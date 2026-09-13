@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>bringup</name>
+  <version>0.1.0</version>
+  <description>
+    Launch files that start the full vertical stack described in
+    ARCHITECTURE.md, and the config/controllers.yaml every controller_manager
+    instance in this repo (sim or hardware) loads. See README.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>g1_description</exec_depend>
+  <exec_depend>mujoco_sim</exec_depend>
+  <exec_depend>lowlevel_control</exec_depend>
+  <exec_depend>ethercat_bridge</exec_depend>
+  <exec_depend>teleop_input</exec_depend>
+  <exec_depend>locomotion_runner</exec_depend>
+  <exec_depend>manipulation_runner</exec_depend>
+  <exec_depend>wbc_stub</exec_depend>
+  <exec_depend>safety</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

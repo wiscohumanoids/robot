@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>lowlevel_control</name>
+  <version>0.1.0</version>
+  <description>
+    REAL joint impedance controller: tau = tau_ff + Kp(q_d-q) + Kd(qd_d-qd),
+    implemented as a real ros2_control controller_interface plugin running
+    inside controller_manager's 1000 Hz real-time update() loop. Identical
+    whether the loaded hardware plugin is mujoco_ros2_control/MujocoSystem
+    (sim) or ethercat_bridge/EthercatHardwareInterface (real hardware). See
+    README.md and ARCHITECTURE.md "Sim/hardware symmetry".
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>controller_interface</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>realtime_tools</depend>
+  <depend>humanoid_interfaces</depend>
+  <depend>std_msgs</depend>
+  <depend>eigen</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <controller_interface plugin="${prefix}/lowlevel_control.xml"/>
+  </export>
+</package>

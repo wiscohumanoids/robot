@@ -1,0 +1,76 @@
+# The ros2_control controllers config every controller_manager instance in
+# this repo loads -- sim (mujoco_ros2_control node) and hardware
+# (ros2_control_node + ethercat_bridge) both use this SAME file, per
+# ARCHITECTURE.md's "Sim/hardware symmetry".
+#
+# update_rate: 1000 -- see RESEARCH_NOTES.md section 4 (PREEMPT-RT). This
+# number alone does not make the loop real-time; see that section's caveats
+# about CPU isolation / SCHED_FIFO / mlockall, none of which this repo
+# configures for you.
+
+controller_manager:
+  ros__parameters:
+    update_rate: 1000  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    joint_impedance_controller:
+      type: lowlevel_control/JointImpedanceController
+
+# lowlevel_control's JointImpedanceController parameters.
+# CANONICAL_JOINT_ORDER -- see humanoid_interfaces/config/canonical_joint_order.yaml
+# and g1_description/g1_23dof.urdf.xacro. kp/kd/joints MUST be the same
+# length and index-aligned.
+joint_impedance_controller:
+  ros__parameters:
+    joints:
+      - left_hip_pitch_joint
+      - left_hip_roll_joint
+      - left_hip_yaw_joint
+      - left_knee_joint
+      - left_ankle_pitch_joint
+      - left_ankle_roll_joint
+      - right_hip_pitch_joint
+      - right_hip_roll_joint
+      - right_hip_yaw_joint
+      - right_knee_joint
+      - right_ankle_pitch_joint
+      - right_ankle_roll_joint
+      - waist_yaw_joint
+      - left_shoulder_pitch_joint
+      - left_shoulder_roll_joint
+      - left_shoulder_yaw_joint
+      - left_elbow_joint
+      - left_wrist_roll_joint
+      - right_shoulder_pitch_joint
+      - right_shoulder_roll_joint
+      - right_shoulder_yaw_joint
+      - right_elbow_joint
+      - right_wrist_roll_joint
+
+    # Per-joint-group PD gains. Legs stiff (knee highest), waist/hip-yaw
+    # softer, arms soft, wrists softest -- see lowlevel_control/README.md for
+    # the rationale (mirrors bipedal_nav's original position_pid gains,
+    # reused here as impedance gains).
+    kp: [
+      1500.0, 1500.0, 500.0, 1500.0, 1500.0, 1500.0,   # left leg
+      1500.0, 1500.0, 500.0, 1500.0, 1500.0, 1500.0,   # right leg
+      500.0,                                            # waist_yaw
+      100.0, 100.0, 100.0, 100.0, 50.0,                 # left arm (wrist_roll softest)
+      100.0, 100.0, 100.0, 100.0, 50.0,                 # right arm
+    ]
+    kd: [
+      150.0, 150.0, 50.0, 150.0, 150.0, 150.0,
+      150.0, 150.0, 50.0, 150.0, 150.0, 150.0,
+      50.0,
+      10.0, 10.0, 10.0, 10.0, 5.0,
+      10.0, 10.0, 10.0, 10.0, 5.0,
+    ]
+
+    # 0.0 = no additional software clamp beyond whatever the active hardware
+    # plugin already enforces from the URDF's <limit effort="..."> per joint
+    # (verified for mujoco_ros2_control/MujocoSystem; a real EtherCAT drive's
+    # own object-dictionary torque limit is the ultimate real-hardware
+    # authority -- see ethercat_bridge/README.md).
+    max_effort: 0.0

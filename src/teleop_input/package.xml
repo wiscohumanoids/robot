@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>teleop_input</name>
+  <version>0.1.0</version>
+  <description>
+    Real (non-stub) keyboard/joystick teleop node. Publishes
+    humanoid_interfaces/VelocityCommand on /cmd_vel at 10 Hz. See README.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>humanoid_interfaces</depend>
+  <depend>sensor_msgs</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

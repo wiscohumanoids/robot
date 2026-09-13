@@ -1,0 +1,16 @@
+<library path="ethercat_bridge">
+  <class name="ethercat_bridge/EthercatHardwareInterface"
+         type="ethercat_bridge::EthercatHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      REAL SCAFFOLD ros2_control SystemInterface for a CiA402 torque-mode
+      EtherCAT drive train. Exports position/velocity/effort state and
+      effort command per joint, identical to
+      mujoco_ros2_control/MujocoSystem's contract (see g1_description's
+      ros2_control tag). Bus I/O (on_configure's master init,
+      on_activate/on_deactivate's CiA402 state machine, read()'s TxPDO
+      consumption, write()'s RxPDO production) is stubbed and logged, not
+      implemented -- see README.md and INTEGRATION_POINTS.md.
+    </description>
+  </class>
+</library>

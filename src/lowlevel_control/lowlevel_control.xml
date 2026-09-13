@@ -1,0 +1,15 @@
+<library path="lowlevel_control">
+  <class name="lowlevel_control/JointImpedanceController"
+         type="lowlevel_control::JointImpedanceController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      Joint impedance controller: tau = tau_ff + Kp(q_d-q) + Kd(qd_d-qd) per
+      joint, running at controller_manager's configured update_rate (1000 Hz
+      in this repo's config/controllers.yaml). Subscribes to
+      humanoid_interfaces/JointCommand on /joint_command and
+      humanoid_interfaces/SafetyStatus on /safety_status (zeroes torque and
+      refuses to re-enable while unsafe). Publishes
+      humanoid_interfaces/RobotState on /robot_state.
+    </description>
+  </class>
+</library>

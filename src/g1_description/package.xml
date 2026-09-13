@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>g1_description</name>
+  <version>0.1.0</version>
+  <description>
+    Canonical Unitree G1 (23-DOF) robot description for the WiscoHumanoids
+    integration stack. Ported from bipedal_nav/src/g1_description
+    (g1_23dof_rev_1_0 variant) and converted to a xacro file so the
+    ros2_control hardware plugin can be selected at launch time between
+    the MuJoCo sim path and the EtherCAT hardware path. See README.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -1,0 +1,17 @@
+# colcon build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# ROS bag / model artifacts a user might drop in locally
+*.onnx
+*.bag

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ethercat_bridge</name>
+  <version>0.1.0</version>
+  <description>
+    Real ros2_control hardware_interface::SystemInterface scaffold for a
+    CiA402 torque-mode EtherCAT drive train. Interface (state/command
+    interfaces, lifecycle, config parsing/validation) is real; actual
+    EtherCAT bus I/O is stubbed and clearly marked. See README.md,
+    RESEARCH_NOTES.md, and INTEGRATION_POINTS.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>ament_index_cpp</depend>
+  <depend>yaml-cpp</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <hardware_interface plugin="${prefix}/ethercat_bridge.xml"/>
+  </export>
+</package>

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mujoco_sim</name>
+  <version>0.1.0</version>
+  <description>
+    G1-specific MuJoCo simulation bringup: robot_description + the vendored
+    mujoco_ros2_control bridge + robot_state_publisher, wired to
+    g1_description. This is the "shared simulator" referenced in
+    ARCHITECTURE.md -- every layer above lowlevel_control talks to this
+    exact same simulated robot the real hardware path (ethercat_bridge)
+    would present. See README.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>g1_description</exec_depend>
+  <exec_depend>mujoco_ros2_control</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
