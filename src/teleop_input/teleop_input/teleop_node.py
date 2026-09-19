@@ -14,15 +14,22 @@ INPUTS:
     most recently wins (both write into the same self._vx/_vy/_vyaw state).
 
 OUTPUT:
-  humanoid_interfaces/VelocityCommand on /cmd_vel, at 10 Hz, holding the last
-  commanded value between key/joystick events (i.e. this node latches a
-  velocity command until told otherwise, it does not require the operator to
-  hold a key down).
+  geometry_msgs/Twist on /cmd_vel_teleop (NOT /cmd_vel -- /cmd_vel is owned
+  solely by cmd_vel_mux, which arbitrates teleop vs. navigation; see
+  INTERFACE_CONTRACT.md). Published at 10 Hz, holding the last commanded value
+  between key/joystick events (this node latches a velocity command until told
+  otherwise, it does not require the operator to hold a key down) -- but ONLY
+  while the command is nonzero, plus one final zero when it returns to zero.
+  Going quiet is what lets navigation take over again: cmd_vel_mux falls back
+  to /cmd_vel_nav once teleop has been silent for its timeout.
 
-WHY A CUSTOM MESSAGE INSTEAD OF geometry_msgs/Twist: see
-humanoid_interfaces/README.md -- Twist's linear.z/angular.x/angular.y have no
-meaning for a ground-locomoting humanoid and this repo's message-contract
-policy is to not leave unused fields for downstream nodes to guess about.
+Only linear.x, linear.y and angular.z are used (REP-103 base_link frame:
+x-forward, y-left, z-up). The other three Twist fields are always zero.
+
+KEYBOARD NOTE: keyboard input needs a real TTY, and `ros2 launch` does not give
+its nodes one. Run this node in its own terminal (`ros2 run teleop_input
+teleop_node`); bringup's full_stack.launch.py starts it only with teleop:=true,
+where only the joystick path works.
 """
 import sys
 import termios
@@ -31,9 +38,8 @@ import select
 
 import rclpy
 from rclpy.node import Node
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-
-from humanoid_interfaces.msg import VelocityCommand
 
 PUBLISH_RATE_HZ = 10.0
 LINEAR_STEP = 0.1     # m/s per keypress
@@ -69,7 +75,8 @@ class TeleopNode(Node):
         self._vy = 0.0
         self._vyaw = 0.0
 
-        self._pub = self.create_publisher(VelocityCommand, '/cmd_vel', 10)
+        self._was_active = False
+        self._pub = self.create_publisher(Twist, '/cmd_vel_teleop', 10)
         self._joy_sub = self.create_subscription(Joy, '/joy', self._on_joy, 10)
         self._timer = self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_timer)
 
@@ -83,7 +90,7 @@ class TeleopNode(Node):
 
         self.get_logger().info(
             f'teleop_input up: w/s=vx a/d=vy q/e=vyaw space=zero x=quit, '
-            f'publishing at {PUBLISH_RATE_HZ} Hz on /cmd_vel')
+            f'publishing at {PUBLISH_RATE_HZ} Hz on /cmd_vel_teleop while active')
 
     def _on_key_poll(self):
         key = _get_key(self._term_settings, timeout_s=0.0)
@@ -111,12 +118,14 @@ class TeleopNode(Node):
         self._vyaw = msg.axes[3] * JOY_ANGULAR_SCALE
 
     def _on_timer(self):
-        msg = VelocityCommand()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'base_link'
-        msg.vx = self._vx
-        msg.vy = self._vy
-        msg.vyaw = self._vyaw
+        active = self._vx != 0.0 or self._vy != 0.0 or self._vyaw != 0.0
+        if not active and not self._was_active:
+            return  # stay silent so cmd_vel_mux can hand control to navigation
+        self._was_active = active  # the tick that returns to zero still publishes it
+        msg = Twist()
+        msg.linear.x = self._vx
+        msg.linear.y = self._vy
+        msg.angular.z = self._vyaw
         self._pub.publish(msg)
 
     def destroy_node(self):

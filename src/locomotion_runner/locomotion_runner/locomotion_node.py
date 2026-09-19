@@ -10,9 +10,9 @@ below and INTEGRATION_POINTS.md, "Locomotion" section.
 FREQUENCY: 50 Hz (PUBLISH_RATE_HZ).
 
 INPUTS:
-  - humanoid_interfaces/VelocityCommand on /cmd_vel (from teleop_input, 10 Hz
-    -- this node reads whatever was last published, no blocking wait; see
-    RESEARCH_NOTES.md "Multi-rate architecture")
+  - geometry_msgs/Twist on /cmd_vel (from cmd_vel_mux, 50 Hz; only linear.x,
+    linear.y, angular.z are used -- this node reads whatever was last
+    published, no blocking wait; see RESEARCH_NOTES.md "Multi-rate architecture")
   - humanoid_interfaces/RobotState on /robot_state (from lowlevel_control)
 
 OUTPUTS:
@@ -28,7 +28,8 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, HistoryPolicy, ReliabilityPolicy
 
-from humanoid_interfaces.msg import VelocityCommand, RobotState, PolicyObservation, JointTargets
+from geometry_msgs.msg import Twist
+from humanoid_interfaces.msg import RobotState, PolicyObservation, JointTargets
 
 from locomotion_runner.joint_order import load_canonical_joint_order, NUM_JOINTS
 
@@ -85,7 +86,7 @@ class LocomotionNode(Node):
         self._onnx_session = None
         self._maybe_load_policy(self.get_parameter('policy_onnx_path').value)
 
-        self._latest_cmd = VelocityCommand()
+        self._latest_cmd = Twist()
         self._latest_state = None  # RobotState, None until first message arrives
         self._previous_action = [0.0] * NUM_JOINTS
         self._t = 0.0  # gait phase clock, seconds
@@ -95,7 +96,7 @@ class LocomotionNode(Node):
             history=HistoryPolicy.KEEP_LAST,
             reliability=ReliabilityPolicy.BEST_EFFORT)
 
-        self.create_subscription(VelocityCommand, '/cmd_vel', self._on_cmd, latest_qos)
+        self.create_subscription(Twist, '/cmd_vel', self._on_cmd, latest_qos)
         self.create_subscription(RobotState, '/robot_state', self._on_state, latest_qos)
         self._obs_pub = self.create_publisher(PolicyObservation, '/locomotion/observation', 10)
         self._targets_pub = self.create_publisher(JointTargets, '/locomotion/joint_targets', 10)
@@ -121,7 +122,7 @@ class LocomotionNode(Node):
         self._onnx_session = onnxruntime.InferenceSession(path)
         self.get_logger().info(f'loaded locomotion policy from {path}')
 
-    def _on_cmd(self, msg: VelocityCommand):
+    def _on_cmd(self, msg: Twist):
         self._latest_cmd = msg
 
     def _on_state(self, msg: RobotState):
@@ -130,9 +131,9 @@ class LocomotionNode(Node):
     def _build_observation(self) -> PolicyObservation:
         obs = PolicyObservation()
         obs.header.stamp = self.get_clock().now().to_msg()
-        obs.cmd_vx = self._latest_cmd.vx
-        obs.cmd_vy = self._latest_cmd.vy
-        obs.cmd_vyaw = self._latest_cmd.vyaw
+        obs.cmd_vx = self._latest_cmd.linear.x
+        obs.cmd_vy = self._latest_cmd.linear.y
+        obs.cmd_vyaw = self._latest_cmd.angular.z
 
         if self._latest_state is not None:
             obs.joint_positions = list(self._latest_state.joint_positions)
@@ -149,12 +150,12 @@ class LocomotionNode(Node):
         obs.previous_action = list(self._previous_action)
         return obs
 
-    def _compute_action_stub(self, cmd: VelocityCommand) -> list:
+    def _compute_action_stub(self, cmd: Twist) -> list:
         """Nominal pose + sinusoidal leg-pitch correction while a nonzero
         forward/yaw command is present, otherwise hold the nominal pose.
         This is OUR stub, not berkeley_humanoid's trained gait."""
-        is_walking = (abs(cmd.vx) > WALK_CMD_THRESHOLD
-                      or abs(cmd.vyaw) > WALK_CMD_THRESHOLD)
+        is_walking = (abs(cmd.linear.x) > WALK_CMD_THRESHOLD
+                      or abs(cmd.angular.z) > WALK_CMD_THRESHOLD)
         action = list(NOMINAL_POSE)
         if is_walking:
             phase = 2.0 * math.pi * GAIT_FREQUENCY_HZ * self._t

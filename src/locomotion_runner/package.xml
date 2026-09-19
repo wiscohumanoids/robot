@@ -14,6 +14,7 @@
 
   <depend>rclpy</depend>
   <depend>humanoid_interfaces</depend>
+  <depend>geometry_msgs</depend>
   <depend>ament_index_python</depend>
   <depend>python3-yaml</depend>
 

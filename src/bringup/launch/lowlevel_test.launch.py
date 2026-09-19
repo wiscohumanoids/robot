@@ -34,6 +34,7 @@ from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 import xacro
 
@@ -47,6 +48,10 @@ def generate_launch_description():
         description='false (default) = mujoco_ros2_control/MujocoSystem sim path. '
                     'true = ethercat_bridge/EthercatHardwareInterface scaffold path '
                     '(see ethercat_bridge/README.md for what that actually does today).')
+
+    headless_arg = DeclareLaunchArgument(
+        'headless', default_value='false',
+        description='Run MuJoCo without a GUI window (Docker / CI / macOS host). Sim path only.')
 
     controllers_yaml = os.path.join(bringup_path, 'config', 'controllers.yaml')
     xacro_file = os.path.join(g1_description_path, 'g1_23dof.urdf.xacro')
@@ -68,7 +73,8 @@ def generate_launch_description():
         package='mujoco_ros2_control',
         executable='mujoco_ros2_control',
         output='screen',
-        parameters=[sim_robot_description, controllers_yaml, {'mujoco_model_path': mujoco_model_path}],
+        parameters=[sim_robot_description, controllers_yaml, {'mujoco_model_path': mujoco_model_path},
+                    {'headless': ParameterValue(LaunchConfiguration('headless'), value_type=bool)}],
         condition=UnlessCondition(LaunchConfiguration('use_hardware')),
     )
     node_rsp_sim = Node(
@@ -111,6 +117,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         use_hardware_arg,
+        headless_arg,
         node_mujoco_ros2_control,
         node_rsp_sim,
         node_ros2_control,

@@ -1,6 +1,7 @@
 # manipulation_runner
 
-**Status:** Stub task execution, real action-server interface.
+**Layer:** 6 -- skill runners. **Status:** STUB task execution, real action-server interface.
+**Called by:** `behavior_tree` for every non-navigation skill (`pick`, `place`, ...).
 **Frequency:** 10 Hz internal loop while a goal is active; otherwise idle.
 **Action server:** `execute_manipulation` (`humanoid_interfaces/ExecuteManipulation`).
 **Publishes:** `/manipulation/joint_targets` (`JointTargets`, `source="manipulation"`)

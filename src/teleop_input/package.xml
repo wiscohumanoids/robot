@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>
     Real (non-stub) keyboard/joystick teleop node. Publishes
-    humanoid_interfaces/VelocityCommand on /cmd_vel at 10 Hz. See README.md.
+    geometry_msgs/Twist on /cmd_vel_teleop at 10 Hz while active. See README.md.
   </description>
   <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
   <license>Apache-2.0</license>
@@ -13,6 +13,7 @@
 
   <depend>rclpy</depend>
   <depend>humanoid_interfaces</depend>
+  <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
 
   <test_depend>ament_copyright</test_depend>

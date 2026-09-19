@@ -234,8 +234,10 @@ Sources:
 ## 5. Multi-rate ROS2 architecture (10 / 50 / 500 / 1000 Hz coexisting cleanly)
 
 Findings applied directly to this repo's layer frequencies (`teleop_input`
-10Hz -> `locomotion_runner`/`manipulation_runner` 50/10Hz -> `wbc_stub` 500Hz
--> `lowlevel_control`/`ethercat_bridge` 1000Hz):
+10Hz -> `cmd_vel_mux` 50Hz -> `locomotion_runner`/`manipulation_runner` 50/10Hz ->
+`wbc_stub` 500Hz -> `lowlevel_control`/`ethercat_bridge` 1000Hz; the task-stack
+stubs added later run at 1-100 Hz or on events, well inside the "plain DDS is
+fine" range this section describes -- see the contract for each rate):
 
 - A single node can cleanly run several independent rates using multiple ROS
   `Timer` objects (e.g. rclpy `create_timer` / rclcpp `create_wall_timer`)
@@ -269,6 +271,70 @@ Sources:
 
 ---
 
+## 6. Task-stack and interface-design decisions (added with the task-layer scaffold)
+
+**Read this differently from sections 1-5.** Those record research with cited
+sources. This section records *design decisions* and, more importantly, the
+**assumptions that were made without checking a primary source** (the task-stack
+stubs were written on a machine with no ROS installation, and no web research was
+done for them). Nothing below is cited because nothing below was looked up; each
+item is a thing to verify on a ROS machine. Verified items get a tick in
+`STATUS.md`'s "not verified" list.
+
+**Decisions and their reasons**
+
+- *Standard message types where they exist.* `/cmd_vel` is `geometry_msgs/Twist`
+  (an earlier custom `VelocityCommand` was removed), navigation is Nav2's own
+  `NavigateToPose` action, `/joint_states` is `sensor_msgs/JointState`. Reason:
+  Nav2, rosbag, rviz, joystick and teleop tooling work unchanged, and a
+  custom `/cmd_vel` type would have collided with Nav2's `Twist` publisher.
+- *One publisher per topic and per TF edge*, enforced by
+  `interface_contract.yaml` + `tests/` + `check_contract.py`. A topic with two
+  publishers interleaves their messages (last-writer-wins per message), which
+  for `/safety_status` would let a healthy `is_safe: true` overwrite an E-stop.
+  A TF frame can have only one parent; two publishers of the same edge produce
+  jitter, two parents produce a broken tree.
+- *A small custom `cmd_vel_mux` instead of the `twist_mux` package.* Chosen so the
+  arbitration (teleop > nav > zero with a 0.5 s timeout, doubling as a watchdog)
+  is fully unit-testable without ROS. `twist_mux` is the standard alternative and
+  is a reasonable replacement; its parameter names and Humble message type were
+  **not** checked, and it would additionally need teleop to stop publishing zeros
+  while idle (which `teleop_input` now does anyway).
+- *`base_link` added to the URDF* as a massless root fixed to `pelvis`, so the
+  REP-105 frame chain (`map -> odom -> base_link`) and Nav2's default
+  `robot_base_frame` hold. The Unitree model's own root is `pelvis`.
+- *Stubs live in separate packages, logic in ROS-free modules,* so each team owns a
+  package and the interesting behavior (planner rules, go-to-goal controller,
+  dead-reckoning, mux selection) is unit-tested with plain `pytest`.
+
+**Assumptions to verify on a ROS Humble machine**
+
+1. `nav2_msgs/action/NavigateToPose` in Humble: goal `pose` (`PoseStamped`) +
+   `behavior_tree`; result `std_msgs/Empty`; feedback includes `current_pose`
+   and `distance_remaining`. `nav_stub` and `behavior_tree_stub` were written
+   from memory of this definition.
+2. The rosdep key for the Python `tf2_ros` module in Humble is `tf2_ros_py`
+   (used in the new packages' `package.xml`).
+3. `ros2 launch` does not attach a TTY to launched nodes, so keyboard teleop only
+   works from `ros2 run` in its own terminal. (Asserted from how `teleop_node`
+   detects a TTY; not tested.)
+4. How Nav2 is remapped so its velocity output goes to `/cmd_vel_nav` (which
+   node/param) -- the intent is fixed by the contract, the wiring is unwritten.
+5. `mock_components/GenericSystem` was considered as a no-MuJoCo stand-in for
+   hardware (so CI could test `lowlevel_control`) and **not used**: whether it
+   exports the `imu_imu` sensor interfaces `lowlevel_control` requires, and with
+   what initial values (NaN would trip `safety`'s NaN check), is unknown. CI
+   therefore runs the stubs-only stack (`sim:=false`) and skips the sim-only
+   topics.
+6. The MuJoCo `linux-aarch64` release tarball exists under the same URL pattern as
+   `linux-x86_64` for `MUJOCO_VERSION=3.2.7` (used by the Dockerfile for arm64
+   hosts), and OSMesa headless rendering works in that image with
+   `MUJOCO_HEADLESS_OSMESA=ON`.
+7. `rclpy` action clients/servers behave as `behavior_tree_stub` and `nav_stub`
+   assume: goal/result futures completing from a worker thread under a
+   `MultiThreadedExecutor`, and blocking `execute_callback`s with
+   `time.sleep` (the same pattern `manipulation_runner` already used).
+
 ## Summary of open TODOs this research left for the hardware team
 
 These are repeated as inline `# TODO` / `// TODO` comments at the exact call
@@ -288,3 +354,5 @@ sites in `ethercat_bridge/`, listed here as one checklist:
    actual target compute — none of this OS-level setup is part of this repo
    (it's a deployment/provisioning concern, tracked here so it isn't
    forgotten).
+
+Task-stack items to verify are listed in section 6 above and in `STATUS.md`.

@@ -8,10 +8,11 @@ unchanged) from `bipedal_nav/src/g1_description`, variant `g1_23dof_rev_1_0`.
 
 ## What changed vs. the bipedal_nav original
 
+- Added a massless `base_link` root link and a fixed identity `base_link_to_pelvis` joint (the Unitree model's own root is `pelvis`), so the TF contract's `odom -> base_link` frame and Nav2's default `robot_base_frame` work without renaming anything. No geometry/inertia touched.
 - File renamed `g1_23dof_rev_1_0.urdf` -> `g1_23dof.urdf.xacro` and wrapped with
   `xmlns:xacro` + one `<xacro:arg name="hardware_plugin" .../>` so the
   `<ros2_control><hardware><plugin>` value can be chosen at launch time instead of
-  being hard-coded. Default is `mujoco_ros2_control/MujocoSystem` (sim). Pass
+  being hard-coded (read with `$(arg hardware_plugin)` -- `${...}` would look up a *property*, and an earlier version of this file used it, which made the URDF fail to expand and would have crashed every launch file; `tests/test_repo_consistency.py` now guards this). Default is `mujoco_ros2_control/MujocoSystem` (sim). Pass
   `hardware_plugin:=ethercat_bridge/EthercatHardwareInterface` to target real
   hardware. No link/joint/geometry/inertial data was touched.
 - The `<ros2_control>` block itself was rewritten: every joint now exports

@@ -1,12 +1,113 @@
 # Integration points — exactly where each team plugs in
 
-This document is written for the three teams working in the *other* repos.
-Each section says: what you own, what file/topic/message to target, and what
-you must NOT break.
+Written for every team. Each section says: what you own, which stub you
+replace, what interface you must honor, and what you must NOT break.
+
+**The workflow is the same for every team** (details in
+[`CONTRIBUTING.md`](CONTRIBUTING.md), the interfaces in
+[`INTERFACE_CONTRACT.md`](INTERFACE_CONTRACT.md), where things stand in
+[`STATUS.md`](STATUS.md)):
+
+```bash
+ros2 launch bringup full_stack.launch.py <your_layer>:=external   # the rest of the stack, as stubs
+ros2 run <your_pkg> <your_node>                                    # your real node replaces your stub
+ros2 run bringup check_contract.py                                 # did you honor the contract?
+```
+
+You never need another team's real node to develop yours, only their stub. If
+you need an interface to change, that is a reviewed contract change, not a
+private edit -- see CONTRIBUTING.md.
+
+| Team / area | Stub you replace | Section |
+|---|---|---|
+| Planning | `task_planner`, `behavior_tree`, (`speech_input`) | [Task planning](#task-planning-task_planner-behavior_tree-speech_input) |
+| Perception | `perception`, `slam` | [Perception and SLAM](#perception-and-slam-perception-slam) |
+| State estimation | `state_estimation` | [State estimation](#state-estimation-state_estimation) |
+| Navigation | `nav` | [Navigation](#navigation-nav) |
+| Locomotion | `locomotion`, `wbc` | [Locomotion](#locomotion-berkeley_humanoid---locomotion_runner) |
+| Manipulation | `manipulation` | [Manipulation](#manipulation-lerobot_alohamini---manipulation_runner) |
+| Low-level | `ethercat_bridge` (scaffold) | [Low-level / EtherCAT](#low-level--ethercat-this-repos-own-ethercat_bridge) |
+| Safety | `estop_bridge` (missing) | [Safety](#safety) |
+
+---
+
+## Task planning (`task_planner`, `behavior_tree`, `speech_input`)
+
+**You own:** turning an intent into behavior. **You replace:**
+`task_planner_stub` (canned plan) and `behavior_tree_stub` (sequential executor).
+
+- **`task_planner`**: subscribe `/user_intent` (`std_msgs/String`) and
+  `/object_poses`; publish `humanoid_interfaces/SkillSequence` on
+  `/skill_sequence`. Skills use the
+  [skill vocabulary](INTERFACE_CONTRACT.md#skill-vocabulary) (`navigate_to`,
+  `pick`, `place`, `handover`, ...). Adding a skill name is an interface change.
+- **`behavior_tree`** (BehaviorTree.CPP): subscribe `/skill_sequence`; be an
+  action **client** of `navigate_to_pose` (`nav2_msgs/NavigateToPose`) and
+  `execute_manipulation` (`ExecuteManipulation`); publish `/task_status`
+  (`std_msgs/String`, e.g. `RUNNING 2/3 pick` / `SUCCEEDED` / `FAILED ...`) --
+  `bringup/smoke_task.py` reads it.
+- **`speech_input`** does not exist. It owns `/user_intent`; until then publish by hand:
+  `ros2 topic pub --once /user_intent std_msgs/msg/String "{data: 'pick up the cube'}"`.
+
+**Do not:** publish velocity commands yourself (go through `navigate_to_pose`);
+publish `/cmd_vel` at all (it belongs to `cmd_vel_mux`).
+**Test yours:** `full_stack.launch.py sim:=false planner:=external` (no MuJoCo
+needed), then `ros2 run bringup smoke_task.py`.
+
+## Perception and SLAM (`perception`, `slam`)
+
+**You own:** what the robot sees and where it is on the map. **You replace:**
+`perception_stub` (a hardcoded cube) and `slam_stub` (empty map, identity TF).
+
+- **`perception`** publishes `humanoid_interfaces/ObjectPoseArray` on
+  `/object_poses` at >= 15 Hz (nominal 30), **in the `map` frame** -- do the TF
+  transform yourself so consumers never need to -- with stable `object_id`s.
+- **`slam`** owns `/map` (`nav_msgs/OccupancyGrid`, transient-local) and the TF
+  edge **`map -> odom`** (drift correction). It must **not** publish
+  `odom -> base_link`; that belongs to state estimation.
+- **Camera frame:** add the camera's mounting as a static edge in
+  `g1_description`'s URDF (there is a `d455_link` mesh but no camera frame is
+  wired into the model yet) and add it to the TF table in the contract.
+- Camera drivers publish standard `sensor_msgs/Image`/`CameraInfo`; those topics
+  are not in the contract yet -- add them when you have real ones.
+
+**Test yours:** `full_stack.launch.py perception:=external slam:=external sim:=false`.
+
+## State estimation (`state_estimation`)
+
+**You own:** the robot's pose and velocity estimate. **You replace:**
+`state_estimation_stub` (dead-reckons `/cmd_vel`, assuming perfect tracking).
+
+- Publish `/robot_pose` (`geometry_msgs/PoseStamped`, frame `map`) at >= 50 Hz
+  (nominal 100) and the TF edge **`odom -> base_link`** -- you are the only
+  publisher of both. (The IEKF from its own repo, or `robot_localization`.)
+- **Also needed by locomotion:** `PolicyObservation.base_linear_velocity` has no
+  real-hardware source and is zero today. Coordinate with the locomotion team on
+  how that velocity reaches `locomotion_runner` (a new contract entry).
+- Inputs are yours to choose (IMU via `/robot_state`, joint kinematics, vision);
+  add any new topic you need to the contract.
+
+## Navigation (`nav`)
+
+**You own:** getting the robot to a goal pose. **You replace:** `nav_stub` (a
+go-to-point controller with no obstacle avoidance).
+
+- Serve `navigate_to_pose` (`nav2_msgs/NavigateToPose`) -- the stub already uses
+  Nav2's own action name and type, so the behavior tree's client won't change.
+- **Remap Nav2's velocity output to `/cmd_vel_nav`** (not `/cmd_vel`).
+  `cmd_vel_mux` forwards it. *(Exact Nav2 launch/param wiring for the remap has
+  not been written or verified.)*
+- Consume `/map` (from `slam`), `/robot_pose` and TF (`map -> odom -> base_link`).
+  Nav2's robot base frame is `base_link`.
+- A humanoid is not a diff-drive base: Nav2's controller output is only a
+  velocity request to `locomotion_runner`, which decides whether the robot can
+  follow it. Tune velocity/acceleration limits to what the gait can do.
 
 ---
 
 ## Locomotion (`berkeley_humanoid` -> `locomotion_runner`)
+
+**Also yours:** `wbc` (`wbc_stub`, the 500 Hz priority merge of locomotion and manipulation targets into `JointCommand`) -- replace with a real whole-body controller behind the same `JointTargets in -> JointCommand out` contract.
 
 **Target file:** `src/locomotion_runner/locomotion_runner/locomotion_node.py`,
 inside the block literally marked:
@@ -62,15 +163,19 @@ responsibility, not this repo's.
    joint targets.
 
 **What you must not change:** `PolicyObservation`'s field layout/order, the
-canonical joint order, or the node's 50 Hz timer rate, without updating
-`humanoid_interfaces` and `ARCHITECTURE.md` in the same change.
+canonical joint order, or the node's 50 Hz timer rate, without a contract change
+(`interface_contract.yaml`, `humanoid_interfaces`, and the docs -- see CONTRIBUTING.md).
 
-**Command input:** `locomotion_runner` already receives `VelocityCommand`
-(`vx`,`vy`,`vyaw`) on `/cmd_vel` and puts it in `PolicyObservation.cmd_*`.
-Your G1Env currently only has a binary stand/walk flag — you'll need to
-either retrain with a real velocity-conditioned command, or (as an interim
-step) threshold `vx`/`vyaw` magnitude into your existing binary flag inside
-the adapter. Document whichever you choose in a comment at the call site.
+**Command input:** `locomotion_runner` receives a standard `geometry_msgs/Twist` on
+`/cmd_vel` (published only by `cmd_vel_mux`, 50 Hz; uses `linear.x`, `linear.y`,
+`angular.z`) and puts it in `PolicyObservation.cmd_*`. Your G1Env currently only
+has a binary stand/walk flag — you'll need to either retrain with a real
+velocity-conditioned command, or (as an interim step) threshold `vx`/`vyaw`
+magnitude into your existing binary flag inside the adapter. Document whichever
+you choose in a comment at the call site.
+
+**Swap in your runner:** `full_stack.launch.py locomotion:=external`, or keep
+this node and pass `policy_onnx_path:=...` to use the ONNX slot.
 
 ---
 
@@ -79,7 +184,8 @@ the adapter. Document whichever you choose in a comment at the call site.
 **Target file:** `src/manipulation_runner/manipulation_runner/manipulation_node.py`,
 which already implements the `ExecuteManipulation` action server interface
 (goal: `task`, `object_id`, `target_pose`; feedback: `phase`, `progress`;
-result: `success`, `message`) — currently a stub that reports
+result: `success`, `message`; **called by the `behavior_tree`** for every
+non-navigation skill, with `task` = the skill name) — currently a stub that reports
 `phase="approaching"` -> `"grasping"` -> `"retracting"` on a timer and
 returns success. Replace the body of the goal-execution callback with a real
 call into your inference loop.
@@ -126,8 +232,9 @@ from a ROS2 action server callback instead of a standalone script.
 4. **Cameras.** `lerobot_alohamini`'s 4 camera streams are coded but
    disabled by default. If your policy needs them, you are responsible for
    publishing them as standard `sensor_msgs/Image`/`CameraInfo` topics
-   yourself — no perception package exists in this repo to consume or
-   republish them.
+   yourself (and adding them to the contract). `perception_stub` fabricates a
+   cube and does not consume or republish any camera stream; coordinate with
+   the perception team on who owns the camera drivers.
 
 ---
 
@@ -169,19 +276,29 @@ would need to change in lockstep if you do.
 ## Safety
 
 **Interface:** `humanoid_interfaces/SafetyStatus` on `/safety_status`,
-published today by `src/safety/safety/safety_node.py` (currently a
-software-only stub: it always reports `is_safe=true` unless you manually
-publish a `estop_active=true` message for testing, or a future firmware
-bridge does it for real).
+published **only by `src/safety/safety/safety_node.py`** at 100 Hz. It combines
+two inputs: `/manual_estop` (`std_msgs/Bool`) and a NaN/Inf check of
+`/robot_state`.
 
 **What the (separate, out-of-scope-here) wireless E-stop firmware project
-needs to do:** publish `humanoid_interfaces/SafetyStatus` with
-`estop_active=true` the instant the physical button is pressed, over
-whatever transport bridges firmware to ROS2 (a micro-ROS agent, a serial
-bridge node, etc. — not specified here, that's the firmware team's
-integration choice). `safety_node.py` does not care how the message arrives,
-only that it arrives on `/safety_status`. On receipt, `safety_node` sets
-`is_safe=false` and `lowlevel_control`'s `JointImpedanceController` (which
-subscribes to the same topic) zeroes its torque output and refuses to
-re-enable until a subsequent message reports `is_safe=true`. See
+needs to do:** publish `std_msgs/Bool` **on `/manual_estop`**, `true` the instant
+the physical button is pressed, over whatever transport bridges firmware to ROS2
+(micro-ROS agent, serial bridge node, etc. — the firmware team's choice; the node
+that does this is the contract's `estop_bridge`, status MISSING).
+
+**Do NOT publish `SafetyStatus` on `/safety_status` yourself.** It has one owner.
+`safety_node` publishes `is_safe: true` at 100 Hz whenever it sees no fault, so a
+second publisher's `estop_active: true` would be interleaved with those messages
+and `lowlevel_control` would flicker back to "safe" between them. (An earlier
+version of this document told the firmware to do exactly that; it was wrong.)
+
+On `estop_active` (via `/manual_estop`), `safety_node` sets `is_safe: false` and
+`lowlevel_control`'s `JointImpedanceController` (subscribed to `/safety_status`)
+zeroes its torque and refuses to re-enable until `is_safe` is true again. See
 `src/safety/README.md`.
+
+**Known gaps for whoever owns safety** (also in STATUS.md): `lowlevel_control`
+treats "no `/safety_status` ever received" as safe and never times out a stale
+`/joint_command`, so a crashed `safety` node or WBC does not zero torque. Add
+heartbeat/staleness timeouts before any hardware run. The software E-stop path is
+not a substitute for a hardware E-stop.

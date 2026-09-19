@@ -1,0 +1,264 @@
+# THE INTERFACE CONTRACT -- machine-readable source of truth.
+#
+# Human-readable rendering: INTERFACE_CONTRACT.md and STATUS.md at the repo
+# root (their tables are GENERATED from this file: `python3 tools/gen_docs.py`).
+# Enforced by: tests/ (static, no ROS needed -- runs in CI) and
+# `ros2 run bringup check_contract.py` (live graph check against a running stack).
+#
+# RULES (see CONTRIBUTING.md):
+#   1. Exactly ONE publisher per topic, exactly ONE publisher per TF edge.
+#      `owner` is the node id (see `nodes:`) that is allowed to publish it.
+#   2. Changing a topic name/type/rate/owner, a TF edge, a skill name or a
+#      message field is an INTERFACE CHANGE: edit this file, regenerate the
+#      docs, and get the change reviewed by the interface owner (integration
+#      lead) -- in the same PR as the code.
+#   3. A stub and the real node that replaces it honor the SAME entry here.
+#      Swapping one for the other must not touch this file.
+#
+# nodes[].status:
+#   real      complete for its purpose today
+#   stub      real interface, fake internals (the internals are what someone builds)
+#   scaffold  real interface + structure, hardware/bus I/O stubbed
+#   external  third-party ROS node used as-is (configure only)
+#   missing   nothing exists yet; the entry reserves the interface
+#
+# nodes[].launch_arg (bringup/launch/full_stack.launch.py):
+#   stub/scaffold nodes:  <arg>:=stub (default) launches the repo's stub;
+#                         <arg>:=external launches nothing -- you run your real
+#                         node yourself (it then becomes the topic's one publisher).
+#   real nodes:           <arg>:=true|false.
+
+contract_version: 1
+
+frames:
+  map: "Global fixed frame. Owned by SLAM (slam_stub today)."
+  odom: "Smooth local frame. Drifts relative to map; never jumps."
+  base_link: "Robot body frame (REP-103: x forward, y left, z up). Fixed to `pelvis` in the URDF."
+
+layers:
+  - {id: intent,     title: "1. Intent & speech"}
+  - {id: planning,   title: "2. Task planning"}
+  - {id: execution,  title: "3. Task execution (behavior tree)"}
+  - {id: perception, title: "4. Perception & state estimation"}
+  - {id: navigation, title: "5. Navigation & velocity arbitration"}
+  - {id: skills,     title: "6. Skill runners (locomotion, manipulation)"}
+  - {id: wbc,        title: "7. Whole-body arbitration"}
+  - {id: lowlevel,   title: "8. Low-level control & hardware"}
+  - {id: safety,     title: "9. Safety"}
+  - {id: platform,   title: "10. Robot model & simulation"}
+
+nodes:
+  # ---- 1. intent ----
+  - id: speech_input
+    layer: intent
+    status: missing
+    package: null
+    area: planning
+    replaces: "Whisper (or similar) speech-to-text wrapper"
+    summary: "Turns speech/UI input into /user_intent. Until it exists, publish by hand with `ros2 topic pub`."
+  # ---- 2. planning ----
+  - id: task_planner
+    layer: planning
+    status: stub
+    package: task_planner_stub
+    executable: planner_node
+    launch_arg: planner
+    area: planning
+    replaces: "LLM + skill-library task planner"
+    summary: "Any intent -> canned [navigate_to, pick/place] plan for the nearest known object."
+  # ---- 3. execution ----
+  - id: behavior_tree
+    layer: execution
+    status: stub
+    package: behavior_tree_stub
+    executable: bt_node
+    launch_arg: behavior_tree
+    area: planning
+    replaces: "BehaviorTree.CPP tree with custom condition/action nodes"
+    summary: "Sequential executor: runs each skill via the navigate_to_pose / execute_manipulation actions, stops at first failure."
+  # ---- 4. perception & estimation ----
+  - id: perception
+    layer: perception
+    status: stub
+    package: perception_stub
+    executable: perception_node
+    launch_arg: perception
+    area: perception
+    replaces: "ORB-SLAM3 + FoundationPose wiring"
+    summary: "Reports one hardcoded cube in `map` at 30 Hz."
+  - id: state_estimation
+    layer: perception
+    status: stub
+    package: state_estimation_stub
+    executable: state_estimation_node
+    launch_arg: state_estimation
+    area: state-estimation
+    replaces: "Custom IEKF (own repo) or robot_localization"
+    summary: "Dead-reckons /cmd_vel (assumes perfect tracking); publishes /robot_pose and odom->base_link."
+  - id: slam
+    layer: perception
+    status: stub
+    package: slam_stub
+    executable: slam_node
+    launch_arg: slam
+    area: perception
+    replaces: "ORB-SLAM3 / slam_toolbox"
+    summary: "Empty 10 m x 10 m /map and identity map->odom."
+  # ---- 5. navigation ----
+  - id: nav
+    layer: navigation
+    status: stub
+    package: nav_stub
+    executable: nav_node
+    launch_arg: navigation
+    area: navigation
+    replaces: "Nav2 (configured, not built). Remap its velocity output to /cmd_vel_nav."
+    summary: "navigate_to_pose action server; straight-line go-to-point, no obstacle avoidance."
+  - id: cmd_vel_mux
+    layer: navigation
+    status: real
+    package: cmd_vel_mux
+    executable: mux_node
+    launch_arg: cmd_vel_mux
+    area: integration
+    replaces: null
+    summary: "Sole publisher of /cmd_vel: teleop > navigation > zero, with a 0.5 s watchdog."
+  - id: teleop
+    layer: navigation
+    status: real
+    package: teleop_input
+    executable: teleop_node
+    launch_arg: teleop
+    area: locomotion
+    replaces: null
+    summary: "Keyboard/joystick -> /cmd_vel_teleop. Keyboard needs its own terminal (see README)."
+  # ---- 6. skills ----
+  - id: locomotion
+    layer: skills
+    status: stub
+    package: locomotion_runner
+    executable: locomotion_node
+    launch_arg: locomotion
+    area: locomotion
+    replaces: "Trained RL policy (berkeley_humanoid ONNX export) -- slot exists, adapter unverified"
+    summary: "Sinusoidal hip/knee gait over a nominal crouch pose at 50 Hz."
+  - id: manipulation
+    layer: skills
+    status: stub
+    package: manipulation_runner
+    executable: manipulation_node
+    launch_arg: manipulation
+    area: manipulation
+    replaces: "lerobot_alohamini inference wrapped as an action server"
+    summary: "execute_manipulation action server: scripted approach/grasp/retract, then success."
+  # ---- 7. wbc ----
+  - id: wbc
+    layer: wbc
+    status: stub
+    package: wbc_stub
+    executable: wbc_node
+    launch_arg: wbc
+    area: locomotion
+    replaces: "Whole-body controller (QP / operational-space)"
+    summary: "Priority merge: legs+waist from locomotion, arms from manipulation when fresh (500 Hz)."
+  # ---- 8. lowlevel ----
+  - id: lowlevel_control
+    layer: lowlevel
+    status: real
+    package: lowlevel_control
+    executable: null
+    launch_arg: null
+    area: low-level
+    replaces: null
+    summary: "ros2_control controller plugin: tau = tau_ff + Kp(q_d-q) + Kd(qd_d-qd) at 1 kHz; publishes /robot_state."
+  - id: ethercat_bridge
+    layer: lowlevel
+    status: scaffold
+    package: ethercat_bridge
+    executable: null
+    launch_arg: null
+    area: low-level
+    replaces: "Real EtherCAT master + CiA402 PDO I/O (read()/write() TODOs)"
+    summary: "SystemInterface plugin, correct state/command interfaces; bus I/O stubbed. Use with lowlevel_test.launch.py use_hardware:=true."
+  - id: joint_state_broadcaster
+    layer: lowlevel
+    status: external
+    package: joint_state_broadcaster
+    executable: null
+    launch_arg: null
+    area: low-level
+    replaces: null
+    summary: "Standard ros2_control broadcaster: /joint_states."
+  # ---- 9. safety ----
+  - id: safety
+    layer: safety
+    status: real
+    package: safety
+    executable: safety_node
+    launch_arg: safety
+    area: safety
+    replaces: null
+    summary: "Aggregates /manual_estop + NaN check into /safety_status at 100 Hz; lowlevel_control zeroes torque when unsafe."
+  - id: estop_bridge
+    layer: safety
+    status: missing
+    package: null
+    area: safety
+    replaces: "Wireless E-stop firmware bridge (micro-ROS / serial). Must publish std_msgs/Bool on /manual_estop -- NOT on /safety_status."
+    summary: "Reserved. Today /manual_estop is driven by hand for tests."
+  # ---- 10. platform ----
+  - id: mujoco_sim
+    layer: platform
+    status: external
+    package: mujoco_ros2_control
+    executable: null
+    launch_arg: sim
+    area: low-level
+    replaces: null
+    summary: "Vendored MuJoCo <-> ros2_control bridge (real, unmodified). sim:=false skips it and lowlevel_control."
+  - id: robot_state_publisher
+    layer: platform
+    status: external
+    package: robot_state_publisher
+    executable: null
+    launch_arg: null
+    area: integration
+    replaces: null
+    summary: "Standard: URDF -> TF (base_link->pelvis static, joint frames from /joint_states)."
+
+topics:
+  # check: rate   -> live checker measures the rate against min_rate_hz
+  #        latched-> live checker only requires a publisher (transient_local topic)
+  #        event  -> published on demand; zero publishers is fine, more than one is not
+  # sim_only: true -> only checked when the sim/hardware path is running (sim:=true)
+  - {name: /user_intent,        type: std_msgs/msg/String,                owner: speech_input,      consumers: [task_planner],                 check: event}
+  - {name: /skill_sequence,     type: humanoid_interfaces/msg/SkillSequence, owner: task_planner,   consumers: [behavior_tree],                check: event}
+  - {name: /task_status,        type: std_msgs/msg/String,                owner: behavior_tree,     consumers: [],                             check: rate, rate_hz: 1,   min_rate_hz: 0.5}
+  - {name: /object_poses,       type: humanoid_interfaces/msg/ObjectPoseArray, owner: perception,  consumers: [task_planner],                  check: rate, rate_hz: 30,  min_rate_hz: 15}
+  - {name: /robot_pose,         type: geometry_msgs/msg/PoseStamped,      owner: state_estimation,  consumers: [nav],                          check: rate, rate_hz: 100, min_rate_hz: 50}
+  - {name: /map,                type: nav_msgs/msg/OccupancyGrid,         owner: slam,              consumers: [nav],                          check: latched}
+  - {name: /cmd_vel_teleop,     type: geometry_msgs/msg/Twist,            owner: teleop,            consumers: [cmd_vel_mux],                  check: event}
+  - {name: /cmd_vel_nav,        type: geometry_msgs/msg/Twist,            owner: nav,               consumers: [cmd_vel_mux],                  check: event}
+  - {name: /cmd_vel,            type: geometry_msgs/msg/Twist,            owner: cmd_vel_mux,       consumers: [locomotion, state_estimation], check: rate, rate_hz: 50,  min_rate_hz: 25}
+  - {name: /locomotion/observation,   type: humanoid_interfaces/msg/PolicyObservation, owner: locomotion, consumers: [],                     check: rate, rate_hz: 50,  min_rate_hz: 25}
+  - {name: /locomotion/joint_targets, type: humanoid_interfaces/msg/JointTargets,      owner: locomotion, consumers: [wbc],                 check: rate, rate_hz: 50,  min_rate_hz: 25}
+  - {name: /manipulation/joint_targets, type: humanoid_interfaces/msg/JointTargets,    owner: manipulation, consumers: [wbc],               check: event}
+  - {name: /joint_command,      type: humanoid_interfaces/msg/JointCommand, owner: wbc,             consumers: [lowlevel_control],             check: rate, rate_hz: 500, min_rate_hz: 100}
+  - {name: /robot_state,        type: humanoid_interfaces/msg/RobotState, owner: lowlevel_control,  consumers: [locomotion, safety],           check: rate, rate_hz: 1000, min_rate_hz: 100, sim_only: true}
+  - {name: /joint_states,       type: sensor_msgs/msg/JointState,         owner: joint_state_broadcaster, consumers: [robot_state_publisher],  check: rate, rate_hz: 1000, min_rate_hz: 100, sim_only: true}
+  - {name: /manual_estop,       type: std_msgs/msg/Bool,                  owner: estop_bridge,      consumers: [safety],                       check: event}
+  - {name: /safety_status,      type: humanoid_interfaces/msg/SafetyStatus, owner: safety,          consumers: [lowlevel_control],             check: rate, rate_hz: 100, min_rate_hz: 50}
+
+actions:
+  - {name: navigate_to_pose,     type: nav2_msgs/action/NavigateToPose,                   server: nav,          clients: [behavior_tree]}
+  - {name: execute_manipulation, type: humanoid_interfaces/action/ExecuteManipulation,    server: manipulation, clients: [behavior_tree]}
+
+# One publisher per edge. A TF frame has exactly one parent, so `child` must be unique.
+tf:
+  - {parent: map,       child: odom,      owner: slam,                  rate_hz: 20,  note: "SLAM's drift correction"}
+  - {parent: odom,      child: base_link, owner: state_estimation,      rate_hz: 100, note: "fast local motion"}
+  - {parent: base_link, child: pelvis,    owner: robot_state_publisher, static: true, note: "from the URDF (fixed joint)"}
+  # Every other URDF link (joint frames, imu, head, ...) hangs off pelvis and is
+  # published by robot_state_publisher from /joint_states (sim/hardware path only).
+  # A camera frame will be added here, as a static edge from the URDF, when the
+  # perception team mounts one.

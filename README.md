@@ -1,21 +1,46 @@
 # robot
 
-The canonical ROS2 Humble humanoid software stack for WiscoHumanoids. This
-repo unifies four previously disconnected prototypes into one coherent
-system with a real message contract, a stubbed-but-correctly-interfaced
-vertical control stack, and a real low-level ROS2-to-EtherCAT bridge
-scaffold.
+The canonical ROS2 Humble humanoid software stack for WiscoHumanoids: **a frozen
+interface contract, a stub for every layer of the stack, and the real low-level
+infrastructure underneath**, so several teams can build their own piece in
+parallel and swap it in without waiting on anyone else.
 
-**Start here:** `ARCHITECTURE.md` (the full stack, frequencies, real-vs-stub
-status, canonical joint order) and `INTEGRATION_POINTS.md` (exactly where
-each team's work plugs in). `RESEARCH_NOTES.md` documents the
-EtherCAT/`ros2_control`/real-time research the `ethercat_bridge` and
-`lowlevel_control` packages are built on, with citations.
+## Start here
+
+| If you want to... | Read |
+|---|---|
+| Know **where the project stands**: what's real, what's stubbed, who owns what, what to do next | [`STATUS.md`](STATUS.md) |
+| Know **every topic, action and TF edge** between layers, and who publishes it | [`INTERFACE_CONTRACT.md`](INTERFACE_CONTRACT.md) |
+| Understand **how the stack fits together** (both halves, rates, data flow, gaps) | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| Find **where your team plugs in** (which stub you replace, what you must honor) | [`INTEGRATION_POINTS.md`](INTEGRATION_POINTS.md) |
+| **Contribute**: workflow, changing an interface, adding a node, running the checks | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| See the EtherCAT / `ros2_control` / real-time research (and what's unverified) | [`RESEARCH_NOTES.md`](RESEARCH_NOTES.md) |
+
+Every package has its own `README.md` stating its layer, status (real / stub /
+scaffold), rate and interfaces — read those before assuming anything works.
+
+## The idea in one screen
+
+Nodes never call each other; they publish/subscribe (or call an action) through
+interfaces listed in the contract. Each topic and each TF edge has **exactly one
+owner**. Every layer has a stub that honors its interface, so:
+
+```bash
+ros2 launch bringup full_stack.launch.py locomotion:=external   # whole stack, minus your stub
+ros2 run my_pkg my_locomotion_node                              # your real node takes its place
+ros2 run bringup check_contract.py                              # prove you honored the contract
+```
+
+**What stubs prove:** data flows through the right topics at the right rates
+with the right types, and everyone can develop in parallel. **What they can't:**
+real-time timing, dynamics, whether a policy balances the real robot. Those only
+show up on hardware.
 
 ## The four-repo context
 
-This repo does not contain a trained locomotion or manipulation policy, and
-does not contain a real EtherCAT master. What it provides is the glue:
+This repo does not contain a trained locomotion or manipulation policy, an LLM
+planner, a real perception system, or a real EtherCAT master. It provides the
+glue and the slots they plug into:
 
 1. **`berkeley_humanoid`** — MuJoCo + Stable-Baselines3 PPO locomotion RL,
    sim-only, no ROS. Will eventually export `policy.onnx`, which drops into
@@ -24,90 +49,116 @@ does not contain a real EtherCAT master. What it provides is the glue:
    requires.
 2. **`bipedal_nav`** — a real ROS2 Humble workspace. Its `g1_description`
    (URDF+MJCF with `ros2_control` bindings) and `mujoco_ros2_control` bridge
-   are ported into this repo verbatim as the canonical robot model and sim
-   backend (see `src/g1_description/README.md` for the small, disclosed
-   changes made). Its SLAM/state-estimation/planner nodes were non-functional
-   stubs and were **not** brought over — this repo doesn't have a navigation
-   or SLAM stack, by design (see `ARCHITECTURE.md`'s gap list).
+   are ported into this repo as the canonical robot model and sim backend (see
+   `src/g1_description/README.md` for the small, disclosed changes made). Its
+   SLAM/state-estimation/planner nodes were non-functional stubs and were **not**
+   brought over; this repo's stubs for those layers are new.
 3. **`lerobot_alohamini`** — a LeRobot fork for bimanual manipulation,
    ZMQ-based, no ROS by design. Will eventually be wrapped as the
    `ExecuteManipulation` action server this repo's `manipulation_runner`
-   already implements as a stub. See `INTEGRATION_POINTS.md` "Manipulation"
-   for the real transport/joint-mapping gaps that wrapping requires.
-4. **`ros2_hub`** — an empty ROS2 tutorial workspace. Not used as a source
-   of anything; superseded by this repo.
+   already implements as a stub. See `INTEGRATION_POINTS.md` "Manipulation".
+4. **`ros2_hub`** — an empty ROS2 tutorial workspace. Not used; superseded by this repo.
 
 ## Repo structure
 
 ```
 robot/
-  README.md                    you are here
-  ARCHITECTURE.md               the stack, frequencies, canonical joint order, data flow
-  INTEGRATION_POINTS.md         exactly where each team plugs in
-  RESEARCH_NOTES.md             cited EtherCAT/ros2_control/real-time research
-  docker/                       optional ROS2 Humble + MuJoCo dev container
+  README.md  STATUS.md  INTERFACE_CONTRACT.md  ARCHITECTURE.md
+  INTEGRATION_POINTS.md  CONTRIBUTING.md  RESEARCH_NOTES.md
+  tools/gen_docs.py            regenerates the tables in STATUS.md / INTERFACE_CONTRACT.md from the YAML
+  tests/                       static contract + consistency tests (pytest, no ROS needed)
+  docker/                      ROS2 Humble + MuJoCo dev container (x86_64 and arm64, headless-capable)
+  .github/workflows/ci.yml     static checks, then colcon build + stub-stack contract check + end-to-end task
   src/
-    g1_description/             canonical URDF/MJCF (ported from bipedal_nav)
-    mujoco_ros2_control/        vendored MuJoCo<->ros2_control bridge (unmodified, MIT)
-    mujoco_sim/                 G1-specific MuJoCo sim bringup
-    humanoid_interfaces/        THE message/action contract (real, consumed)
-    teleop_input/                10 Hz keyboard/joystick -> /cmd_vel (real)
-    locomotion_runner/           50 Hz stub gait + real ONNX-policy slot
-    manipulation_runner/         10 Hz stub ExecuteManipulation action server
-    wbc_stub/                    500 Hz pass-through arbitration (stands in for a real WBC)
-    lowlevel_control/            1000 Hz REAL joint impedance controller (ros2_control plugin)
-    ethercat_bridge/             1000 Hz REAL SCAFFOLD ros2_control hardware_interface
-    bringup/                     launch files + shared controllers.yaml
-    safety/                      100 Hz E-stop/fault monitor
+    humanoid_interfaces/       THE contract: messages, action, canonical joint order, interface_contract.yaml
+    bringup/                   full_stack / lowlevel_test launch files, controllers.yaml, check_contract.py, smoke_task.py
+
+    -- task stack (all STUBS today) --
+    task_planner_stub/         /user_intent -> /skill_sequence
+    behavior_tree_stub/        /skill_sequence -> navigate_to_pose + execute_manipulation, /task_status
+    perception_stub/           /object_poses (hardcoded cube)
+    slam_stub/                 /map, map->odom
+    state_estimation_stub/     /robot_pose, odom->base_link (dead-reckons /cmd_vel)
+    nav_stub/                  navigate_to_pose action server (stands in for Nav2) -> /cmd_vel_nav
+
+    -- velocity arbitration (REAL) --
+    teleop_input/              keyboard/joystick -> /cmd_vel_teleop
+    cmd_vel_mux/               teleop > nav > zero -> /cmd_vel (sole publisher)
+
+    -- control stack --
+    locomotion_runner/         50 Hz stub gait + ONNX-policy slot
+    manipulation_runner/       10 Hz stub ExecuteManipulation action server
+    wbc_stub/                  500 Hz pass-through arbitration (stands in for a real WBC)
+    lowlevel_control/          1000 Hz REAL joint impedance controller (ros2_control plugin)
+    ethercat_bridge/           1000 Hz REAL SCAFFOLD ros2_control hardware_interface
+    safety/                    100 Hz E-stop/fault monitor
+
+    -- platform --
+    g1_description/            canonical URDF/MJCF (ported from bipedal_nav; adds base_link)
+    mujoco_ros2_control/       vendored MuJoCo<->ros2_control bridge (unmodified, MIT)
+    mujoco_sim/                G1-specific MuJoCo sim bringup
 ```
 
-Every package has its own `README.md` stating its status (real / stub /
-real scaffold), frequency, and interfaces — read those before assuming
-anything works or doesn't.
+## Prerequisites
 
-## Prerequisites (native install, Ubuntu 22.04 + ROS2 Humble)
+**Easiest: the dev container** (Linux or macOS, x86_64 or Apple silicon):
+
+```bash
+./docker/build.sh      # builds the workspace inside the image (a few minutes; needs network)
+./docker/run.sh        # shell with YOUR working copy mounted -- edits are live for Python
+```
+On macOS there is no X11 forwarding, so run the sim with `headless:=true`. The
+image builds MuJoCo with OSMesa so headless needs no display at all.
+
+**Native (Ubuntu 22.04 + ROS2 Humble):**
 
 ```bash
 sudo apt install \
-  libglfw3-dev libeigen3-dev libyaml-cpp-dev \
+  libglfw3-dev libosmesa6-dev libeigen3-dev libyaml-cpp-dev \
   ros-humble-control-toolbox ros-humble-effort-controllers \
   ros-humble-joint-state-broadcaster ros-humble-robot-state-publisher \
-  ros-humble-xacro
+  ros-humble-xacro ros-humble-nav2-msgs ros-humble-tf2-ros-py
 pip3 install xacro onnxruntime   # onnxruntime only needed to use a real locomotion policy
 ```
-
 Plus **MuJoCo** itself: download a release from
 https://github.com/google-deepmind/mujoco/releases and either let CMake's
-`find_package(mujoco)` find it, or set `MUJOCO_DIR` to its extracted path
-before building. See `docker/Dockerfile` for a complete working example of
-this exact setup, or use it directly (`./docker/build.sh && ./docker/run.sh`).
+`find_package(mujoco)` find it, or set `MUJOCO_DIR` to its extracted path before
+building. See `docker/Dockerfile` for a complete working example.
 
 ## Build
 
 ```bash
 cd robot
 rosdep install --from-paths src --ignore-src -y
-colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 source install/setup.bash
 ```
 
-## Run the full sim stack
+## Run
 
 ```bash
-ros2 launch bringup full_stack.launch.py
+ros2 launch bringup full_stack.launch.py                  # MuJoCo sim + every stub
+ros2 launch bringup full_stack.launch.py sim:=false       # stubs only -- no MuJoCo, runs on a laptop
+ros2 launch bringup full_stack.launch.py headless:=true   # sim with no GUI window
+
+ros2 run teleop_input teleop_node                         # keyboard, in a SECOND terminal
+ros2 topic pub --once /user_intent std_msgs/msg/String "{data: 'pick up the cube'}"
+ros2 topic echo /task_status                              # RUNNING 1/2 navigate_to ... SUCCEEDED
 ```
+Launch switches (per-layer `stub|external`, `sim`, `headless`, ...) are in
+`bringup/README.md`. The EtherCAT-scaffold milestone harness:
+`ros2 launch bringup lowlevel_test.launch.py [use_hardware:=true]`.
 
-Drives the simulated G1 in MuJoCo end-to-end: keyboard teleop ->
-`locomotion_runner`'s stub gait -> `wbc_stub` -> `lowlevel_control`'s real
-impedance controller -> `mujoco_ros2_control`. See `bringup/README.md`.
-
-## Run the low-level milestone test
+## Test
 
 ```bash
-ros2 launch bringup lowlevel_test.launch.py                    # sim path
-ros2 launch bringup lowlevel_test.launch.py use_hardware:=true # EtherCAT scaffold path
-```
+pip install pytest pyyaml xacro
+python3 tools/gen_docs.py --check     # generated doc tables match the contract
+python3 -m pytest tests src/*/test    # static contract/consistency + pure-logic unit tests (no ROS)
 
-See `bringup/README.md` for the full worked example (publish a
-`JointCommand`, watch `/robot_state` respond) and `ethercat_bridge/README.md`
-for exactly what the hardware path does and does not do today.
+ros2 run bringup check_contract.py [--no-sim]   # live: one publisher per topic, types, rates, TF, actions
+ros2 run bringup smoke_task.py                  # live: intent -> plan -> navigate -> manipulate -> SUCCEEDED
+```
+CI (`.github/workflows/ci.yml`) runs all of the above. **Note:** as of the last
+update to `STATUS.md`, nothing had yet been built or launched on a ROS machine —
+only the static checks and unit tests have run. Check `STATUS.md` before assuming.

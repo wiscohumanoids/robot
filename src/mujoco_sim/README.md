@@ -17,9 +17,16 @@ Run standalone:
 ros2 launch mujoco_sim g1_mujoco.launch.py
 ```
 
-For the actual "does a command move the robot" milestone test, use
-`bringup/lowlevel_test.launch.py` instead (it includes this launch file and
-adds the test instructions) — see `bringup/README.md`.
+`bringup/launch/lowlevel_test.launch.py` (which `full_stack.launch.py` includes for
+`sim:=true`) does **not** include this launch file: it re-implements the same
+sim bring-up so that it can also switch to the EtherCAT hardware plugin
+(`use_hardware:=true`). The two are kept deliberately parallel; if you change how
+the sim is brought up, change both. `g1_mujoco.launch.py` is the minimal
+"just the sim + controllers" entry point; use `bringup`'s launch files for
+anything involving the rest of the stack, and see `bringup/README.md`.
+
+Both accept `headless:=true` (no GUI window). The Docker image is built with
+OSMesa so headless works with no display server at all.
 
 ## Prerequisites (see top-level README.md for the full list)
 

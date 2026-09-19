@@ -1,6 +1,6 @@
 # The exact observation vector the locomotion policy (locomotion_runner's
 # ONNX slot) expects, at 50 Hz. Assembled by locomotion_runner itself from
-# RobotState + the latest VelocityCommand + its own last output -- this
+# RobotState + the latest /cmd_vel Twist + its own last output -- this
 # message exists as an explicit, documented, loggable intermediate so the
 # locomotion team can record/replay/diff exactly what a policy saw, rather
 # than that vector only ever existing as an anonymous numpy array inside one
@@ -22,7 +22,7 @@
 
 std_msgs/Header header
 
-# --- command (from the latest VelocityCommand on /cmd_vel) ---
+# --- command (from the latest geometry_msgs/Twist on /cmd_vel: linear.x, linear.y, angular.z) ---
 float64 cmd_vx
 float64 cmd_vy
 float64 cmd_vyaw

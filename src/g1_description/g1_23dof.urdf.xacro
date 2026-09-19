@@ -12,6 +12,17 @@
     see ARCHITECTURE.md "Sim/hardware symmetry".
   -->
   <xacro:arg name="hardware_plugin" default="mujoco_ros2_control/MujocoSystem"/>
+  <!-- REP-105 root frame. The Unitree model's own root link is `pelvis`; this
+       massless `base_link` + fixed identity joint is added so the TF contract
+       (odom -> base_link, see INTERFACE_CONTRACT.md) and Nav2's default
+       robot_base_frame work without renaming anything. No geometry/inertia is
+       affected. -->
+  <link name="base_link"/>
+  <joint name="base_link_to_pelvis" type="fixed">
+    <parent link="base_link"/>
+    <child link="pelvis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
   <material name="dark">
     <color rgba="0.2 0.2 0.2 1"/>
   </material>
@@ -870,7 +881,7 @@
   -->
   <ros2_control name="G1System" type="system">
     <hardware>
-      <plugin>${hardware_plugin}</plugin>
+      <plugin>$(arg hardware_plugin)</plugin>
       <!-- Consumed only by ethercat_bridge/EthercatHardwareInterface (ignored by
            mujoco_ros2_control/MujocoSystem, which does not look up these keys).
            Relative slave-config path is resolved against ethercat_bridge's own

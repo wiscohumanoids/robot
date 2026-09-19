@@ -1,6 +1,6 @@
 # safety
 
-**Status:** Real (software-only inputs today).
+**Layer:** 9 -- safety. **Status:** REAL (software-only inputs today).
 **Frequency:** 100 Hz.
 **Subscribes:** `/manual_estop` (`std_msgs/Bool`), `/robot_state` (`RobotState`,
 checked for NaN/Inf).
@@ -20,8 +20,13 @@ log that it has disabled (see `lowlevel_control/README.md`).
 
 A wireless E-stop is a separate firmware project, out of scope here. Whatever
 bridges that firmware to ROS2 (micro-ROS agent, serial bridge node, etc.)
-needs to publish `humanoid_interfaces/SafetyStatus` with `estop_active=true`
-directly on `/safety_status` — or, more simply, publish `std_msgs/Bool` on
-`/manual_estop` the same way the test command above does, and let this node
-do the rest. Either integration point works; `/manual_estop` is the lower-
-effort one for a firmware bridge to target.
+must publish `std_msgs/Bool` on **`/manual_estop`** the same way the test command
+above does, and let this node do the rest.
+
+**It must not publish on `/safety_status`.** That topic has exactly one owner --
+this node -- under the [interface contract](../../INTERFACE_CONTRACT.md). This node
+publishes `is_safe: true` at 100 Hz whenever nothing is wrong, so a second
+publisher asserting `estop_active` would be interleaved with (and immediately
+overwritten by) those messages, and `lowlevel_control` would flicker back to
+"safe". (An earlier version of this document allowed either topic; that was a
+flaw in the design, not a valid option.)

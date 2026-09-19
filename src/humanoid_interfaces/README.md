@@ -1,10 +1,18 @@
 # humanoid_interfaces
 
 **Purpose:** the message contract every other package in this repo is written
-against. **Real and consumed** -- unlike `bipedal_nav`'s `humanoid_interfaces`
+against, plus [`config/interface_contract.yaml`](config/interface_contract.yaml) --
+the machine-readable list of every topic, action and TF edge, its owner, type and
+rate (rendered in [INTERFACE_CONTRACT.md](../../INTERFACE_CONTRACT.md), enforced by
+`tests/` and `ros2 run bringup check_contract.py`).
+
+**Only invent a custom message where no standard one fits.** `/cmd_vel`,
+`/joint_states`, `/robot_pose`, `/map` and `navigate_to_pose` use standard types on purpose.
+
+**Real and consumed** -- unlike `bipedal_nav`'s `humanoid_interfaces`
 package (which defined `SlamState`/`RobotState`/`ContactState`/etc. but had
-zero real code importing them), every message here has at least one real
-publisher and one real subscriber somewhere in `src/`. Grep for the message
+zero real code importing them), every message here has a publisher and a subscriber
+(real or stub) somewhere in `src/`. Grep for the message
 name if you want to verify this yourself; it's a deliberate design goal, not
 a claim to take on faith.
 
@@ -14,35 +22,30 @@ a claim to take on faith.
 
 | File | Published by | Consumed by |
 |---|---|---|
-| `msg/VelocityCommand.msg` | `teleop_input` (~10 Hz) | `locomotion_runner` |
+| `msg/Skill.msg`, `msg/SkillSequence.msg` | `task_planner` (event, on `/skill_sequence`) | `behavior_tree` |
+| `msg/ObjectPose.msg`, `msg/ObjectPoseArray.msg` | `perception` (30 Hz, on `/object_poses`, frame `map`) | `task_planner` |
 | `msg/PolicyObservation.msg` | `locomotion_runner` (50 Hz, for logging/replay) | (loggable; policy consumes the equivalent in-process) |
 | `msg/JointTargets.msg` | `locomotion_runner` (50 Hz), `manipulation_runner` (10 Hz) | `wbc_stub` |
 | `msg/JointCommand.msg` | `wbc_stub` (500 Hz) | `lowlevel_control` |
 | `msg/RobotState.msg` | `lowlevel_control` (1000 Hz, throttled where re-published) | `locomotion_runner`, `safety` |
 | `msg/SafetyStatus.msg` | `safety` (100 Hz) | `lowlevel_control` |
-| `action/ExecuteManipulation.action` | server: `manipulation_runner` | client: whatever task layer calls it (none yet -- see ARCHITECTURE.md gap list) |
+| `action/ExecuteManipulation.action` | server: `manipulation_runner` | client: `behavior_tree` |
+| `config/interface_contract.yaml` | N/A (data file) | `tools/gen_docs.py`, `tests/`, `bringup/check_contract.py` |
 | `config/canonical_joint_order.yaml` | N/A (data file) | every node that touches a 23-element joint array |
 
-`NavigateToPose` is intentionally **not** redefined here -- this repo has no
-navigation stack (bipedal_nav's was a non-functional stub, see the earlier
-repo audit), so there is nothing yet to standardize an interface against.
-When a real nav stack is added, use `nav2_msgs/action/NavigateToPose`
-directly rather than inventing a parallel type.
+`NavigateToPose` is intentionally **not** redefined here: navigation uses Nav2's
+own `nav2_msgs/action/NavigateToPose` (served by `nav_stub` today, real Nav2 later).
 
-## Why custom messages instead of `geometry_msgs/Twist` + `Float64MultiArray`
+## Why standard types where they exist
 
-Two deliberate choices, both explained in-line in the `.msg` files themselves:
-
-1. `VelocityCommand` instead of `Twist` on `/cmd_vel`: `Twist` carries 3 fields
-   (`linear.z`, `angular.x`, `angular.y`) that are meaningless for a
-   ground-locomoting humanoid and would be silently ignored -- a custom 3-field
-   message makes the contract exact.
-2. Named `float64[23]` arrays with documented order, instead of
-   `std_msgs/Float64MultiArray`: a `MultiArray` carries no compile-time
-   guarantee of length or order, so a bug that reorders or truncates the array
-   is a silent runtime failure instead of a build-time one. Every array field
-   in this package is commented with the exact 23-index order (also see
-   `config/canonical_joint_order.yaml`).
+Earlier versions of this package defined a custom `VelocityCommand` for
+`/cmd_vel`. It was removed: `/cmd_vel` is now a plain `geometry_msgs/Twist` so
+Nav2, `teleop_twist_keyboard`, joysticks and rosbag tooling work unchanged (only
+`linear.x`, `linear.y`, `angular.z` are meaningful for a ground-walking humanoid).
+The joint-space messages stay custom because a `float64[23]` with a documented
+order is safer than a `Float64MultiArray` that carries no length or order: a
+reordered or truncated array is a typed error, not a silent runtime bug. Every
+array field is index-aligned with `config/canonical_joint_order.yaml`.
 
 ## Canonical joint order
 

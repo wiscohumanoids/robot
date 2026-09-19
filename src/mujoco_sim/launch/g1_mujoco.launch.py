@@ -11,10 +11,12 @@ load_controller` ExecuteProcess chained via OnProcessExit) -- reused here,
 not reinvented, adapted for our xacro'd URDF and effort-interface
 controllers.yaml instead of position_pid.
 
-Accepts `controllers_yaml` so callers (bringup/lowlevel_test.launch.py,
-bringup/sim_stack.launch.py) can point at the shared
-bringup/config/controllers.yaml instead of this package needing to know
-where bringup keeps it.
+Accepts `controllers_yaml` so callers can point at a different controllers
+file than the shared bringup/config/controllers.yaml (its default).
+
+NOTE: bringup/lowlevel_test.launch.py does NOT include this file -- it
+re-implements the same sim bring-up so it can also select the EtherCAT hardware
+plugin. Keep the two in step.
 """
 import os
 

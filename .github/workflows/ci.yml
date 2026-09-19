@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Fast, no ROS: contract enforcement, doc freshness, URDF expansion, logic unit tests.
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pytest pyyaml xacro
+      - name: Generated docs are up to date
+        run: python tools/gen_docs.py --check
+      - name: Contract, consistency and unit tests
+        run: python -m pytest -q tests src/*/test
+
+  # Slow, real ROS: does it build, does the stubbed stack come up, does it honor the
+  # contract, and does a task run end to end. Runs in the repo's own Docker image.
+  ros:
+    runs-on: ubuntu-latest
+    needs: static
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image (includes colcon build of the whole workspace)
+        run: docker build -t robot:ci -f docker/Dockerfile .
+      - name: colcon test (package-level tests)
+        run: |
+          docker run --rm robot:ci bash -c '
+            colcon test --event-handlers console_cohesion+ &&
+            colcon test-result --verbose'
+      - name: Stubs-only stack - contract check and end-to-end task
+        run: |
+          docker run --rm robot:ci bash -c '
+            ros2 launch bringup full_stack.launch.py sim:=false > /tmp/launch.log 2>&1 &
+            LAUNCH_PID=$!
+            sleep 10
+            rc=0
+            ros2 run bringup check_contract.py --no-sim || rc=1
+            ros2 run bringup smoke_task.py --timeout 90 || rc=1
+            kill $LAUNCH_PID 2>/dev/null || true
+            if [ $rc -ne 0 ]; then echo "=== launch log ==="; tail -n 200 /tmp/launch.log; fi
+            exit $rc'

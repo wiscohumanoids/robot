@@ -4,10 +4,11 @@
   <version>0.1.0</version>
   <description>
     The message/action contract shared by every package in this repo:
-    VelocityCommand, PolicyObservation, JointTargets, JointCommand,
-    RobotState, SafetyStatus messages and the ExecuteManipulation action,
-    plus the canonical 23-DOF joint order data file all of them are indexed
-    against. See README.md and ARCHITECTURE.md.
+    PolicyObservation, JointTargets, JointCommand, RobotState, SafetyStatus
+    (control stack) and Skill, SkillSequence, ObjectPose, ObjectPoseArray
+    (task stack) messages, the ExecuteManipulation action, the canonical
+    23-DOF joint order, and the machine-readable interface_contract.yaml.
+    See README.md and INTERFACE_CONTRACT.md.
   </description>
   <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
   <license>Apache-2.0</license>

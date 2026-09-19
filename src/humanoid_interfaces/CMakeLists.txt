@@ -7,7 +7,10 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/VelocityCommand.msg"
+  "msg/Skill.msg"
+  "msg/SkillSequence.msg"
+  "msg/ObjectPose.msg"
+  "msg/ObjectPoseArray.msg"
   "msg/PolicyObservation.msg"
   "msg/JointTargets.msg"
   "msg/JointCommand.msg"

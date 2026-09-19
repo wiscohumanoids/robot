@@ -15,7 +15,7 @@ setup(
     zip_safe=True,
     maintainer='WiscoHumanoids',
     maintainer_email='wiscohumanoids@example.com',
-    description='Keyboard/joystick teleop -> humanoid_interfaces/VelocityCommand at 10 Hz.',
+    description='Keyboard/joystick teleop -> geometry_msgs/Twist on /cmd_vel_teleop at 10 Hz.',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={

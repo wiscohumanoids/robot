@@ -1,8 +1,8 @@
 # locomotion_runner
 
-**Status:** Stub gait, real interface (see `ARCHITECTURE.md`'s real-vs-stub table).
+**Layer:** 6 -- skill runners. **Status:** STUB gait, real interface (see [STATUS.md](../../STATUS.md)).
 **Frequency:** 50 Hz.
-**Subscribes:** `/cmd_vel` (`VelocityCommand`), `/robot_state` (`RobotState`).
+**Subscribes:** `/cmd_vel` (`geometry_msgs/Twist`, from `cmd_vel_mux`; uses `linear.x`, `linear.y`, `angular.z`), `/robot_state` (`RobotState`).
 **Publishes:** `/locomotion/observation` (`PolicyObservation`, for logging),
 `/locomotion/joint_targets` (`JointTargets`, `source="locomotion"`).
 
@@ -39,3 +39,12 @@ is a *correction* on top of a hard-coded nominal pose + gait, computed inside
 `G1Env.step()` — that math is not part of the ONNX graph and must be ported
 here too, which `_compute_action_onnx()` does not yet do (it currently
 assumes the ONNX graph's raw output is directly usable as joint targets).
+
+## Swap it out
+
+```bash
+ros2 launch bringup full_stack.launch.py locomotion:=external   # or policy_onnx_path:=... to use the ONNX slot
+ros2 run bringup check_contract.py
+```
+The stub gait cannot balance the free-floating MuJoCo robot; it exists so the
+*interface* is exercised (a `/cmd_vel` produces `JointTargets` at 50 Hz).
