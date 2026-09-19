@@ -1,9 +1,9 @@
 """task_planner_stub / planner_node
 
-STATUS: STUB. Real interface, fake internals: no LLM. Any /user_intent string
-becomes a canned two-skill plan (navigate to the nearest known object, then
-pick/place it -- see planner_logic.py). The real replacement is the LLM +
-skill-library planner publishing the same SkillSequence.
+STATUS: STUB. The interface is real; there is no LLM. Any /user_intent string
+becomes a canned two-skill plan (navigate to a known object, then pick or place
+it; see planner_logic.py). The real replacement is the LLM + skill-library
+planner publishing the same SkillSequence.
 
 INPUTS:
   - std_msgs/String on /user_intent (typed by hand today:
@@ -12,7 +12,7 @@ INPUTS:
   - humanoid_interfaces/ObjectPoseArray on /object_poses (from perception);
     a plan is only possible once perception has reported at least one object.
 
-OUTPUT (this node is the ONLY publisher):
+OUTPUT (this node is the only publisher):
   humanoid_interfaces/SkillSequence on /skill_sequence (event-driven: one
   message per accepted intent).
 """
@@ -43,6 +43,9 @@ class PlannerStub(Node):
             for o in msg.objects]
 
     def _on_intent(self, msg: String):
+        if not msg.data.strip():
+            self.get_logger().warn('ignoring an empty /user_intent')
+            return
         plan = plan_for_intent(
             msg.data, self._objects, float(self.get_parameter('standoff_m').value))
         if not plan:

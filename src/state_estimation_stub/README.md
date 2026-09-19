@@ -1,10 +1,10 @@
 # state_estimation_stub
 
-**Layer:** 4 -- perception & state estimation. **Status:** STUB.
+**Layer:** 4 (perception & state estimation). **Status:** STUB.
 **Frequency:** 100 Hz.
 **Subscribes:** `/cmd_vel` (`Twist`).
 **Publishes:** `/robot_pose` (`PoseStamped`, frame `map`) and the TF edge
-`odom -> base_link` -- **the only publisher of both.**
+`odom -> base_link`, **the only publisher of both.**
 
 ## What is fake
 

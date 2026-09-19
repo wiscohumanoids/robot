@@ -1,5 +1,5 @@
 # High-level manipulation task interface. This is the action server contract
-# manipulation_runner implements (10 Hz internal loop) -- today as a stub that
+# manipulation_runner implements (10 Hz internal loop): today as a stub that
 # accepts any goal and reports success after a fixed delay (see
 # manipulation_runner/README.md). It is the same interface a future ROS2
 # wrapper around lerobot_alohamini's evaluate_bi.py inference loop is meant to
@@ -8,7 +8,7 @@
 # --- Goal ---
 string task                        # e.g. "pick", "place", "handover"
 string object_id                   # target object identifier (from a perception
-                                    # stack -- none exists in this repo yet)
+                                    # stack: none exists in this repo yet)
 geometry_msgs/PoseStamped target_pose   # optional explicit target pose; empty/default
                                           # if object_id-based lookup is used instead
 ---

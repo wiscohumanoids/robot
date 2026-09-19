@@ -1,9 +1,9 @@
-# EtherCAT slave configuration -- CiA402 torque-mode drives, one entry per
+# EtherCAT slave configuration: CiA402 torque-mode drives, one entry per
 # joint, CANONICAL_JOINT_ORDER (see humanoid_interfaces/config/canonical_joint_order.yaml).
 #
 # THIS FILE IS A TEMPLATE. Every vendor_id/product_id below is a placeholder
 # (0x00000000) and MUST be replaced with the real values from each drive's
-# datasheet/EtherCAT ESI (.xml) file before this can talk to real hardware --
+# datasheet/EtherCAT ESI (.xml) file before this can talk to real hardware.
 # EthercatHardwareInterface::on_configure() logs an error and refuses to
 # proceed if it finds an unfilled 0x00000000 placeholder still present.
 #
@@ -16,7 +16,7 @@
 
 # --- Shared PDO mapping template ---
 # All 23 joints in this repo use identical CiA402 objects (this is the
-# standard CiA402 "servo drive" default PDO set -- see RESEARCH_NOTES.md).
+# standard CiA402 "servo drive" default PDO set: see RESEARCH_NOTES.md).
 # If a real deployment uses more than one drive model (e.g. larger drives for
 # legs, smaller ones for wrists), duplicate this anchor per drive family
 # rather than editing each of the 23 entries individually.
@@ -31,10 +31,10 @@ pdo_template: &pdo_template
     actual_velocity:  { index: 0x606C, sub_index: 0, type: int32, state_interface: velocity }
     actual_torque:    { index: 0x6077, sub_index: 0, type: int16, state_interface: effort }
   # Distributed-clock sync, targeting this repo's 1kHz control loop
-  # (see RESEARCH_NOTES.md -- lowlevel_control and ethercat_bridge both run
+  # (see RESEARCH_NOTES.md: lowlevel_control and ethercat_bridge both run
   # at controller_manager's update_rate=1000, set in bringup/config/controllers.yaml).
   # TODO(unconfirmed): `cycle_time_us` is OUR OWN placeholder key name, not a
-  # verified ethercat_driver_ros2/SOEM field -- confirm the real field name
+  # verified ethercat_driver_ros2/SOEM field: confirm the real field name
   # against ICube-Robotics/ethercat_driver_ros2_examples before relying on it.
   dc_sync:
     enabled: true
@@ -152,7 +152,7 @@ slaves:
   - joint: left_wrist_roll_joint
     alias: 0
     position: 17
-    vendor_id: 0x00000000   # TODO -- likely a smaller/different drive model than the legs
+    vendor_id: 0x00000000   # TODO: likely a smaller or different drive model than the legs
     product_id: 0x00000000  # TODO
     <<: *pdo_template
   - joint: right_shoulder_pitch_joint
@@ -182,6 +182,6 @@ slaves:
   - joint: right_wrist_roll_joint
     alias: 0
     position: 22
-    vendor_id: 0x00000000   # TODO -- likely a smaller/different drive model than the legs
+    vendor_id: 0x00000000   # TODO: likely a smaller or different drive model than the legs
     product_id: 0x00000000  # TODO
     <<: *pdo_template

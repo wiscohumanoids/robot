@@ -1,7 +1,13 @@
 #include "lowlevel_control/joint_impedance_controller.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "hardware_interface/loaned_command_interface.hpp"
 #include "hardware_interface/loaned_state_interface.hpp"
@@ -16,11 +22,11 @@ using humanoid_interfaces::msg::SafetyStatus;
 
 namespace
 {
-// Fallback defaults if config/controllers.yaml doesn't override them --
+// Fallback defaults if config/controllers.yaml doesn't override them,
 // CANONICAL_JOINT_ORDER, see g1_description/g1_23dof.urdf.xacro and
 // humanoid_interfaces/config/canonical_joint_order.yaml. Gains mirror the
 // position_pid values bipedal_nav originally used per joint group (legs
-// stiff, knee highest, waist/hip-yaw softer, arms soft, wrist softest) --
+// stiff, knee highest, waist/hip-yaw softer, arms soft, wrist softest),
 // reused here as impedance PD gains instead, per ARCHITECTURE.md's
 // "Sim/hardware symmetry" rationale for standardizing on a raw effort
 // interface.
@@ -52,6 +58,13 @@ const std::vector<double> kDefaultKd = {
   10, 10, 10, 10, 5,
 };
 
+// Torque limits [Nm] per joint = the URDF <limit effort="..."> values, CANONICAL_JOINT_ORDER
+// (legs: hip pitch/yaw 88, hip roll/knee 139, ankles 35; waist 88; every arm joint 25).
+// tests/test_repo_consistency.py checks these against the URDF.
+const std::vector<double> kDefaultEffortLimits = {
+  88.0, 139.0, 88.0, 139.0, 35.0, 35.0, 88.0, 139.0, 88.0, 139.0, 35.0, 35.0, 88.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0,
+};
+
 const std::vector<std::string> kImuInterfaceSuffixes = {
   "orientation.x", "orientation.y", "orientation.z", "orientation.w",
   "angular_velocity.x", "angular_velocity.y", "angular_velocity.z",
@@ -63,22 +76,58 @@ constexpr const char * kImuSensorName = "imu_imu";
 controller_interface::CallbackReturn JointImpedanceController::on_init()
 {
   auto node = get_node();
-  node->declare_parameter<std::vector<std::string>>("joints", kDefaultJoints);
-  node->declare_parameter<std::vector<double>>("kp", kDefaultKp);
-  node->declare_parameter<std::vector<double>>("kd", kDefaultKd);
-  node->declare_parameter<double>("max_effort", 0.0);
+  // controller_manager creates this node with every parameter from
+  // controllers.yaml ALREADY declared (automatically_declare_parameters_from_overrides),
+  // so an unconditional declare_parameter() throws ParameterAlreadyDeclaredException.
+  // Uncaught, that terminates the whole controller_manager process. Declare the
+  // built-in default only when the params file did not supply the parameter.
+  if (!node->has_parameter("joints"))
+  {
+    node->declare_parameter<std::vector<std::string>>("joints", kDefaultJoints);
+  }
+  if (!node->has_parameter("kp"))
+  {
+    node->declare_parameter<std::vector<double>>("kp", kDefaultKp);
+  }
+  if (!node->has_parameter("kd"))
+  {
+    node->declare_parameter<std::vector<double>>("kd", kDefaultKd);
+  }
+  if (!node->has_parameter("effort_limits"))
+  {
+    node->declare_parameter<std::vector<double>>("effort_limits", kDefaultEffortLimits);
+  }
+  if (!node->has_parameter("max_effort"))
+  {
+    node->declare_parameter<double>("max_effort", 0.0);
+  }
 
   joint_names_ = node->get_parameter("joints").as_string_array();
   kp_ = node->get_parameter("kp").as_double_array();
   kd_ = node->get_parameter("kd").as_double_array();
+  effort_limits_ = node->get_parameter("effort_limits").as_double_array();
   max_effort_ = node->get_parameter("max_effort").as_double();
 
-  if (joint_names_.size() != kp_.size() || joint_names_.size() != kd_.size())
+  // The message arrays (JointCommand/RobotState) are fixed at 23 joints
+  // (CANONICAL_JOINT_ORDER); indexing them by joint index in update() is only
+  // safe if the configured joint count matches exactly.
+  constexpr size_t kNumJoints = std::tuple_size<RobotState::_joint_positions_type>::value;
+  if (joint_names_.size() != kNumJoints)
   {
     RCLCPP_ERROR(
       node->get_logger(),
-      "joints (%zu), kp (%zu), kd (%zu) size mismatch -- fix config/controllers.yaml",
-      joint_names_.size(), kp_.size(), kd_.size());
+      "controller configured with %zu joints but humanoid_interfaces messages carry exactly "
+      "%zu: fix config/controllers.yaml (see canonical_joint_order.yaml)",
+      joint_names_.size(), kNumJoints);
+    return controller_interface::CallbackReturn::ERROR;
+  }
+  if (joint_names_.size() != kp_.size() || joint_names_.size() != kd_.size() ||
+    joint_names_.size() != effort_limits_.size())
+  {
+    RCLCPP_ERROR(
+      node->get_logger(),
+      "joints (%zu), kp (%zu), kd (%zu), effort_limits (%zu) size mismatch, fix config/controllers.yaml",
+      joint_names_.size(), kp_.size(), kd_.size(), effort_limits_.size());
     return controller_interface::CallbackReturn::ERROR;
   }
   return controller_interface::CallbackReturn::SUCCESS;
@@ -107,7 +156,7 @@ JointImpedanceController::state_interface_configuration() const
     config.names.push_back(joint + "/velocity");
     config.names.push_back(joint + "/effort");
   }
-  // See g1_description/g1_23dof.urdf.xacro's <sensor name="imu_imu"> block --
+  // See g1_description/g1_23dof.urdf.xacro's <sensor name="imu_imu"> block,
   // if the active hardware plugin doesn't export these (e.g. an
   // EthercatHardwareInterface build that hasn't wired an IMU yet), activation
   // will fail loudly here rather than silently reading garbage, which is the
@@ -188,8 +237,9 @@ controller_interface::CallbackReturn JointImpedanceController::on_activate(
     return controller_interface::CallbackReturn::ERROR;
   }
 
-  // Start "disabled" (is_safe_ defaults true, but with no JointCommand
-  // received yet update() holds zero effort -- see update()'s null-check).
+  // Starts effectively disabled: until the first JointCommand arrives,
+  // update() holds zero effort (see its null check), even though is_safe_
+  // defaults to true.
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -224,18 +274,22 @@ controller_interface::return_type JointImpedanceController::update(
       const double qd_d = command->velocity_target[i];
       const double tau_ff = command->effort_feedforward[i];
       tau = tau_ff + kp_[i] * (q_d - q) + kd_[i] * (qd_d - qd);
+      if (effort_limits_[i] > 0.0)
+      {
+        tau = std::clamp(tau, -effort_limits_[i], effort_limits_[i]);
+      }
       if (max_effort_ > 0.0)
       {
         tau = std::clamp(tau, -max_effort_, max_effort_);
       }
     }
-    // safe == false, or no JointCommand received yet: tau stays 0.0 -- this
+    // safe == false, or no JointCommand received yet: tau stays 0.0; this
     // is the E-stop / not-yet-armed behaviour required by
-    // INTEGRATION_POINTS.md "Safety". Per-joint effort limits from the URDF
-    // are enforced one layer down by whichever SystemInterface is active
-    // (verified in mujoco_system.cpp's effort-command clamp against
-    // <limit effort="...">), so this controller does not duplicate that clamp
-    // except for the optional global max_effort_ override above.
+    // INTEGRATION_POINTS.md "Safety". Per-joint torque limits are enforced in
+    // this controller (effort_limits_ above) and NOT relied on from the hardware
+    // plugin: mujoco_ros2_control's URDF-limit clamp never activates
+    // (joint_limits.has_effort_limits is never set), and a real drive's own limit
+    // should be a second line of defense, not the only one.
     effort_command_[i].get().set_value(tau);
   }
 
@@ -243,9 +297,8 @@ controller_interface::return_type JointImpedanceController::update(
   {
     auto & msg = state_pub_->msg_;
     msg.header.stamp = time;
-    msg.joint_positions.resize(joint_names_.size());
-    msg.joint_velocities.resize(joint_names_.size());
-    msg.joint_efforts.resize(joint_names_.size());
+    // RobotState's joint arrays are fixed-size (float64[23] -> std::array), so
+    // there is nothing to resize; on_init() guarantees joint_names_.size() fits.
     for (size_t i = 0; i < joint_names_.size(); ++i)
     {
       msg.joint_positions[i] = position_state_[i].get().get_value();
@@ -254,7 +307,7 @@ controller_interface::return_type JointImpedanceController::update(
     }
 
     // imu_state_ order: orientation x,y,z,w (0-3), angular_velocity x,y,z (4-6),
-    // linear_acceleration x,y,z (7-9) -- see kImuInterfaceSuffixes.
+    // linear_acceleration x,y,z (7-9), see kImuInterfaceSuffixes.
     const double qx = imu_state_[0].get().get_value();
     const double qy = imu_state_[1].get().get_value();
     const double qz = imu_state_[2].get().get_value();
@@ -273,7 +326,7 @@ controller_interface::return_type JointImpedanceController::update(
     // gravity_vector = world gravity (0,0,-9.81) expressed in the IMU/pelvis
     // body frame, i.e. R(q)^T * (0,0,-9.81) with q = (qw,qx,qy,qz). Computed
     // directly (no tf2 dependency) to avoid any allocation in this
-    // real-time-called path -- see RESEARCH_NOTES.md section 4.
+    // real-time-called path: see RESEARCH_NOTES.md section 4.
     constexpr double g = 9.81;
     // R^T * [0,0,-g] = -g * (third ROW of R) = -g * [2(qx*qz+qw*qy), 2(qy*qz-qw*qx), qw^2-qx^2-qy^2+qz^2]
     msg.gravity_vector.x = -g * (2.0 * (qx * qz + qw * qy));

@@ -1,10 +1,9 @@
 """behavior_tree_stub / bt_node
 
-STATUS: STUB. Real interface, fake internals: not a behavior tree, just a
-sequential executor -- it runs a SkillSequence's skills one after another and
-stops at the first failure. The real replacement is BehaviorTree.CPP with your
-own condition/action nodes; it must keep the same inputs, outputs and action
-clients below.
+STATUS: STUB. The interface is real; the internals are not a behavior tree. It
+runs a SkillSequence's skills one after another and stops at the first failure.
+The real replacement is BehaviorTree.CPP with your own condition and action
+nodes; it must keep the same inputs, outputs and action clients below.
 
 INPUT:
   humanoid_interfaces/SkillSequence on /skill_sequence (from task_planner).
@@ -14,7 +13,7 @@ ACTION CLIENTS (it calls, it does not serve):
   - navigate_to_pose    nav2_msgs/NavigateToPose            for skill "navigate_to"
   - execute_manipulation humanoid_interfaces/ExecuteManipulation  for every other skill
 
-OUTPUT (this node is the ONLY publisher):
+OUTPUT (this node is the only publisher):
   std_msgs/String on /task_status, e.g. "IDLE", "RUNNING 2/3 pick",
   "SUCCEEDED", "FAILED 1/2 navigate_to: goal rejected". Published on every
   change and re-sent at 1 Hz as a heartbeat.
@@ -55,7 +54,7 @@ class BehaviorTreeStub(Node):
         self.create_timer(1.0, self._publish_status)
         self.get_logger().info('behavior_tree STUB up: sequential SkillSequence executor')
 
-    # -- status ------------------------------------------------------------
+    # status ------------------------------------------------------------
     def _set_status(self, text):
         self._status = text
         self.get_logger().info(f'task_status: {text}')
@@ -64,14 +63,14 @@ class BehaviorTreeStub(Node):
     def _publish_status(self):
         self._status_pub.publish(String(data=self._status))
 
-    # -- plan intake ---------------------------------------------------------
+    # plan intake ---------------------------------------------------------
     def _on_sequence(self, msg: SkillSequence):
         with self._lock:
             if self._busy:
-                self.get_logger().warn('plan received while busy -- ignored')
+                self.get_logger().warn('plan received while busy, ignored')
                 return
             if not msg.skills:
-                self.get_logger().warn('empty plan received -- ignored')
+                self.get_logger().warn('empty plan received, ignored')
                 return
             self._busy = True
         # Run on a worker thread so this callback returns immediately and the
@@ -94,7 +93,7 @@ class BehaviorTreeStub(Node):
             with self._lock:
                 self._busy = False
 
-    # -- skill execution -----------------------------------------------------
+    # skill execution -----------------------------------------------------
     def _run_skill(self, skill):
         if action_kind(skill.name) == 'nav':
             client = self._nav

@@ -69,7 +69,7 @@ every node built against the old definition.
    `topics:` / `actions:` / `tf:` entries with **yourself as the single owner**.
    Publish topic names as string literals (`create_publisher(Msg, '/topic', ...)`)
    and TF edges as `tf.header.frame_id = '...'` / `tf.child_frame_id = '...'`
-   literals -- the static tests read them.
+   literals: the static tests read them.
 3. Add its launch switch in `src/bringup/launch/full_stack.launch.py`.
 4. Add the package to `bringup/package.xml` `exec_depend`s.
 5. Write the package README (layer, status, rate, interfaces, what's fake, what
@@ -84,7 +84,7 @@ every node built against the old definition.
 | Builds + tests + stub stack honors the contract + end-to-end task | CI job `ros` (Docker) | every PR |
 | Live contract check on your running stack | `ros2 run bringup check_contract.py` | before asking for review |
 
-## Things that will bite you
+## Common pitfalls
 
 - The 23-joint order and `NOMINAL_POSE` are duplicated across several files;
   `tests/test_repo_consistency.py` keeps them consistent, so change them together.

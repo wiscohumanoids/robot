@@ -4,20 +4,20 @@
 project stands, what is stubbed, which layer of the stack each piece belongs to,
 and what each area should do next.*
 
-## Where we are, in one paragraph
+## Where we are
 
-The repo contains a **complete, correctly-wired stack of stubs and real
-low-level infrastructure**, from a spoken/typed intent at the top to (simulated)
-motor torque at the bottom, with a frozen [interface contract](INTERFACE_CONTRACT.md)
-between every layer. Every layer has either a real implementation or a stub that
-honors its interface, so any team can replace its stub with the real thing
-without touching anyone else. **No layer above low-level control does real work
-yet**: the planner is canned, perception reports a hardcoded cube, state
-estimation dead-reckons the command, navigation is a go-to-point controller, and
-the locomotion "policy" is a sine-wave gait that cannot balance a robot. What is
-real today is the plumbing, the message contract, the 1 kHz impedance
-controller, the MuJoCo bridge, the safety gating, and the tooling that keeps all
-of it honest.
+The repo has a stack of stubs and real low-level infrastructure that runs from a
+typed intent at the top down to simulated motor torque at the bottom, with an
+[interface contract](INTERFACE_CONTRACT.md) between every layer. Each layer is
+either a real implementation or a stub with the same interface, so a team can
+replace its stub without touching anyone else's code.
+
+Nothing above the low-level controller does real work yet. The planner is canned,
+perception reports a hardcoded cube, state estimation dead-reckons the command,
+navigation is a go-to-point controller, and the locomotion "policy" is a sine-wave
+gait that cannot balance a robot. What works today is the plumbing, the message
+contract, the 1 kHz impedance controller, the MuJoCo bridge, the safety gating, and
+the tests and checks that keep the interfaces consistent.
 
 ## The stack at a glance
 
@@ -44,7 +44,7 @@ of it honest.
 | Status | Nodes | Meaning |
 |---|---|---|
 | **REAL** | 4 | Complete for its purpose today. |
-| **STUB** | 9 | Correct interface, fake internals -- the internals are what a team builds. |
+| **STUB** | 9 | Correct interface, fake internals; the internals are what a team builds. |
 | **SCAFFOLD** | 1 | Correct structure/interface, hardware I/O stubbed. |
 | **EXTERNAL** | 3 | Third-party ROS node used as-is (configure only). |
 | **MISSING** | 2 | Nothing exists yet; the contract reserves the interface. |
@@ -53,7 +53,7 @@ of it honest.
 ## Every node, by layer
 
 Status, what it does today, what will replace it, who owns that area, and the
-launch flag that swaps it out (`stub|external` for stubs -- see
+launch flag that swaps it out (`stub|external` for stubs, see
 [the swap procedure](INTERFACE_CONTRACT.md#swapping-a-stub-for-your-real-node)).
 
 <!-- BEGIN GENERATED:nodes -->
@@ -95,7 +95,7 @@ launch flag that swaps it out (`stub|external` for stubs -- see
 
 | Node | Status | Package | What it does today | Real thing that replaces it | Area | Launch switch |
 |---|---|---|---|---|---|---|
-| `locomotion` | **STUB** | `locomotion_runner` | Sinusoidal hip/knee gait over a nominal crouch pose at 50 Hz. | Trained RL policy (berkeley_humanoid ONNX export) -- slot exists, adapter unverified | locomotion | `locomotion:=stub|external` |
+| `locomotion` | **STUB** | `locomotion_runner` | Sinusoidal hip/knee gait over a nominal crouch pose at 50 Hz. | Trained RL policy (berkeley_humanoid ONNX export), slot exists, adapter unverified | locomotion | `locomotion:=stub|external` |
 | `manipulation` | **STUB** | `manipulation_runner` | execute_manipulation action server: scripted approach/grasp/retract, then success. | lerobot_alohamini inference wrapped as an action server | manipulation | `manipulation:=stub|external` |
 
 #### 7. Whole-body arbitration
@@ -117,7 +117,7 @@ launch flag that swaps it out (`stub|external` for stubs -- see
 | Node | Status | Package | What it does today | Real thing that replaces it | Area | Launch switch |
 |---|---|---|---|---|---|---|
 | `safety` | **REAL** | `safety` | Aggregates /manual_estop + NaN check into /safety_status at 100 Hz; lowlevel_control zeroes torque when unsafe. | - | safety | `safety:=true|false` |
-| `estop_bridge` | **MISSING** | - | Reserved. Today /manual_estop is driven by hand for tests. | Wireless E-stop firmware bridge (micro-ROS / serial). Must publish std_msgs/Bool on /manual_estop -- NOT on /safety_status. | safety | - |
+| `estop_bridge` | **MISSING** | - | Reserved. Today /manual_estop is driven by hand for tests. | Wireless E-stop firmware bridge (micro-ROS / serial). Must publish std_msgs/Bool on /manual_estop, NOT on /safety_status. | safety | - |
 
 #### 10. Robot model & simulation
 
@@ -129,7 +129,7 @@ launch flag that swaps it out (`stub|external` for stubs -- see
 
 ## Who owns what
 
-"Area" is the responsibility, not a named person -- **assign a named owner per
+"Area" is the responsibility, not a named person, **assign a named owner per
 area** (and a reviewer for the interface contract) and record it in
 `CONTRIBUTING.md`.
 
@@ -149,42 +149,58 @@ area** (and a reviewer for the interface contract) and record it in
 
 ## What has and has not been verified
 
-Be skeptical of anything not on the first list.
+Only the first two lists reflect things that were actually run or checked.
 
-**Verified (2026-09-19, on a macOS machine with no ROS installed):**
-- All Python sources compile; unit tests pass for the pure logic (mux selection,
-  dead-reckoning kinematics, go-to-goal controller incl. closed-loop
-  convergence, canned planner, BT dispatch).
-- The URDF expands for both hardware plugins (`mujoco_ros2_control/MujocoSystem`
-  and `ethercat_bridge/EthercatHardwareInterface`), has a single `base_link`
-  root, and lists the 23 joints in the canonical order. *(An earlier bug -- the
-  URDF failed to expand, which would have crashed every launch file -- is fixed.)*
-- The 23-joint order is identical in the URDF `ros2_control` block,
-  `canonical_joint_order.yaml`, `controllers.yaml`, `ethercat_slaves.yaml`, the
-  C++ default list and the MJCF; the two `NOMINAL_POSE` copies match the URDF
-  initial values.
-- The static contract tests (`pytest tests/`): one owner per topic/TF edge, every
-  literal publisher in the code matches the contract, docs match the YAML.
+**Verified by static checks** (2026-09-19, `pytest tests src/*/test`, no ROS):
+- All Python compiles; the pure logic (mux selection, dead-reckoning, go-to-goal
+  controller incl. closed-loop convergence, canned planner, BT dispatch, the default
+  demo scenario) is unit-tested.
+- The URDF expands for both hardware plugins, has a single `base_link` root, and
+  lists the 23 joints in canonical order. The joint order and `NOMINAL_POSE` are
+  identical across the URDF, `canonical_joint_order.yaml`, `controllers.yaml`,
+  `ethercat_slaves.yaml`, the C++ defaults and the MJCF; the controller's
+  `effort_limits` equal the URDF's effort limits.
+- The static contract tests: one owner per topic/TF edge, every literal publisher in
+  the code matches the contract, docs match the YAML, doc links resolve.
 
-**Not verified -- nobody has run this on a ROS machine yet:**
-- `colcon build` of any package (message generation for the four new messages, the
-  C++ controller and hardware plugin, the vendored MuJoCo bridge).
-- Any `ros2 launch`, including `full_stack.launch.py` in both `sim:=true` and
-  `sim:=false`, and every new stub node at runtime. The task-layer stubs were
-  written without a ROS install to test against.
-- `ros2 run bringup check_contract.py` (the live contract check).
-- MuJoCo behavior: whether a teleop command visibly moves the sim, and what the
-  free-floating robot does under the stub gait (expect it to fall; nothing here
-  balances it).
-- The Docker image build (arm64 support and OSMesa headless are new) and the
-  GitHub Actions workflow.
-- `nav2_msgs/NavigateToPose` field names against a real Humble install (written
-  from memory of the Humble definition).
+**Verified by actually running it** (2026-09-19, in the Docker image on the author's Mac):
+- The image builds: `rosdep` resolves every package and `colcon build` compiles all 15
+  packages, including the four new messages, the C++ controller and hardware plugin,
+  and the vendored MuJoCo bridge. *(This found and fixed: `ament_python` manifests that
+  rosdep can't resolve; a missing `apt-get update`; an `InterfaceInfo` API mismatch in
+  `ethercat_bridge`; `resize()` on fixed arrays and an uncaught duplicate
+  `declare_parameter` in `lowlevel_control`.)*
+- Launching `full_stack.launch.py headless:=true`: every stub node starts; MuJoCo loads
+  the G1 model headless (OSMesa); `joint_state_broadcaster` and
+  `joint_impedance_controller` load and become `active`; `/robot_state` publishes.
+- `check_contract.py` against that live graph: all 20 checks that don't depend on the
+  sim body passed: one publisher per topic, correct types, all stub rates at target
+  (30/50/100/500 Hz measured), both action servers, all three TF edges.
+  With the torque limits in place (see Known gaps) the **full live check passes 22/22**,
+  including `/robot_state` (~840 Hz) and `/joint_states` (~870 Hz) with the sim running.
+- After the final cleanup pass (concurrent-goal guards, stale-pose abort, measured-dt
+  dead reckoning, the leaner `safety` callback, removal of the unused joint-order
+  loaders), a single clean `full_stack.launch.py headless:=true` still passes
+  `check_contract.py` (22/22) and `smoke_task.py` (intent -> plan -> navigate -> pick ->
+  `SUCCEEDED`), as reported by the author. Running two launches at once makes the checks
+  fail with duplicate publishers, which is the checker working as intended.
+- The simulation is numerically stable: after 34 s of sim time all 23 joints sit within
+  ~0.01 rad of the commanded nominal pose, velocities are near zero, torques never
+  exceed the per-joint limits (the ankles saturate at their 35 Nm limit), and the
+  launch log has no warnings or errors. As expected, nothing balances the free-floating
+  robot: the IMU shows it lying on its side with the joints holding the pose.
 
-**First thing to do on a ROS machine:** `./docker/build.sh`, then inside the
-container `colcon build`, `ros2 launch bringup full_stack.launch.py sim:=false`,
-and `ros2 run bringup check_contract.py --no-sim`. Fix whatever breaks, then tick
-this section.
+**Not yet verified / known failing:**
+- Whether the PD gains are too stiff for a 1 kHz explicit loop on light distal links
+  (ankles, wrists). The first sim run diverged because the MuJoCo bridge applied no
+  torque limit, which `effort_limits` fixed. The ankles saturating at their limit on a
+  fallen robot is not evidence either way.
+- `sim:=false` stubs-only mode, and the GitHub Actions workflow: not run. (`colcon test` is
+  verified: it passes, including every package's unit tests, with the C++ style linters
+  off as noted below. The GitHub Actions run itself has not happened.)
+- Anything about robot behavior: whether teleop moves the sim, standing, walking.
+- Real Nav2. Only `nav_stub`, which serves the same `nav2_msgs/NavigateToPose` action,
+  has run; the remap of Nav2's velocity output to `/cmd_vel_nav` is unwritten.
 
 ## Next actions, by area
 
@@ -234,6 +250,24 @@ this section.
 - Close the fail-open gaps below.
 
 ## Known gaps and risks
+
+- **The MuJoCo bridge applies no torque limit.** In the vendored
+  `mujoco_ros2_control`, the clamp to the URDF `<limit effort>` is dead code
+  (`has_effort_limits` is never set), and the MJCF `actuatorfrcrange` values only
+  apply to `<actuator>`s, of which there are none. Torque limits are enforced in
+  `lowlevel_control` (`effort_limits`); earlier docs claiming the sim enforced them
+  were wrong and have been corrected.
+- **C++ style linters are switched off** in `lowlevel_control` and `ethercat_bridge`
+  (copyright, cpplint, uncrustify). Turning them on needs a licence and
+  copyright-holder decision plus a reformat to ROS 2's brace style. cppcheck, lint_cmake and
+  xmllint still run.
+- **A diverged sim stalls the controller.** If MuJoCo detects instability it resets
+  its data, rewinding sim time; the bridge computes the controller period against the
+  old, later timestamp, so `controller_manager` stops updating and `/robot_state`
+  and `/joint_states` go silent until time catches up. Not modified (vendored), but
+  worth knowing when debugging.
+- **The PD gains may be too stiff for a 1 kHz explicit loop** on light distal links
+  (ankles, wrists). Unverified; check for chatter once torque limits are in.
 
 - **Safety fails open.** `lowlevel_control` treats "no `/safety_status` ever
   received" as safe, and never times out a stale `/joint_command`: if the

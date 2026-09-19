@@ -1,10 +1,10 @@
 # nav_stub
 
-**Layer:** 5 -- navigation. **Status:** STUB standing in for Nav2.
+**Layer:** 5 (navigation). **Status:** STUB standing in for Nav2.
 **Subscribes:** `/robot_pose`.
-**Action server:** `navigate_to_pose` (`nav2_msgs/NavigateToPose`) -- Nav2's own
+**Action server:** `navigate_to_pose` (`nav2_msgs/NavigateToPose`), Nav2's own
 action name and type, so the behavior tree's client is unchanged when Nav2 arrives.
-**Publishes:** `/cmd_vel_nav` (`Twist`, 20 Hz, only while a goal is active) --
+**Publishes:** `/cmd_vel_nav` (`Twist`, 20 Hz, only while a goal is active),
 **the only publisher.** `cmd_vel_mux` forwards it to `/cmd_vel`.
 
 ## What is fake

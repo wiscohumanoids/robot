@@ -1,4 +1,4 @@
-"""Static interface-contract enforcement -- runs anywhere, no ROS needed.
+"""Static interface-contract enforcement: runs anywhere, no ROS needed.
 
 Catches, at PR time, the mistakes the live checker (bringup/check_contract.py)
 would only catch after launching: a second publisher on a topic, a node that
@@ -106,7 +106,7 @@ def test_every_literal_publisher_topic_is_in_the_contract_with_the_right_owner()
         for topic in _publisher_topics(package):
             assert topic in owner_of, (
                 f'{package} publishes {topic}, which is not in interface_contract.yaml '
-                f'(add it -- or you are creating an undeclared interface)')
+                f'(add it, or you are creating an undeclared interface)')
             assert owner_of[topic] == package, (
                 f'{package} publishes {topic}, but the contract says {owner_of[topic]} owns it '
                 f'(two publishers on one topic)')

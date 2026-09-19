@@ -1,6 +1,6 @@
 """bringup / full_stack.launch.py
 
-Brings up the WHOLE stack -- every layer in INTERFACE_CONTRACT.md -- with the
+Brings up the whole stack, every layer in INTERFACE_CONTRACT.md, with the
 repo's stubs standing in for anything that isn't built yet. This is the "launch
 the whole robot in seconds" entry point; teams then swap their own real node in
 for one stub at a time.
@@ -9,13 +9,13 @@ Swapping a stub for your real node (one flag, no file edits):
 
     # launch everything except the stub locomotion node, then run yours:
     ros2 launch bringup full_stack.launch.py locomotion:=external
-    ros2 run my_pkg my_locomotion_node        # now the ONLY publisher of its topics
+    ros2 run my_pkg my_locomotion_node        # now the only publisher of its topics
 
   <layer>:=stub      (default) launch this repo's stub for the layer
-  <layer>:=external  launch nothing for the layer -- you run the real node yourself
+  <layer>:=external  launch nothing for the layer; you run the real node yourself
   Layers: planner behavior_tree perception state_estimation slam navigation
           locomotion manipulation wbc
-  Real nodes take true|false: teleop (default false -- see below),
+  Real nodes take true|false: teleop (default false, see below),
           cmd_vel_mux (true), safety (true)
 
 Other arguments:
@@ -31,7 +31,7 @@ teleop defaults to false. Drive with the keyboard from a second terminal:
     ros2 run teleop_input teleop_node
 (teleop:=true launches it here, where only a joystick on /joy works.)
 
-The hardware path is deliberately not wired in here; use
+The hardware path is not wired in here; use
 `ros2 launch bringup lowlevel_test.launch.py use_hardware:=true` to test the
 EtherCAT scaffold.
 """
@@ -88,7 +88,7 @@ def _launch_setup(context):
     else:
         # Stubs-only mode: still publish the URDF's static TF (base_link -> pelvis)
         # so the TF contract holds. No /joint_states here, so movable joints stay
-        # untransformed -- expected.
+        # untransformed: expected.
         xacro_file = os.path.join(
             get_package_share_directory('g1_description'), 'g1_23dof.urdf.xacro')
         description = xacro.process_file(xacro_file).toxml()

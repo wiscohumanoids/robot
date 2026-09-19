@@ -21,8 +21,8 @@ recording, or nothing.
    one for the other changes nothing for anyone else and must not touch this
    contract.
 3. **Changing the contract is a reviewed act.** A topic name, type, rate or
-   owner, a TF edge, a skill name, or a message field is an *interface change*
-   -- see [Changing the contract](#changing-the-contract).
+   owner, a TF edge, a skill name, or a message field is an *interface change*;
+   see [Changing the contract](#changing-the-contract).
 4. **Standard message types wherever one exists** (`Twist`, `JointState`,
    `PoseStamped`, `OccupancyGrid`, `NavigateToPose`), so tooling and libraries
    (Nav2, rviz, rosbag, `robot_localization`) work unchanged. Custom messages only
@@ -32,7 +32,7 @@ recording, or nothing.
 
 The machine-readable source of truth is
 [`src/humanoid_interfaces/config/interface_contract.yaml`](src/humanoid_interfaces/config/interface_contract.yaml).
-The tables below are **generated from it** (`python3 tools/gen_docs.py`) -- never
+The tables below are **generated from it** (`python3 tools/gen_docs.py`), never
 edit them by hand.
 
 | Check | Where | Needs ROS? | Catches |
@@ -90,7 +90,7 @@ exist only when the MuJoCo/`ros2_control` path is running (`sim:=true`).
   earlier custom `VelocityCommand` message that would have collided with Nav2.)*
 - **`/manual_estop` is the only way an external E-stop enters the system.**
   The wireless E-stop's firmware bridge publishes `std_msgs/Bool` there. It must
-  **not** publish on `/safety_status` -- that topic belongs to the `safety` node
+  **not** publish on `/safety_status`; that topic belongs to the `safety` node
   alone, and a second publisher would overwrite the E-stop with `is_safe: true`.
 - **`/robot_pose` is in the `map` frame.** It equals `odom -> base_link`
   composed with `map -> odom`; consumers that need other frames use TF.
@@ -109,14 +109,14 @@ exist only when the MuJoCo/`ros2_control` path is running (`sim:=true`).
 | `execute_manipulation` | `humanoid_interfaces/action/ExecuteManipulation` | `manipulation` | `behavior_tree` |
 <!-- END GENERATED:actions -->
 
-`navigate_to_pose` is deliberately Nav2's own action name and type, so the
+`navigate_to_pose` uses Nav2's own action name and type, so the
 behavior tree's client is unchanged when real Nav2 replaces `nav_stub`.
 
 ## TF ownership
 
-TF is the one genuinely shared piece of global state. It works with many
+TF is the one piece of global state that many nodes share. It works with many
 writers because each **edge** has exactly one publisher and the framework chains
-edges together -- SLAM owns `map -> odom`, state estimation owns
+edges together: SLAM owns `map -> odom`, state estimation owns
 `odom -> base_link`, the URDF owns the rest.
 
 <!-- BEGIN GENERATED:tf -->
@@ -176,7 +176,7 @@ stubs without MuJoCo. Full details in
 
 Stubs prove **architectural correctness**: that data flows through the right
 topics at the right rates with the right types, and they let everyone develop in
-parallel. They cannot prove anything about tightly-coupled real-time behavior --
+parallel. They cannot prove anything about tightly-coupled real-time behavior,
 the 1 kHz loop's timing under load, EtherCAT cycle jitter, whether a policy
 actually balances the real robot, sim-to-real gaps. Those only surface on
 hardware; the stubbing has done its job when *only* those are left.

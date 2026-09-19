@@ -1,7 +1,7 @@
 """Pure planning logic for task_planner_stub (no rclpy, unit-testable anywhere).
 
 This is the canned "planner". The real one (LLM call + skill library) replaces
-plan_for_intent() -- the node around it, and the messages in and out, stay.
+plan_for_intent(); the node around it and the messages in and out stay.
 """
 
 # Verbs that select the manipulation skill. First match wins; default is "pick".

@@ -1,10 +1,10 @@
 # behavior_tree_stub
 
-**Layer:** 3 -- task execution. **Status:** STUB.
+**Layer:** 3 (task execution). **Status:** STUB.
 **Subscribes:** `/skill_sequence`.
 **Action clients:** `navigate_to_pose` (`nav2_msgs/NavigateToPose`) for
 `navigate_to`; `execute_manipulation` (`ExecuteManipulation`) for every other skill.
-**Publishes:** `/task_status` (`std_msgs/String`, on change + 1 Hz heartbeat) --
+**Publishes:** `/task_status` (`std_msgs/String`, on change + 1 Hz heartbeat),
 **the only publisher.**
 
 ## What is fake

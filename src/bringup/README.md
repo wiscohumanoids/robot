@@ -1,9 +1,9 @@
 # bringup
 
 Launch files, the shared `config/controllers.yaml`, and the two ROS-level
-checks that keep the interface contract honest.
+checks that enforce the interface contract.
 
-## `full_stack.launch.py` -- the whole stack, stubs included
+## `full_stack.launch.py`: the whole stack, stubs included
 
 ```bash
 ros2 launch bringup full_stack.launch.py                 # MuJoCo sim + every stub
@@ -13,7 +13,7 @@ ros2 launch bringup full_stack.launch.py headless:=true  # sim without a GUI win
 
 It starts one node per layer of [INTERFACE_CONTRACT.md](../../INTERFACE_CONTRACT.md):
 `task_planner`, `behavior_tree`, `perception`, `state_estimation`, `slam`,
-`nav`, `cmd_vel_mux`, `locomotion`, `manipulation`, `wbc`, `safety` -- plus, for
+`nav`, `cmd_vel_mux`, `locomotion`, `manipulation`, `wbc`, `safety`, plus, for
 `sim:=true`, `mujoco_ros2_control` + `lowlevel_control` + `robot_state_publisher`
 (via `lowlevel_test.launch.py`). Who owns what and what is fake: [STATUS.md](../../STATUS.md).
 
@@ -61,7 +61,7 @@ having two parents. Pass `--no-sim` when the stack was launched with
 `sim:=false`. The static (no-ROS) counterpart is `pytest tests/` in the repo root.
 CI runs all of it (`.github/workflows/ci.yml`).
 
-## `lowlevel_test.launch.py` -- the "prove a command produces motion" harness
+## `lowlevel_test.launch.py`: the "prove a command produces motion" harness
 
 **This is the test the low-level team should run after every change to
 `ethercat_bridge`.**
@@ -71,7 +71,7 @@ CI runs all of it (`.github/workflows/ci.yml`).
 ros2 launch bringup lowlevel_test.launch.py [headless:=true]
 
 # EtherCAT scaffold path (will NOT move a real motor until
-# ethercat_bridge's TODOs are filled in -- see its README)
+# ethercat_bridge's TODOs are filled in: see its README)
 ros2 launch bringup lowlevel_test.launch.py use_hardware:=true
 ```
 
@@ -86,7 +86,7 @@ effort_feedforward: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 " --rate 100
 ```
 
-(This is exactly the nominal pose from `locomotion_runner`'s `NOMINAL_POSE` --
+(This is the nominal pose from `locomotion_runner`'s `NOMINAL_POSE`;
 publishing it holds the robot standing. Perturb a couple of entries to see
 individual joints move. Don't run this while `wbc` is also running: it is
 `/joint_command`'s owner.)
@@ -99,8 +99,8 @@ In the sim path you should see the MuJoCo viewer's G1 track the commanded
 pose and `/robot_state.joint_positions` converge to it. In the hardware
 path today (per `ethercat_bridge`'s current stub state) you will see
 `/robot_state` stay static and the terminal log
-`write(): STUB -- would pack ... into RxPDO TargetTorque ... No frame sent.`
--- that log line, not silence, is the expected and correct result until
+`write(): STUB, would pack ... into RxPDO TargetTorque ... No frame sent.`
+That log line, not silence, is the expected result until
 `ethercat_bridge`'s TODOs are filled in.
 
 ## `config/controllers.yaml`
@@ -109,5 +109,5 @@ The single controller_manager config shared by both paths: `update_rate:
 1000`, `joint_state_broadcaster`, and `lowlevel_control`'s
 `joint_impedance_controller` with its `joints`/`kp`/`kd` parameters. See
 `ARCHITECTURE.md`'s canonical joint order table before editing the `joints`
-list -- it must stay index-aligned with `kp`/`kd` and with
+list: it must stay index-aligned with `kp`/`kd` and with
 `g1_description`'s `<ros2_control>` block (`tests/` checks this).

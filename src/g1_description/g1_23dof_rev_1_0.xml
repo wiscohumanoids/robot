@@ -219,7 +219,7 @@
     <gyro name="imu-torso-angular-velocity" site="imu_in_torso" noise="5e-4" cutoff="34.9"/>
     <accelerometer name="imu-torso-linear-acceleration" site="imu_in_torso" noise="1e-2" cutoff="157"/>
 
-    <!-- IMU sensors (pelvis) — publishes as /imu/data -->
+    <!-- IMU sensors (pelvis), publishes as /imu/data -->
     <!-- renamed from imu_orientation to imu_quat (WiscoHumanoids `robot` repo,
          g1_description port): mujoco_ros2_control's register_sensors() looks
          up "prefix_quat"/"prefix_gyro"/"prefix_accel" by exact MuJoCo sensor
@@ -232,7 +232,7 @@
     <gyro name="imu_gyro" site="imu_in_pelvis" noise="5e-4" cutoff="34.9"/>
     <accelerometer name="imu_accel" site="imu_in_pelvis" noise="1e-2" cutoff="157"/>
 
-    <!-- Foot contact sensors — publish as /contact/left_foot and /contact/right_foot -->
+    <!-- Foot contact sensors: publish as /contact/left_foot and /contact/right_foot -->
     <touch name="left_foot_contact" site="left_foot"/>
     <touch name="right_foot_contact" site="right_foot"/>
   </sensor>

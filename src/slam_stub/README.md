@@ -1,8 +1,8 @@
 # slam_stub
 
-**Layer:** 4 -- perception & state estimation. **Status:** STUB.
+**Layer:** 4 (perception & state estimation). **Status:** STUB.
 **Publishes:** `/map` (`nav_msgs/OccupancyGrid`, transient-local, re-sent every
-5 s) and the TF edge `map -> odom` at 20 Hz -- **the only publisher of both.**
+5 s) and the TF edge `map -> odom` at 20 Hz, **the only publisher of both.**
 
 ## What is fake
 

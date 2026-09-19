@@ -92,3 +92,59 @@ def test_mjcf_has_every_canonical_joint():
     mj = ET.parse(os.path.join(SRC, 'g1_description', 'g1_23dof_rev_1_0.xml')).getroot()
     names = {j.get('name') for j in mj.iter('joint')}
     assert set(canonical()) <= names
+
+
+def test_package_manifests_are_rosdep_resolvable_shape():
+    """`rosdep install` cannot resolve <buildtool_depend>ament_python</...>:
+    ament_python is a build TYPE (declared in <export>), not a package. It broke
+    the Docker build once; every ament_python package must declare it only there."""
+    import glob
+    import xml.etree.ElementTree as ET
+    for path in glob.glob(os.path.join(SRC, '*', 'package.xml')):
+        root = ET.parse(path).getroot()
+        build_type = root.find('export/build_type').text
+        buildtools = [e.text for e in root.findall('buildtool_depend')]
+        assert 'ament_python' not in buildtools, f'{path}: remove <buildtool_depend>ament_python</...>'
+        if build_type == 'ament_cmake':
+            assert 'ament_cmake' in buildtools, f'{path}: ament_cmake package without buildtool_depend'
+
+
+def test_shell_scripts_have_valid_syntax():
+    import glob
+    import subprocess
+    scripts = glob.glob(os.path.join(ROOT, 'scripts', '*.sh')) + glob.glob(os.path.join(ROOT, 'docker', '*.sh'))
+    assert scripts
+    for path in scripts:
+        result = subprocess.run(['bash', '-n', path], capture_output=True, text=True)
+        assert result.returncode == 0, f'{path}: {result.stderr}'
+
+
+def test_controller_declares_parameters_only_if_absent():
+    """controller_manager pre-declares every parameter from controllers.yaml; an
+    unconditional declare_parameter() throws ParameterAlreadyDeclaredException and
+    takes down the whole controller_manager process (seen on first sim launch)."""
+    text = open(os.path.join(SRC, 'lowlevel_control', 'src', 'joint_impedance_controller.cpp')).read()
+    declared = text.count('->declare_parameter<')
+    guarded = text.count('if (!node->has_parameter(')
+    assert declared >= 1 and declared == guarded, (
+        f'{declared} declare_parameter calls but {guarded} has_parameter guards')
+
+
+def _urdf_effort_limits():
+    root = _expanded_urdf()
+    joints = {j.get('name'): j for j in root.findall('joint')}
+    return [float(joints[n].find('limit').get('effort')) for n in canonical()]
+
+
+def test_controller_effort_limits_equal_urdf_limits():
+    """The MuJoCo bridge never clamps to the URDF limit (has_effort_limits is never
+    set), so lowlevel_control must clamp, and its numbers must match the URDF."""
+    import re
+    with open(os.path.join(SRC, 'bringup', 'config', 'controllers.yaml')) as f:
+        params = yaml.safe_load(f)['joint_impedance_controller']['ros__parameters']
+    urdf = _urdf_effort_limits()
+    assert params['effort_limits'] == urdf
+    cpp = open(os.path.join(SRC, 'lowlevel_control', 'src', 'joint_impedance_controller.cpp')).read()
+    start = cpp.index('kDefaultEffortLimits')
+    block = cpp[start:cpp.index('};', start)]
+    assert [float(x) for x in re.findall(r'(\d+\.\d+)', block)] == urdf

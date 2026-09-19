@@ -10,9 +10,9 @@ def yaw_to_quaternion(yaw):
 def integrate_body_velocity(x, y, yaw, vx, vy, wz, dt):
     """Advance a planar pose by a BODY-frame velocity (REP-103: x fwd, y left).
 
-    Returns the new (x, y, yaw). Assumes perfect tracking of the command --
-    this is exactly why it's a stub: a real estimator fuses IMU, kinematics
-    and vision instead of trusting the command.
+    Returns the new (x, y, yaw). This assumes the robot tracks the command
+    perfectly, which is why it is only a stub: a real estimator fuses IMU,
+    kinematics and vision instead of trusting the command.
     """
     c, s = math.cos(yaw), math.sin(yaw)
     x += (vx * c - vy * s) * dt

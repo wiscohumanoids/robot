@@ -1,17 +1,16 @@
 """safety / safety_node
 
-STATUS: REAL, not a stub -- but its inputs today are software-only. This is
-the ROS2-side half of the safety interface; the other half (a physical
-wireless E-stop's firmware bridging into ROS2) is a separate, out-of-scope
-project. See INTEGRATION_POINTS.md "Safety".
+STATUS: real, with software-only inputs today. This is the ROS2 side of the
+safety interface; the other side (a physical wireless E-stop's firmware
+bridging into ROS2) is a separate project. See INTEGRATION_POINTS.md "Safety".
 
 FREQUENCY: 100 Hz (PUBLISH_RATE_HZ).
 
 INPUTS:
-  - std_msgs/Bool on /manual_estop -- for testing, and for whatever bridge
+  - std_msgs/Bool on /manual_estop. Used for testing, and by whatever bridge
     node a real wireless E-stop firmware project connects here. true = estop
     asserted, latched until a false is received.
-  - humanoid_interfaces/RobotState on /robot_state -- checked for NaN/Inf in
+  - humanoid_interfaces/RobotState on /robot_state: checked for NaN/Inf in
     joint positions/velocities/efforts, which would otherwise silently
     propagate into lowlevel_control's torque computation.
 
@@ -25,6 +24,7 @@ import math
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import Bool
 
 from humanoid_interfaces.msg import SafetyStatus, RobotState
@@ -40,7 +40,11 @@ class SafetyNode(Node):
         self._fault_flags = []
 
         self.create_subscription(Bool, '/manual_estop', self._on_manual_estop, 10)
-        self.create_subscription(RobotState, '/robot_state', self._on_robot_state, 10)
+        # /robot_state arrives at 1 kHz and only the latest value matters, so keep a
+        # depth-1 best-effort queue instead of buffering 10 messages the check never needs.
+        latest_qos = QoSProfile(
+            depth=1, history=HistoryPolicy.KEEP_LAST, reliability=ReliabilityPolicy.BEST_EFFORT)
+        self.create_subscription(RobotState, '/robot_state', self._on_robot_state, latest_qos)
         self._pub = self.create_publisher(SafetyStatus, '/safety_status', 10)
 
         self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_timer)
@@ -52,11 +56,10 @@ class SafetyNode(Node):
         self._estop_active = msg.data
 
     def _on_robot_state(self, msg: RobotState):
-        flags = []
-        all_values = list(msg.joint_positions) + list(msg.joint_velocities) + list(msg.joint_efforts)
-        if any(math.isnan(v) or math.isinf(v) for v in all_values):
-            flags.append('nan_or_inf_in_robot_state')
-        self._fault_flags = flags
+        finite = (all(map(math.isfinite, msg.joint_positions))
+                  and all(map(math.isfinite, msg.joint_velocities))
+                  and all(map(math.isfinite, msg.joint_efforts)))
+        self._fault_flags = [] if finite else ['nan_or_inf_in_robot_state']
 
     def _on_timer(self):
         msg = SafetyStatus()

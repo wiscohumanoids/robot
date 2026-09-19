@@ -1,9 +1,9 @@
 """manipulation_runner / manipulation_node
 
-STATUS: STUB task execution, REAL action-server interface. Accepts any
+STATUS: STUB task execution, real action-server interface. Accepts any
 ExecuteManipulation goal and runs a fixed scripted arm-pose sequence
 (approach -> grasp -> retract) over a few seconds, then reports success. No
-perception, no grasp planning, no policy inference happens here -- see
+perception, no grasp planning, no policy inference happens here, see
 INTEGRATION_POINTS.md "Manipulation" for what a real implementation
 (wrapping lerobot_alohamini's evaluate_bi.py-style inference loop) needs to
 replace this with.
@@ -13,14 +13,15 @@ FREQUENCY: 10 Hz internal control-loop rate while a goal is executing
 callbacks), not rate-limited.
 
 OUTPUT: humanoid_interfaces/JointTargets on /manipulation/joint_targets,
-source="manipulation", published ONLY while a goal is active. wbc_stub reads
-this as an override for the arm joint indices (13-22) only -- see
+source="manipulation", published only while a goal is active. wbc_stub reads
+this as an override for the arm joint indices (13-22) only, see
 wbc_stub/README.md for the exact arbitration rule. The leg/waist indices in
 this message are filled with the same nominal pose as locomotion_runner's
 but are NOT meant to be trusted downstream; they exist only because
 JointTargets is a fixed 23-length array and this node has no legitimate
 opinion about leg/waist targets.
 """
+import threading
 import time
 
 import rclpy
@@ -31,7 +32,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from humanoid_interfaces.msg import JointTargets
 from humanoid_interfaces.action import ExecuteManipulation
 
-from manipulation_runner.joint_order import load_canonical_joint_order, NUM_JOINTS
+NUM_JOINTS = 23  # CANONICAL_JOINT_ORDER, see humanoid_interfaces/config/canonical_joint_order.yaml
 
 CONTROL_RATE_HZ = 10.0
 PHASE_DURATION_S = 1.0  # each of approach/grasp/retract takes this long
@@ -48,7 +49,7 @@ assert len(NOMINAL_POSE) == NUM_JOINTS
 LEFT_ARM = slice(13, 18)
 RIGHT_ARM = slice(18, 23)
 
-# A scripted "reach forward" arm pose, purely illustrative -- not derived from
+# A scripted "reach forward" arm pose, purely illustrative: not derived from
 # any real grasp/IK computation. shoulder_pitch more negative = arm forward,
 # elbow more flexed = forearm raised.
 REACH_POSE_LEFT_ARM = [0.9, 0.15, 0.0, 1.1, 0.0]
@@ -59,7 +60,8 @@ class ManipulationNode(Node):
 
     def __init__(self):
         super().__init__('manipulation_runner')
-        self.joint_names = load_canonical_joint_order()
+        self._busy = False
+        self._lock = threading.Lock()
         self._targets_pub = self.create_publisher(
             JointTargets, '/manipulation/joint_targets', 10)
 
@@ -77,6 +79,12 @@ class ManipulationNode(Node):
             f'at {CONTROL_RATE_HZ} Hz internal loop (STUB task execution)')
 
     def _goal_callback(self, goal_request):
+        # One goal at a time: two would publish competing arm targets.
+        with self._lock:
+            if self._busy:
+                self.get_logger().warn('rejecting manipulation goal: another goal is active')
+                return GoalResponse.REJECT
+            self._busy = True
         self.get_logger().info(
             f'accepted manipulation goal: task={goal_request.task} object_id={goal_request.object_id}')
         return GoalResponse.ACCEPT
@@ -96,6 +104,13 @@ class ManipulationNode(Node):
         self._targets_pub.publish(msg)
 
     def _execute_callback(self, goal_handle):
+        try:
+            return self._run_goal(goal_handle)
+        finally:
+            with self._lock:
+                self._busy = False
+
+    def _run_goal(self, goal_handle):
         """
         === REAL MANIPULATION INFERENCE GOES HERE ===
         Replace this scripted three-phase sequence with a call into a ROS2

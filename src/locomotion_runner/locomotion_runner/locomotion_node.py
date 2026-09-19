@@ -1,23 +1,22 @@
 """locomotion_runner / locomotion_node
 
-STATUS: STUB gait, REAL interface. The gait itself (sinusoidal leg-pitch
-correction on top of a nominal crouch pose) is a placeholder written for this
-repo -- it is NOT berkeley_humanoid's trained policy. But every message it
-reads and writes, and its 50 Hz timing, are exactly what a dropped-in ONNX
-policy would also read/write/run at. See the "REAL POLICY GOES HERE" block
-below and INTEGRATION_POINTS.md, "Locomotion" section.
+STATUS: STUB gait, real interface. The gait (a sinusoidal leg-pitch correction
+on top of a nominal crouch pose) is a placeholder written for this repo, not
+berkeley_humanoid's trained policy. The messages it reads and writes, and its
+50 Hz timing, are what a dropped-in ONNX policy would use too. See the
+"REAL POLICY GOES HERE" block below and INTEGRATION_POINTS.md, "Locomotion".
 
 FREQUENCY: 50 Hz (PUBLISH_RATE_HZ).
 
 INPUTS:
   - geometry_msgs/Twist on /cmd_vel (from cmd_vel_mux, 50 Hz; only linear.x,
-    linear.y, angular.z are used -- this node reads whatever was last
+    linear.y, angular.z are used; this node reads whatever was last
     published, no blocking wait; see RESEARCH_NOTES.md "Multi-rate architecture")
   - humanoid_interfaces/RobotState on /robot_state (from lowlevel_control)
 
 OUTPUTS:
   - humanoid_interfaces/PolicyObservation on /locomotion/observation (for
-    logging/replay/debugging -- see PolicyObservation.msg's own docstring for
+    logging/replay/debugging: see PolicyObservation.msg's own docstring for
     why this is published even though nothing currently subscribes to it)
   - humanoid_interfaces/JointTargets on /locomotion/joint_targets, source="locomotion"
 """
@@ -31,7 +30,7 @@ from rclpy.qos import QoSProfile, HistoryPolicy, ReliabilityPolicy
 from geometry_msgs.msg import Twist
 from humanoid_interfaces.msg import RobotState, PolicyObservation, JointTargets
 
-from locomotion_runner.joint_order import load_canonical_joint_order, NUM_JOINTS
+NUM_JOINTS = 23  # CANONICAL_JOINT_ORDER, see humanoid_interfaces/config/canonical_joint_order.yaml
 
 PUBLISH_RATE_HZ = 50.0
 
@@ -55,14 +54,14 @@ RIGHT_HIP_PITCH, RIGHT_KNEE = 6, 9
 GAIT_FREQUENCY_HZ = 1.0        # one full stride cycle per second
 GAIT_HIP_AMPLITUDE = 0.25      # rad
 GAIT_KNEE_AMPLITUDE = 0.20     # rad
-WALK_CMD_THRESHOLD = 0.05      # m/s or rad/s -- below this, treat cmd as "stand"
+WALK_CMD_THRESHOLD = 0.05      # m/s or rad/s; below this the command means "stand"
 
 # berkeley_humanoid G1Env is trained on the 29-DOF G1 (adds waist_roll,
-# waist_pitch, and wrist_pitch/wrist_yaw per arm -- 6 extra DOF vs. our
+# waist_pitch, and wrist_pitch/wrist_yaw per arm: 6 extra DOF vs. our
 # canonical 23). This is the index map from canonical (23) into
 # berkeley_humanoid's 29-vector, derived directly from g1_env.py's own
 # qpos-layout docstring (environment/g1_env.py lines ~14-65 at the time this
-# was written -- RE-VERIFY against the actual checkpoint before trusting
+# was written: RE-VERIFY against the actual checkpoint before trusting
 # this for a real policy, per INTEGRATION_POINTS.md).
 CANONICAL_TO_BERKELEY29 = [
     0, 1, 2, 3, 4, 5,            # left leg
@@ -80,10 +79,11 @@ class LocomotionNode(Node):
 
     def __init__(self):
         super().__init__('locomotion_runner')
-        self.joint_names = load_canonical_joint_order()
 
         self.declare_parameter('policy_onnx_path', '')
         self._onnx_session = None
+        self._onnx_input_name = None
+        self._np = None   # numpy, imported only when a policy is loaded
         self._maybe_load_policy(self.get_parameter('policy_onnx_path').value)
 
         self._latest_cmd = Twist()
@@ -103,7 +103,7 @@ class LocomotionNode(Node):
 
         self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_timer)
         self.get_logger().info(
-            f'locomotion_runner up at {PUBLISH_RATE_HZ} Hz -- '
+            f'locomotion_runner up at {PUBLISH_RATE_HZ} Hz: '
             f'{"ONNX policy loaded" if self._onnx_session else "STUB gait (no policy_onnx_path given)"}')
 
     def _maybe_load_policy(self, path: str):
@@ -113,13 +113,21 @@ class LocomotionNode(Node):
             self.get_logger().warn(f'policy_onnx_path={path} does not exist, falling back to stub gait')
             return
         try:
-            import onnxruntime  # optional dependency, only needed on this path
+            import numpy  # optional dependencies, only needed on this path
+            import onnxruntime
         except ImportError:
             self.get_logger().error(
                 'policy_onnx_path was given but onnxruntime is not installed '
-                '(pip install onnxruntime) -- falling back to stub gait')
+                '(pip install onnxruntime), falling back to stub gait')
             return
-        self._onnx_session = onnxruntime.InferenceSession(path)
+        try:
+            session = onnxruntime.InferenceSession(path)
+        except Exception as exc:  # corrupt or unsupported model file
+            self.get_logger().error(f'could not load {path} ({exc}), falling back to stub gait')
+            return
+        self._np = numpy
+        self._onnx_input_name = session.get_inputs()[0].name
+        self._onnx_session = session
         self.get_logger().info(f'loaded locomotion policy from {path}')
 
     def _on_cmd(self, msg: Twist):
@@ -142,7 +150,7 @@ class LocomotionNode(Node):
             obs.base_angular_velocity = self._latest_state.imu_angular_velocity
             obs.projected_gravity = self._latest_state.gravity_vector
             # base_linear_velocity has no real-hardware source in this repo yet
-            # (no state estimator) -- see ARCHITECTURE.md gap list. Zero until one exists.
+            # (no state estimator): see ARCHITECTURE.md gap list. Zero until one exists.
         else:
             obs.joint_positions = list(NOMINAL_POSE)
             obs.joint_velocities = [0.0] * NUM_JOINTS
@@ -175,7 +183,7 @@ class LocomotionNode(Node):
         It performs the 23->29 pad / 29->23 truncate documented at
         CANONICAL_TO_BERKELEY29 above and in INTEGRATION_POINTS.md.
 
-        UNVERIFIED: no real policy.onnx has been run through this path yet --
+        UNVERIFIED: no real policy.onnx has been run through this path yet,
         it is written to the exact contract berkeley_humanoid's G1Env
         describes in its own docstring, but has not been validated against an
         actual exported checkpoint. Whoever drops in the first real
@@ -190,10 +198,9 @@ class LocomotionNode(Node):
         # (behaviour flag, pelvis quat, velocities) in the exact order given
         # in berkeley_humanoid/environment/g1_env.py's constructor docstring
         # before calling session.run(). That full assembly is intentionally
-        # left as the integrating team's job -- see INTEGRATION_POINTS.md.
-        input_name = self._onnx_session.get_inputs()[0].name
-        import numpy as np
-        result = self._onnx_session.run(None, {input_name: np.array([obs29], dtype=np.float32)})
+        # left as the integrating team's job: see INTEGRATION_POINTS.md.
+        result = self._onnx_session.run(
+            None, {self._onnx_input_name: self._np.array([obs29], dtype=self._np.float32)})
         action29 = result[0][0].tolist()
 
         action23 = [action29[b] for b in CANONICAL_TO_BERKELEY29]
@@ -206,9 +213,18 @@ class LocomotionNode(Node):
         obs = self._build_observation()
         self._obs_pub.publish(obs)
 
+        action = None
         if self._onnx_session is not None:
-            action = self._compute_action_onnx(obs)
-        else:
+            try:
+                action = self._compute_action_onnx(obs)
+            except Exception as exc:
+                # A policy whose input shape or output does not match the adapter would
+                # otherwise raise on every 20 ms tick and leave nothing publishing.
+                # Fall back to the stub gait once, loudly, and stay there.
+                self.get_logger().error(
+                    f'ONNX policy failed ({exc}); falling back to the stub gait permanently')
+                self._onnx_session = None
+        if action is None:
             action = self._compute_action_stub(self._latest_cmd)
 
         self._previous_action = action

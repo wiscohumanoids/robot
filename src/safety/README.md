@@ -1,6 +1,6 @@
 # safety
 
-**Layer:** 9 -- safety. **Status:** REAL (software-only inputs today).
+**Layer:** 9 (safety). **Status:** REAL (software-only inputs today).
 **Frequency:** 100 Hz.
 **Subscribes:** `/manual_estop` (`std_msgs/Bool`), `/robot_state` (`RobotState`,
 checked for NaN/Inf).
@@ -23,8 +23,8 @@ bridges that firmware to ROS2 (micro-ROS agent, serial bridge node, etc.)
 must publish `std_msgs/Bool` on **`/manual_estop`** the same way the test command
 above does, and let this node do the rest.
 
-**It must not publish on `/safety_status`.** That topic has exactly one owner --
-this node -- under the [interface contract](../../INTERFACE_CONTRACT.md). This node
+**It must not publish on `/safety_status`.** Under the [interface contract](../../INTERFACE_CONTRACT.md) that topic has exactly
+one owner: this node. This node
 publishes `is_safe: true` at 100 Hz whenever nothing is wrong, so a second
 publisher asserting `estop_active` would be interleaved with (and immediately
 overwritten by) those messages, and `lowlevel_control` would flicker back to

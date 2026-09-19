@@ -2,6 +2,7 @@
 #define LOWLEVEL_CONTROL__JOINT_IMPEDANCE_CONTROLLER_HPP_
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,7 +21,7 @@ namespace lowlevel_control
 {
 
 // STATUS: REAL. See lowlevel_control/README.md and RESEARCH_NOTES.md sections
-// 2 ("ros2_control SystemInterface architecture" -- this is the matching
+// 2 ("ros2_control SystemInterface architecture"; this is the matching
 // controller-side lifecycle) and 4 ("PREEMPT-RT") for why JointCommand and
 // SafetyStatus are handed to update() via realtime-safe buffers rather than
 // processed directly in their ROS subscription callbacks.
@@ -50,7 +51,12 @@ private:
   std::vector<std::string> joint_names_;
   std::vector<double> kp_;
   std::vector<double> kd_;
-  double max_effort_{0.0};  // 0.0 = no additional clamp beyond hardware's own URDF effort limits
+  // Per-joint torque limit [Nm], index-aligned with joint_names_; a value <= 0 disables the
+  // clamp for that joint. Enforced HERE, not by the hardware plugin: the MuJoCo bridge's
+  // URDF-limit clamp is dead code (has_effort_limits is never set), so without this the
+  // sim applies unbounded torque. Values come from the URDF <limit effort="...">.
+  std::vector<double> effort_limits_;
+  double max_effort_{0.0};  // optional extra global clamp on top of effort_limits_; 0.0 = off
 
   // Cached pointers into exported command/state interfaces, indexed same as joint_names_.
   std::vector<std::reference_wrapper<hardware_interface::LoanedCommandInterface>> effort_command_;
@@ -59,7 +65,7 @@ private:
   std::vector<std::reference_wrapper<hardware_interface::LoanedStateInterface>> effort_state_;
 
   // IMU state interfaces (sensor "imu_imu" in g1_description's <ros2_control>
-  // block -- see that file's comments for the exact naming convention this
+  // block: see that file's comments for the exact naming convention this
   // depends on). Order: orientation x,y,z,w; angular_velocity x,y,z;
   // linear_acceleration x,y,z.
   std::vector<std::reference_wrapper<hardware_interface::LoanedStateInterface>> imu_state_;

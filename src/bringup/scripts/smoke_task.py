@@ -61,7 +61,7 @@ def main():
     code = 1
     try:
         if not node.wait_for_planner(20.0):
-            print('FAIL: nobody subscribes to /user_intent -- is the stack (task_planner) running?')
+            print('FAIL: nobody subscribes to /user_intent, is the stack (task_planner) running?')
             return 1
         # perception must have reported an object before the planner can plan; the
         # planner logs and drops an intent that arrives too early, so retry gently.

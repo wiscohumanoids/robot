@@ -14,7 +14,7 @@
 #         docker volume rm robot_build robot_install robot_log
 #
 # GUI: on Linux with an X server, the MuJoCo viewer and rviz2 open on your
-# display. On macOS (Docker Desktop) there is no X11 forwarding -- run the sim
+# display. On macOS (Docker Desktop) there is no X11 forwarding: run the sim
 # headless:  ros2 launch bringup full_stack.launch.py headless:=true
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,11 +33,11 @@ case "$(uname -s)" in
       xhost +local:docker >/dev/null 2>&1 || true
       ARGS+=(-e DISPLAY="${DISPLAY}" -v /tmp/.X11-unix:/tmp/.X11-unix:rw)
     else
-      echo "note: no \$DISPLAY set -- use headless:=true for the sim" >&2
+      echo "note: no \$DISPLAY set, use headless:=true for the sim" >&2
     fi
     ;;
   Darwin)
-    echo "note: macOS has no X11 forwarding here -- use headless:=true for the sim" >&2
+    echo "note: macOS has no X11 forwarding here, use headless:=true for the sim" >&2
     ;;
 esac
 

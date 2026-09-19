@@ -1,12 +1,11 @@
 """wbc_stub / wbc_node
 
-STATUS: STUB arbitration, standing in for a real whole-body controller. No
-dynamics model, no QP, no contact reasoning -- a fixed priority rule (legs +
-waist always from locomotion_runner, arms from manipulation_runner only
-while its output is fresh). See ARCHITECTURE.md's honesty about what this is
-not.
+STATUS: STUB arbitration, standing in for a real whole-body controller. There
+is no dynamics model, no QP and no contact reasoning: only a fixed priority
+rule (legs and waist always from locomotion_runner, arms from
+manipulation_runner only while its output is fresh).
 
-FREQUENCY: 500 Hz (CONTROL_RATE_HZ) -- deliberately faster than either input
+FREQUENCY: 500 Hz (CONTROL_RATE_HZ), faster than either input
 source (50 Hz / 10 Hz) and slower than lowlevel_control (1000 Hz); see
 RESEARCH_NOTES.md "Multi-rate architecture" for why this layer sits where it
 does (cross-process DDS topic, not the 1kHz in-process controller boundary).
@@ -28,19 +27,19 @@ from rclpy.qos import QoSProfile, HistoryPolicy, ReliabilityPolicy
 
 from humanoid_interfaces.msg import JointTargets, JointCommand
 
-from wbc_stub.joint_order import load_canonical_joint_order, NUM_JOINTS
+NUM_JOINTS = 23  # CANONICAL_JOINT_ORDER, see humanoid_interfaces/config/canonical_joint_order.yaml
 
 CONTROL_RATE_HZ = 500.0
 MANIPULATION_STALENESS_S = 0.3  # ignore manipulation targets older than this
 
 ARM_JOINTS = slice(13, 23)  # canonical indices 13-22, both arms
+ZERO_EFFORT = [0.0] * NUM_JOINTS
 
 
 class WbcStubNode(Node):
 
     def __init__(self):
         super().__init__('wbc_stub')
-        self.joint_names = load_canonical_joint_order()
 
         self._latest_locomotion = None       # JointTargets
         self._latest_manipulation = None     # JointTargets
@@ -67,11 +66,15 @@ class WbcStubNode(Node):
         self._latest_manipulation = msg
         self._manipulation_received_at = time.monotonic()
 
-    def _arbitrate(self) -> JointTargets:
-        """Legs+waist always from locomotion. Arms from manipulation only if
-        fresh. See wbc_stub/README.md for why this is a stand-in, not a real
-        whole-body controller (it does not check torque/dynamics consistency
-        between the two sources at all -- it just overwrites array slices)."""
+    def _arbitrate(self):
+        """Returns (positions, velocities) for the merged command, or None if
+        locomotion has not published yet.
+
+        Legs and waist always come from locomotion. Arms come from manipulation
+        only while its output is fresh. This is a slice overwrite, not a
+        whole-body solve: it does not check that the merged pose is dynamically
+        consistent (see wbc_stub/README.md).
+        """
         if self._latest_locomotion is None:
             return None
 
@@ -84,23 +87,17 @@ class WbcStubNode(Node):
         if manipulation_fresh:
             positions[ARM_JOINTS] = self._latest_manipulation.positions[ARM_JOINTS]
             velocities[ARM_JOINTS] = self._latest_manipulation.velocities[ARM_JOINTS]
-
-        merged = JointTargets()
-        merged.positions = positions
-        merged.velocities = velocities
-        merged.source = 'manipulation' if manipulation_fresh else 'locomotion'
-        return merged
+        return positions, velocities
 
     def _on_timer(self):
         merged = self._arbitrate()
         if merged is None:
-            return  # nothing published yet by locomotion_runner -- don't command garbage
+            return  # locomotion_runner has not published yet: do not command garbage
 
         cmd = JointCommand()
         cmd.header.stamp = self.get_clock().now().to_msg()
-        cmd.position_target = merged.positions
-        cmd.velocity_target = merged.velocities
-        cmd.effort_feedforward = [0.0] * NUM_JOINTS  # a real WBC would fill this in
+        cmd.position_target, cmd.velocity_target = merged
+        cmd.effort_feedforward = ZERO_EFFORT  # a real WBC would fill this in
         self._cmd_pub.publish(cmd)
 
 

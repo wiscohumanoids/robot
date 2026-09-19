@@ -1,4 +1,4 @@
-# Joint-space position targets, CANONICAL_JOINT_ORDER (23) -- see
+# Joint-space position targets, CANONICAL_JOINT_ORDER (23): see
 # humanoid_interfaces/config/canonical_joint_order.yaml and ARCHITECTURE.md.
 #
 # Published by: locomotion_runner (50 Hz) and manipulation_runner (10 Hz),
@@ -7,7 +7,7 @@
 #   and forwards a single stream downstream as JointCommand.
 #
 # This is a target-generation-layer message (arms/legs/waist coordination,
-# task-level intent). It carries NO torque information on purpose -- torque
+# task-level intent). It carries no torque information: torque
 # feedforward + gains are a lowlevel_control concern (see JointCommand).
 
 std_msgs/Header header

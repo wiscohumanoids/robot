@@ -833,7 +833,7 @@
     ================================================================
     CANONICAL JOINT ORDER (23 DOF): THE contract every message, node, and
     controller in this repo is written against. Index 0-22 below matches
-    humanoid_interfaces/config/canonical_joint_order.yaml EXACTLY. If you
+    humanoid_interfaces/config/canonical_joint_order.yaml exactly. If you
     add/reorder a joint here, update that file too, and every array-valued
     field in humanoid_interfaces (JointTargets, JointCommand,
     RobotState.joint_*, PolicyObservation.joint_*) shifts with it. See
@@ -872,8 +872,10 @@
     (tau = tau_ff + Kp*(q_d-q) + Kd*(qd_d-qd)), which runs identically whether
     the plugin below resolves to mujoco_ros2_control/MujocoSystem (sim) or
     ethercat_bridge/EthercatHardwareInterface (real hardware). Confirmed by
-    reading mujoco_system.cpp: its effort branch writes straight to qfrc_applied,
-    clamped to this URDF's per-joint limit-effort attribute, with no actuator
+    reading mujoco_system.cpp: its effort branch writes straight to qfrc_applied
+    (its clamp to this URDF's per-joint limit-effort never activates because
+    has_effort_limits is never set, so lowlevel_control enforces the torque limits
+    from controllers.yaml `effort_limits`, which must equal these values), with no actuator
     elements fighting it in g1_23dof_rev_1_0.xml (verified: zero actuator
     elements in that MJCF, timestep=0.001s, i.e. the sim's physics rate already
     matches our 1kHz control loop 1:1).

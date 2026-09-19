@@ -4,7 +4,7 @@ This document records what was actually found (with sources) before
 `ethercat_bridge` and `lowlevel_control` were scaffolded, per the project
 requirement to cite research rather than invent plausible-sounding hardware
 integration code. Where a source didn't give a complete answer, that gap is
-stated explicitly — this repo's EtherCAT code is a scaffold, and the gaps
+stated explicitly: this repo's EtherCAT code is a scaffold, and the gaps
 below are exactly the TODOs left in the code for the low-level team to fill
 with real datasheet/hardware values.
 
@@ -16,7 +16,7 @@ This is the reference implementation the design here follows conceptually.
 **We do not take a hard dependency on it** (see "Why we didn't vendor
 `ethercat_driver_ros2` directly" below), but `ethercat_bridge`'s
 `EthercatHardwareInterface` mirrors its architecture so that swapping in the
-real package later — or wiring `ethercat_bridge` to actually call it — is a
+real package later, or wiring `ethercat_bridge` to actually call it, is a
 small diff, not a redesign.
 
 **`<ros2_control>` URDF structure** (from the master hardware plugin's
@@ -44,7 +44,7 @@ Each EtherCAT slave is then declared as a module resource with an `alias`/
 ```
 
 **CiA402 drive slave config** (`slave_config.yaml`-style file consumed by the
-`EcCiA402Drive` plugin) — confirmed field names and example values:
+`EcCiA402Drive` plugin): confirmed field names and example values:
 
 ```yaml
 vendor_id: 0x000000fb
@@ -56,32 +56,32 @@ auto_fault_reset: false
 RxPDO (master -> slave) entries seen in the reference config, each with
 `index`, `sub_index`, `type`, and an optional `command_interface` binding:
 
-- Controlword — `0x6040`, sub-index 0, `uint16`
-- Target position — `0x607a`, sub-index 0, `int32`, `command_interface: position`
-- Target velocity — `0x60ff`, sub-index 0, `int32`
-- Target torque — `0x6071`, sub-index 0, `int16`
-- Mode of operation — `0x6060`, sub-index 0, `int8`
+- Controlword: `0x6040`, sub-index 0, `uint16`
+- Target position: `0x607a`, sub-index 0, `int32`, `command_interface: position`
+- Target velocity: `0x60ff`, sub-index 0, `int32`
+- Target torque: `0x6071`, sub-index 0, `int16`
+- Mode of operation: `0x6060`, sub-index 0, `int8`
 
 TxPDO (slave -> master) entries, each with an optional `state_interface`
 binding:
 
-- Statusword — `0x6041`, sub-index 0, `uint16`
-- Position actual value — `0x6064`, `state_interface: position`
-- Velocity actual value — `0x606c`, `state_interface: velocity`
-- Torque actual value — `0x6077`, `state_interface: effort`
+- Statusword: `0x6041`, sub-index 0, `uint16`
+- Position actual value: `0x6064`, `state_interface: position`
+- Velocity actual value: `0x606c`, `state_interface: velocity`
+- Torque actual value: `0x6077`, `state_interface: effort`
 
 `mode_of_operation` is also settable as a plain URDF `<param>` on the joint to
 fix the drive's default CiA402 mode (position/velocity/torque profile) without
 a runtime PDO write.
 
 **Gap:** the exact `sync_cycle_time`/distributed-clock cycle-time field name
-for pinning a 1ms (1kHz) cycle was not confirmed from the fetched pages — the
+for pinning a 1ms (1kHz) cycle was not confirmed from the fetched pages. The
 docs describe DC sync as a capability gated by `assign_activate` but didn't
 spell out the millisecond-cycle parameter name in the excerpt retrieved.
 **TODO for the low-level team:** confirm this against
 `ICube-Robotics/ethercat_driver_ros2_examples` before wiring a real bus; our
 `config/ethercat_slaves.yaml` scaffold assumes a field name
-(`dc_sync.cycle_time_us: 1000`) that is our own placeholder, clearly marked,
+(`dc_sync.cycle_time_us: 1000`) that is our own placeholder, marked as such,
 not a confirmed upstream field.
 
 Sources:
@@ -89,7 +89,7 @@ Sources:
 - https://icube-robotics.github.io/ethercat_driver_ros2/user_guide/config_cia402_drive.html
 - https://github.com/ICube-Robotics/ethercat_driver_ros2_examples
 - https://github.com/ICube-Robotics/ethercat_driver_ros2/issues/47 (real-world PDO-mapping/ros2_control wiring discussion)
-- https://github.com/ICube-Robotics/ethercat_driver_ros2/issues/214, #171 (real-world CiA402 slave bring-up failure modes — worth reading before hardware bring-up, e.g. drives getting stuck in PREOP+ERROR)
+- https://github.com/ICube-Robotics/ethercat_driver_ros2/issues/214, #171 (real-world CiA402 slave bring-up failure modes, worth reading before hardware bring-up, e.g. drives getting stuck in PREOP+ERROR)
 
 ### Why we didn't vendor `ethercat_driver_ros2` directly
 
@@ -101,7 +101,7 @@ a *scaffold this team owns and fills in incrementally*, not an opaque
 dependency. `ethercat_bridge` is written so that its `on_configure()`/`read()`/
 `write()` TODOs are exactly the places a real integration would either (a)
 call into `ethercat_driver_ros2`'s generic module plugins, or (b) call SOEM
-directly — both paths are left open, and this is documented at the top of
+directly: both paths are left open, and this is documented at the top of
 `ethercat_bridge/src/ethercat_hardware_interface.cpp`.
 
 ---
@@ -175,7 +175,7 @@ position mode).
 
 **Gap:** the exact Statusword bitmask table (which bits of `0x6041` to mask
 and compare, e.g. the commonly-cited `0x6F` mask) was **not** confirmed
-verbatim from a fetched primary source in this session — the fetched
+verbatim from a fetched primary source in this session. The fetched
 Synapticon page confirmed the state names and the three startup Controlword
 values (`0x0006`/`0x0007`/`0x000F`) but the tool's summary explicitly noted the
 full bitmask table was not present in what it returned. The `0x0002` (Quick
@@ -203,7 +203,7 @@ Findings, with the specific numeric target this repo's `lowlevel_control` and
   preemption; a 1kHz (1ms period) hard real-time loop requires the
   `PREEMPT_RT` kernel patch, not just `nice`/`chrt` on a stock kernel.
 - Rule of thumb cited: keep worst-case jitter under **~5% of the update
-  period** — for 1kHz that's a ≤50µs budget; one cited reference
+  period**: for 1 kHz that is a budget of 50 µs or less. One cited reference
   configuration achieved <3% jitter (~30µs) using `PREEMPT_RT` +
   `SCHED_RR` at priority 98.
 - `ros2_control`'s own real-time thread model: the `controller_manager`'s
@@ -216,11 +216,11 @@ Findings, with the specific numeric target this repo's `lowlevel_control` and
   subscription callback rather than processed directly in the subscription
   callback).
 - Caveat directly relevant to this repo: **installing `PREEMPT_RT` does not
-  by itself make a program real-time** — the process must also be pinned to
+  by itself make a program real-time**. The process must also be pinned to
   an isolated CPU core (`isolcpus`/`taskset`), run at `SCHED_FIFO`/`SCHED_RR`
   elevated priority, and avoid page faults (lock memory with `mlockall`) and
   any allocation/logging/blocking syscalls in the hot path. None of this is
-  configured in this repo's stub yet — see `ethercat_bridge/README.md`'s
+  configured in this repo's stub yet, see `ethercat_bridge/README.md`'s
   "what's not done" list.
 
 Sources:
@@ -231,35 +231,35 @@ Sources:
 
 ---
 
-## 5. Multi-rate ROS2 architecture (10 / 50 / 500 / 1000 Hz coexisting cleanly)
+## 5. Multi-rate ROS2 architecture (10 / 50 / 500 / 1000 Hz coexisting)
 
 Findings applied directly to this repo's layer frequencies (`teleop_input`
 10Hz -> `cmd_vel_mux` 50Hz -> `locomotion_runner`/`manipulation_runner` 50/10Hz ->
 `wbc_stub` 500Hz -> `lowlevel_control`/`ethercat_bridge` 1000Hz; the task-stack
 stubs added later run at 1-100 Hz or on events, well inside the "plain DDS is
-fine" range this section describes -- see the contract for each rate):
+fine" range this section describes, see the contract for each rate):
 
-- A single node can cleanly run several independent rates using multiple ROS
+- A single node can run several independent rates using multiple ROS
   `Timer` objects (e.g. rclpy `create_timer` / rclcpp `create_wall_timer`)
-  rather than needing one node per rate — used in this repo only where a
-  layer genuinely has one job at one rate (which is every layer here; each
+  rather than needing one node per rate, used in this repo only where a
+  layer has one job at one rate (which is every layer here; each
   package in the stack has exactly one timer).
 - For frequencies **above** roughly 50Hz shared over the standard
-  DDS/multi-process transport, latency degrades with node/topic count — the
+  DDS/multi-process transport, latency degrades with node/topic count, the
   literature explicitly calls out that intra-process **composition** (loading
   nodes as components in one process, using intra-process communication) is
   the standard mitigation once you're pushing >1kHz data volumes across node
   boundaries. This repo's 1kHz boundary (`lowlevel_control` <-> whichever
-  hardware plugin is active) deliberately stays **inside a single process**
+  hardware plugin is active) stays **inside a single process**
   (`controller_manager` loads both the controller and the hardware component
-  as plugins in one process) specifically to sidestep this — it is not a
+  as plugins in one process) specifically to sidestep this; it is not a
   design accident that `JointCommand` (500Hz, cross-process, DDS topic) sits
   one layer *above* the 1kHz boundary rather than crossing it.
 - Recommended layering pattern (perception -> planning -> control, decoupled
   per-layer polling instead of one global synchronized clock) matches this
   repo's structure: each layer reads whatever the layer below last published
   (via a cached "latest message wins" QoS, not a blocking wait), so a slow
-  publisher never stalls a fast consumer — this is why `wbc_stub` and
+  publisher never stalls a fast consumer; this is why `wbc_stub` and
   `lowlevel_control` both use `KEEP_LAST` depth-1 QoS on their inputs rather
   than a queued/reliable large-depth queue.
 
@@ -309,28 +309,28 @@ item is a thing to verify on a ROS machine. Verified items get a tick in
 
 **Assumptions to verify on a ROS Humble machine**
 
-1. `nav2_msgs/action/NavigateToPose` in Humble: goal `pose` (`PoseStamped`) +
+1. *(Verified 2026-09-19: the stub builds against Humble's `nav2_msgs` and completes goals.)* `nav2_msgs/action/NavigateToPose` in Humble: goal `pose` (`PoseStamped`) +
    `behavior_tree`; result `std_msgs/Empty`; feedback includes `current_pose`
    and `distance_remaining`. `nav_stub` and `behavior_tree_stub` were written
    from memory of this definition.
-2. The rosdep key for the Python `tf2_ros` module in Humble is `tf2_ros_py`
+2. *(Verified 2026-09-19: rosdep resolved it and the Docker build passed.)* The rosdep key for the Python `tf2_ros` module in Humble is `tf2_ros_py`
    (used in the new packages' `package.xml`).
 3. `ros2 launch` does not attach a TTY to launched nodes, so keyboard teleop only
    works from `ros2 run` in its own terminal. (Asserted from how `teleop_node`
    detects a TTY; not tested.)
 4. How Nav2 is remapped so its velocity output goes to `/cmd_vel_nav` (which
-   node/param) -- the intent is fixed by the contract, the wiring is unwritten.
+   node/param): the intent is fixed by the contract, the wiring is unwritten.
 5. `mock_components/GenericSystem` was considered as a no-MuJoCo stand-in for
    hardware (so CI could test `lowlevel_control`) and **not used**: whether it
    exports the `imu_imu` sensor interfaces `lowlevel_control` requires, and with
    what initial values (NaN would trip `safety`'s NaN check), is unknown. CI
    therefore runs the stubs-only stack (`sim:=false`) and skips the sim-only
    topics.
-6. The MuJoCo `linux-aarch64` release tarball exists under the same URL pattern as
+6. *(Verified 2026-09-19 on the author's Mac: the image builds and MuJoCo runs headless with OSMesa.)* The MuJoCo `linux-aarch64` release tarball exists under the same URL pattern as
    `linux-x86_64` for `MUJOCO_VERSION=3.2.7` (used by the Dockerfile for arm64
    hosts), and OSMesa headless rendering works in that image with
    `MUJOCO_HEADLESS_OSMESA=ON`.
-7. `rclpy` action clients/servers behave as `behavior_tree_stub` and `nav_stub`
+7. *(Verified 2026-09-19: `smoke_task.py` completes the full navigate and pick sequence.)* `rclpy` action clients/servers behave as `behavior_tree_stub` and `nav_stub`
    assume: goal/result futures completing from a worker thread under a
    `MultiThreadedExecutor`, and blocking `execute_callback`s with
    `time.sleep` (the same pattern `manipulation_runner` already used).
@@ -347,11 +347,11 @@ sites in `ethercat_bridge/`, listed here as one checklist:
    datasheet, not just the generic CiA402 spec, before trusting any
    state-machine decode logic.
 3. Decide whether `ethercat_bridge` will (a) shell out to
-   `ethercat_driver_ros2`'s generic slave plugins, or (b) link SOEM directly
-   — both are architecturally possible with the current scaffold, neither is
+   `ethercat_driver_ros2`'s generic slave plugins, or (b) link SOEM directly.
+   Both are architecturally possible with the current scaffold; neither is
    implemented.
 4. Configure `PREEMPT_RT` + CPU isolation + `SCHED_FIFO`/`mlockall` on the
-   actual target compute — none of this OS-level setup is part of this repo
+   actual target compute: none of this OS-level setup is part of this repo
    (it's a deployment/provisioning concern, tracked here so it isn't
    forgotten).
 

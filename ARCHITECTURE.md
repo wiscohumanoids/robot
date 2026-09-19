@@ -9,7 +9,7 @@
 
 `robot` is the canonical ROS2 Humble integration workspace for WiscoHumanoids.
 It does not contain a working locomotion policy, manipulation policy, task
-planner, perception system or EtherCAT master -- those are the jobs of the
+planner, perception system or EtherCAT master; those are the jobs of the
 teams (and of the `berkeley_humanoid` and `lerobot_alohamini` repos) working
 against this scaffold. What this repo *does* provide, today, for real:
 
@@ -30,7 +30,7 @@ The design principle: **nodes talk through frozen interfaces, never through each
 other**, so stubs and real implementations are interchangeable and integration is
 progressive stub-replacement rather than a big-bang merge. The catch, stated
 plainly: stubs prove architectural correctness, not real-time timing or
-dynamics -- see [what stubs cannot prove](INTERFACE_CONTRACT.md#what-stubs-can-and-cannot-prove).
+dynamics: see [what stubs cannot prove](INTERFACE_CONTRACT.md#what-stubs-can-and-cannot-prove).
 
 ## The whole stack
 
@@ -73,7 +73,7 @@ CONTROL STACK                                                                   
 500 Hz                            ┌──────────────────┐
                                   │     wbc_stub      │  STUB: pass-through arbitration
                                   │  (arbitrate, no   │  (locomotion wins below the waist,
-                                  │  real WBC yet)    │   manipulation wins at the arms —
+                                  │  real WBC yet)    │   manipulation wins at the arms,
                                   └─────────┬─────────┘   see wbc_stub/README.md)
                                             │ JointCommand
                                             ▼
@@ -92,12 +92,12 @@ CONTROL STACK                                                                   
                 │ mujoco_ros2_control/  │          │  ethercat_bridge/             │
                 │ MujocoSystem (sim)    │   OR     │  EthercatHardwareInterface    │
                 │ REAL, vendored,       │  (arg)   │  REAL SCAFFOLD: read()/write()│
-                │ working today         │          │  stubbed, clearly marked      │
+                │ working today         │          │  stubbed and marked as such   │
                 └─────────────────────┘          └─────────────────────────────┘
                            │                                 │
                            ▼                                 ▼
                   simulated G1 in MuJoCo            real G1 over EtherCAT (not yet
-                  (runs today, no GPU)               wired to a real bus — TODO)
+                  (runs today, no GPU)               wired to a real bus, TODO)
 
   (orthogonal, not in the vertical path)
 100 Hz   ┌──────────────────┐   /manual_estop ◄── (E-stop firmware bridge, MISSING)
@@ -109,11 +109,11 @@ CONTROL STACK                                                                   
 Both hardware boxes export the **identical interface**: state
 `position`/`velocity`/`effort`, command `effort`, per joint, in
 `CANONICAL_JOINT_ORDER`. `lowlevel_control` and everything above it never
-knows or cares which one is active — that's the whole point of standardizing
+knows or cares which one is active. That is why the stack standardizes
 on a raw torque interface instead of `bipedal_nav`'s original `position_pid`
 custom interface (which only `MujocoSystem`'s built-in PID understood, and
 which a real torque-mode CiA402 drive has no equivalent for). This is
-selected via the `hardware_plugin` xacro arg on `g1_description`'s URDF —
+selected via the `hardware_plugin` xacro arg on `g1_description`'s URDF,
 see `bringup/README.md` and `bringup/lowlevel_test.launch.py`.
 
 ### Coordinate frames and TF
@@ -133,13 +133,18 @@ navigation > zero, 0.5 s timeout) is the sole owner of `/cmd_vel`. The timeout
 doubles as a watchdog: if whatever was driving dies, the robot is commanded to
 stop rather than repeating its last command.
 
-## Sim/hardware symmetry — why this works
+## Sim/hardware symmetry: why this works
 
 Verified directly in `mujoco_ros2_control/src/mujoco_system.cpp`: the
-`effort`-command branch of `write()` clamps the incoming torque to the
-joint's `<limit effort="...">` from the URDF and writes it straight into
-MuJoCo's `qfrc_applied` array — it does **not** require or interact with any
-`<actuator>` element in the MJCF. Verified in `g1_description`'s
+`effort`-command branch of `write()` writes the incoming torque straight into
+MuJoCo's `qfrc_applied` array: it does **not** require or interact with any
+`<actuator>` element in the MJCF. **It does not clamp to the URDF's
+`<limit effort>` in practice:** the clamp exists, but its enabling flag
+(`has_effort_limits`) is never set, so it is dead code. (An earlier version of
+this document claimed the sim enforced the URDF limit; the first sim run showed
+unbounded torque and a diverging simulation.) Torque limits are therefore
+enforced in `lowlevel_control` (`effort_limits` in `controllers.yaml`, equal to
+the URDF values), for sim and hardware alike. Verified in `g1_description`'s
 `g1_23dof_rev_1_0.xml`: there are **zero** `<actuator>` elements (a comment in
 the file says so explicitly), and `<option timestep="0.001">` means physics
 already steps at exactly 1kHz. Net effect: the sim path is not an
@@ -194,7 +199,7 @@ mirrored as an inline comment in `g1_description/g1_23dof.urdf.xacro`'s
 
 This is the `g1_23dof_rev_1_0` variant from `bipedal_nav/src/g1_description`:
 legs 6 DOF each, waist yaw only (roll+pitch locked), arms 5 DOF each
-(shoulder pitch/roll/yaw, elbow, wrist roll only — no wrist pitch/yaw, rubber
+(shoulder pitch/roll/yaw, elbow, wrist roll only, no wrist pitch/yaw, rubber
 hand end effector).
 
 ### Reconciliation with `berkeley_humanoid`
@@ -202,14 +207,14 @@ hand end effector).
 `berkeley_humanoid`'s `G1Env` (`environment/g1_env.py`) trains against the
 **29-DOF** G1 variant: same 12 leg joints and same `waist_yaw_joint`, but adds
 `waist_roll_joint` + `waist_pitch_joint` (2 extra) and, per arm,
-`wrist_pitch_joint` + `wrist_yaw_joint` (4 extra) — 6 extra DOF total,
+`wrist_pitch_joint` + `wrist_yaw_joint` (4 extra), 6 extra DOF total,
 23 + 6 = 29. Confirmed by reading `g1_env.py`'s own qpos-layout docstring and
 cross-checking joint names against `environment/g1_robot.xml`'s `<actuator>`
 list.
 
 This is **not** a blocking mismatch. Per the earlier audit of
 `berkeley_humanoid`, `G1Env`'s `correction_scaling` vector is ~zero for every
-joint except the leg hip/knee pitch joints used for the walking gait — i.e.
+joint except the leg hip/knee pitch joints used for the walking gait, i.e.
 the policy already treats the 6 extra DOF as held-fixed, not as joints it
 actively uses for balance. The 29<->23 conversion is therefore a safe
 truncation/padding at the `locomotion_runner` boundary, not a requirement to
@@ -224,13 +229,13 @@ The per-node table (status, what it does today, what replaces it, owner,
 launch switch) lives in [`STATUS.md`](STATUS.md) and is generated from the
 contract, so it cannot drift from the code. The short version:
 
-**Real, working today (as far as static checks can tell -- see STATUS.md for
-what has not yet been run on a ROS machine):** `g1_description`,
+**Working today (as far as static checks can tell; STATUS.md lists what has
+not yet been run on a ROS machine):** `g1_description`,
 `mujoco_ros2_control` (vendored), `humanoid_interfaces` and the contract
 tooling, `teleop_input`, `cmd_vel_mux`, `lowlevel_control`'s
 `JointImpedanceController`, `safety`'s gating logic.
 
-**Real interface, stubbed internals (by design):** `task_planner`,
+**Real interface, stubbed internals:** `task_planner`,
 `behavior_tree`, `perception`, `slam`, `state_estimation`, `nav`,
 `locomotion_runner`, `manipulation_runner`, `wbc_stub`, and `ethercat_bridge`'s
 bus I/O.
@@ -243,7 +248,7 @@ bus I/O and CiA402 state handling, and the `PREEMPT_RT`/CPU-isolation OS setup
 
 ## Data flow, one task, top to bottom
 
-1. A user intent (`"pick up the cube"`) reaches `/user_intent` -- typed by hand
+1. A user intent (`"pick up the cube"`) reaches `/user_intent`, typed by hand
    today; the speech front-end later.
 2. `task_planner` turns it, using the latest `/object_poses` from `perception`,
    into a `SkillSequence` on `/skill_sequence`: `[navigate_to, pick]`.
@@ -255,19 +260,19 @@ bus I/O and CiA402 state handling, and the `PREEMPT_RT`/CPU-isolation OS setup
    `/cmd_vel` at 50 Hz. `state_estimation` updates `/robot_pose` and
    `odom -> base_link`; `slam` provides `/map` and `map -> odom`.
 5. `locomotion_runner`, on its own 50 Hz timer, reads the latest `/cmd_vel`
-   (whatever was last published -- no blocking wait) plus the latest
+   (whatever was last published, no blocking wait) plus the latest
    `RobotState`, assembles a `PolicyObservation`, runs its stub gait (or, once
    dropped in, the ONNX policy), and publishes `JointTargets` with
    `source="locomotion"`.
 6. **Manipulation:** `manipulation_runner`, while it has an active goal, publishes
    `JointTargets` with `source="manipulation"` for the arm joints at 10 Hz.
 7. `wbc_stub`, at 500 Hz, merges both sources (legs+waist from locomotion, arms
-   from manipulation when fresh -- see `wbc_stub/README.md`) into one `JointCommand`.
+   from manipulation when fresh: see `wbc_stub/README.md`) into one `JointCommand`.
 8. `lowlevel_control`'s `JointImpedanceController`, inside `controller_manager`'s
    1000 Hz real-time `update()`, reads the latest cached `JointCommand` (via a
    realtime buffer, not in the ROS callback) and the hardware's `position`/
    `velocity` state, computes `tau` per joint, and writes the `effort` command.
-9. Whichever `SystemInterface` is loaded applies that torque -- in sim to
+9. Whichever `SystemInterface` is loaded applies that torque, in sim to
    `qfrc_applied`; on hardware it would be packed into a CiA402 RxPDO
    `TargetTorque` frame (currently stubbed, see `ethercat_bridge/README.md`).
 10. `lowlevel_control` re-publishes state as `RobotState` for `locomotion_runner`
@@ -278,7 +283,7 @@ bus I/O and CiA402 state handling, and the `PREEMPT_RT`/CPU-isolation OS setup
 Every arrow above is an entry in the contract, and every box can be a stub or the
 real thing.
 
-## Explicit gaps (kept honest)
+## Known gaps
 
 This repo proves the *pipeline*, not a walking or manipulating robot.
 
@@ -298,4 +303,4 @@ This repo proves the *pipeline*, not a walking or manipulating robot.
   `lerobot_alohamini`; the ONNX/action-server "slots" are structurally ready but
   the artifacts they load don't ship here.
 - **Nothing here has been built or launched on a ROS machine yet** (only static
-  checks and pure-logic unit tests have run) -- see STATUS.md.
+  checks and pure-logic unit tests have run). See STATUS.md.

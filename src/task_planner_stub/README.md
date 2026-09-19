@@ -1,9 +1,9 @@
 # task_planner_stub
 
-**Layer:** 2 -- task planning. **Status:** STUB.
+**Layer:** 2 (task planning). **Status:** STUB.
 **Subscribes:** `/user_intent` (`std_msgs/String`), `/object_poses`.
 **Publishes:** `/skill_sequence` (`humanoid_interfaces/SkillSequence`), one
-message per accepted intent -- **the only publisher.**
+message per accepted intent, **the only publisher.**
 
 ## What is fake
 
@@ -11,7 +11,7 @@ No LLM. Any intent becomes a canned two-step plan built by `plan_for_intent()`
 (`planner_logic.py`, unit-tested):
 
 1. `navigate_to` a point `standoff_m` (default 0.6 m) short of the chosen object;
-2. the manipulation skill picked from the intent's verb -- `pick` (default),
+2. the manipulation skill picked from the intent's verb, `pick` (default),
    `place`, or `handover`.
 
 The object is the one whose label appears in the intent, else the first

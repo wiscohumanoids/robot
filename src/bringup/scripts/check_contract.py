@@ -81,8 +81,11 @@ class Checker(Node):
             pubs = self.get_publishers_info_by_topic(name)
             owners = sorted({p.node_name for p in pubs})
             if len(pubs) > 1:
-                add(False, f'{name}: {len(pubs)} publishers {owners} -- must be exactly one '
-                           f'(contract owner: {t["owner"]})')
+                hint = (' (the same node name appears twice: an earlier launch is still running. '
+                        'Run `jobs`, then `pkill -INT -f full_stack.launch.py` and relaunch)'
+                        if len(owners) == 1 else '')
+                add(False, f'{name}: {len(pubs)} publishers {owners}, must be exactly one '
+                           f'(contract owner: {t["owner"]}){hint}')
                 continue
             if len(pubs) == 1 and pubs[0].topic_type != t['type']:
                 add(False, f'{name}: publisher {owners[0]} uses {pubs[0].topic_type}, '
@@ -115,7 +118,7 @@ class Checker(Node):
         contract_children = {e['child'] for e in self.contract['tf']}
         for child, parents in sorted(self.tf_edges.items()):
             if child in contract_children and len(parents) > 1:
-                add(False, f'tf frame {child} has multiple parents {sorted(parents)} -- '
+                add(False, f'tf frame {child} has multiple parents {sorted(parents)}, '
                            f'one publisher per edge')
         return results
 

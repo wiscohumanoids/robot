@@ -1,17 +1,17 @@
-# THE INTERFACE CONTRACT -- machine-readable source of truth.
+# THE INTERFACE CONTRACT: machine-readable source of truth.
 #
 # Human-readable rendering: INTERFACE_CONTRACT.md and STATUS.md at the repo
 # root (their tables are GENERATED from this file: `python3 tools/gen_docs.py`).
-# Enforced by: tests/ (static, no ROS needed -- runs in CI) and
+# Enforced by: tests/ (static, no ROS needed: runs in CI) and
 # `ros2 run bringup check_contract.py` (live graph check against a running stack).
 #
 # RULES (see CONTRIBUTING.md):
 #   1. Exactly ONE publisher per topic, exactly ONE publisher per TF edge.
 #      `owner` is the node id (see `nodes:`) that is allowed to publish it.
 #   2. Changing a topic name/type/rate/owner, a TF edge, a skill name or a
-#      message field is an INTERFACE CHANGE: edit this file, regenerate the
-#      docs, and get the change reviewed by the interface owner (integration
-#      lead) -- in the same PR as the code.
+#      message field is an INTERFACE CHANGE. In one PR, edit this file,
+#      regenerate the docs, update the code, and get it reviewed by the
+#      interface owner (the integration lead).
 #   3. A stub and the real node that replaces it honor the SAME entry here.
 #      Swapping one for the other must not touch this file.
 #
@@ -24,7 +24,7 @@
 #
 # nodes[].launch_arg (bringup/launch/full_stack.launch.py):
 #   stub/scaffold nodes:  <arg>:=stub (default) launches the repo's stub;
-#                         <arg>:=external launches nothing -- you run your real
+#                         <arg>:=external launches nothing: you run your real
 #                         node yourself (it then becomes the topic's one publisher).
 #   real nodes:           <arg>:=true|false.
 
@@ -140,7 +140,7 @@ nodes:
     executable: locomotion_node
     launch_arg: locomotion
     area: locomotion
-    replaces: "Trained RL policy (berkeley_humanoid ONNX export) -- slot exists, adapter unverified"
+    replaces: "Trained RL policy (berkeley_humanoid ONNX export), slot exists, adapter unverified"
     summary: "Sinusoidal hip/knee gait over a nominal crouch pose at 50 Hz."
   - id: manipulation
     layer: skills
@@ -204,7 +204,7 @@ nodes:
     status: missing
     package: null
     area: safety
-    replaces: "Wireless E-stop firmware bridge (micro-ROS / serial). Must publish std_msgs/Bool on /manual_estop -- NOT on /safety_status."
+    replaces: "Wireless E-stop firmware bridge (micro-ROS / serial). Must publish std_msgs/Bool on /manual_estop, NOT on /safety_status."
     summary: "Reserved. Today /manual_estop is driven by hand for tests."
   # ---- 10. platform ----
   - id: mujoco_sim

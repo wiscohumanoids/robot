@@ -6,7 +6,7 @@
     Real ros2_control hardware_interface::SystemInterface scaffold for a
     CiA402 torque-mode EtherCAT drive train. Interface (state/command
     interfaces, lifecycle, config parsing/validation) is real; actual
-    EtherCAT bus I/O is stubbed and clearly marked. See README.md,
+    EtherCAT bus I/O is stubbed and marked as such. See README.md,
     RESEARCH_NOTES.md, and INTEGRATION_POINTS.md.
   </description>
   <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>

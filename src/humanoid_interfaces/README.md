@@ -1,20 +1,19 @@
 # humanoid_interfaces
 
 **Purpose:** the message contract every other package in this repo is written
-against, plus [`config/interface_contract.yaml`](config/interface_contract.yaml) --
+against, plus [`config/interface_contract.yaml`](config/interface_contract.yaml),
 the machine-readable list of every topic, action and TF edge, its owner, type and
 rate (rendered in [INTERFACE_CONTRACT.md](../../INTERFACE_CONTRACT.md), enforced by
 `tests/` and `ros2 run bringup check_contract.py`).
 
-**Only invent a custom message where no standard one fits.** `/cmd_vel`,
-`/joint_states`, `/robot_pose`, `/map` and `navigate_to_pose` use standard types on purpose.
+Only add a custom message where no standard one fits. `/cmd_vel`, `/joint_states`,
+`/robot_pose`, `/map` and `navigate_to_pose` use standard types so Nav2, rviz and
+rosbag work unchanged.
 
-**Real and consumed** -- unlike `bipedal_nav`'s `humanoid_interfaces`
-package (which defined `SlamState`/`RobotState`/`ContactState`/etc. but had
-zero real code importing them), every message here has a publisher and a subscriber
-(real or stub) somewhere in `src/`. Grep for the message
-name if you want to verify this yourself; it's a deliberate design goal, not
-a claim to take on faith.
+Unlike `bipedal_nav`'s `humanoid_interfaces` package, which defined
+`SlamState`/`RobotState`/`ContactState` but had no code importing them, every
+message here has a publisher and a subscriber (real or stub) somewhere in `src/`.
+Grep for a message name to check.
 
 **Frequency:** N/A (interface definitions only, no nodes).
 

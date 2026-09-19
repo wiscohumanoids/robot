@@ -31,6 +31,7 @@
   <exec_depend>nav_stub</exec_depend>
   <exec_depend>humanoid_interfaces</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
   <exec_depend>tf2_msgs</exec_depend>
   <exec_depend>rosidl_runtime_py</exec_depend>
   <exec_depend>python3-yaml</exec_depend>

@@ -3,7 +3,7 @@
 THE "prove a command produces motion" milestone harness.
 
 Starts EITHER the MuJoCo sim path (default) OR the EtherCAT hardware
-scaffold path -- switchable via the `use_hardware` launch argument -- then
+scaffold path, switchable via the `use_hardware` launch argument, then
 loads joint_state_broadcaster and lowlevel_control's
 JointImpedanceController against whichever one came up. Both paths load the
 exact same bringup/config/controllers.yaml (see ARCHITECTURE.md "Sim/
@@ -13,7 +13,7 @@ Usage:
     # sim path (default, laptop-friendly, no GPU, no real hardware needed)
     ros2 launch bringup lowlevel_test.launch.py
 
-    # hardware scaffold path (ethercat_bridge -- see its README for what's
+    # hardware scaffold path (ethercat_bridge: see its README for what's
     # actually implemented vs. stubbed; this will NOT move a real motor
     # until the hardware team fills in ethercat_bridge's TODOs)
     ros2 launch bringup lowlevel_test.launch.py use_hardware:=true

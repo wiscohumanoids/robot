@@ -1,6 +1,6 @@
 """Puts every ROS package directory under src/ on sys.path so the pure-Python
 logic modules (mux_logic, kinematics, nav_logic, planner_logic, bt_logic, ...)
-can be imported and unit-tested with plain pytest -- no ROS installation needed.
+can be imported and unit-tested with plain pytest, no ROS installation needed.
 Modules that import rclpy are never imported by the tests."""
 import glob
 import os

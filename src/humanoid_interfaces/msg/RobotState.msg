@@ -1,4 +1,4 @@
-# Aggregated robot proprioception, CANONICAL_JOINT_ORDER (23) -- see
+# Aggregated robot proprioception, CANONICAL_JOINT_ORDER (23): see
 # humanoid_interfaces/config/canonical_joint_order.yaml and ARCHITECTURE.md.
 #
 # Published by: lowlevel_control (re-publishing controller_manager's
@@ -18,6 +18,6 @@ geometry_msgs/Vector3    imu_angular_velocity       # body frame, rad/s
 geometry_msgs/Vector3    imu_linear_acceleration    # body frame, m/s^2
 geometry_msgs/Vector3    gravity_vector             # gravity direction expressed in the IMU
                                                      # (pelvis) frame, derived from
-                                                     # imu_orientation -- kept explicit so
+                                                     # imu_orientation: kept explicit so
                                                      # every consumer doesn't reimplement the
                                                      # same quaternion-rotate-gravity math.

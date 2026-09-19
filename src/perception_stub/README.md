@@ -1,9 +1,9 @@
 # perception_stub
 
-**Layer:** 4 -- perception & state estimation. **Status:** STUB.
+**Layer:** 4 (perception & state estimation). **Status:** STUB.
 **Frequency:** 30 Hz.
 **Publishes:** `/object_poses` (`humanoid_interfaces/ObjectPoseArray`, frame
-`map`) -- **the only publisher.**
+`map`), **the only publisher.**
 
 ## What is fake
 
@@ -17,7 +17,7 @@ ORB-SLAM3 + FoundationPose (or similar) publishing the same `ObjectPoseArray`.
 Contract points a real implementation must keep: poses **in the `map` frame**
 (do the TF transform yourself so consumers don't need to), stable `object_id`s
 across frames, >= 15 Hz. The camera's mounting frame should be added to the URDF
-as a static edge -- coordinate with whoever owns `g1_description`.
+as a static edge: coordinate with whoever owns `g1_description`.
 
 ```bash
 ros2 launch bringup full_stack.launch.py perception:=external

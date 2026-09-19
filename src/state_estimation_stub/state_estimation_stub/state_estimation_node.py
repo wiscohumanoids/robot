@@ -1,17 +1,17 @@
 """state_estimation_stub / state_estimation_node
 
-STATUS: STUB. Real interface, fake internals: it does not estimate anything, it
-dead-reckons the commanded /cmd_vel (assuming the robot tracks it perfectly)
-starting from a fixed initial pose. That is enough for navigation and the
-task layer to develop against a /robot_pose that moves when they command it.
-The real replacement is the IEKF (own repo) or robot_localization.
+STATUS: STUB. The interface is real; nothing is estimated. The node dead-reckons
+the commanded /cmd_vel from a fixed initial pose, assuming the robot tracks the
+command perfectly. That is enough for navigation and the task layer to develop
+against a /robot_pose that moves when they command motion. The real replacement
+is the IEKF (own repo) or robot_localization.
 
 FREQUENCY: 100 Hz (PUBLISH_RATE_HZ).
 
 INPUT:
   - geometry_msgs/Twist on /cmd_vel (from cmd_vel_mux)
 
-OUTPUTS (this node is the ONLY publisher of both):
+OUTPUTS (this node is the only publisher of both):
   - geometry_msgs/PoseStamped on /robot_pose, frame_id "map"
   - TF edge  odom -> base_link
     (map -> odom is owned by slam_stub and is identity, so the pose of
@@ -26,6 +26,7 @@ from tf2_ros import TransformBroadcaster
 from state_estimation_stub.kinematics import integrate_body_velocity, yaw_to_quaternion
 
 PUBLISH_RATE_HZ = 100.0
+MAX_DT_S = 0.1   # clamp integration steps after a stall so the pose cannot jump
 
 
 class StateEstimationStub(Node):
@@ -39,6 +40,7 @@ class StateEstimationStub(Node):
         self._y = float(self.get_parameter('initial_y').value)
         self._yaw = float(self.get_parameter('initial_yaw').value)
         self._cmd = (0.0, 0.0, 0.0)
+        self._last_time = self.get_clock().now()
 
         self.create_subscription(Twist, '/cmd_vel', self._on_cmd, 10)
         self._pose_pub = self.create_publisher(PoseStamped, '/robot_pose', 10)
@@ -52,11 +54,15 @@ class StateEstimationStub(Node):
         self._cmd = (msg.linear.x, msg.linear.y, msg.angular.z)
 
     def _on_timer(self):
-        dt = 1.0 / PUBLISH_RATE_HZ
+        # Integrate over the measured interval, not the nominal one: Python timers
+        # jitter, and integrating a fixed dt would turn that jitter into drift.
+        now = self.get_clock().now()
+        dt = min(max((now - self._last_time).nanoseconds * 1e-9, 0.0), MAX_DT_S)
+        self._last_time = now
         self._x, self._y, self._yaw = integrate_body_velocity(
             self._x, self._y, self._yaw, *self._cmd, dt)
         qx, qy, qz, qw = yaw_to_quaternion(self._yaw)
-        stamp = self.get_clock().now().to_msg()
+        stamp = now.to_msg()
 
         pose = PoseStamped()
         pose.header.stamp = stamp

@@ -1,20 +1,18 @@
-# CANONICAL_JOINT_ORDER -- the single source of truth for the index order of
+# CANONICAL_JOINT_ORDER: the single source of truth for the index order of
 # every array-valued field in this package's messages (JointTargets.positions,
 # JointCommand.position_target, RobotState.joint_positions,
 # PolicyObservation.joint_positions, etc.) and for the <ros2_control> block in
 # g1_description/g1_23dof.urdf.xacro (which carries this same order as an
-# inline comment -- if you change one, change both).
+# inline comment: if you change one, change both).
 #
-# Loaded at runtime (not hard-coded per-node) via ament_index, e.g.:
-#   from ament_index_python.packages import get_package_share_directory
-#   path = get_package_share_directory('humanoid_interfaces') + '/config/canonical_joint_order.yaml'
-# every Python node that touches a joint array does this instead of
-# maintaining its own copy of the list -- see any of locomotion_runner,
-# manipulation_runner, wbc_stub, safety for the ~5-line loader.
+# Nodes index the arrays by position and do not load this file at runtime.
+# tests/test_repo_consistency.py checks that the URDF <ros2_control> block,
+# controllers.yaml, ethercat_slaves.yaml, the C++ defaults and the MJCF all list
+# the same joints in this order, so change them together.
 #
 # 23 joints = bipedal_nav's g1_23dof_rev_1_0 variant: 6 DOF/leg x2, waist yaw
 # only (roll+pitch locked), 5 DOF/arm (shoulder pitch/roll/yaw, elbow, wrist
-# roll only -- no wrist pitch/yaw, rubber hand end effector, no dexterous hand).
+# roll only: no wrist pitch/yaw, rubber hand end effector, no dexterous hand).
 #
 # See ARCHITECTURE.md for the berkeley_humanoid (29-DOF) reconciliation note.
 

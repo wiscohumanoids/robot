@@ -4,7 +4,7 @@
 #   wants to gate its own output on robot safety state (e.g. locomotion_runner
 #   could refuse to arm the "walk" behaviour while estop_active).
 #
-# This is the ROS2-side half of the hardware E-stop interface -- see
+# This is the ROS2-side half of the hardware E-stop interface: see
 # safety/README.md and INTEGRATION_POINTS.md "Safety" section for how a
 # physical wireless E-stop (separate firmware project, out of scope here) is
 # expected to drive estop_active.

@@ -1,19 +1,19 @@
 """perception_stub / perception_node
 
-STATUS: STUB. Real interface, fake internals: there is no camera and no
-detector. It reports one cube at a fixed, parameterised position, forever. The
-real replacement is ORB-SLAM3 + FoundationPose (or similar) wired into ROS,
+STATUS: STUB. The interface is real; the content is fake. There is no camera and
+no detector: it reports one cube at a fixed position, forever. The real
+replacement is ORB-SLAM3 + FoundationPose (or similar) wired into ROS,
 publishing the same ObjectPoseArray.
 
 FREQUENCY: 30 Hz (PUBLISH_RATE_HZ).
 
-OUTPUT (this node is the ONLY publisher):
+OUTPUT (this node is the only publisher):
   humanoid_interfaces/ObjectPoseArray on /object_poses, header.frame_id "map"
   (perception is responsible for transforming into `map`; consumers never
   need TF for this).
 
-PARAMETERS: cube_x, cube_y, cube_z (metres, in `map`). Defaults put a cube on
-a table 1.5 m ahead and 0.3 m to the left of the start pose.
+PARAMETERS (read once at startup): cube_x, cube_y, cube_z in metres, in `map`.
+The defaults put a cube on a table 1.5 m ahead and 0.3 m left of the start pose.
 """
 import rclpy
 from rclpy.node import Node
@@ -30,14 +30,6 @@ class PerceptionStub(Node):
         self.declare_parameter('cube_x', 1.5)
         self.declare_parameter('cube_y', 0.3)
         self.declare_parameter('cube_z', 0.8)
-        self._pub = self.create_publisher(ObjectPoseArray, '/object_poses', 10)
-        self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_timer)
-        self.get_logger().info(
-            f'perception STUB up at {PUBLISH_RATE_HZ} Hz: reporting cube_1 at '
-            f'({self.get_parameter("cube_x").value}, {self.get_parameter("cube_y").value}, '
-            f'{self.get_parameter("cube_z").value}) in map')
-
-    def _on_timer(self):
         cube = ObjectPose()
         cube.object_id = 'cube_1'
         cube.label = 'cube'
@@ -47,11 +39,20 @@ class PerceptionStub(Node):
         cube.pose.orientation.w = 1.0
         cube.confidence = 1.0
 
-        msg = ObjectPoseArray()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'map'
-        msg.objects = [cube]
-        self._pub.publish(msg)
+        # The scene never changes, so build the message once and only re-stamp it.
+        self._msg = ObjectPoseArray()
+        self._msg.header.frame_id = 'map'
+        self._msg.objects = [cube]
+
+        self._pub = self.create_publisher(ObjectPoseArray, '/object_poses', 10)
+        self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_timer)
+        pos = cube.pose.position
+        self.get_logger().info(
+            f'perception stub up at {PUBLISH_RATE_HZ} Hz: cube_1 at ({pos.x}, {pos.y}, {pos.z}) in map')
+
+    def _on_timer(self):
+        self._msg.header.stamp = self.get_clock().now().to_msg()
+        self._pub.publish(self._msg)
 
 
 def main(args=None):

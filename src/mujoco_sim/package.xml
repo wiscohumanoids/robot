@@ -6,7 +6,7 @@
     G1-specific MuJoCo simulation bringup: robot_description + the vendored
     mujoco_ros2_control bridge + robot_state_publisher, wired to
     g1_description. This is the "shared simulator" referenced in
-    ARCHITECTURE.md -- every layer above lowlevel_control talks to this
+    ARCHITECTURE.md, every layer above lowlevel_control talks to this
     exact same simulated robot the real hardware path (ethercat_bridge)
     would present. See README.md.
   </description>

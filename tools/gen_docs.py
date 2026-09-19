@@ -7,7 +7,7 @@ src/humanoid_interfaces/config/interface_contract.yaml.
 
 Only text between `<!-- BEGIN GENERATED:name -->` and `<!-- END GENERATED:name -->`
 is touched; everything else in those files is hand-written. Never edit a
-generated block by hand -- edit the YAML and re-run this script.
+generated block by hand: edit the YAML and re-run this script.
 Needs only PyYAML.
 """
 import argparse
@@ -49,7 +49,7 @@ def block_summary(c):
         counts[n['status']] = counts.get(n['status'], 0) + 1
     return md_table(['Status', 'Nodes', 'Meaning'], [
         ('**REAL**', counts.get('real', 0), 'Complete for its purpose today.'),
-        ('**STUB**', counts.get('stub', 0), 'Correct interface, fake internals -- the internals are what a team builds.'),
+        ('**STUB**', counts.get('stub', 0), 'Correct interface, fake internals; the internals are what a team builds.'),
         ('**SCAFFOLD**', counts.get('scaffold', 0), 'Correct structure/interface, hardware I/O stubbed.'),
         ('**EXTERNAL**', counts.get('external', 0), 'Third-party ROS node used as-is (configure only).'),
         ('**MISSING**', counts.get('missing', 0), 'Nothing exists yet; the contract reserves the interface.'),

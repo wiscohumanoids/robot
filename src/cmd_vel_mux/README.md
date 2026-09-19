@@ -1,16 +1,16 @@
 # cmd_vel_mux
 
-**Layer:** 5 -- navigation & velocity arbitration. **Status:** REAL (small and complete).
+**Layer:** 5 (navigation & velocity arbitration). **Status:** real, small and complete.
 **Frequency:** 50 Hz, always publishing.
 **Subscribes:** `/cmd_vel_teleop`, `/cmd_vel_nav` (`geometry_msgs/Twist`).
-**Publishes:** `/cmd_vel` (`geometry_msgs/Twist`) -- **this node is its only publisher.**
+**Publishes:** `/cmd_vel` (`geometry_msgs/Twist`). **This node is its only publisher.**
 
 Priority `teleop > nav > zero`. A source that has been silent for `timeout_s`
 (default 0.5 s) is ignored, so:
 
 - a human touching the keyboard overrides navigation, and releasing (teleop goes
   quiet) hands control back to navigation;
-- if *everything* goes quiet -- teleop crashed, Nav2 died -- `/cmd_vel` becomes an
+- if *everything* goes quiet (teleop crashed, Nav2 died), `/cmd_vel` becomes an
   explicit zero within half a second instead of the last command latching forever.
 
 Why it exists: Nav2 and every off-the-shelf teleop node publish `Twist` on

@@ -1,6 +1,6 @@
 """cmd_vel_mux / mux_node
 
-STATUS: REAL (a small, complete node -- not a stub).
+STATUS: real. This is a small, complete node.
 
 FREQUENCY: 50 Hz (PUBLISH_RATE_HZ), always publishing, so downstream nodes
 (locomotion_runner, state_estimation) get a steady /cmd_vel and a stale source
@@ -8,11 +8,11 @@ turns into an explicit zero command instead of silence.
 
 INPUTS:
   - geometry_msgs/Twist on /cmd_vel_teleop (owner: teleop_input)
-  - geometry_msgs/Twist on /cmd_vel_nav    (owner: nav_stub today, Nav2 later --
-    remap Nav2's velocity output to this topic)
+  - geometry_msgs/Twist on /cmd_vel_nav    (owner: nav_stub today; when Nav2
+    replaces it, remap Nav2's velocity output to this topic)
 
 OUTPUT:
-  geometry_msgs/Twist on /cmd_vel -- this node is its ONLY publisher. Priority
+  geometry_msgs/Twist on /cmd_vel. This node is its only publisher. Priority
   teleop > navigation > zero, each source expiring after `timeout_s`.
   See INTERFACE_CONTRACT.md.
 """

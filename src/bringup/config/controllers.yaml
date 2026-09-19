@@ -1,9 +1,9 @@
 # The ros2_control controllers config every controller_manager instance in
-# this repo loads -- sim (mujoco_ros2_control node) and hardware
+# this repo loads: sim (mujoco_ros2_control node) and hardware
 # (ros2_control_node + ethercat_bridge) both use this SAME file, per
 # ARCHITECTURE.md's "Sim/hardware symmetry".
 #
-# update_rate: 1000 -- see RESEARCH_NOTES.md section 4 (PREEMPT-RT). This
+# update_rate: 1000: see RESEARCH_NOTES.md section 4 (PREEMPT-RT). This
 # number alone does not make the loop real-time; see that section's caveats
 # about CPU isolation / SCHED_FIFO / mlockall, none of which this repo
 # configures for you.
@@ -19,7 +19,7 @@ controller_manager:
       type: lowlevel_control/JointImpedanceController
 
 # lowlevel_control's JointImpedanceController parameters.
-# CANONICAL_JOINT_ORDER -- see humanoid_interfaces/config/canonical_joint_order.yaml
+# CANONICAL_JOINT_ORDER: see humanoid_interfaces/config/canonical_joint_order.yaml
 # and g1_description/g1_23dof.urdf.xacro. kp/kd/joints MUST be the same
 # length and index-aligned.
 joint_impedance_controller:
@@ -50,7 +50,7 @@ joint_impedance_controller:
       - right_wrist_roll_joint
 
     # Per-joint-group PD gains. Legs stiff (knee highest), waist/hip-yaw
-    # softer, arms soft, wrists softest -- see lowlevel_control/README.md for
+    # softer, arms soft, wrists softest: see lowlevel_control/README.md for
     # the rationale (mirrors bipedal_nav's original position_pid gains,
     # reused here as impedance gains).
     kp: [
@@ -68,9 +68,21 @@ joint_impedance_controller:
       10.0, 10.0, 10.0, 10.0, 5.0,
     ]
 
-    # 0.0 = no additional software clamp beyond whatever the active hardware
-    # plugin already enforces from the URDF's <limit effort="..."> per joint
-    # (verified for mujoco_ros2_control/MujocoSystem; a real EtherCAT drive's
-    # own object-dictionary torque limit is the ultimate real-hardware
-    # authority -- see ethercat_bridge/README.md).
+    # Per-joint torque limit [Nm], index-aligned with `joints`. Enforced by THIS
+    # controller for both sim and hardware. Must equal the URDF <limit effort="...">
+    # (tests/test_repo_consistency.py checks). Do NOT rely on the sim to clamp: the
+    # vendored mujoco_ros2_control's URDF-limit clamp never activates
+    # (has_effort_limits is never set), so without this the sim applies unbounded
+    # torque and diverges. A value <= 0 disables the clamp for that joint. A real
+    # EtherCAT drive's own torque limit is an additional, independent safeguard
+    # (see ethercat_bridge/README.md).
+    effort_limits: [
+      88.0, 139.0, 88.0, 139.0, 35.0, 35.0,            # left leg
+      88.0, 139.0, 88.0, 139.0, 35.0, 35.0,            # right leg
+      88.0,                                            # waist_yaw
+      25.0, 25.0, 25.0, 25.0, 25.0,                    # left arm
+      25.0, 25.0, 25.0, 25.0, 25.0,                    # right arm
+    ]
+
+    # Optional extra GLOBAL clamp on top of effort_limits. 0.0 = off.
     max_effort: 0.0

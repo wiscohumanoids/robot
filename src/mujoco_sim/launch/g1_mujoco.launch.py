@@ -7,14 +7,14 @@ lowlevel_control's JointImpedanceController.
 
 This is the same pattern bipedal_nav's unitree_ros2_control/launch/
 unitree_g1.launch.py used (Node + xacro + delayed `ros2 control
-load_controller` ExecuteProcess chained via OnProcessExit) -- reused here,
+load_controller` ExecuteProcess chained via OnProcessExit), reused here,
 not reinvented, adapted for our xacro'd URDF and effort-interface
 controllers.yaml instead of position_pid.
 
 Accepts `controllers_yaml` so callers can point at a different controllers
 file than the shared bringup/config/controllers.yaml (its default).
 
-NOTE: bringup/lowlevel_test.launch.py does NOT include this file -- it
+NOTE: bringup/lowlevel_test.launch.py does NOT include this file; it
 re-implements the same sim bring-up so it can also select the EtherCAT hardware
 plugin. Keep the two in step.
 """

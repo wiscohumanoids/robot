@@ -22,15 +22,15 @@ dynamically feasible, does not reason about contacts, and does not resolve
 conflicts other than "which source wins per joint slice." A real WBC
 (operational-space control, a QP over both target sets plus a dynamics
 model and contact constraints) would replace this entire node without
-changing its interface — that's the point of giving it a real
+changing its interface, which is why it has a real
 `JointTargets in -> JointCommand out` contract now.
 
 ## Why 500 Hz
 
 Faster than either input (50 Hz locomotion, 10 Hz manipulation) so this node
 never becomes the bottleneck; slower than `lowlevel_control`'s 1000 Hz
-in-process real-time loop by design — `JointCommand` crosses a normal
+in-process real-time loop, so `JointCommand` crosses a normal
 cross-process DDS topic here, and `RESEARCH_NOTES.md`'s multi-rate section is
 the reason that boundary sits at 500->1000 Hz across a topic rather than at
-the 1kHz hardware-interface boundary itself (which is deliberately kept
+the 1kHz hardware-interface boundary itself (which is kept
 in-process inside `controller_manager`).

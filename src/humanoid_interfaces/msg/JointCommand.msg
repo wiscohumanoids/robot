@@ -9,10 +9,10 @@
 #   hardware plugin is active (mujoco_ros2_control/MujocoSystem in sim,
 #   ethercat_bridge/EthercatHardwareInterface on real hardware).
 #
-# This message is deliberately received via a non-real-time topic subscription
+# This message is received via a non-real-time topic subscription
 # and cached in a realtime_tools::RealtimeBuffer inside the controller (see
 # lowlevel_control's controller source + RESEARCH_NOTES.md "Multi-rate
-# architecture") -- 500 Hz publishing into a 1000 Hz consumer is fine because
+# architecture"): 500 Hz publishing into a 1000 Hz consumer is fine because
 # the controller re-evaluates the PD law against the LATEST cached target on
 # every 1kHz tick, not once per received message.
 
@@ -20,6 +20,6 @@ std_msgs/Header header
 
 float64[23] position_target       # rad
 float64[23] velocity_target       # rad/s
-float64[23] effort_feedforward    # Nm -- tau_ff term, 0.0 from wbc_stub today;
+float64[23] effort_feedforward    # Nm: tau_ff term, 0.0 from wbc_stub today;
                                    # a real WBC would fill this with e.g. gravity
                                    # compensation or contact-consistent torques.

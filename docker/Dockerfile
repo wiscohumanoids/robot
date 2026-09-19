@@ -3,7 +3,7 @@
 # Works on x86_64 AND arm64 hosts (Apple-silicon Macs, ARM Linux): the MuJoCo
 # release tarball is chosen from the build architecture below. MuJoCo is built
 # with OSMesa support so the sim can run headless (`headless:=true`) with no
-# display server -- the only option on macOS, in CI, and on remote machines.
+# display server: the only option on macOS, in CI, and on remote machines.
 #
 # Pattern (MuJoCo prebuilt-binary download + MUJOCO_DIR, apt deps, rosdep,
 # colcon build) adapted from the vendored mujoco_ros2_control package's own
@@ -13,7 +13,7 @@
 # bind-mounts your working copy over /home/ros2_ws/src, Python edits take effect
 # without rebuilding (C++/message changes still need `colcon build`).
 #
-# This is the OPTIONAL containerized path -- everything also runs on a bare
+# This is the OPTIONAL containerized path: everything also runs on a bare
 # Ubuntu 22.04 + ROS2 Humble install; see README.md "Prerequisites".
 
 ARG ROS_DISTRO=humble
@@ -57,9 +57,13 @@ RUN mkdir -p ${ROS_WS}/src
 WORKDIR ${ROS_WS}
 COPY src/ src/
 
+# The apt package index was deleted at the end of the first RUN (to keep the layer
+# small), so refresh it here or rosdep's apt installs fail with "Unable to locate package".
 RUN . /opt/ros/${ROS_DISTRO}/setup.bash && \
+    apt-get update && \
     rosdep update && \
-    rosdep install --from-paths src/ --ignore-src -y
+    rosdep install --from-paths src/ --ignore-src -y && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN . /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --symlink-install \

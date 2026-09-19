@@ -10,7 +10,7 @@
       ros2_control tag). Bus I/O (on_configure's master init,
       on_activate/on_deactivate's CiA402 state machine, read()'s TxPDO
       consumption, write()'s RxPDO production) is stubbed and logged, not
-      implemented -- see README.md and INTEGRATION_POINTS.md.
+      implemented: see README.md and INTEGRATION_POINTS.md.
     </description>
   </class>
 </library>

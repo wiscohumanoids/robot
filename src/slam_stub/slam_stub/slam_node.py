@@ -1,11 +1,11 @@
 """slam_stub / slam_node
 
-STATUS: STUB. Real interface, fake internals: publishes a static, empty (all
-free) map and an identity map -> odom transform, i.e. "no drift, and the map
-origin is where the robot started". The real replacement is ORB-SLAM3 (or
+STATUS: STUB. The interface is real; the content is fake. It publishes a static,
+empty (all free) map and an identity map -> odom transform: no drift, and the map
+origin is where the robot started. The real replacement is ORB-SLAM3 (or
 slam_toolbox) wired into ROS.
 
-OUTPUTS (this node is the ONLY publisher of both):
+OUTPUTS (this node is the only publisher of both):
   - nav_msgs/OccupancyGrid on /map, QoS transient_local (late joiners such as
     Nav2 get the latest map), re-sent every MAP_REPUBLISH_S seconds
   - TF edge  map -> odom  at TF_RATE_HZ
@@ -35,6 +35,7 @@ class SlamStub(Node):
             reliability=ReliabilityPolicy.RELIABLE,
             durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self._map_pub = self.create_publisher(OccupancyGrid, '/map', map_qos)
+        self._grid = self._build_grid()   # built once; only the stamp changes on re-send
         self._tf = TransformBroadcaster(self)
         self.create_timer(1.0 / TF_RATE_HZ, self._on_tf_timer)
         self.create_timer(MAP_REPUBLISH_S, self._publish_map)
@@ -43,9 +44,9 @@ class SlamStub(Node):
             'slam STUB up: empty 10m x 10m /map + identity map->odom '
             f'({TF_RATE_HZ} Hz TF)')
 
-    def _publish_map(self):
+    @staticmethod
+    def _build_grid():
         grid = OccupancyGrid()
-        grid.header.stamp = self.get_clock().now().to_msg()
         grid.header.frame_id = 'map'
         grid.info.resolution = MAP_RESOLUTION
         grid.info.width = MAP_SIZE_CELLS
@@ -54,7 +55,11 @@ class SlamStub(Node):
         grid.info.origin.position.y = MAP_ORIGIN
         grid.info.origin.orientation.w = 1.0
         grid.data = [0] * (MAP_SIZE_CELLS * MAP_SIZE_CELLS)  # 0 = free
-        self._map_pub.publish(grid)
+        return grid
+
+    def _publish_map(self):
+        self._grid.header.stamp = self.get_clock().now().to_msg()
+        self._map_pub.publish(self._grid)
 
     def _on_tf_timer(self):
         tf = TransformStamped()

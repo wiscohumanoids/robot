@@ -1,5 +1,5 @@
-"""Cross-stub scenario, pure logic (no ROS): the default demo -- 'pick up the
-cube' with perception's default cube -- must be plannable, navigable within
+"""Cross-stub scenario, pure logic (no ROS). The default demo ('pick up the
+cube' with perception's default cube) must be plannable, navigable within
 nav_stub's timeout using the same dead-reckoning state_estimation_stub does, and
 must stay inside slam_stub's map. Catches the stubs' default constants drifting
 apart (e.g. someone moves the cube 20 m away, or changes the standoff)."""

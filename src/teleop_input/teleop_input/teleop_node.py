@@ -1,8 +1,8 @@
 """teleop_input / teleop_node
 
-STATUS: REAL, not a stub.
+STATUS: real.
 
-FREQUENCY: 10 Hz (enforced by a single rclpy timer -- see PUBLISH_RATE_HZ).
+FREQUENCY: 10 Hz (enforced by a single rclpy timer, see PUBLISH_RATE_HZ).
 
 INPUTS:
   - Keyboard, read non-blockingly from stdin via termios/tty (same technique
@@ -14,12 +14,12 @@ INPUTS:
     most recently wins (both write into the same self._vx/_vy/_vyaw state).
 
 OUTPUT:
-  geometry_msgs/Twist on /cmd_vel_teleop (NOT /cmd_vel -- /cmd_vel is owned
-  solely by cmd_vel_mux, which arbitrates teleop vs. navigation; see
+  geometry_msgs/Twist on /cmd_vel_teleop (not /cmd_vel, which belongs solely
+  to cmd_vel_mux; it arbitrates teleop against navigation, see
   INTERFACE_CONTRACT.md). Published at 10 Hz, holding the last commanded value
-  between key/joystick events (this node latches a velocity command until told
-  otherwise, it does not require the operator to hold a key down) -- but ONLY
-  while the command is nonzero, plus one final zero when it returns to zero.
+  between key/joystick events (the command latches until changed, so the
+  operator does not need to hold a key down), but only while the command is
+  nonzero, plus one final zero when it returns to zero.
   Going quiet is what lets navigation take over again: cmd_vel_mux falls back
   to /cmd_vel_nav once teleop has been silent for its timeout.
 
@@ -86,7 +86,7 @@ class TeleopNode(Node):
             self._key_timer = self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_key_poll)
         else:
             self.get_logger().warn(
-                'stdin is not a TTY -- keyboard input disabled, joystick-only mode.')
+                'stdin is not a TTY, keyboard input disabled, joystick-only mode.')
 
         self.get_logger().info(
             f'teleop_input up: w/s=vx a/d=vy q/e=vyaw space=zero x=quit, '

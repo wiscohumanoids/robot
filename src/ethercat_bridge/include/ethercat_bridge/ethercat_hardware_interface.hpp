@@ -12,8 +12,8 @@
 namespace ethercat_bridge
 {
 
-// STATUS: REAL SCAFFOLD. This class is a genuine, loadable
-// hardware_interface::SystemInterface plugin -- controller_manager can
+// STATUS: scaffold. This class is a real, loadable
+// hardware_interface::SystemInterface plugin, controller_manager can
 // activate it today and lowlevel_control's JointImpedanceController will
 // claim its interfaces exactly as it does mujoco_ros2_control/MujocoSystem's
 // (see g1_description's <ros2_control> block and ARCHITECTURE.md "Sim/
@@ -63,10 +63,10 @@ private:
   std::vector<double> effort_state_;
   std::vector<double> effort_command_;
 
-  // Placeholder IMU state -- identity orientation, zero gyro/accel. See
-  // README.md "What's not done" -- a real pelvis IMU is not necessarily on
-  // the EtherCAT PDO bus at all (often a separate serial/CAN link), so this
-  // is tracked as its own TODO, not assumed to arrive via read().
+  // Placeholder IMU state: identity orientation, zero gyro/accel. See
+  // README.md "What's not done". A real pelvis IMU is often not on the
+  // EtherCAT bus at all (typically a separate serial or CAN link), so it is
+  // tracked as its own TODO and not assumed to arrive via read().
   double imu_orientation_[4] = {0.0, 0.0, 0.0, 1.0};  // x, y, z, w
   double imu_angular_velocity_[3] = {0.0, 0.0, 0.0};
   double imu_linear_acceleration_[3] = {0.0, 0.0, 0.0};
