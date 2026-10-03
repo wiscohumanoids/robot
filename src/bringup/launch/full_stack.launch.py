@@ -14,7 +14,7 @@ Swapping a stub for your real node (one flag, no file edits):
   <layer>:=stub      (default) launch this repo's stub for the layer
   <layer>:=external  launch nothing for the layer; you run the real node yourself
   Layers: planner behavior_tree perception state_estimation slam navigation
-          locomotion manipulation wbc
+          odom_adapter locomotion manipulation wbc
   Real nodes take true|false: teleop (default false, see below),
           cmd_vel_mux (true), safety (true)
 
@@ -54,6 +54,7 @@ STUB_LAYERS = {
     'state_estimation': ('state_estimation_stub', 'state_estimation_node'),
     'slam': ('slam_stub', 'slam_node'),
     'navigation': ('nav_stub', 'nav_node'),
+    'odom_adapter': ('odom_adapter_stub', 'odom_adapter_node'),
     'locomotion': ('locomotion_runner', 'locomotion_node'),
     'manipulation': ('manipulation_runner', 'manipulation_node'),
     'wbc': ('wbc_stub', 'wbc_node'),

@@ -44,7 +44,7 @@ the tests and checks that keep the interfaces consistent.
 | Status | Nodes | Meaning |
 |---|---|---|
 | **REAL** | 4 | Complete for its purpose today. |
-| **STUB** | 9 | Correct interface, fake internals; the internals are what a team builds. |
+| **STUB** | 10 | Correct interface, fake internals; the internals are what a team builds. |
 | **SCAFFOLD** | 1 | Correct structure/interface, hardware I/O stubbed. |
 | **EXTERNAL** | 3 | Third-party ROS node used as-is (configure only). |
 | **MISSING** | 2 | Nothing exists yet; the contract reserves the interface. |
@@ -88,6 +88,7 @@ launch flag that swaps it out (`stub|external` for stubs, see
 | Node | Status | Package | What it does today | Real thing that replaces it | Area | Launch switch |
 |---|---|---|---|---|---|---|
 | `nav` | **STUB** | `nav_stub` | navigate_to_pose action server; straight-line go-to-point, no obstacle avoidance. | Nav2 (configured, not built). Remap its velocity output to /cmd_vel_nav. | navigation | `navigation:=stub|external` |
+| `odom_adapter` | **STUB** | `odom_adapter_stub` | Builds /odom (nav_msgs/Odometry) from the odom->base_link TF; Nav2 reads it for current velocity. | state_estimation publishing /odom itself (IEKF or robot_localization) | navigation | `odom_adapter:=stub|external` |
 | `cmd_vel_mux` | **REAL** | `cmd_vel_mux` | Sole publisher of /cmd_vel: teleop > navigation > zero, with a 0.5 s watchdog. | - | integration | `cmd_vel_mux:=true|false` |
 | `teleop` | **REAL** | `teleop_input` | Keyboard/joystick -> /cmd_vel_teleop. Keyboard needs its own terminal (see README). | - | locomotion | `teleop:=true|false` |
 
@@ -140,7 +141,7 @@ area** (and a reviewer for the interface contract) and record it in
 | **locomotion** | `teleop` (real), `locomotion` (stub), `wbc` (stub) |
 | **low-level** | `lowlevel_control` (real), `ethercat_bridge` (scaffold), `joint_state_broadcaster` (external), `mujoco_sim` (external) |
 | **manipulation** | `manipulation` (stub) |
-| **navigation** | `nav` (stub) |
+| **navigation** | `nav` (stub), `odom_adapter` (stub) |
 | **perception** | `perception` (stub), `slam` (stub) |
 | **planning** | `speech_input` (missing), `task_planner` (stub), `behavior_tree` (stub) |
 | **safety** | `safety` (real), `estop_bridge` (missing) |

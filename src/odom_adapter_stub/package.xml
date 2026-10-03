@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>odom_adapter_stub</name>
+  <version>0.1.0</version>
+  <description>
+    STUB /odom publisher (nav_msgs/Odometry) built from the odom->base_link TF, for Nav2. See README.md and INTERFACE_CONTRACT.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2_ros_py</depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

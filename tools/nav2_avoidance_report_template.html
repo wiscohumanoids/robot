@@ -1,0 +1,248 @@
+<title>Nav2 Obstacle Runs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: replay field on the left, run readout and summary on the right.
+   Palette: slate neutrals; blue = robot and its trail, amber = Nav2's plan and goal, red = obstacles. */
+:root {
+  --bg: #f2f4f6; --surface: #ffffff; --world: #fbfcfd; --ink: #17202a; --muted: #5b6874;
+  --line: #d9dee3; --grid: #e6eaee; --robot: #1d62c9; --plan: #b86a00; --obst: #b8402f;
+  --obst-fill: #f1c9c2; --halo: rgba(184, 64, 47, 0.10); --ok: #1f8a4c; --bad: #c0392b;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171c; --surface: #1a2128; --world: #151b21; --ink: #e6ebef; --muted: #96a3af;
+    --line: #2b353e; --grid: #222b33; --robot: #5b9bff; --plan: #f0a33b; --obst: #ff8a78;
+    --obst-fill: #4a2a26; --halo: rgba(255, 138, 120, 0.12); --ok: #4fc283; --bad: #ff7a6b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171c; --surface: #1a2128; --world: #151b21; --ink: #e6ebef; --muted: #96a3af;
+  --line: #2b353e; --grid: #222b33; --robot: #5b9bff; --plan: #f0a33b; --obst: #ff8a78;
+  --obst-fill: #4a2a26; --halo: rgba(255, 138, 120, 0.12); --ok: #4fc283; --bad: #ff7a6b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 32px; }
+.wrap { max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 72ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.stage { padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+button, select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--robot); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--robot); color: var(--surface); border-color: var(--robot); }
+.spacer { flex: 1; }
+canvas { display: block; width: 100%; aspect-ratio: 62 / 52; border-radius: 6px; background: var(--world); border: 1px solid var(--line); }
+.scrub { display: flex; align-items: center; gap: 10px; }
+.scrub input { flex: 1; min-width: 0; accent-color: var(--robot); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 12.5px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 0; border-top: 3px solid; }
+.sw.dash { border-top-style: dashed; }
+.sw.box { width: 12px; height: 12px; border: 1.5px solid var(--obst); background: var(--obst-fill); border-radius: 2px; }
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { padding: 14px; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; margin: 0 0 10px; }
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-family: var(--font-mono); font-size: 12.5px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; text-align: right; }
+.pill { font-family: var(--font-mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.pill.ok { color: var(--ok); border-color: var(--ok); } .pill.bad { color: var(--bad); border-color: var(--bad); }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 500; }
+tr[data-run] { cursor: pointer; }
+tr[data-run]:hover td { background: var(--grid); }
+tr[aria-selected="true"] td { background: var(--grid); font-weight: 500; }
+.note { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Nav2 Obstacle Runs</h1>
+    <p>Recorded runs of Nav2 on the stub stack, each driving from (0, 0) to the goal through a fake test map. The blue path is where the robot went (from <code>/odom</code>); the dashed line is the route Nav2 planned.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel stage" aria-label="Run replay">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Choose a run" id="tabs"></div>
+        <span class="spacer"></span>
+        <button id="play" type="button">Pause</button>
+        <button id="replay" type="button">Replay</button>
+        <label for="speed" style="color:var(--muted)">Speed</label>
+        <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select>
+      </div>
+      <canvas id="field" width="930" height="780" aria-label="Top-down replay of the robot driving around the boxes"></canvas>
+      <div class="scrub"><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Playback position"><span id="clock" class="mono">0.0 s</span></div>
+      <div class="legend">
+        <span><i class="sw" style="border-color:var(--robot)"></i>robot path</span>
+        <span><i class="sw dash" style="border-color:var(--plan)"></i>Nav2 plan</span>
+        <span><i class="sw box"></i>obstacle (shaded ring = 0.30 m robot radius)</span>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="panel card" aria-label="This run">
+        <h2>This run</h2>
+        <p class="note" id="r-note" style="margin:0 0 10px"></p>
+        <dl class="kv">
+          <dt>Result</dt><dd id="r-result"></dd>
+          <dt>Time to goal</dt><dd id="r-time"></dd>
+          <dt>Now: position</dt><dd id="r-pos"></dd>
+          <dt>Now: distance to nearest obstacle</dt><dd id="r-clear"></dd>
+          <dt>Closest approach, whole run</dt><dd id="r-min"></dd>
+          <dt>Ended from goal</dt><dd id="r-end"></dd>
+          <dt>Heading error at end</dt><dd id="r-yaw"></dd>
+        </dl>
+        <p class="note">Distances are from the robot's centre to the obstacle edge. The robot body is a 0.30 m radius disc, so anything under 0.30 m would be a collision.</p>
+      </section>
+
+      <section class="panel card" aria-label="All runs">
+        <h2>All runs</h2>
+        <div class="tablewrap"><table id="table"><thead><tr><th>Run</th><th>Time</th><th>Closest</th><th>Detour</th></tr></thead><tbody></tbody></table></div>
+        <p class="note">Detour is the widest sideways distance from the straight line from start to goal.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var RUNS = __RUNS__;
+  var VIEW = { x0: -1.0, x1: 5.2, y0: -2.6, y1: 2.6 };
+  var ROBOT_R = 0.30, TOL = 0.15, HALO = 0.30;
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $('field'), ctx = canvas.getContext('2d');
+  var cur = 0, t = 0, playing = true, speed = 1, last = performance.now();
+
+  function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function px(x, y) { var s = canvas.width / (VIEW.x1 - VIEW.x0); return [(x - VIEW.x0) * s, (VIEW.y1 - y) * s]; }
+  function scale() { return canvas.width / (VIEW.x1 - VIEW.x0); }
+  function fit() { var d = window.devicePixelRatio || 1, w = canvas.clientWidth; canvas.width = Math.round(w * d); canvas.height = Math.round(canvas.width * (VIEW.y1 - VIEW.y0) / (VIEW.x1 - VIEW.x0)); }
+
+  function rectDist(x, y, b) { var dx = Math.max(b[0] - x, 0, x - b[2]), dy = Math.max(b[1] - y, 0, y - b[3]); return Math.hypot(dx, dy); }
+  function clearAt(run, x, y) { return Math.min.apply(null, run.boxes.map(function (b) { return rectDist(x, y, b); })); }
+  function dur(run) { return run.track[run.track.length - 1][0]; }
+  function sample(run, tt) {
+    var a = run.track, i = 0;
+    while (i < a.length - 2 && a[i + 1][0] < tt) i++;
+    var p = a[i], q = a[Math.min(i + 1, a.length - 1)], f = q[0] > p[0] ? Math.min(1, Math.max(0, (tt - p[0]) / (q[0] - p[0]))) : 0;
+    var dyaw = Math.atan2(Math.sin(q[3] - p[3]), Math.cos(q[3] - p[3]));
+    return { x: p[1] + (q[1] - p[1]) * f, y: p[2] + (q[2] - p[2]) * f, yaw: p[3] + dyaw * f, i: i };
+  }
+  var stats = RUNS.map(function (r) {
+    var mc = Infinity, dv = 0;
+    r.track.forEach(function (s) { mc = Math.min(mc, clearAt(r, s[1], s[2])); dv = Math.max(dv, Math.abs(s[2])); });
+    return { minClear: mc, detour: dv, time: dur(r) };
+  });
+
+  function draw() {
+    var run = RUNS[cur], s = scale(), d = canvas.width / canvas.clientWidth;
+    var cGrid = css('--grid'), cMuted = css('--muted'), cRobot = css('--robot'), cPlan = css('--plan'), cObst = css('--obst'), cFill = css('--obst-fill'), cHalo = css('--halo');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = (11 * d) + 'px ' + css('--font-mono'); ctx.textBaseline = 'middle';
+    // grid, 1 m
+    ctx.lineWidth = d; ctx.strokeStyle = cGrid; ctx.fillStyle = cMuted;
+    for (var gx = Math.ceil(VIEW.x0); gx <= VIEW.x1; gx++) { var a = px(gx, 0); ctx.beginPath(); ctx.moveTo(a[0], 0); ctx.lineTo(a[0], canvas.height); ctx.stroke(); ctx.textAlign = 'center'; ctx.fillText(gx + ' m', a[0], canvas.height - 9 * d); }
+    for (var gy = Math.ceil(VIEW.y0); gy <= VIEW.y1; gy++) { var b = px(0, gy); ctx.beginPath(); ctx.moveTo(0, b[1]); ctx.lineTo(canvas.width, b[1]); ctx.stroke(); ctx.textAlign = 'left'; ctx.fillText(gy + ' m', 6 * d, b[1] - 8 * d); }
+    // boxes with robot-radius halo
+    run.boxes.forEach(function (bx) {
+      var tl = px(bx[0], bx[3]), br = px(bx[2], bx[1]);
+      ctx.fillStyle = cHalo; ctx.beginPath(); var hx = tl[0] - HALO * s, hy = tl[1] - HALO * s, hw = br[0] - tl[0] + 2 * HALO * s, hh = br[1] - tl[1] + 2 * HALO * s; if (ctx.roundRect) ctx.roundRect(hx, hy, hw, hh, HALO * s); else ctx.rect(hx, hy, hw, hh); ctx.fill();
+    });
+    run.boxes.forEach(function (bx) {
+      var tl = px(bx[0], bx[3]), br = px(bx[2], bx[1]);
+      ctx.fillStyle = cFill; ctx.strokeStyle = cObst; ctx.lineWidth = 1.5 * d;
+      ctx.fillRect(tl[0], tl[1], br[0] - tl[0], br[1] - tl[1]); ctx.strokeRect(tl[0], tl[1], br[0] - tl[0], br[1] - tl[1]);
+    });
+    // Nav2 plan
+    if (run.plan.length > 1) {
+      ctx.strokeStyle = cPlan; ctx.lineWidth = 2 * d; ctx.setLineDash([7 * d, 6 * d]); ctx.beginPath();
+      run.plan.forEach(function (p, i) { var q = px(p[0], p[1]); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    // goal and start
+    var g = px(run.goal[0], run.goal[1]);
+    ctx.strokeStyle = cPlan; ctx.lineWidth = 1.5 * d; ctx.beginPath(); ctx.arc(g[0], g[1], TOL * s, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(g[0] - 7 * d, g[1]); ctx.lineTo(g[0] + 7 * d, g[1]); ctx.moveTo(g[0], g[1] - 7 * d); ctx.lineTo(g[0], g[1] + 7 * d); ctx.stroke();
+    if (run.goal_yaw !== null && run.goal_yaw !== undefined) {   // the heading the goal asks for
+      var ax = g[0] + Math.cos(run.goal_yaw) * 0.55 * s, ay = g[1] - Math.sin(run.goal_yaw) * 0.55 * s, ang = Math.atan2(g[1] - ay, ax - g[0]);
+      ctx.beginPath(); ctx.moveTo(g[0], g[1]); ctx.lineTo(ax, ay); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - Math.cos(ang - 0.5) * 9 * d, ay + Math.sin(ang - 0.5) * 9 * d);
+      ctx.moveTo(ax, ay); ctx.lineTo(ax - Math.cos(ang + 0.5) * 9 * d, ay + Math.sin(ang + 0.5) * 9 * d); ctx.stroke();
+    }
+    ctx.fillStyle = cMuted; ctx.textAlign = 'center'; ctx.fillText('goal', g[0], g[1] - 18 * d);
+    var st = px(0, 0); ctx.fillText('start', st[0], st[1] + 40 * d);
+    // trail up to t
+    var cs = sample(run, t);
+    ctx.strokeStyle = cRobot; ctx.lineWidth = 2.5 * d; ctx.lineJoin = 'round'; ctx.beginPath();
+    for (var i = 0; i <= cs.i; i++) { var q = px(run.track[i][1], run.track[i][2]); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }
+    var cp = px(cs.x, cs.y); ctx.lineTo(cp[0], cp[1]); ctx.stroke();
+    // robot disc + heading
+    ctx.fillStyle = cRobot; ctx.globalAlpha = 0.18; ctx.beginPath(); ctx.arc(cp[0], cp[1], ROBOT_R * s, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = cRobot; ctx.lineWidth = 1.5 * d; ctx.beginPath(); ctx.arc(cp[0], cp[1], ROBOT_R * s, 0, Math.PI * 2); ctx.stroke();
+    ctx.save(); ctx.translate(cp[0], cp[1]); ctx.rotate(-cs.yaw); ctx.fillStyle = cRobot;
+    var L = 13 * d; ctx.beginPath(); ctx.moveTo(L, 0); ctx.lineTo(-L * 0.7, L * 0.7); ctx.lineTo(-L * 0.4, 0); ctx.lineTo(-L * 0.7, -L * 0.7); ctx.closePath(); ctx.fill(); ctx.restore();
+    readouts(run, cs);
+  }
+
+  function readouts(run, cs) {
+    var T = dur(run), st = stats[cur], ok = run.ok;
+    $('clock').textContent = t.toFixed(1) + ' / ' + T.toFixed(1) + ' s';
+    $('scrub').value = Math.round(t / T * 1000);
+    $('r-result').innerHTML = '<span class="pill ' + (ok ? 'ok' : 'bad') + '">' + (ok ? (run.expect === 'no_path' ? 'gave up, as expected' : 'reached goal, no collision') : 'failed') + '</span>';
+    $('r-note').textContent = run.note;
+    $('r-time').textContent = T.toFixed(1) + ' s';
+    $('r-pos').textContent = '(' + cs.x.toFixed(2) + ', ' + cs.y.toFixed(2) + ')';
+    $('r-clear').textContent = clearAt(run, cs.x, cs.y).toFixed(2) + ' m';
+    $('r-min').textContent = st.minClear.toFixed(2) + ' m';
+    $('r-end').textContent = run.to_goal.toFixed(2) + ' m';
+    $('r-yaw').textContent = (run.yaw_err === null || run.yaw_err === undefined) ? 'not checked' : (run.yaw_err * 180 / Math.PI).toFixed(0) + '\u00b0 (allowed 29\u00b0)';
+  }
+
+  function buildUI() {
+    var tabs = $('tabs'), body = document.querySelector('#table tbody');
+    RUNS.forEach(function (r, i) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = r.title;
+      b.setAttribute('aria-pressed', i === cur); b.onclick = function () { select(i); }; tabs.appendChild(b);
+      var tr = document.createElement('tr'); tr.dataset.run = i; tr.setAttribute('aria-selected', i === cur);
+      var s = stats[i];
+      tr.innerHTML = '<td>' + r.title + '</td><td>' + s.time.toFixed(1) + ' s</td><td>' + s.minClear.toFixed(2) + ' m</td><td>' + s.detour.toFixed(2) + ' m</td>';
+      tr.onclick = function () { select(i); }; body.appendChild(tr);
+    });
+  }
+  function select(i) {
+    cur = i; t = 0; playing = true; $('play').textContent = 'Pause';
+    [].forEach.call($('tabs').children, function (b, k) { b.setAttribute('aria-pressed', k === i); });
+    [].forEach.call(document.querySelectorAll('tr[data-run]'), function (r) { r.setAttribute('aria-selected', +r.dataset.run === i); });
+  }
+
+  $('play').onclick = function () { playing = !playing; this.textContent = playing ? 'Pause' : 'Play'; if (playing && t >= dur(RUNS[cur])) t = 0; };
+  $('replay').onclick = function () { t = 0; playing = true; $('play').textContent = 'Pause'; };
+  $('speed').onchange = function () { speed = parseFloat(this.value); };
+  $('scrub').oninput = function () { playing = false; $('play').textContent = 'Play'; t = this.value / 1000 * dur(RUNS[cur]); };
+
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (playing) { t += dt * speed; var T = dur(RUNS[cur]); if (t >= T) { t = T; playing = false; $('play').textContent = 'Play'; } }
+    draw(); requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', function () { fit(); });
+  fit(); buildUI(); requestAnimationFrame(frame);
+})();
+</script>

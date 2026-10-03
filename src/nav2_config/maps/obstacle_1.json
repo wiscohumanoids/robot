@@ -1,0 +1,16 @@
+{
+ "title": "1 box",
+ "goal": [
+  4.0,
+  0.0
+ ],
+ "note": "wall 0.6 m wide, across the straight line to the goal",
+ "rects": [
+  [
+   1.7,
+   -0.3,
+   2.3,
+   0.3
+  ]
+ ]
+}

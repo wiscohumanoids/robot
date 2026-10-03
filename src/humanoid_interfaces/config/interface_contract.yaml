@@ -114,6 +114,15 @@ nodes:
     area: navigation
     replaces: "Nav2 (configured, not built). Remap its velocity output to /cmd_vel_nav."
     summary: "navigate_to_pose action server; straight-line go-to-point, no obstacle avoidance."
+  - id: odom_adapter
+    layer: navigation
+    status: stub
+    package: odom_adapter_stub
+    executable: odom_adapter_node
+    launch_arg: odom_adapter
+    area: navigation
+    replaces: "state_estimation publishing /odom itself (IEKF or robot_localization)"
+    summary: "Builds /odom (nav_msgs/Odometry) from the odom->base_link TF; Nav2 reads it for current velocity."
   - id: cmd_vel_mux
     layer: navigation
     status: real
@@ -237,6 +246,7 @@ topics:
   - {name: /object_poses,       type: humanoid_interfaces/msg/ObjectPoseArray, owner: perception,  consumers: [task_planner],                  check: rate, rate_hz: 30,  min_rate_hz: 15}
   - {name: /robot_pose,         type: geometry_msgs/msg/PoseStamped,      owner: state_estimation,  consumers: [nav],                          check: rate, rate_hz: 100, min_rate_hz: 50}
   - {name: /map,                type: nav_msgs/msg/OccupancyGrid,         owner: slam,              consumers: [nav],                          check: latched}
+  - {name: /odom,               type: nav_msgs/msg/Odometry,              owner: odom_adapter,      consumers: [nav],                          check: rate, rate_hz: 50,  min_rate_hz: 25}
   - {name: /cmd_vel_teleop,     type: geometry_msgs/msg/Twist,            owner: teleop,            consumers: [cmd_vel_mux],                  check: event}
   - {name: /cmd_vel_nav,        type: geometry_msgs/msg/Twist,            owner: nav,               consumers: [cmd_vel_mux],                  check: event}
   - {name: /cmd_vel,            type: geometry_msgs/msg/Twist,            owner: cmd_vel_mux,       consumers: [locomotion, state_estimation], check: rate, rate_hz: 50,  min_rate_hz: 25}

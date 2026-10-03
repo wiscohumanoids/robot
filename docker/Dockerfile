@@ -69,6 +69,14 @@ RUN . /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --symlink-install \
       --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMUJOCO_HEADLESS_OSMESA=ON
 
+# Nav2 stack for the navigation team (replaces nav_stub; only nav2-msgs was installed
+# above). Kept as its own late layer so adding it does not invalidate the MuJoCo
+# download or the colcon build above. Refresh the apt index first (deleted above).
+RUN apt-get update && apt-get install -y \
+    ros-${ROS_DISTRO}-navigation2 \
+    ros-${ROS_DISTRO}-nav2-bringup \
+    && rm -rf /var/lib/apt/lists/*
+
 # Interactive shells you open later (`docker exec`) also get the workspace.
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc && \
     echo "source ${ROS_WS}/install/setup.bash" >> ~/.bashrc

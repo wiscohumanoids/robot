@@ -61,6 +61,7 @@ edit them by hand.
 | `/object_poses` | `humanoid_interfaces/msg/ObjectPoseArray` | `perception` | `task_planner` | 30 Hz |
 | `/robot_pose` | `geometry_msgs/msg/PoseStamped` | `state_estimation` | `nav` | 100 Hz |
 | `/map` | `nav_msgs/msg/OccupancyGrid` | `slam` | `nav` | latched |
+| `/odom` | `nav_msgs/msg/Odometry` | `odom_adapter` | `nav` | 50 Hz |
 | `/cmd_vel_teleop` | `geometry_msgs/msg/Twist` | `teleop` | `cmd_vel_mux` | event |
 | `/cmd_vel_nav` | `geometry_msgs/msg/Twist` | `nav` | `cmd_vel_mux` | event |
 | `/cmd_vel` | `geometry_msgs/msg/Twist` | `cmd_vel_mux` | `locomotion`, `state_estimation` | 50 Hz |

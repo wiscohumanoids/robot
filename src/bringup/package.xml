@@ -29,6 +29,7 @@
   <exec_depend>state_estimation_stub</exec_depend>
   <exec_depend>slam_stub</exec_depend>
   <exec_depend>nav_stub</exec_depend>
+  <exec_depend>odom_adapter_stub</exec_depend>
   <exec_depend>humanoid_interfaces</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
