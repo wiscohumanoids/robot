@@ -34,18 +34,19 @@ private edit: see CONTRIBUTING.md.
 ## Task planning (`task_planner`, `behavior_tree`, `speech_input`)
 
 **You own:** turning an intent into behavior. **You replace:**
-`task_planner_stub` (canned plan) and `behavior_tree_stub` (sequential executor).
+`task_planner_stub` (canned plan). The `behavior_tree` is already implemented (see its README).
 
 - **`task_planner`**: subscribe `/user_intent` (`std_msgs/String`) and
   `/object_poses`; publish `humanoid_interfaces/SkillSequence` on
   `/skill_sequence`. Skills use the
   [skill vocabulary](INTERFACE_CONTRACT.md#skill-vocabulary) (`navigate_to`,
   `pick`, `place`, `handover`, ...). Adding a skill name is an interface change.
-- **`behavior_tree`** (BehaviorTree.CPP): subscribe `/skill_sequence`; be an
-  action **client** of `navigate_to_pose` (`nav2_msgs/NavigateToPose`) and
-  `execute_manipulation` (`ExecuteManipulation`); publish `/task_status`
+- **`behavior_tree`** (implemented, `src/behavior_tree`): queues `/skill_sequence`
+  plans and runs their skills through the `navigate_to_pose`
+  (`nav2_msgs/NavigateToPose`) and `execute_manipulation` (`ExecuteManipulation`)
+  actions, 3 attempts x 60 s per skill; publishes `/task_status`
   (`std_msgs/String`, e.g. `RUNNING 2/3 pick` / `SUCCEEDED` / `FAILED ...`),
-  `bringup/smoke_task.py` reads it.
+  `bringup/smoke_task.py` reads it. A new skill is a function in `skills.py`.
 - **`speech_input`** does not exist. It owns `/user_intent`; until then publish by hand:
   `ros2 topic pub --once /user_intent std_msgs/msg/String "{data: 'pick up the cube'}"`.
 

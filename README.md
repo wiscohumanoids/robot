@@ -75,7 +75,7 @@ robot/
 
     # task stack (all stubs today)
     task_planner_stub/         /user_intent -> /skill_sequence
-    behavior_tree_stub/        /skill_sequence -> navigate_to_pose + execute_manipulation, /task_status
+    behavior_tree/             /skill_sequence queue -> navigate_to_pose + execute_manipulation, /task_status
     perception_stub/           /object_poses (hardcoded cube)
     slam_stub/                 /map, map->odom
     state_estimation_stub/     /robot_pose, odom->base_link (dead-reckons /cmd_vel)

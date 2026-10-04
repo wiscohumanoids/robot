@@ -142,9 +142,9 @@ behavior tree:
 | Skill name | Behavior tree calls | Uses |
 |---|---|---|
 | `navigate_to` | `navigate_to_pose` (`nav2_msgs/NavigateToPose`) | `target_pose` (frame `map`) |
-| `pick`, `place`, `handover`, ... (anything else) | `execute_manipulation` (`ExecuteManipulation`) with `task = name` | `object_id`, optional `target_pose` |
+| `pick`, `place`, `handover` | `execute_manipulation` (`ExecuteManipulation`) with `task = name` | `object_id`, optional `target_pose` |
 
-Adding a skill name is an interface change.
+Any other name fails the plan with `unknown skill: <name>` (no retries). Adding a skill name is an interface change: add it to `SKILLS` in `behavior_tree/skills.py` as well.
 
 ## Changing the contract
 

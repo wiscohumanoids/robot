@@ -69,13 +69,13 @@ nodes:
   # ---- 3. execution ----
   - id: behavior_tree
     layer: execution
-    status: stub
-    package: behavior_tree_stub
+    status: real
+    package: behavior_tree
     executable: bt_node
     launch_arg: behavior_tree
     area: planning
-    replaces: "BehaviorTree.CPP tree with custom condition/action nodes"
-    summary: "Sequential executor: runs each skill via the navigate_to_pose / execute_manipulation actions, stops at first failure."
+    replaces: null
+    summary: "Queues incoming plans and runs their skills in order via the navigate_to_pose / execute_manipulation actions: 3 attempts and a 60 s limit per skill, FAILED drops the rest of that plan."
   # ---- 4. perception & estimation ----
   - id: perception
     layer: perception

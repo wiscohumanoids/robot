@@ -13,10 +13,10 @@ Swapping a stub for your real node (one flag, no file edits):
 
   <layer>:=stub      (default) launch this repo's stub for the layer
   <layer>:=external  launch nothing for the layer; you run the real node yourself
-  Layers: planner behavior_tree perception state_estimation slam navigation
+  Layers: planner perception state_estimation slam navigation
           odom_adapter locomotion manipulation wbc
   Real nodes take true|false: teleop (default false, see below),
-          cmd_vel_mux (true), safety (true)
+          behavior_tree (true), cmd_vel_mux (true), safety (true)
 
 Other arguments:
   sim:=true|false          true (default) = MuJoCo + ros2_control + lowlevel_control
@@ -49,7 +49,6 @@ from launch_ros.parameter_descriptions import ParameterValue
 # layer argument -> (package, executable)
 STUB_LAYERS = {
     'planner': ('task_planner_stub', 'planner_node'),
-    'behavior_tree': ('behavior_tree_stub', 'bt_node'),
     'perception': ('perception_stub', 'perception_node'),
     'state_estimation': ('state_estimation_stub', 'state_estimation_node'),
     'slam': ('slam_stub', 'slam_node'),
@@ -61,6 +60,7 @@ STUB_LAYERS = {
 }
 BOOL_NODES = {
     'teleop': ('teleop_input', 'teleop_node', 'false'),
+    'behavior_tree': ('behavior_tree', 'bt_node', 'true'),
     'cmd_vel_mux': ('cmd_vel_mux', 'mux_node', 'true'),
     'safety': ('safety', 'safety_node', 'true'),
 }

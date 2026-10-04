@@ -2,9 +2,13 @@
 # Run the robot workspace dev container with YOUR working copy mounted, so edits
 # on the host show up in the container immediately.
 #
-#   ./docker/run.sh                    # interactive shell
+#   ./docker/run.sh                    # interactive shell, with the stub stack already
+#                                      # running in the background (log: /tmp/stack.log)
+#   START_STACK=0 ./docker/run.sh      # plain interactive shell, no stack
 #   ./docker/run.sh <command...>       # run one command, e.g.
 #   ./docker/run.sh ros2 launch bringup full_stack.launch.py sim:=false
+#   ./docker/run.sh smoke              # build, start the stub stack (sim:=false), run
+#                                      # smoke_task.py, stop the stack; exit 0 = SUCCEEDED
 #
 # Inside the container:
 #   - Python edits are live (the image was built with --symlink-install).
@@ -41,7 +45,41 @@ case "$(uname -s)" in
     ;;
 esac
 
+if [[ "${1:-}" == "smoke" ]]; then
+  shift
+  # Extra args go to full_stack.launch.py, e.g.  ./docker/run.sh smoke navigation:=external
+  exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest bash -c '
+    set -o pipefail
+    cd /home/ros2_ws
+    echo "== building"
+    colcon build --symlink-install --packages-select behavior_tree bringup 2>&1 | tail -3 || exit 1
+    source install/setup.bash
+    echo "== starting the stack (log: /tmp/stack.log)"
+    ros2 launch bringup full_stack.launch.py sim:=false "$@" > /tmp/stack.log 2>&1 &
+    stack=$!
+    trap "kill -INT $stack 2>/dev/null; wait $stack 2>/dev/null" EXIT
+    for _ in $(seq 60); do   # wait until the planner is listening
+      ros2 topic info /user_intent 2>/dev/null | grep -q "Subscription count: [1-9]" && break
+      sleep 1
+    done
+    echo "== smoke_task"
+    ros2 run bringup smoke_task.py || { echo "-- stack log (tail) --"; tail -40 /tmp/stack.log; exit 1; }
+  ' smoke "$@"
+fi
+
 if [[ $# -gt 0 ]]; then
   exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest "$@"
 fi
-exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest
+if [[ "${START_STACK:-1}" == "0" ]]; then
+  exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest
+fi
+# Build what changed (fast when nothing did), start the headless stub stack in the
+# background, then hand you a shell. Try it with:  ros2 run bringup smoke_task.py
+exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest bash -c '
+  cd /home/ros2_ws
+  colcon build --symlink-install --packages-select behavior_tree bringup 2>&1 | tail -3
+  source install/setup.bash
+  ros2 launch bringup full_stack.launch.py sim:=false > /tmp/stack.log 2>&1 &
+  echo "stack starting in the background (log: /tmp/stack.log), give it a few seconds"
+  exec bash
+'

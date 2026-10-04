@@ -6,7 +6,7 @@ apart (e.g. someone moves the cube 20 m away, or changes the standoff)."""
 import ast
 import os
 
-from behavior_tree_stub.bt_logic import action_kind
+from behavior_tree.skills import SKILLS
 from nav_stub.nav_logic import go_to_goal_command, reached, yaw_from_quaternion
 from state_estimation_stub.kinematics import integrate_body_velocity, yaw_to_quaternion
 from task_planner_stub.planner_logic import plan_for_intent
@@ -40,7 +40,8 @@ def test_default_demo_is_plannable_navigable_and_inside_the_map():
     standoff = _default_param('task_planner_stub', 'planner_node', 'standoff_m')
     plan = plan_for_intent('pick up the cube', [cube], standoff)
 
-    assert [action_kind(s['name']) for s in plan] == ['nav', 'manip']
+    assert [s['name'] for s in plan][0] == 'navigate_to'
+    assert all(s['name'] in SKILLS for s in plan), 'planner emits a skill the behavior tree cannot run'
     goal = plan[0]
 
     half_map = _module_constant('slam_stub', 'slam_node', 'MAP_SIZE_CELLS') * \

@@ -43,8 +43,8 @@ the tests and checks that keep the interfaces consistent.
 <!-- BEGIN GENERATED:summary -->
 | Status | Nodes | Meaning |
 |---|---|---|
-| **REAL** | 4 | Complete for its purpose today. |
-| **STUB** | 10 | Correct interface, fake internals; the internals are what a team builds. |
+| **REAL** | 5 | Complete for its purpose today. |
+| **STUB** | 9 | Correct interface, fake internals; the internals are what a team builds. |
 | **SCAFFOLD** | 1 | Correct structure/interface, hardware I/O stubbed. |
 | **EXTERNAL** | 3 | Third-party ROS node used as-is (configure only). |
 | **MISSING** | 2 | Nothing exists yet; the contract reserves the interface. |
@@ -73,7 +73,7 @@ launch flag that swaps it out (`stub|external` for stubs, see
 
 | Node | Status | Package | What it does today | Real thing that replaces it | Area | Launch switch |
 |---|---|---|---|---|---|---|
-| `behavior_tree` | **STUB** | `behavior_tree_stub` | Sequential executor: runs each skill via the navigate_to_pose / execute_manipulation actions, stops at first failure. | BehaviorTree.CPP tree with custom condition/action nodes | planning | `behavior_tree:=stub|external` |
+| `behavior_tree` | **REAL** | `behavior_tree` | Queues incoming plans and runs their skills in order via the navigate_to_pose / execute_manipulation actions: 3 attempts and a 60 s limit per skill, FAILED drops the rest of that plan. | - | planning | `behavior_tree:=true|false` |
 
 #### 4. Perception & state estimation
 
@@ -143,7 +143,7 @@ area** (and a reviewer for the interface contract) and record it in
 | **manipulation** | `manipulation` (stub) |
 | **navigation** | `nav` (stub), `odom_adapter` (stub) |
 | **perception** | `perception` (stub), `slam` (stub) |
-| **planning** | `speech_input` (missing), `task_planner` (stub), `behavior_tree` (stub) |
+| **planning** | `speech_input` (missing), `task_planner` (stub), `behavior_tree` (real) |
 | **safety** | `safety` (real), `estop_bridge` (missing) |
 | **state-estimation** | `state_estimation` (stub) |
 <!-- END GENERATED:areas -->

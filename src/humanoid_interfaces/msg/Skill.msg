@@ -3,8 +3,9 @@
 # `name` is the skill vocabulary shared by the planner and the behavior tree.
 # Vocabulary today (see INTERFACE_CONTRACT.md "Skill vocabulary"):
 #   "navigate_to"  -> BT calls the nav2_msgs/NavigateToPose action with target_pose
-#   "pick", "place", "handover", ... -> BT calls the ExecuteManipulation action
+#   "pick", "place", "handover" -> BT calls the ExecuteManipulation action
 #                     with task=name, object_id=object_id, target_pose=target_pose
+# Any other name fails the plan ("unknown skill"), it is not guessed.
 # Adding a skill name is an interface change: update INTERFACE_CONTRACT.md and
 # the behavior tree in the same PR.
 

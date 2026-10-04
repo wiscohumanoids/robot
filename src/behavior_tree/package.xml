@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>behavior_tree_stub</name>
+  <name>behavior_tree</name>
   <version>0.1.0</version>
   <description>
-    STUB behavior tree: sequential SkillSequence executor over the nav and manipulation actions. See README.md and INTERFACE_CONTRACT.md.
+    Task execution: runs queued SkillSequence plans through the nav and manipulation actions, 3 attempts and a 60 s limit per skill. See README.md and INTERFACE_CONTRACT.md.
   </description>
   <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
   <license>Apache-2.0</license>
