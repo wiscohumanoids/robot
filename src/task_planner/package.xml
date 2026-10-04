@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>task_planner_stub</name>
+  <name>task_planner</name>
   <version>0.1.0</version>
   <description>
-    STUB task planner: /user_intent -> canned /skill_sequence. See README.md and INTERFACE_CONTRACT.md.
+    Task planner: queued /user_intent -> LLM plan -> /skill_sequence (canned fallback without an API key). See README.md and INTERFACE_CONTRACT.md.
   </description>
   <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
   <license>Apache-2.0</license>

@@ -12,6 +12,10 @@ FREQUENCY: 10 Hz internal control-loop rate while a goal is executing
 (CONTROL_RATE_HZ). The action server itself is event-driven (goal/cancel
 callbacks), not rate-limited.
 
+OUTPUT: std_msgs/String on /manipulation/held_object: the id of the object in the
+hand, or "" for an empty hand (hand_logic.py). Published on every change and at 1 Hz.
+STUB: only successful goals change it; a real node should publish what it senses.
+
 OUTPUT: humanoid_interfaces/JointTargets on /manipulation/joint_targets,
 source="manipulation", published only while a goal is active. wbc_stub reads
 this as an override for the arm joint indices (13-22) only, see
@@ -28,9 +32,12 @@ import rclpy
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
+from std_msgs.msg import String
 
 from humanoid_interfaces.msg import JointTargets
 from humanoid_interfaces.action import ExecuteManipulation
+
+from manipulation_runner.hand_logic import EMPTY, next_hand
 
 NUM_JOINTS = 23  # CANONICAL_JOINT_ORDER, see humanoid_interfaces/config/canonical_joint_order.yaml
 
@@ -64,6 +71,9 @@ class ManipulationNode(Node):
         self._lock = threading.Lock()
         self._targets_pub = self.create_publisher(
             JointTargets, '/manipulation/joint_targets', 10)
+        self._held = EMPTY
+        self._held_pub = self.create_publisher(String, '/manipulation/held_object', 10)
+        self.create_timer(1.0, self._publish_held)
 
         self._action_server = ActionServer(
             self,
@@ -77,6 +87,9 @@ class ManipulationNode(Node):
         self.get_logger().info(
             f'manipulation_runner up, ExecuteManipulation action server ready '
             f'at {CONTROL_RATE_HZ} Hz internal loop (STUB task execution)')
+
+    def _publish_held(self):
+        self._held_pub.publish(String(data=self._held))
 
     def _goal_callback(self, goal_request):
         # One goal at a time: two would publish competing arm targets.
@@ -147,6 +160,9 @@ class ManipulationNode(Node):
                 time.sleep(dt)
 
         goal_handle.succeed()
+        request = goal_handle.request
+        self._held = next_hand(self._held, request.task, request.object_id, True)
+        self._publish_held()
         result.success = True
         result.message = f'stub execution of task={goal_handle.request.task} complete'
         return result

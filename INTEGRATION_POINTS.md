@@ -33,8 +33,8 @@ private edit: see CONTRIBUTING.md.
 
 ## Task planning (`task_planner`, `behavior_tree`, `speech_input`)
 
-**You own:** turning an intent into behavior. **You replace:**
-`task_planner_stub` (canned plan). The `behavior_tree` is already implemented (see its README).
+**You own:** turning an intent into behavior. The `task_planner` (LLM) and the
+`behavior_tree` are already implemented (see their READMEs).
 
 - **`task_planner`**: subscribe `/user_intent` (`std_msgs/String`) and
   `/object_poses`; publish `humanoid_interfaces/SkillSequence` on
@@ -52,7 +52,7 @@ private edit: see CONTRIBUTING.md.
 
 **Do not:** publish velocity commands yourself (go through `navigate_to_pose`);
 publish `/cmd_vel` at all (it belongs to `cmd_vel_mux`).
-**Test yours:** `full_stack.launch.py sim:=false planner:=external` (no MuJoCo
+**Test yours:** `full_stack.launch.py sim:=false planner:=false` (no MuJoCo
 needed), then `ros2 run bringup smoke_task.py`.
 
 ## Perception and SLAM (`perception`, `slam`)

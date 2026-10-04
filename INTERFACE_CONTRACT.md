@@ -56,10 +56,12 @@ edit them by hand.
 | Topic | Type | Owner (sole publisher) | Consumers | Rate |
 |---|---|---|---|---|
 | `/user_intent` | `std_msgs/msg/String` | `speech_input` | `task_planner` | event |
+| `/planner_command` | `std_msgs/msg/String` | `speech_input` | `task_planner` | event |
 | `/skill_sequence` | `humanoid_interfaces/msg/SkillSequence` | `task_planner` | `behavior_tree` | event |
-| `/task_status` | `std_msgs/msg/String` | `behavior_tree` | - | 1 Hz |
+| `/planner_status` | `std_msgs/msg/String` | `task_planner` | - | event |
+| `/task_status` | `std_msgs/msg/String` | `behavior_tree` | `task_planner` | 1 Hz |
 | `/object_poses` | `humanoid_interfaces/msg/ObjectPoseArray` | `perception` | `task_planner` | 30 Hz |
-| `/robot_pose` | `geometry_msgs/msg/PoseStamped` | `state_estimation` | `nav` | 100 Hz |
+| `/robot_pose` | `geometry_msgs/msg/PoseStamped` | `state_estimation` | `nav`, `task_planner` | 100 Hz |
 | `/map` | `nav_msgs/msg/OccupancyGrid` | `slam` | `nav` | latched |
 | `/odom` | `nav_msgs/msg/Odometry` | `odom_adapter` | `nav` | 50 Hz |
 | `/cmd_vel_teleop` | `geometry_msgs/msg/Twist` | `teleop` | `cmd_vel_mux` | event |
@@ -67,6 +69,7 @@ edit them by hand.
 | `/cmd_vel` | `geometry_msgs/msg/Twist` | `cmd_vel_mux` | `locomotion`, `state_estimation` | 50 Hz |
 | `/locomotion/observation` | `humanoid_interfaces/msg/PolicyObservation` | `locomotion` | - | 50 Hz |
 | `/locomotion/joint_targets` | `humanoid_interfaces/msg/JointTargets` | `locomotion` | `wbc` | 50 Hz |
+| `/manipulation/held_object` | `std_msgs/msg/String` | `manipulation` | `task_planner` | 1 Hz |
 | `/manipulation/joint_targets` | `humanoid_interfaces/msg/JointTargets` | `manipulation` | `wbc` | event |
 | `/joint_command` | `humanoid_interfaces/msg/JointCommand` | `wbc` | `lowlevel_control` | 500 Hz |
 | `/robot_state` | `humanoid_interfaces/msg/RobotState` | `lowlevel_control` | `locomotion`, `safety` | 1000 Hz (sim only) |

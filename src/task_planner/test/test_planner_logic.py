@@ -1,4 +1,4 @@
-from task_planner_stub.planner_logic import choose_object, choose_task, plan_for_intent
+from task_planner.planner_logic import choose_object, choose_task, plan_for_intent
 
 CUBE = {'object_id': 'cube_1', 'label': 'cube', 'x': 1.5, 'y': 0.3, 'z': 0.8}
 BALL = {'object_id': 'ball_1', 'label': 'ball', 'x': 2.0, 'y': -0.5, 'z': 0.8}

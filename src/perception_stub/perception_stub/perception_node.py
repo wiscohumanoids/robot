@@ -12,6 +12,9 @@ OUTPUT (this node is the only publisher):
   (perception is responsible for transforming into `map`; consumers never
   need TF for this).
 
+SCENE: cube_1 plus the fixed objects in scene.py (ball, cup, box, bottle), one per
+cell of a 10 x 10 grid over the 10 m map.
+
 PARAMETERS (read once at startup): cube_x, cube_y, cube_z in metres, in `map`.
 The defaults put a cube on a table 1.5 m ahead and 0.3 m left of the start pose.
 """
@@ -19,6 +22,8 @@ import rclpy
 from rclpy.node import Node
 
 from humanoid_interfaces.msg import ObjectPose, ObjectPoseArray
+
+from perception_stub.scene import extra_objects
 
 PUBLISH_RATE_HZ = 30.0
 
@@ -43,12 +48,23 @@ class PerceptionStub(Node):
         self._msg = ObjectPoseArray()
         self._msg.header.frame_id = 'map'
         self._msg.objects = [cube]
+        for obj in extra_objects():
+            item = ObjectPose()
+            item.object_id = obj['object_id']
+            item.label = obj['label']
+            item.pose.position.x = obj['x']
+            item.pose.position.y = obj['y']
+            item.pose.position.z = obj['z']
+            item.pose.orientation.w = 1.0
+            item.confidence = 1.0
+            self._msg.objects.append(item)
 
         self._pub = self.create_publisher(ObjectPoseArray, '/object_poses', 10)
         self.create_timer(1.0 / PUBLISH_RATE_HZ, self._on_timer)
         pos = cube.pose.position
         self.get_logger().info(
-            f'perception stub up at {PUBLISH_RATE_HZ} Hz: cube_1 at ({pos.x}, {pos.y}, {pos.z}) in map')
+            f'perception stub up at {PUBLISH_RATE_HZ} Hz: {len(self._msg.objects)} objects, '
+            f'cube_1 at ({pos.x}, {pos.y}, {pos.z}) in map')
 
     def _on_timer(self):
         self._msg.header.stamp = self.get_clock().now().to_msg()

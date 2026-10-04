@@ -30,6 +30,12 @@ ARGS=(-it --rm
   -v robot_install:/home/ros2_ws/install
   -v robot_log:/home/ros2_ws/log)
 
+# API keys etc. for the LLM planner: .env at the repo root is mounted read-only; the planner
+# node reads it itself (llm_config.load_env). Not --env-file: docker rejects spaces around "=".
+if [[ -f "${REPO_ROOT}/.env" ]]; then
+  ARGS+=(-v "${REPO_ROOT}/.env:/home/ros2_ws/.env:ro")
+fi
+
 case "$(uname -s)" in
   Linux)
     ARGS+=(--network host)
@@ -52,7 +58,7 @@ if [[ "${1:-}" == "smoke" ]]; then
     set -o pipefail
     cd /home/ros2_ws
     echo "== building"
-    colcon build --symlink-install --packages-select behavior_tree bringup 2>&1 | tail -3 || exit 1
+    colcon build --symlink-install --packages-select humanoid_interfaces behavior_tree task_planner bringup 2>&1 | tail -3 || exit 1
     source install/setup.bash
     echo "== starting the stack (log: /tmp/stack.log)"
     ros2 launch bringup full_stack.launch.py sim:=false "$@" > /tmp/stack.log 2>&1 &
@@ -77,7 +83,7 @@ fi
 # background, then hand you a shell. Try it with:  ros2 run bringup smoke_task.py
 exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest bash -c '
   cd /home/ros2_ws
-  colcon build --symlink-install --packages-select behavior_tree bringup 2>&1 | tail -3
+  colcon build --symlink-install --packages-select humanoid_interfaces behavior_tree task_planner bringup 2>&1 | tail -3
   source install/setup.bash
   ros2 launch bringup full_stack.launch.py sim:=false > /tmp/stack.log 2>&1 &
   echo "stack starting in the background (log: /tmp/stack.log), give it a few seconds"

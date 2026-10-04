@@ -74,7 +74,7 @@ robot/
     bringup/                   full_stack / lowlevel_test launch files, controllers.yaml, check_contract.py, smoke_task.py
 
     # task stack (all stubs today)
-    task_planner_stub/         /user_intent -> /skill_sequence
+    task_planner/         /user_intent -> /skill_sequence
     behavior_tree/             /skill_sequence queue -> navigate_to_pose + execute_manipulation, /task_status
     perception_stub/           /object_poses (hardcoded cube)
     slam_stub/                 /map, map->odom

@@ -17,6 +17,7 @@ from behavior_tree.skills import run_skill
 
 MAX_ATTEMPTS = 3
 SKILL_TIMEOUT_S = 60.0
+SEEN_IDS_KEPT = 64      # plan ids remembered, to ignore a plan the planner sends twice
 
 
 def format_status(state, index=None, total=None, skill=None, detail=''):
@@ -89,6 +90,7 @@ class BehaviorRunner:
         self._max_attempts = max_attempts
         self._timeout_s = timeout_s
         self.queue = PlanQueue()
+        self._seen_ids = collections.deque(maxlen=SEEN_IDS_KEPT)
         self.status = format_status('IDLE')
 
     def set_status(self, text):
@@ -96,11 +98,18 @@ class BehaviorRunner:
         self._log(f'task_status: {text}')
         self._publish(text)
 
-    def submit(self, plan):
-        """Queue a plan. An empty plan is ignored (returns False)."""
+    def submit(self, plan, plan_id=''):
+        """Queue a plan. An empty plan is ignored (returns False), and so is a plan
+        whose non-empty plan_id was already seen (the planner resends until it sees
+        us start, so duplicates are expected)."""
         if not plan:
             self._log('empty plan received, ignored')
             return False
+        if plan_id:
+            if plan_id in self._seen_ids:
+                self._log(f'duplicate plan {plan_id} ignored')
+                return False
+            self._seen_ids.append(plan_id)
         self.queue.put(plan)
         return True
 

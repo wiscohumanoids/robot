@@ -5,7 +5,11 @@
 **Frequency:** 10 Hz internal loop while a goal is active; otherwise idle.
 **Action server:** `execute_manipulation` (`humanoid_interfaces/ExecuteManipulation`).
 **Publishes:** `/manipulation/joint_targets` (`JointTargets`, `source="manipulation"`),
-only while a goal is executing.
+only while a goal is executing; `/manipulation/held_object` (`std_msgs/String`): the
+id of the object in the hand, `""` when empty, on every change and at 1 Hz.
+Stub rule (`hand_logic.py`): a successful `pick` means holding that object, a
+successful `place`/`handover` means empty, a failed or canceled goal changes nothing.
+The task planner uses it so the LLM knows what the robot is holding.
 
 Today, any goal is accepted and runs a fixed three-phase scripted arm motion
 (approach -> grasp -> retract) over ~3 seconds, then reports success. No

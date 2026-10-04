@@ -59,13 +59,13 @@ nodes:
   # ---- 2. planning ----
   - id: task_planner
     layer: planning
-    status: stub
-    package: task_planner_stub
+    status: real
+    package: task_planner
     executable: planner_node
     launch_arg: planner
     area: planning
-    replaces: "LLM + skill-library task planner"
-    summary: "Any intent -> canned [navigate_to, pick/place] plan for the nearest known object."
+    replaces: null
+    summary: "Queues raw intents; plans the oldest only when the behavior tree is idle, from the robot pose and objects at that moment. LLM (OPENAI_API_KEY) or, without a key, a canned [navigate_to, pick/place] plan."
   # ---- 3. execution ----
   - id: behavior_tree
     layer: execution
@@ -241,10 +241,12 @@ topics:
   #        event  -> published on demand; zero publishers is fine, more than one is not
   # sim_only: true -> only checked when the sim/hardware path is running (sim:=true)
   - {name: /user_intent,        type: std_msgs/msg/String,                owner: speech_input,      consumers: [task_planner],                 check: event}
+  - {name: /planner_command,    type: std_msgs/msg/String,                owner: speech_input,      consumers: [task_planner],                 check: event}
   - {name: /skill_sequence,     type: humanoid_interfaces/msg/SkillSequence, owner: task_planner,   consumers: [behavior_tree],                check: event}
-  - {name: /task_status,        type: std_msgs/msg/String,                owner: behavior_tree,     consumers: [],                             check: rate, rate_hz: 1,   min_rate_hz: 0.5}
+  - {name: /planner_status,     type: std_msgs/msg/String,                owner: task_planner,      consumers: [],                             check: event}
+  - {name: /task_status,        type: std_msgs/msg/String,                owner: behavior_tree,     consumers: [task_planner],                             check: rate, rate_hz: 1,   min_rate_hz: 0.5}
   - {name: /object_poses,       type: humanoid_interfaces/msg/ObjectPoseArray, owner: perception,  consumers: [task_planner],                  check: rate, rate_hz: 30,  min_rate_hz: 15}
-  - {name: /robot_pose,         type: geometry_msgs/msg/PoseStamped,      owner: state_estimation,  consumers: [nav],                          check: rate, rate_hz: 100, min_rate_hz: 50}
+  - {name: /robot_pose,         type: geometry_msgs/msg/PoseStamped,      owner: state_estimation,  consumers: [nav, task_planner],                          check: rate, rate_hz: 100, min_rate_hz: 50}
   - {name: /map,                type: nav_msgs/msg/OccupancyGrid,         owner: slam,              consumers: [nav],                          check: latched}
   - {name: /odom,               type: nav_msgs/msg/Odometry,              owner: odom_adapter,      consumers: [nav],                          check: rate, rate_hz: 50,  min_rate_hz: 25}
   - {name: /cmd_vel_teleop,     type: geometry_msgs/msg/Twist,            owner: teleop,            consumers: [cmd_vel_mux],                  check: event}
@@ -252,6 +254,7 @@ topics:
   - {name: /cmd_vel,            type: geometry_msgs/msg/Twist,            owner: cmd_vel_mux,       consumers: [locomotion, state_estimation], check: rate, rate_hz: 50,  min_rate_hz: 25}
   - {name: /locomotion/observation,   type: humanoid_interfaces/msg/PolicyObservation, owner: locomotion, consumers: [],                     check: rate, rate_hz: 50,  min_rate_hz: 25}
   - {name: /locomotion/joint_targets, type: humanoid_interfaces/msg/JointTargets,      owner: locomotion, consumers: [wbc],                 check: rate, rate_hz: 50,  min_rate_hz: 25}
+  - {name: /manipulation/held_object, type: std_msgs/msg/String,                  owner: manipulation, consumers: [task_planner],     check: rate, rate_hz: 1, min_rate_hz: 0.5}
   - {name: /manipulation/joint_targets, type: humanoid_interfaces/msg/JointTargets,    owner: manipulation, consumers: [wbc],               check: event}
   - {name: /joint_command,      type: humanoid_interfaces/msg/JointCommand, owner: wbc,             consumers: [lowlevel_control],             check: rate, rate_hz: 500, min_rate_hz: 100}
   - {name: /robot_state,        type: humanoid_interfaces/msg/RobotState, owner: lowlevel_control,  consumers: [locomotion, safety],           check: rate, rate_hz: 1000, min_rate_hz: 100, sim_only: true}

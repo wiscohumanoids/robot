@@ -8,4 +8,6 @@
 
 std_msgs/Header header
 string intent               # the /user_intent text this plan was made for
+string plan_id              # unique per plan; a resend carries the same id and the
+                            # behavior tree ignores ids it has already seen ("" = no dedupe)
 Skill[] skills

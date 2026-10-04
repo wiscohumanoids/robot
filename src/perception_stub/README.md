@@ -7,9 +7,20 @@
 
 ## What is fake
 
-There is no camera and no detector. One cube, `cube_1`, is reported forever at
-a fixed position (params `cube_x`, `cube_y`, `cube_z`; defaults 1.5, 0.3, 0.8 m in
-`map`), confidence 1.0.
+There is no camera and no detector. Five objects are reported forever at fixed
+positions, confidence 1.0:
+
+- `cube_1` at the params `cube_x`, `cube_y`, `cube_z` (defaults 1.5, 0.3, 0.8 m in `map`);
+- `ball_1`, `cup_1`, `box_1`, `bottle_1` from `scene.py`, one per cell of a 10 x 10
+  grid (1 m cells) over the 10 m map, on a 0.8 m table.
+
+| Object | Cell (col, row) | x, y (m) |
+|---|---|---|
+| `cube_1` | (6, 5) | 1.5, 0.3 |
+| `ball_1` | (3, 7) | -1.5, 2.5 |
+| `cup_1` | (8, 2) | 3.5, -2.5 |
+| `box_1` | (7, 8) | 2.5, 3.5 |
+| `bottle_1` | (2, 2) | -2.5, -2.5 |
 
 ## What replaces it
 

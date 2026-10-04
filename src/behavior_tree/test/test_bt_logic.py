@@ -113,3 +113,52 @@ def test_unexpected_error_does_not_leave_status_stuck():
     runner.submit([Skill('navigate_to')])
     runner.step(0)
     assert runner.status.startswith('FAILED: unexpected error')
+
+
+# ---------------------------------------------------------------- duplicate plans (planner resends)
+def _runner():
+    from behavior_tree.bt_logic import BehaviorRunner
+    logs = []
+    return BehaviorRunner(None, lambda text: None, log=logs.append), logs
+
+
+def test_a_plan_with_a_seen_id_is_ignored():
+    runner, logs = _runner()
+    plan = [object()]
+    assert runner.submit(plan, 'abc') is True
+    assert runner.submit(plan, 'abc') is False
+    assert len(runner.queue) == 1 and any('duplicate plan abc' in m for m in logs)
+
+
+def test_different_ids_are_all_queued():
+    runner, _ = _runner()
+    assert runner.submit([1], 'a') and runner.submit([1], 'b')
+    assert len(runner.queue) == 2
+
+
+def test_plans_without_an_id_are_never_treated_as_duplicates():
+    runner, _ = _runner()
+    assert runner.submit([1]) and runner.submit([1])
+    assert len(runner.queue) == 2
+
+
+def test_an_id_stays_remembered_after_its_plan_ran():
+    runner, _ = _runner()
+    runner.submit([1], 'a')
+    runner.queue.take(0)
+    assert runner.submit([1], 'a') is False
+
+
+def test_only_the_most_recent_ids_are_remembered():
+    from behavior_tree.bt_logic import SEEN_IDS_KEPT
+    runner, _ = _runner()
+    for i in range(SEEN_IDS_KEPT + 1):
+        runner.submit([1], f'id{i}')
+    assert runner.submit([1], 'id0') is True            # forgotten
+    assert runner.submit([1], f'id{SEEN_IDS_KEPT}') is False
+
+
+def test_an_empty_plan_is_still_ignored_and_its_id_not_remembered():
+    runner, _ = _runner()
+    assert runner.submit([], 'x') is False
+    assert runner.submit([1], 'x') is True

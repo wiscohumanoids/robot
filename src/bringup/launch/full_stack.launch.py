@@ -48,7 +48,6 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 # layer argument -> (package, executable)
 STUB_LAYERS = {
-    'planner': ('task_planner_stub', 'planner_node'),
     'perception': ('perception_stub', 'perception_node'),
     'state_estimation': ('state_estimation_stub', 'state_estimation_node'),
     'slam': ('slam_stub', 'slam_node'),
@@ -60,6 +59,7 @@ STUB_LAYERS = {
 }
 BOOL_NODES = {
     'teleop': ('teleop_input', 'teleop_node', 'false'),
+    'planner': ('task_planner', 'planner_node', 'true'),
     'behavior_tree': ('behavior_tree', 'bt_node', 'true'),
     'cmd_vel_mux': ('cmd_vel_mux', 'mux_node', 'true'),
     'safety': ('safety', 'safety_node', 'true'),

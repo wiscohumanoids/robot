@@ -8,7 +8,8 @@ import yaml
 
 from behavior_tree import bt_logic
 from behavior_tree.skills import SKILLS
-from task_planner_stub.planner_logic import _TASK_KEYWORDS, plan_for_intent
+from task_planner import skill_catalog
+from task_planner.planner_logic import _TASK_KEYWORDS, plan_for_intent
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'src')
@@ -44,6 +45,10 @@ def test_every_skill_the_planner_can_produce_is_runnable():
     cube = {'object_id': 'cube_1', 'label': 'cube', 'x': 2.0, 'y': 0.0, 'z': 0.0}
     for intent in ('pick up the cube', 'put the cube down', 'hand over the cube', 'do something'):
         assert {s['name'] for s in plan_for_intent(intent, [cube])} <= set(SKILLS), intent
+
+
+def test_planner_catalog_and_behavior_tree_skills_are_the_same_set():
+    assert set(skill_catalog.names()) == set(SKILLS)
 
 
 def test_skill_msg_comment_lists_every_skill():
@@ -95,3 +100,49 @@ def test_every_status_the_node_can_publish_is_one_smoke_task_understands():
     for prefix in ('RUNNING', 'SUCCEEDED', 'FAILED'):
         assert prefix in smoke
     assert bt_logic.format_status('IDLE') == 'IDLE'
+
+
+def test_plan_id_is_in_the_message_and_used_by_planner_and_tree():
+    assert 'string plan_id' in _read('src', 'humanoid_interfaces', 'msg', 'SkillSequence.msg')
+    assert 'seq.plan_id = plan_id' in _read('src', 'task_planner', 'task_planner', 'planner_node.py')
+    assert 'msg.plan_id' in _read('src', 'behavior_tree', 'behavior_tree', 'bt_node.py')
+
+
+def test_held_object_topic_has_one_publisher_and_the_planner_reads_it():
+    topic = next(t for t in _contract()['topics'] if t['name'] == '/manipulation/held_object')
+    assert topic['owner'] == 'manipulation' and topic['consumers'] == ['task_planner']
+    assert "create_publisher(String, '/manipulation/held_object'" in _read(
+        'src', 'manipulation_runner', 'manipulation_runner', 'manipulation_node.py')
+    assert "'/manipulation/held_object'" in _read('src', 'task_planner', 'task_planner', 'planner_node.py')
+
+
+def test_the_stub_hand_rules_agree_with_the_skill_catalog():
+    from manipulation_runner.hand_logic import EMPTY, next_hand
+    for name in SKILLS:
+        spec = skill_catalog.get(name)
+        after = next_hand('x', name, 'cup_1', True)
+        assert after == {'take': 'cup_1', 'release': EMPTY, '': 'x'}[spec.hand], name
+
+
+def test_planner_command_topic_and_the_print_script():
+    topic = next(t for t in _contract()['topics'] if t['name'] == '/planner_command')
+    assert topic['owner'] == 'speech_input' and topic['consumers'] == ['task_planner']
+    assert "'/planner_command'" in _read('src', 'task_planner', 'task_planner', 'planner_node.py')
+    script = _read('src', 'bringup', 'scripts', 'watch_status.py')
+    assert "'/planner_status'" in script and "'/task_status'" in script
+    assert 'create_publisher' not in script
+    assert 'scripts/watch_status.py' in _read('src', 'bringup', 'CMakeLists.txt')
+
+
+def test_the_planner_is_a_real_node_launched_by_a_true_false_switch():
+    node = next(n for n in _contract()['nodes'] if n['id'] == 'task_planner')
+    assert node['status'] == 'real' and node['package'] == 'task_planner' and node['replaces'] is None
+    launch = _read('src', 'bringup', 'launch', 'full_stack.launch.py')
+    assert "'task_planner'" not in launch.split('STUB_LAYERS = {', 1)[1].split('}', 1)[0]
+    assert "'planner': ('task_planner', 'planner_node', 'true')" in launch
+    assert '<exec_depend>task_planner</exec_depend>' in _read('src', 'bringup', 'package.xml')
+
+
+def test_the_old_stub_package_name_is_gone():
+    assert not os.path.exists(os.path.join(SRC, 'task_planner_stub'))
+    assert os.path.isdir(os.path.join(SRC, 'task_planner', 'task_planner'))

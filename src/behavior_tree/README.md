@@ -17,8 +17,9 @@ all skills worked -> publish SUCCEEDED
 next plan
 ```
 
-- **Queue:** plans that arrive while it is busy wait their turn (FIFO, unbounded for now).
-  An empty plan is ignored.
+- **Queue:** plans that arrive while it is busy wait their turn (FIFO, unbounded; in practice the task planner only sends a plan when the tree is idle, so at most one waits. The intent queue and its size cap live in the planner).
+  An empty plan is ignored, and so is a plan whose `plan_id` was already seen (the
+  planner resends until it sees the tree start; the last 64 ids are remembered).
 - **Retry and timeout:** the same for every skill (`MAX_ATTEMPTS = 3` total attempts,
   `SKILL_TIMEOUT_S = 60` per attempt, in `bt_logic.py`). A timeout cancels the running action.
 - **Unknown skill name:** fails at once with `unknown skill: <name>`, no retries.
@@ -51,5 +52,5 @@ ros2 run bringup smoke_task.py       # end-to-end check of the whole task layer
 
 ## Not done yet
 
-A "stop" command that jumps the queue and cancels the running skill, a queue size limit,
-and any condition checks before a skill starts (e.g. safety status).
+A "stop" command that jumps the queue and cancels the running skill, and any
+condition checks before a skill starts (e.g. safety status).

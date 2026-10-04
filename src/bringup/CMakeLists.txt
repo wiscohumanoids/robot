@@ -10,7 +10,7 @@ install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(PROGRAMS scripts/check_contract.py scripts/smoke_task.py
+install(PROGRAMS scripts/check_contract.py scripts/smoke_task.py scripts/watch_status.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -9,7 +9,7 @@ import os
 from behavior_tree.skills import SKILLS
 from nav_stub.nav_logic import go_to_goal_command, reached, yaw_from_quaternion
 from state_estimation_stub.kinematics import integrate_body_velocity, yaw_to_quaternion
-from task_planner_stub.planner_logic import plan_for_intent
+from task_planner.planner_logic import plan_for_intent
 
 SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')
 
@@ -37,7 +37,7 @@ def test_default_demo_is_plannable_navigable_and_inside_the_map():
             'x': _default_param('perception_stub', 'perception_node', 'cube_x'),
             'y': _default_param('perception_stub', 'perception_node', 'cube_y'),
             'z': _default_param('perception_stub', 'perception_node', 'cube_z')}
-    standoff = _default_param('task_planner_stub', 'planner_node', 'standoff_m')
+    standoff = _default_param('task_planner', 'planner_node', 'standoff_m')
     plan = plan_for_intent('pick up the cube', [cube], standoff)
 
     assert [s['name'] for s in plan][0] == 'navigate_to'

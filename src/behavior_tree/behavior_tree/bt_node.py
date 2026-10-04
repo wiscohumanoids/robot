@@ -75,7 +75,7 @@ class BehaviorTreeNode(Node):
 
     def _on_sequence(self, msg: SkillSequence):
         plan = [Skill(s.name, s.object_id, s.target_pose) for s in msg.skills]
-        if self._runner.submit(plan):
+        if self._runner.submit(plan, msg.plan_id):
             self.get_logger().info(f'plan queued ({len(plan)} skills, {len(self._runner.queue)} waiting)')
 
     def shutdown(self):

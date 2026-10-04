@@ -43,8 +43,8 @@ the tests and checks that keep the interfaces consistent.
 <!-- BEGIN GENERATED:summary -->
 | Status | Nodes | Meaning |
 |---|---|---|
-| **REAL** | 5 | Complete for its purpose today. |
-| **STUB** | 9 | Correct interface, fake internals; the internals are what a team builds. |
+| **REAL** | 6 | Complete for its purpose today. |
+| **STUB** | 8 | Correct interface, fake internals; the internals are what a team builds. |
 | **SCAFFOLD** | 1 | Correct structure/interface, hardware I/O stubbed. |
 | **EXTERNAL** | 3 | Third-party ROS node used as-is (configure only). |
 | **MISSING** | 2 | Nothing exists yet; the contract reserves the interface. |
@@ -67,7 +67,7 @@ launch flag that swaps it out (`stub|external` for stubs, see
 
 | Node | Status | Package | What it does today | Real thing that replaces it | Area | Launch switch |
 |---|---|---|---|---|---|---|
-| `task_planner` | **STUB** | `task_planner_stub` | Any intent -> canned [navigate_to, pick/place] plan for the nearest known object. | LLM + skill-library task planner | planning | `planner:=stub|external` |
+| `task_planner` | **REAL** | `task_planner` | Queues raw intents; plans the oldest only when the behavior tree is idle, from the robot pose and objects at that moment. LLM (OPENAI_API_KEY) or, without a key, a canned [navigate_to, pick/place] plan. | - | planning | `planner:=true|false` |
 
 #### 3. Task execution (behavior tree)
 
@@ -143,7 +143,7 @@ area** (and a reviewer for the interface contract) and record it in
 | **manipulation** | `manipulation` (stub) |
 | **navigation** | `nav` (stub), `odom_adapter` (stub) |
 | **perception** | `perception` (stub), `slam` (stub) |
-| **planning** | `speech_input` (missing), `task_planner` (stub), `behavior_tree` (real) |
+| **planning** | `speech_input` (missing), `task_planner` (real), `behavior_tree` (real) |
 | **safety** | `safety` (real), `estop_bridge` (missing) |
 | **state-estimation** | `state_estimation` (stub) |
 <!-- END GENERATED:areas -->
