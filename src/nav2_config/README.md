@@ -20,9 +20,14 @@ bypass `cmd_vel_mux` (no teleop override, no watchdog) and break the one-publish
 rule. `cmd_vel_raw` is internal and not part of the contract.
 
 ```bash
+ros2 launch bringup full_stack.launch.py sim:=false navigation:=nav2   # whole stack, Nav2 instead of nav_stub
+# or the two-step form (e.g. with your own map server):
 ros2 launch bringup full_stack.launch.py sim:=false navigation:=external
 ros2 launch nav2_config nav2.launch.py
 ```
+
+`navigation:=nav2` runs Nav2 on `slam_stub`'s empty map; the obstacle tests below use the two-step form so
+a fake map with obstacles can be served instead.
 
 ## Testing obstacle avoidance
 
@@ -47,8 +52,8 @@ failed one. Exits non-zero if any scenario fails.
 | `unreachable` | goal (4, 0) inside a closed box: no path exists | Nav2 reports `ABORTED` (no hang, wandered less than 0.6 m) |
 | `obstacle_1@90`, `@180` | as `obstacle_1`, but the goal also asks for that final heading | same, and final heading within 0.5 rad of it |
 
-How fast Nav2 gives up on `unreachable` is the behavior tree's decision, so that test only checks
-that failure is reported: stock Nav2 spins and backs up for about 25 s first.
+That test only checks that failure is reported: stock Nav2 spins and backs up for about 25 s
+before it aborts, and nothing shortens that yet (see "Unreachable goals are slow to fail" below).
 
 The heading check uses Nav2's own `yaw_goal_tolerance` (0.5 rad, about 29 degrees), and the robot
 stops as soon as it is inside it (the runs end 26-27 degrees off), so the test shows the heading
@@ -61,9 +66,8 @@ obstacles known in advance; it does not test sensing (nothing publishes a scan y
 ## What is left (to close out navigation)
 
 To close out on the stub stack:
-- [ ] **One-command launch.** Nav2 is a second, manual `ros2 launch nav2_config nav2.launch.py`. Add a
-      `navigation:=nav2` option to `bringup/launch/full_stack.launch.py` (shared file: integration lead).
-      Decide whether `bringup/package.xml` should depend on `nav2_config`.
+- [x] **One-command launch.** `navigation:=nav2` in `bringup/launch/full_stack.launch.py` launches Nav2
+      (not yet run live; `bringup/package.xml` now has an `exec_depend` on `nav2_config`).
 - [ ] **Contract entry.** The `nav` node in `interface_contract.yaml` still describes `nav_stub` and says
       "Nav2 (configured, not built)". Update it, regenerate docs (`python3 tools/gen_docs.py`).
 - [ ] **Re-run the live checks with the final parameters.** `check_contract.py` and `smoke_task.py` were
@@ -77,8 +81,16 @@ To close out on the stub stack:
 - [ ] **Goal heading is loose.** The runs end 26-27 degrees off because `yaw_goal_tolerance` is 0.5 rad.
       Tighten it if heading matters (see above).
 
-Handed to the behavior-tree work: giving up at once when no path exists (stock Nav2 spins and backs up
-for about 25 s before aborting).
+**Unreachable goals are slow to fail (open, not done anywhere).** Giving up at once when no path
+exists was meant to be handled by the behavior tree, but it is not: the tree treats a Nav2 `ABORTED`
+like any other failure and tries the skill 3 times, and stock Nav2 spins and backs up for about 25 s
+before each abort, so an unreachable goal takes roughly 75 s or more to become `FAILED`. With an LLM
+key the planner then replans once and may send the robot to the same place again (about as long
+again). The tree's per-attempt limit is also a fixed 60 s whatever the distance, while Nav2 is capped
+at 0.3 m/s, so a goal more than about 18 m of path away times out even when it is reachable. Possible
+fixes, none started: a Nav2 behavior tree XML without the recovery branch for "no valid path", telling
+`ABORTED` causes apart in the tree (Humble's `NavigateToPose` result carries no error code), and a
+timeout derived from the path length.
 
 Depends on other teams or hardware:
 - **Obstacle sensing.** The costmaps use only the static map. Nothing publishes a scan or point cloud, so

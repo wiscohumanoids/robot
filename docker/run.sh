@@ -3,8 +3,11 @@
 # on the host show up in the container immediately.
 #
 #   ./docker/run.sh                    # interactive shell, with the stub stack already
-#                                      # running in the background (log: /tmp/stack.log)
-#   START_STACK=0 ./docker/run.sh      # plain interactive shell, no stack
+#                                      # running in the background (log: /tmp/stack.log).
+#                                      # Do NOT run `ros2 launch bringup full_stack.launch.py`
+#                                      # in that shell: every node would run twice.
+#   START_STACK=0 ./docker/run.sh      # plain interactive shell, no stack: use this to
+#                                      # launch the stack yourself
 #   ./docker/run.sh <command...>       # run one command, e.g.
 #   ./docker/run.sh ros2 launch bringup full_stack.launch.py sim:=false
 #   ./docker/run.sh smoke              # build, start the stub stack (sim:=false), run
@@ -82,10 +85,19 @@ fi
 # Build what changed (fast when nothing did), start the headless stub stack in the
 # background, then hand you a shell. Try it with:  ros2 run bringup smoke_task.py
 exec docker run "${ARGS[@]}" wiscohumanoids/robot:latest bash -c '
+  set -o pipefail
   cd /home/ros2_ws
-  colcon build --symlink-install --packages-select humanoid_interfaces behavior_tree task_planner bringup 2>&1 | tail -3
+  if ! colcon build --symlink-install --packages-select humanoid_interfaces behavior_tree task_planner bringup 2>&1 | tail -3; then
+    echo "BUILD FAILED: the stack was NOT started. Run the colcon build again here to see the full output." >&2
+    exec bash
+  fi
   source install/setup.bash
   ros2 launch bringup full_stack.launch.py sim:=false > /tmp/stack.log 2>&1 &
-  echo "stack starting in the background (log: /tmp/stack.log), give it a few seconds"
+  echo "stack starting in the background (pid $!, log: /tmp/stack.log), give it a few seconds"
+  echo "WARNING: the stub stack is ALREADY RUNNING in this shell. Do not run"
+  echo "  ros2 launch bringup full_stack.launch.py"
+  echo "here: every node would run twice (two publishers per topic, which the contract forbids)."
+  echo "To launch it yourself: stop this one first (kill -INT $!), or start the container"
+  echo "with START_STACK=0 ./docker/run.sh"
   exec bash
 '

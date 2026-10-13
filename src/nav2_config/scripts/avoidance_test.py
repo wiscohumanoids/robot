@@ -10,8 +10,8 @@ actually bent around them (otherwise the test proves nothing).
     ros2 run nav2_config avoidance_test.py --map zigzag [--goal 4.5 0.0] [--save run.json]
 
 A map whose metadata says expect = no_path (the sealed goal) passes only if Nav2 reports failure
-(ABORTED) within --max-fail-time seconds without the robot wandering off. How FAST it gives up is
-the behavior tree's business (stock Nav2 spins and backs up for about 25 s first), so the limits
+(ABORTED) within --max-fail-time seconds without the robot wandering off. Nothing makes it give up
+FAST yet (stock Nav2 spins and backs up for about 25 s first; see the README), so the limits
 are generous: the test catches a hang or a runaway, not a slow give-up.
 --goal-yaw-deg also sets the goal's heading and requires the robot to end facing within
 --yaw-tol radians of it (Nav2's own goal checker allows 0.5).
@@ -133,7 +133,10 @@ def main():
     while rclpy.ok() and not result.done() and time.monotonic() - t0 < args.timeout:
         rclpy.spin_once(node, timeout_sec=0.1)
     if not result.done():
-        print('FAIL: timed out')
+        # Do not leave the robot driving to a goal nobody is waiting for.
+        cancel = handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(node, cancel, timeout_sec=5.0)
+        print(f'FAIL: timed out after {args.timeout:g} s (goal cancelled)')
         return 1
     elapsed = time.monotonic() - t0
     status = result.result().status   # 4 = SUCCEEDED, 5 = CANCELED, 6 = ABORTED
@@ -142,6 +145,9 @@ def main():
     rclpy.shutdown()
 
     path = node.path
+    if not path:
+        print(f'FAIL: no /odom received during the run (status={status_name}, time={elapsed:.1f}s)')
+        return 1
     end = path[-1]
     to_goal = math.hypot(end[0] - args.goal[0], end[1] - args.goal[1])
     clearance = min(math.hypot(px - ox, py - oy) for px, py in path[::5] for ox, oy in occupied)

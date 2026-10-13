@@ -25,9 +25,11 @@ MOUNTS=(-v "${REPO_ROOT}/src:/home/ros2_ws/src"
         -v "${OUT}:/out")
 
 echo "== building packages in the container"
+# pipefail: without it the exit code is tail's, and a failed build goes unnoticed.
+# The list is what changed since the image was built and full_stack.launch.py needs.
 docker run --rm "${MOUNTS[@]}" "$IMAGE" bash -c \
-  'cd /home/ros2_ws && colcon build --symlink-install --packages-select odom_adapter_stub nav2_config bringup 2>&1 | tail -3' \
-  || { echo "build failed" >&2; exit 1; }
+  'set -o pipefail; cd /home/ros2_ws && colcon build --symlink-install --packages-select humanoid_interfaces behavior_tree task_planner odom_adapter_stub nav2_config bringup 2>&1 | tail -3' \
+  || { echo "build failed (run the colcon build in ./docker/run.sh to see the full output)" >&2; exit 1; }
 
 status=0
 for map in "${MAPS[@]}"; do
