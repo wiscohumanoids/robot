@@ -5,7 +5,7 @@ planned only when the behavior tree is idle (nothing running, nothing about to r
 so the plan is built from where the robot and the objects are NOW, not where they
 were when the user asked.
 
-    submit(text)            -> queue (rejected beyond MAX_QUEUED)
+    submit(text)            -> queue (no size limit for now; see MAX_QUEUED)
     on_status(text)         <- every /task_status message
     tick()                  -> if the tree is idle and the queue is not empty:
                                take the oldest intent, plan it with the current world,
@@ -24,6 +24,14 @@ let a second plan be sent too early; AWAITING_START closes that gap.
 be lost. If the tree has not started the plan RESEND_AFTER_S after a send, the same
 plan (same plan_id, which the tree uses to ignore duplicates) is sent again, up to
 MAX_SENDS times in total. Then the intent is given up (reported as NO_PLAN).
+
+DONE is reported only when the tree says SUCCEEDED. If a plan we sent stops being
+RUNNING with any other status that is not FAILED (e.g. IDLE: the tree was restarted
+mid-plan), the outcome is unknown: it is reported as GAVE_UP and not replanned.
+
+The tree re-sends its status at 1 Hz. If nothing arrives for STATUS_TIMEOUT_S while a
+plan is in flight, the tree is taken for dead: the plan is given up (GAVE_UP), and
+nothing more is planned until a status is heard again.
 """
 import collections
 import math
@@ -31,9 +39,10 @@ import threading
 import time
 import uuid
 
-MAX_QUEUED = 10
+MAX_QUEUED = None       # no limit for now. Set a number to reject intents beyond it (REJECTED)
 RESEND_AFTER_S = 2.0
 MAX_SENDS = 3
+STATUS_TIMEOUT_S = 5.0  # the tree's heartbeat is 1 Hz; None disables the check
 NO_STATUS_LOG_S = 10.0
 TICK_S = 0.1
 
@@ -43,6 +52,10 @@ READY, PLANNING, AWAITING_START, RUNNING = 'READY', 'PLANNING', 'AWAITING_START'
 def is_busy(status):
     """True while the tree is running a plan ('RUNNING 2/3 pick ...')."""
     return status.startswith('RUNNING')
+
+
+def is_success(status):
+    return status.startswith('SUCCEEDED')
 
 
 def format_report(state, intent, detail=''):
@@ -67,7 +80,8 @@ class Dispatcher:
 
     def __init__(self, plan_fn, publish, get_world, log=lambda msg: None,
                  report=lambda text: None, replan_fn=None, now=time.monotonic, max_queued=MAX_QUEUED, resend_after_s=RESEND_AFTER_S,
-                 max_sends=MAX_SENDS, new_id=lambda: uuid.uuid4().hex[:8]):
+                 max_sends=MAX_SENDS, new_id=lambda: uuid.uuid4().hex[:8],
+                 status_timeout_s=STATUS_TIMEOUT_S):
         self._plan_fn = plan_fn
         self._publish = publish
         self._get_world = get_world
@@ -79,11 +93,13 @@ class Dispatcher:
         self._resend_after_s = resend_after_s
         self._max_sends = max_sends
         self._new_id = new_id
+        self._status_timeout_s = status_timeout_s
         self._lock = threading.Lock()
         self._queue = collections.deque()
         self._phase = READY
         self._status_seen = False
         self._busy = False
+        self._status_at = 0.0   # when the last /task_status arrived
         self._deadline = 0.0
         self._last_wait_log = None
         self._current = None    # {'intent','plan','plan_id','sends','retried'}: the plan in flight
@@ -98,7 +114,7 @@ class Dispatcher:
             self._log('ignoring an empty /user_intent')
             return False
         with self._lock:
-            if len(self._queue) >= self._max_queued:
+            if self._max_queued is not None and len(self._queue) >= self._max_queued:
                 self._log(f'intent queue full ({self._max_queued}), rejected: "{text}"')
                 self._say(format_report('REJECTED', text, f'queue full ({self._max_queued})'))
                 return False
@@ -112,6 +128,7 @@ class Dispatcher:
         with self._lock:
             self.status = text
             self._status_seen = True
+            self._status_at = self._now()
             self._busy = is_busy(text)
             if self._phase == AWAITING_START and self._busy:
                 self._phase = RUNNING
@@ -126,8 +143,14 @@ class Dispatcher:
         if job is None:
             return
         intent = job['intent']
-        if not status.startswith('FAILED'):
+        if is_success(status):
             self._say(format_report('DONE', intent))
+        elif not status.startswith('FAILED'):
+            # Neither result: the tree dropped the plan (e.g. restarted). What the robot
+            # did is unknown, so no DONE and no replan from a guessed state.
+            reason = f'behavior tree stopped without a result (status: {status})'
+            self._log(f'"{intent}": {reason}')
+            self._say(format_report('GAVE_UP', intent, reason))
         elif job['retried'] or self._replan_fn is None:
             self._say(format_report('GAVE_UP', intent, status))
         else:
@@ -207,6 +230,7 @@ class Dispatcher:
     # -------------------------------------------------------------- the decision
     def tick(self):
         """One decision. Returns True if an intent was taken from the queue."""
+        self._check_heartbeat()
         self._resend_or_give_up()
         with self._lock:
             if self._phase != READY or not (self._queue or self._retry):
@@ -219,6 +243,28 @@ class Dispatcher:
             self._phase = PLANNING
         self._plan_and_send(intent, retry)
         return True
+
+    def _check_heartbeat(self):
+        """No /task_status for too long: the tree is gone. Give up the plan in flight and
+        wait for a status before planning anything else."""
+        with self._lock:
+            if (self._status_timeout_s is None or not self._status_seen
+                    or self._now() - self._status_at < self._status_timeout_s):
+                return
+            self._status_seen = False
+            self._busy = False
+            self._last_wait_log = None
+            job = self._current if self._phase in (AWAITING_START, RUNNING) else None
+            if job is not None:
+                was_running = self._phase == RUNNING
+                self._phase = READY
+                self._current = None
+            self._log(f'no /task_status for {self._status_timeout_s:g} s: behavior tree not running?')
+            if job is not None:
+                state = 'while the plan was running' if was_running else 'after the plan was sent'
+                self._say(format_report(
+                    'GAVE_UP', job['intent'],
+                    f'no /task_status for {self._status_timeout_s:g} s {state} (outcome unknown)'))
 
     def _resend_or_give_up(self):
         """The tree has not started the plan we sent: send it again, or give up."""

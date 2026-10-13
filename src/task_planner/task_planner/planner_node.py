@@ -32,8 +32,9 @@ OUTPUTS (this node is the only publisher of both):
   message per planned intent).
   std_msgs/String on /planner_status (event-driven): what happened to each intent,
   e.g. 'QUEUED "pick up the cup": 1 waiting', 'PLANNING "..."', 'SENT "...": 2 steps',
-  'NO_PLAN "...": <reason>', 'REJECTED "...": queue full (10)', and the outcome:
-  'DONE "..."', 'RETRYING "...": <tree failure>' + 'REPLANNING "..."', 'GAVE_UP "...": <failure>'.
+  'NO_PLAN "...": <reason>', 'REJECTED "...": queue full (N)' (only with a cap), and the outcome:
+  'DONE "..."' (only after the tree said SUCCEEDED), 'RETRYING "...": <tree failure>' +
+  'REPLANNING "..."', 'GAVE_UP "...": <failure, or the tree stopped / went silent>'.
 """
 import threading
 
@@ -47,7 +48,12 @@ from humanoid_interfaces.msg import ObjectPoseArray, Skill, SkillSequence
 from task_planner.dispatcher import Dispatcher, yaw_from_quaternion
 from task_planner.llm_config import config_from_env, load_env
 from task_planner.llm_planner import PlanResult, plan_with_llm, replan_with_llm
-from task_planner.planner_logic import plan_for_intent
+from task_planner.planner_logic import plan_checked
+
+# ROS keeps only this many unread messages per topic. The default (10) silently dropped
+# intents when more than ten arrived faster than the planner read them (found by the stress
+# test); the queue cap, not DDS, must be what turns extra intents away.
+BACKLOG = 200
 
 
 class PlannerNode(Node):
@@ -64,10 +70,10 @@ class PlannerNode(Node):
         self.create_subscription(PoseStamped, '/robot_pose', self._on_robot_pose, 10)
         self.create_subscription(String, '/manipulation/held_object', self._on_held, 10)
         self.create_subscription(String, '/task_status', self._on_status, 10)
-        self.create_subscription(String, '/user_intent', self._on_intent, 10)
-        self.create_subscription(String, '/planner_command', self._on_command, 10)
+        self.create_subscription(String, '/user_intent', self._on_intent, BACKLOG)
+        self.create_subscription(String, '/planner_command', self._on_command, BACKLOG)
         self._pub = self.create_publisher(SkillSequence, '/skill_sequence', 10)
-        self._report_pub = self.create_publisher(String, '/planner_status', 10)
+        self._report_pub = self.create_publisher(String, '/planner_status', BACKLOG)
 
         self._dispatcher = Dispatcher(
             plan_fn=self._plan, publish=self._publish_plan,
@@ -113,8 +119,8 @@ class PlannerNode(Node):
         standoff = float(self.get_parameter('standoff_m').value)
         if self._llm.configured:
             return plan_with_llm(intent, world['objects'], self._llm, standoff, world['robot'], world['held'])
-        plan = plan_for_intent(intent, world['objects'], standoff)
-        return PlanResult(plan=plan, error='' if plan else 'perception has reported no objects yet')
+        plan, error = plan_checked(intent, world['objects'], standoff, world['held'])
+        return PlanResult(plan=plan, error=error)
 
     def _replan(self, intent, old_plan, failure, world):
         standoff = float(self.get_parameter('standoff_m').value)

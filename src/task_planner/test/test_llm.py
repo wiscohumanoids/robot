@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from task_planner import llm_config, llm_planner, skill_catalog
+from task_planner import llm_client, llm_config, llm_planner, skill_catalog
 from task_planner.llm_client import LLMError, chat_json
 from task_planner.llm_config import LLMConfig
 
@@ -37,6 +37,18 @@ def test_parse_env_file():
     text = '# c\n\nOPENAI_API_KEY="sk-1"\nexport OPENAI_MODEL=gpt-x\nBAD LINE\nEMPTY=\nQ=\'a b\'\n'
     assert llm_config.parse_env_file(text) == {
         'OPENAI_API_KEY': 'sk-1', 'OPENAI_MODEL': 'gpt-x', 'EMPTY': '', 'Q': 'a b'}
+
+
+@pytest.mark.parametrize('line, value', [
+    ('K=sk-1 # my key', 'sk-1'), ('K = sk-1\t# my key', 'sk-1'), ('K="sk-1" # my key', 'sk-1'),
+    ("K='a b'#c", 'a b'), ('K=# nothing', ''), ('K= # nothing', ''),
+    ('K=a#b', 'a#b'),                       # no space before it: part of the value
+    ('K="a # b"', 'a # b'), ("K='a # b' # c", 'a # b'),   # inside quotes: part of the value
+    ('K=http://h/v1 # url', 'http://h/v1'), ('K="unclosed # x', '"unclosed # x'),
+    ('K=""', ''), ('K="', '"'),
+])
+def test_inline_comments_are_not_part_of_the_value(line, value):
+    assert llm_config.parse_env_file(line + '\n') == {'K': value}
 
 
 def test_defaults_without_a_key():
@@ -101,6 +113,83 @@ def test_unusable_replies_raise_llm_error(raw, text):
 
 
 # ------------------------------------------------------------------ the prompt
+# ------------------------------------------------------------------ transient errors are retried
+def flaky_post(*errors):
+    """Raises the given errors in turn, then answers with a valid plan reply."""
+    calls, pending = [], list(errors)
+
+    def post(url, headers, body, timeout_s):
+        calls.append(url)
+        if pending:
+            raise pending.pop(0)
+        return fake_post(reply())(url, headers, body, timeout_s)
+    return post, calls
+
+
+def busy():
+    return LLMError('LLM request failed: HTTP 429 slow down', transient=True)
+
+
+def test_a_transient_error_is_retried_and_the_reply_used():
+    post, calls = flaky_post(busy())
+    waits = []
+    assert chat_json(CONFIG, [], {}, post=post, sleep=waits.append) == reply()
+    assert len(calls) == 2 and waits == [llm_client.RETRY_WAIT_S[0]]
+
+
+def test_retries_are_bounded_and_the_last_error_is_raised():
+    post, calls = flaky_post(*[busy() for _ in range(10)])
+    waits = []
+    with pytest.raises(LLMError, match='HTTP 429'):
+        chat_json(CONFIG, [], {}, post=post, sleep=waits.append)
+    assert len(calls) == llm_client.MAX_ATTEMPTS == 3 and waits == list(llm_client.RETRY_WAIT_S)
+
+
+def test_a_permanent_error_is_not_retried():
+    post, calls = flaky_post(LLMError('LLM request failed: HTTP 401 bad key'))
+    with pytest.raises(LLMError, match='HTTP 401'):
+        chat_json(CONFIG, [], {}, post=post, sleep=lambda s: pytest.fail('must not wait'))
+    assert len(calls) == 1
+
+
+def test_an_unusable_reply_is_not_retried():
+    calls = []
+    with pytest.raises(LLMError):
+        chat_json(CONFIG, [], {}, post=lambda *a: calls.append(1) or b'not json',
+                  sleep=lambda s: pytest.fail('must not wait'))
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize('code, transient', [(408, True), (429, True), (500, True), (502, True), (503, True),
+                                             (504, True), (400, False), (401, False), (403, False), (404, False)])
+def test_which_http_errors_count_as_transient(monkeypatch, code, transient):
+    import io
+    import urllib.error
+
+    def urlopen(request, timeout):
+        raise urllib.error.HTTPError(request.full_url, code, 'x', {}, io.BytesIO(b'detail'))
+    monkeypatch.setattr(llm_client.urllib.request, 'urlopen', urlopen)
+    with pytest.raises(LLMError, match=f'HTTP {code} detail') as info:
+        llm_client._http_post('http://h/v1', {}, b'{}', 1.0)
+    assert info.value.transient is transient
+
+
+@pytest.mark.parametrize('error', [TimeoutError('timed out'), ConnectionResetError('reset')])
+def test_timeouts_and_connection_errors_are_transient(monkeypatch, error):
+    def urlopen(request, timeout):
+        raise error
+    monkeypatch.setattr(llm_client.urllib.request, 'urlopen', urlopen)
+    with pytest.raises(LLMError) as info:
+        llm_client._http_post('http://h/v1', {}, b'{}', 1.0)
+    assert info.value.transient is True
+
+
+def test_plan_with_llm_survives_one_transient_error():
+    post, calls = flaky_post(busy())
+    result = llm_planner.plan_with_llm('x', OBJECTS, CONFIG, post=post, sleep=lambda s: None)
+    assert len(calls) == 2 and 'HTTP 429' not in (result.error or '')
+
+
 def test_schema_skill_enum_is_the_catalog():
     enum = llm_planner.SCHEMA['properties']['steps']['items']['properties']['skill']['enum']
     assert enum == skill_catalog.names()

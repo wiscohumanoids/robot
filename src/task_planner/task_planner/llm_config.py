@@ -30,9 +30,28 @@ class LLMConfig:
         return bool(self.api_key)
 
 
+def _clean_value(value):
+    """One pair of surrounding quotes is removed; a trailing ` # comment` is dropped
+    (after the closing quote, or after whitespace in an unquoted value)."""
+    value = value.strip()
+    if value[:1] in ('"', "'"):
+        end = value.find(value[0], 1)
+        rest = value[end + 1:].strip()
+        if end != -1 and (not rest or rest.startswith('#')):
+            return value[1:end]
+        return value
+    if value.startswith('#'):
+        return ''
+    for i, char in enumerate(value):
+        if char == '#' and value[i - 1].isspace():
+            return value[:i].rstrip()
+    return value
+
+
 def parse_env_file(text):
-    """KEY=VALUE lines -> dict. Blank lines and # comments are skipped, one pair of
-    surrounding quotes is removed, an optional leading `export ` is allowed."""
+    """KEY=VALUE lines -> dict. Blank lines and # comments (whole-line or after a
+    value) are skipped, one pair of surrounding quotes is removed, an optional leading
+    `export ` is allowed."""
     values = {}
     for line in text.splitlines():
         line = line.strip()
@@ -41,10 +60,7 @@ def parse_env_file(text):
         if line.startswith('export '):
             line = line[len('export '):]
         key, _, value = line.partition('=')
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
-            value = value[1:-1]
-        values[key.strip()] = value
+        values[key.strip()] = _clean_value(value)
     return values
 
 

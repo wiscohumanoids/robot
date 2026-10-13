@@ -37,6 +37,20 @@ def choose_object(intent, objects):
     return objects[0]
 
 
+def plan_checked(intent, objects, standoff=0.6, held=None):
+    """plan_for_intent plus the checks the LLM planner also makes: returns (plan, error).
+    plan is [] with a reason when there are no objects or the plan is impossible for the
+    hand (held: object id in the hand, '' if empty, None if unknown: nothing is rejected)."""
+    from task_planner import skill_catalog
+    plan = plan_for_intent(intent, objects, standoff)
+    if not plan:
+        return [], 'perception has reported no objects yet'
+    problems = skill_catalog.check_hand(plan, held)
+    if problems:
+        return [], problems[0]
+    return plan, ''
+
+
 def plan_for_intent(intent, objects, standoff=0.6):
     """Return a list of skill dicts {name, object_id, x, y, z}, or [] if no plan
     is possible (e.g. perception has reported no objects yet).

@@ -14,6 +14,8 @@ IDLE, RUN, OK, FAIL = 'IDLE', 'RUNNING 1/1 pick', 'SUCCEEDED', 'FAILED 1/1 pick:
 
 class Rig:
     def __init__(self, plan=PLAN, error='', replan=True, **kwargs):
+        # The fake clock jumps without the tree's heartbeat; only the heartbeat tests want the timeout.
+        kwargs.setdefault('status_timeout_s', None)
         self.t = 0.0
         self.logs, self.planned, self.sent, self.reports, self.ids = [], [], [], [], []
         self.world = {'robot': {'x': 0.0, 'y': 0.0, 'yaw': 0.0}, 'objects': []}
@@ -207,6 +209,146 @@ def test_a_busy_tree_is_waited_for_not_resent_to():
     assert r.intents() == ['one']
 
 
+# -------------------------------------------------------------- DONE only on SUCCEEDED
+def test_a_tree_that_restarts_mid_plan_is_not_reported_done():
+    r = Rig()
+    r.d.on_status(IDLE)
+    r.d.submit('pick up the cube')
+    r.d.tick()
+    r.d.on_status(RUN)
+    r.d.on_status(IDLE)                           # tree restarted: no result for our plan
+    assert not any(m.startswith('DONE') for m in r.reports)
+    assert r.reports[-1] == ('GAVE_UP "pick up the cube": behavior tree stopped without a result '
+                             '(status: IDLE)')
+    assert r.d.phase == d.READY
+
+
+@pytest.mark.parametrize('status', [IDLE, '', 'PAUSED', 'succeeded'])
+def test_only_a_succeeded_status_is_done(status):
+    r = Rig()
+    r.d.on_status(IDLE)
+    r.d.submit('go')
+    r.d.tick(); r.d.on_status(RUN); r.d.on_status(status)
+    assert not any(m.startswith('DONE') for m in r.reports) and r.reports[-1].startswith('GAVE_UP "go"')
+
+
+def test_an_unknown_outcome_is_not_replanned_and_the_queue_carries_on():
+    r = Rig()
+    r.d.on_status(IDLE)
+    r.d.submit('one')
+    r.d.submit('two')
+    r.d.tick(); r.d.on_status(RUN); r.d.on_status(IDLE)
+    assert r.d.tick() and r.replans == [] and r.intents() == ['one', 'two']
+
+
+@pytest.mark.parametrize('status, ok', [('SUCCEEDED', True), ('IDLE', False), ('RUNNING 1/1 pick', False),
+                                        ('FAILED 1/1 pick: x', False), ('', False)])
+def test_is_success(status, ok):
+    assert d.is_success(status) is ok
+
+
+# -------------------------------------------------------------- heartbeat: the tree went silent
+def test_the_heartbeat_timeout_is_on_by_default():
+    assert d.STATUS_TIMEOUT_S == 5.0
+    assert Dispatcher(None, None, None)._status_timeout_s == d.STATUS_TIMEOUT_S
+
+
+def running(r, intent='one'):
+    r.d.on_status(IDLE)
+    r.d.submit(intent)
+    r.d.tick()
+    r.d.on_status(RUN)
+
+
+def test_a_tree_that_dies_while_running_does_not_wedge_the_queue():
+    r = Rig(status_timeout_s=5.0)
+    running(r)
+    r.d.submit('two')
+    r.t = 4.9
+    r.d.tick()
+    assert r.d.phase == d.RUNNING                 # not yet
+    r.t = 5.0
+    assert not r.d.tick()
+    assert r.d.phase == d.READY
+    assert r.reports[-1] == ('GAVE_UP "one": no /task_status for 5 s while the plan was running '
+                             '(outcome unknown)')
+    assert r.intents() == ['one'] and r.d.pending() == ['two']     # nothing sent to a dead tree
+
+
+def test_planning_resumes_when_the_tree_is_heard_again():
+    r = Rig(status_timeout_s=5.0)
+    running(r)
+    r.d.submit('two')
+    r.t = 6.0
+    r.d.tick()
+    r.t = 60.0
+    assert not r.d.tick() and r.intents() == ['one']
+    r.d.on_status(IDLE)                           # tree is back
+    assert r.d.tick() and r.intents() == ['one', 'two']
+
+
+def test_a_heartbeat_keeps_a_long_plan_alive():
+    r = Rig(status_timeout_s=5.0)
+    running(r)
+    for t in range(1, 120):
+        r.t = float(t)
+        r.d.on_status(RUN)
+        r.d.tick()
+    assert r.d.phase == d.RUNNING and not any(m.startswith('GAVE_UP') for m in r.reports)
+    r.d.on_status(OK)
+    assert r.reports[-1] == 'DONE "one"'
+
+
+def test_a_late_result_for_a_plan_already_given_up_is_ignored():
+    r = Rig(status_timeout_s=5.0)
+    running(r)
+    r.t = 6.0
+    r.d.tick()
+    count = len(r.reports)
+    r.d.on_status(RUN)                            # it was only a gap: the tree is still on that plan
+    r.d.submit('two')
+    assert not r.d.tick()                         # busy: wait for it
+    r.d.on_status(FAIL)
+    assert r.replans == [] and not any(m.startswith(('DONE', 'RETRYING')) for m in r.reports[count:])
+    assert r.d.tick() and r.intents() == ['one', 'two']
+
+
+def test_silence_after_a_send_gives_the_plan_up_too():
+    r = Rig(status_timeout_s=5.0, resend_after_s=2.0, max_sends=10)
+    r.d.on_status(IDLE)
+    r.d.submit('one')
+    r.d.tick()
+    for t in (2.0, 4.0, 5.0):
+        r.t = t
+        r.d.tick()
+    assert r.d.phase == d.READY and len(r.sent) == 3               # sent + 2 resends, then silence wins
+    assert r.reports[-1] == ('GAVE_UP "one": no /task_status for 5 s after the plan was sent '
+                             '(outcome unknown)')
+
+
+def test_silence_with_nothing_in_flight_reports_nothing_but_stops_planning():
+    r = Rig(status_timeout_s=5.0)
+    r.d.on_status(IDLE)
+    r.t = 10.0
+    r.d.submit('one')
+    r.reports.clear()
+    assert not r.d.tick() and r.reports == [] and r.sent == []
+    assert any('no /task_status for 5 s' in m for m in r.logs)
+    assert any('waiting for /task_status' in m for m in r.logs)
+
+
+def test_clear_after_the_tree_died_leaves_nothing_stuck():
+    r = Rig(status_timeout_s=5.0)
+    running(r)
+    r.d.submit('two')
+    r.t = 6.0
+    r.d.tick()
+    r.d.clear()
+    r.d.on_status(IDLE)
+    r.d.submit('three')
+    assert r.d.tick() and r.intents() == ['one', 'three']
+
+
 # -------------------------------------------------------------- planning failures
 @pytest.mark.parametrize('plan, error', [([], 'cannot do that: no'), ([], '')])
 def test_no_plan_publishes_nothing_logs_the_reason_and_moves_on(plan, error):
@@ -269,9 +411,23 @@ def test_room_frees_up_once_an_intent_is_taken():
     assert r.d.submit('b')
 
 
-def test_default_cap_is_ten():
+def test_there_is_no_cap_by_default():
     r = Rig()
-    assert [r.d.submit(str(i)) for i in range(11)] == [True] * 10 + [False]
+    assert d.MAX_QUEUED is None
+    assert all(r.d.submit(str(i)) for i in range(500))
+    assert len(r.d) == 500 and not any(m.startswith('REJECTED') for m in r.reports)
+
+
+def test_an_unlimited_queue_still_runs_in_order():
+    r = Rig()
+    r.d.on_status(IDLE)
+    for i in range(30):
+        r.d.submit(f'intent {i}')
+    for _ in range(30):
+        r.d.tick()
+        r.d.on_status(RUN)
+        r.d.on_status(OK)
+    assert r.intents() == [f'intent {i}' for i in range(30)]
 
 
 def test_waiting_for_the_first_status_is_logged_once_per_interval():

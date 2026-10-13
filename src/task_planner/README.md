@@ -9,7 +9,7 @@ to each intent. **The only publisher of both.**
 ## Queue
 
 `/user_intent` text goes into a FIFO of **raw text** (`dispatcher.py`, cap
-`MAX_QUEUED = 10`, extra intents are rejected and logged). Nothing is planned when
+no size limit for now: `MAX_QUEUED` in `dispatcher.py` is `None`; give it a number and extra intents are rejected with `REJECTED ... queue full (N)`). Nothing is planned when
 it is typed. The oldest intent is planned only when the behavior tree is idle
 (`/task_status` is not `RUNNING ...` and the previous plan has finished), using the
 robot pose and objects **at that moment**. A failed plan is logged and the next
@@ -18,8 +18,10 @@ intent is tried. The tree therefore never holds more than one waiting plan.
 `/planner_status` lines (one per event): `QUEUED "<intent>": N waiting`,
 `PLANNING "<intent>"`, `SENT "<intent>": N steps`, `NO_PLAN "<intent>": <reason>`
 (the model refused, the plan was invalid, no objects seen...) and
-`REJECTED "<intent>": queue full (10)`, plus the outcome: `DONE`, `RETRYING` (the tree
-failed, with its failure text, then `REPLANNING`) and `GAVE_UP`. Watch it with `ros2 topic echo /planner_status`, or `ros2 run bringup watch_status.py`,
+`REJECTED "<intent>": queue full (N)` (only when a cap is set), plus the outcome: `DONE` (only when the
+tree reported `SUCCEEDED`), `RETRYING` (the tree
+failed, with its failure text, then `REPLANNING`) and `GAVE_UP` (with the reason: the tree's failure,
+or that the tree stopped or went silent, see "Lost trees"). Watch it with `ros2 topic echo /planner_status`, or `ros2 run bringup watch_status.py`,
 a print-only stand-in for the user-facing feedback (prints `/planner_status` and every
 change of `/task_status`; replace it with the real UI).
 
@@ -56,6 +58,17 @@ is sent again (`RESENDING`), up to 3 sends in total, then the intent is given up
 (`NO_PLAN ... behavior tree did not start the plan`). The tree remembers the last 64
 ids and ignores a plan it has already seen, so a resend never runs twice.
 
+## Lost trees
+
+`DONE` means the tree said `SUCCEEDED`. If a plan we sent stops being `RUNNING` with anything else
+that is not `FAILED` (e.g. `IDLE`, because the tree was restarted mid-plan), nobody knows what the
+robot did: it is reported as `GAVE_UP "...": behavior tree stopped without a result (status: IDLE)`
+and not replanned.
+
+The tree re-sends `/task_status` every second. If none arrives for 5 s (`STATUS_TIMEOUT_S`) while a
+plan is sent or running, the plan is given up (`GAVE_UP "...": no /task_status for 5 s ...`) and the
+queue is no longer stuck behind it; nothing else is planned until a status is heard again.
+
 ## Hand state
 
 `/manipulation/held_object` says what the hand holds (`""` = empty; unknown until the
@@ -72,6 +85,8 @@ perception sees, the model answers with a strict JSON plan, and every step is
 validated (known skill, known object, goal inside the map) before publishing. The
 object poses in the plan come from the world, never from the model. If the model
 refuses or the plan is invalid, nothing is published and the reason is logged.
+A transient API failure (HTTP 408/429/5xx, timeout, connection error) is retried, up to 3 requests in
+total with 1 s and 2 s between them (`llm_client.py`); other errors fail at once (`NO_PLAN`).
 Without a key the canned planner below is used.
 
 ## What is fake (canned planner, used without a key)
@@ -84,7 +99,8 @@ No LLM. Any intent becomes a canned two-step plan built by `plan_for_intent()`
    `place`, or `handover`.
 
 The object is the one whose label appears in the intent, else the first
-reported. If perception has reported nothing yet, there is no plan (logged).
+reported. Like the LLM planner it refuses plans the hand makes impossible (put down or hand over while
+the hand is empty, pick while holding something) when `/manipulation/held_object` is known. If perception has reported nothing yet, there is no plan (logged).
 
 ## What replaces it
 
