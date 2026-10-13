@@ -2,6 +2,10 @@
 from behavior_tree.skills import Outcome
 
 
+def no_sleep(seconds):
+    """For run_plan/BehaviorRunner(sleep=...): the pause between attempts takes no real time."""
+
+
 class FakeCtx:
     """Records calls; returns the scripted outcomes in order (the last one repeats)."""
 

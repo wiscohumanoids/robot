@@ -1,14 +1,14 @@
 import threading
 
-from behavior_tree.bt_logic import (MAX_ATTEMPTS, SKILL_TIMEOUT_S, BehaviorRunner, PlanQueue,
-                                     format_status, run_plan)
+from behavior_tree.bt_logic import (MAX_ATTEMPTS, RETRY_BACKOFF_S, SKILL_TIMEOUT_S, BehaviorRunner,
+                                     PlanQueue, format_status, run_plan)
 from behavior_tree.skills import Outcome, Skill
-from bt_fakes import FakeCtx
+from bt_fakes import FakeCtx, no_sleep
 
 
 def run(plan, ctx):
     statuses = []
-    ok = run_plan(plan, ctx, statuses.append)
+    ok = run_plan(plan, ctx, statuses.append, sleep=no_sleep)
     return ok, statuses
 
 
@@ -47,6 +47,49 @@ def test_three_failed_attempts_fail_the_plan_and_drop_the_rest():
     assert len(ctx.calls) == 3          # 3 attempts, and the pick never ran
     assert statuses[-1] == 'FAILED 1/2 navigate_to: action aborted (attempt 3/3)'
     assert 'SUCCEEDED' not in statuses
+
+
+# ---------------------------------------------------------------- pause between attempts
+def pauses_of(plan, ctx, **kwargs):
+    pauses = []
+    ok = run_plan(plan, ctx, lambda s: None, sleep=pauses.append, **kwargs)
+    return ok, pauses
+
+
+def test_there_is_a_pause_before_every_retry_and_none_after_the_last_attempt():
+    assert RETRY_BACKOFF_S == 1.0
+    ok, pauses = pauses_of([Skill('pick', 'c')], FakeCtx(Outcome(False, 'goal rejected')))
+    assert not ok and pauses == [RETRY_BACKOFF_S] * (MAX_ATTEMPTS - 1)
+
+
+def test_no_pause_when_nothing_fails_or_when_the_failure_is_final():
+    assert pauses_of([Skill('navigate_to'), Skill('pick', 'c')], FakeCtx()) == (True, [])
+    assert pauses_of([Skill('dance')], FakeCtx()) == (False, [])
+
+
+def test_the_pause_comes_between_the_failed_attempt_and_the_next_one():
+    events = []
+
+    class Ctx(FakeCtx):
+        def navigate(self, pose, timeout_s):
+            events.append('call')
+            return super().navigate(pose, timeout_s)
+    ctx = Ctx(Outcome(False, 'timed out after 60 s'), Outcome(True))
+    run_plan([Skill('navigate_to')], ctx, lambda s: None, sleep=lambda s: events.append(f'sleep {s:g}'),
+             backoff_s=2.5)
+    assert events == ['call', 'sleep 2.5', 'call']
+
+
+def test_a_zero_backoff_never_sleeps():
+    assert pauses_of([Skill('pick', 'c')], FakeCtx(Outcome(False, 'x')), backoff_s=0) == (False, [])
+
+
+def test_the_runner_passes_its_backoff_and_sleep_on():
+    pauses = []
+    runner = BehaviorRunner(FakeCtx(Outcome(False, 'x')), lambda s: None, backoff_s=0.25, sleep=pauses.append)
+    runner.submit([Skill('pick', 'c')])
+    runner.step(0)
+    assert pauses == [0.25, 0.25]
 
 
 def test_unknown_skill_fails_immediately_without_retries():
@@ -90,7 +133,7 @@ def test_runner_runs_queued_plans_one_after_another_and_keeps_the_last_result():
 
 def test_a_failed_plan_does_not_block_the_next_one():
     ctx = FakeCtx(Outcome(False, 'no'), Outcome(False, 'no'), Outcome(False, 'no'), Outcome(True))
-    runner = BehaviorRunner(ctx, lambda s: None)
+    runner = BehaviorRunner(ctx, lambda s: None, sleep=no_sleep)
     runner.submit([Skill('navigate_to')])
     runner.submit([Skill('pick', 'c')])
     runner.step(0)

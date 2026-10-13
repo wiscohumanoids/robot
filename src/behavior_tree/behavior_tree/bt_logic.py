@@ -2,7 +2,8 @@
 
     take the oldest plan from the queue (wait if there is none)
     for each skill in the plan:
-        up to MAX_ATTEMPTS attempts of run_skill(), each limited to SKILL_TIMEOUT_S
+        up to MAX_ATTEMPTS attempts of run_skill(), each limited to SKILL_TIMEOUT_S,
+        RETRY_BACKOFF_S apart
         all attempts failed -> publish FAILED, drop the rest of the plan
     all skills worked -> publish SUCCEEDED
     next plan
@@ -12,11 +13,14 @@ IDLE is only the status before the first plan.
 """
 import collections
 import threading
+import time
 
 from behavior_tree.skills import run_skill
 
 MAX_ATTEMPTS = 3
 SKILL_TIMEOUT_S = 60.0
+RETRY_BACKOFF_S = 1.0   # pause before another attempt: a server that just failed or rejected
+                        # a goal (e.g. still busy with the cancelled one) needs a moment
 SEEN_IDS_KEPT = 64      # plan ids remembered, to ignore a plan the planner sends twice
 
 
@@ -58,11 +62,13 @@ class PlanQueue:
 
 
 def run_plan(plan, ctx, set_status, max_attempts=MAX_ATTEMPTS, timeout_s=SKILL_TIMEOUT_S,
-             run=run_skill):
+             run=run_skill, backoff_s=RETRY_BACKOFF_S, sleep=time.sleep):
     """Runs every skill in order. Returns True if the whole plan worked."""
     total = len(plan)
     for index, skill in enumerate(plan, start=1):
         for attempt in range(1, max_attempts + 1):
+            if attempt > 1 and backoff_s > 0:
+                sleep(backoff_s)
             detail = f'attempt {attempt}/{max_attempts}' if attempt > 1 else ''
             set_status(format_status('RUNNING', index, total, skill.name, detail))
             outcome = run(ctx, skill, timeout_s)
@@ -83,12 +89,15 @@ class BehaviorRunner:
     runs run_forever() on a worker thread."""
 
     def __init__(self, ctx, publish_status, log=lambda msg: None,
-                 max_attempts=MAX_ATTEMPTS, timeout_s=SKILL_TIMEOUT_S):
+                 max_attempts=MAX_ATTEMPTS, timeout_s=SKILL_TIMEOUT_S,
+                 backoff_s=RETRY_BACKOFF_S, sleep=time.sleep):
         self._ctx = ctx
         self._publish = publish_status
         self._log = log
         self._max_attempts = max_attempts
         self._timeout_s = timeout_s
+        self._backoff_s = backoff_s
+        self._sleep = sleep
         self.queue = PlanQueue()
         self._seen_ids = collections.deque(maxlen=SEEN_IDS_KEPT)
         self.status = format_status('IDLE')
@@ -119,7 +128,8 @@ class BehaviorRunner:
         if plan is None:
             return False
         try:
-            run_plan(plan, self._ctx, self.set_status, self._max_attempts, self._timeout_s)
+            run_plan(plan, self._ctx, self.set_status, self._max_attempts, self._timeout_s,
+                     backoff_s=self._backoff_s, sleep=self._sleep)
         except Exception as exc:  # never leave the status stuck on RUNNING
             self.set_status(format_status('FAILED', detail=f'unexpected error: {exc}'))
         return True

@@ -37,21 +37,22 @@ from behavior_tree.skills import Skill
 class RosSkillContext:
     """The real SkillContext: the two action clients (see skills.SkillContext)."""
 
-    def __init__(self, node):
+    def __init__(self, node, stop=lambda: False):
+        self._stop = stop   # True once the node is shutting down: cancel the running goal
         self._nav = ActionClient(node, NavigateToPose, 'navigate_to_pose')
         self._manip = ActionClient(node, ExecuteManipulation, 'execute_manipulation')
 
     def navigate(self, pose, timeout_s):
         goal = NavigateToPose.Goal()
         goal.pose = pose
-        return call_action(self._nav, goal, timeout_s)
+        return call_action(self._nav, goal, timeout_s, stop=self._stop)
 
     def manipulate(self, task, object_id, pose, timeout_s):
         goal = ExecuteManipulation.Goal()
         goal.task = task
         goal.object_id = object_id
         goal.target_pose = pose
-        return call_action(self._manip, goal, timeout_s, manipulation=True)
+        return call_action(self._manip, goal, timeout_s, manipulation=True, stop=self._stop)
 
 
 class BehaviorTreeNode(Node):
@@ -59,8 +60,9 @@ class BehaviorTreeNode(Node):
     def __init__(self):
         super().__init__('behavior_tree')
         self._status_pub = self.create_publisher(String, '/task_status', 10)
+        self._stop = threading.Event()
         self._runner = BehaviorRunner(
-            RosSkillContext(self),
+            RosSkillContext(self, self._stop.is_set),
             publish_status=lambda text: self._status_pub.publish(String(data=text)),
             log=lambda msg: self.get_logger().info(msg))
         self.create_subscription(SkillSequence, '/skill_sequence', self._on_sequence, 10)
@@ -68,7 +70,6 @@ class BehaviorTreeNode(Node):
 
         # The flow blocks on action results, so it runs on its own thread and
         # leaves the executor free to service the action clients' callbacks.
-        self._stop = threading.Event()
         self._worker = threading.Thread(target=self._runner.run_forever, args=(self._stop,), daemon=True)
         self._worker.start()
         self.get_logger().info('behavior_tree up: queued plans, 3 attempts x 60 s per skill')
@@ -79,6 +80,8 @@ class BehaviorTreeNode(Node):
             self.get_logger().info(f'plan queued ({len(plan)} skills, {len(self._runner.queue)} waiting)')
 
     def shutdown(self):
+        # The worker sees the flag inside call_action and cancels the goal in flight
+        # (best effort), so a stopped tree does not leave the robot walking.
         self._stop.set()
         self._worker.join(timeout=2.0)
 

@@ -11,17 +11,23 @@
 ```
 take the oldest plan from the queue (wait if there is none)
 for each skill in the plan:
-    up to 3 attempts, each limited to 60 s
+    up to 3 attempts, each limited to 60 s, 1 s apart
     all attempts failed -> publish FAILED, drop the rest of that plan
 all skills worked -> publish SUCCEEDED
 next plan
 ```
 
-- **Queue:** plans that arrive while it is busy wait their turn (FIFO, unbounded; in practice the task planner only sends a plan when the tree is idle, so at most one waits. The intent queue and its size cap live in the planner).
+- **Queue:** plans that arrive while it is busy wait their turn (FIFO, unbounded; in practice the task planner only sends a plan when the tree is idle, so at most one waits. The intent queue lives in the planner, with no size limit for now).
   An empty plan is ignored, and so is a plan whose `plan_id` was already seen (the
   planner resends until it sees the tree start; the last 64 ids are remembered).
 - **Retry and timeout:** the same for every skill (`MAX_ATTEMPTS = 3` total attempts,
-  `SKILL_TIMEOUT_S = 60` per attempt, in `bt_logic.py`). A timeout cancels the running action.
+  `SKILL_TIMEOUT_S = 60` per attempt, in `bt_logic.py`). A timeout cancels the running action
+  and then waits up to 5 s (`CANCEL_WAIT_S` in `action_call.py`) for the server to finish the
+  cancelled goal, so the next attempt is not rejected by a server that is still busy with the old
+  one. Attempts are `RETRY_BACKOFF_S = 1` s apart, so a rejected goal is not re-sent instantly either.
+- **Shutdown:** stopping the node cancels the goal in flight (best effort: the worker thread sends
+  the cancel when it sees the stop flag; not verified live, and after Ctrl-C rclpy may already have
+  shut the context down, in which case the cancel cannot be sent).
 - **Unknown skill name:** fails at once with `unknown skill: <name>`, no retries.
 - A failed plan does not stop the queue: the next plan runs.
 
@@ -52,5 +58,9 @@ ros2 run bringup smoke_task.py       # end-to-end check of the whole task layer
 
 ## Not done yet
 
-A "stop" command that jumps the queue and cancels the running skill, and any
-condition checks before a skill starts (e.g. safety status).
+- A "stop" command that jumps the queue and cancels the running skill. Today nothing can stop a
+  running plan short of stopping the node: `/planner_command clear` only drops waiting intents.
+  It needs a new interface (contract entry, planner and tree as consumers).
+- Condition checks before a skill starts (e.g. safety status).
+- Failing fast on an unreachable navigation goal: every Nav2 `ABORTED` is retried 3 times, and the
+  60 s limit does not depend on the distance (details in `nav2_config/README.md`).

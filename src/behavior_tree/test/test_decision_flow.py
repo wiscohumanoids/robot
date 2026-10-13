@@ -16,7 +16,7 @@ import pytest
 from behavior_tree.bt_logic import (MAX_ATTEMPTS, SKILL_TIMEOUT_S, BehaviorRunner, PlanQueue,
                                      format_status, run_plan)
 from behavior_tree.skills import SKILLS, Outcome, Skill, manipulate, navigate_to, run_skill
-from bt_fakes import FakeCtx
+from bt_fakes import FakeCtx, no_sleep
 
 NAMES = ['navigate_to', 'pick', 'place', 'handover']
 PATTERNS = [''.join(p) for p in itertools.product('SF', repeat=3)]   # S = success, F = failure
@@ -28,6 +28,7 @@ def script(pattern, reason='boom'):
 
 def run(plan, ctx, **kwargs):
     statuses = []
+    kwargs.setdefault('sleep', no_sleep)
     ok = run_plan(plan, ctx, statuses.append, **kwargs)
     return ok, statuses
 
@@ -426,7 +427,7 @@ class TestQueueAndRunner:
 
     def test_a_failed_plan_does_not_block_the_next_plan(self):
         ctx = FakeCtx(*script('FFF') + [Outcome(True)])
-        runner = BehaviorRunner(ctx, lambda s: None)
+        runner = BehaviorRunner(ctx, lambda s: None, sleep=no_sleep)
         runner.submit([Skill('navigate_to')])
         runner.submit([Skill('pick', 'c')])
         runner.step(0)
@@ -436,7 +437,7 @@ class TestQueueAndRunner:
 
     def test_failure_drops_only_that_plans_remaining_skills_not_the_queue(self):
         ctx = FakeCtx(*script('FFF') + [Outcome(True)])
-        runner = BehaviorRunner(ctx, lambda s: None)
+        runner = BehaviorRunner(ctx, lambda s: None, sleep=no_sleep)
         runner.submit([Skill('navigate_to'), Skill('pick', 'c')])      # plan 1: fails at skill 1
         runner.submit([Skill('place', 'c')])                           # plan 2
         runner.step(0)
@@ -454,7 +455,7 @@ class TestQueueAndRunner:
 
     def test_runner_settings_reach_the_skills(self):
         ctx = FakeCtx(Outcome(False, 'boom'))
-        runner = BehaviorRunner(ctx, lambda s: None, max_attempts=2, timeout_s=7.0)
+        runner = BehaviorRunner(ctx, lambda s: None, max_attempts=2, timeout_s=7.0, sleep=no_sleep)
         runner.submit([Skill('navigate_to')])
         runner.step(0)
         assert len(ctx.calls) == 2 and {c[-1] for c in ctx.calls} == {7.0}
