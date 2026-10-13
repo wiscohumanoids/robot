@@ -38,6 +38,8 @@ def switch(node):
     arg = node.get('launch_arg')
     if not arg:
         return '-'
+    if node.get('launch_values'):
+        return f"`{arg}:={node['launch_values']}`"
     if node['status'] in ('stub', 'scaffold'):
         return f'`{arg}:=stub|external`'
     return f'`{arg}:=true|false`'

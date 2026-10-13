@@ -87,7 +87,7 @@ launch flag that swaps it out (`stub|external` for stubs, see
 
 | Node | Status | Package | What it does today | Real thing that replaces it | Area | Launch switch |
 |---|---|---|---|---|---|---|
-| `nav` | **STUB** | `nav_stub` | navigate_to_pose action server; straight-line go-to-point, no obstacle avoidance. | Nav2 (configured, not built). Remap its velocity output to /cmd_vel_nav. | navigation | `navigation:=stub|external` |
+| `nav` | **STUB** | `nav_stub` | navigate_to_pose action server. The stub is a straight-line go-to-point with no obstacle avoidance; `navigation:=nav2` launches Nav2 instead (obstacle avoidance, same action). | nav_stub is replaced by Nav2 with `navigation:=nav2` (src/nav2_config, velocity routed to /cmd_vel_nav) | navigation | `navigation:=stub|nav2|external` |
 | `odom_adapter` | **STUB** | `odom_adapter_stub` | Builds /odom (nav_msgs/Odometry) from the odom->base_link TF; Nav2 reads it for current velocity. | state_estimation publishing /odom itself (IEKF or robot_localization) | navigation | `odom_adapter:=stub|external` |
 | `cmd_vel_mux` | **REAL** | `cmd_vel_mux` | Sole publisher of /cmd_vel: teleop > navigation > zero, with a 0.5 s watchdog. | - | integration | `cmd_vel_mux:=true|false` |
 | `teleop` | **REAL** | `teleop_input` | Keyboard/joystick -> /cmd_vel_teleop. Keyboard needs its own terminal (see README). | - | locomotion | `teleop:=true|false` |

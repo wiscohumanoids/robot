@@ -24,6 +24,7 @@
   <exec_depend>safety</exec_depend>
   <exec_depend>cmd_vel_mux</exec_depend>
   <exec_depend>task_planner</exec_depend>
+  <exec_depend>nav2_config</exec_depend>
   <exec_depend>behavior_tree</exec_depend>
   <exec_depend>perception_stub</exec_depend>
   <exec_depend>state_estimation_stub</exec_depend>

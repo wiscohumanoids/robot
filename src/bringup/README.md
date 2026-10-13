@@ -11,6 +11,11 @@ ros2 launch bringup full_stack.launch.py sim:=false      # stubs only, no MuJoCo
 ros2 launch bringup full_stack.launch.py headless:=true  # sim without a GUI window (Docker/macOS/CI)
 ```
 
+**In the dev container:** a plain `./docker/run.sh` shell already has the stub stack running in the
+background (`sim:=false`, log `/tmp/stack.log`). Launching it again there gives two of every node
+(two publishers per topic; `check_contract.py` fails). Use `START_STACK=0 ./docker/run.sh` for the
+commands above.
+
 It starts one node per layer of [INTERFACE_CONTRACT.md](../../INTERFACE_CONTRACT.md):
 `task_planner`, `behavior_tree`, `perception`, `state_estimation`, `slam`,
 `nav`, `cmd_vel_mux`, `locomotion`, `manipulation`, `wbc`, `safety`, plus, for
@@ -31,9 +36,10 @@ ros2 run bringup check_contract.py          # did you honor the contract?
 
 | Switch | Values | Default | Launches |
 |---|---|---|---|
-| `planner` `behavior_tree` `perception` `state_estimation` `slam` `navigation` `locomotion` `manipulation` `wbc` | `stub` \| `external` | `stub` | that layer's stub |
+| `perception` `state_estimation` `slam` `navigation` `odom_adapter` `locomotion` `manipulation` `wbc` | `stub` \| `external` | `stub` | that layer's stub |
+| `navigation` | `nav2` also allowed | `stub` | `nav2` launches Nav2 (`nav2_config`) instead of `nav_stub` |
 | `teleop` | `true` \| `false` | `false` (needs its own terminal, see below) | `teleop_input` |
-| `cmd_vel_mux` `safety` | `true` \| `false` | `true` | the real node |
+| `planner` `behavior_tree` `cmd_vel_mux` `safety` | `true` \| `false` | `true` | the real node |
 | `sim` | `true` \| `false` | `true` | MuJoCo + ros2_control + lowlevel_control |
 | `headless` | `true` \| `false` | `false` | (sim option) no GUI window |
 | `policy_onnx_path` | path | empty | forwarded to `locomotion_runner` |

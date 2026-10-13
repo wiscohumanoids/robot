@@ -13,6 +13,8 @@ Swapping a stub for your real node (one flag, no file edits):
 
   <layer>:=stub      (default) launch this repo's stub for the layer
   <layer>:=external  launch nothing for the layer; you run the real node yourself
+  navigation:=nav2   launch Nav2 (nav2_config) instead of nav_stub, with its velocity
+                     routed through cmd_vel_mux; same navigate_to_pose action
   Layers: planner perception state_estimation slam navigation
           odom_adapter locomotion manipulation wbc
   Real nodes take true|false: teleop (default false, see below),
@@ -98,7 +100,14 @@ def _launch_setup(context):
             output='screen', parameters=[{'robot_description': description}]))
 
     for arg, (package, executable) in STUB_LAYERS.items():
-        if _choice(context, arg, ('stub', 'external')) != 'stub':
+        allowed = ('stub', 'nav2', 'external') if arg == 'navigation' else ('stub', 'external')
+        choice = _choice(context, arg, allowed)
+        if choice == 'nav2':
+            # Nav2 reads /map + map->odom (slam), /odom (odom_adapter) and serves navigate_to_pose.
+            actions.append(IncludeLaunchDescription(PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory('nav2_config'), 'launch', 'nav2.launch.py'))))
+            continue
+        if choice != 'stub':
             continue
         parameters = []
         if arg == 'locomotion':
@@ -126,10 +135,11 @@ def generate_launch_description():
                               description='ONNX policy for locomotion_runner. Empty = stub gait.'),
     ]
     for arg in STUB_LAYERS:
+        extra = " 'nav2' launches Nav2 instead of the stub." if arg == 'navigation' else ''
         declared.append(DeclareLaunchArgument(
             arg, default_value='stub',
             description=f"'stub' launches this repo's {arg} stub; "
-                        f"'external' launches nothing (you run your real node)."))
+                        f"'external' launches nothing (you run your real node).{extra}"))
     for arg, (_pkg, _exe, default) in BOOL_NODES.items():
         declared.append(DeclareLaunchArgument(
             arg, default_value=default, description=f'Launch {arg} (true|false).'))

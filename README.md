@@ -127,6 +127,10 @@ export LD_LIBRARY_PATH="$HOME/.local/mujoco/mujoco-3.2.7/lib:${LD_LIBRARY_PATH:-
 ./docker/build.sh      # builds the workspace inside the image (a few minutes; needs network)
 ./docker/run.sh        # shell with your working copy mounted; Python edits are live
 ```
+`./docker/run.sh` with no arguments **also starts the stub stack in the background**
+(`sim:=false`, log in `/tmp/stack.log`). Do not run `ros2 launch bringup full_stack.launch.py`
+in that shell: every node would run twice, which breaks the one-publisher-per-topic contract.
+To launch the stack yourself, start the container with `START_STACK=0 ./docker/run.sh`.
 On macOS there is no X11 forwarding, so run the sim with `headless:=true`. The
 image builds MuJoCo with OSMesa so headless needs no display at all.
 

@@ -111,9 +111,11 @@ nodes:
     package: nav_stub
     executable: nav_node
     launch_arg: navigation
+    launch_values: "stub|nav2|external"
     area: navigation
-    replaces: "Nav2 (configured, not built). Remap its velocity output to /cmd_vel_nav."
-    summary: "navigate_to_pose action server; straight-line go-to-point, no obstacle avoidance."
+    replaces: "nav_stub is replaced by Nav2 with `navigation:=nav2` (src/nav2_config, velocity routed to /cmd_vel_nav)"
+    summary: "navigate_to_pose action server. The stub is a straight-line go-to-point with no obstacle avoidance; `navigation:=nav2` launches Nav2 instead (obstacle avoidance, same action)."
+
   - id: odom_adapter
     layer: navigation
     status: stub

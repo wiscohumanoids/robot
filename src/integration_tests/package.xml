@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>integration_tests</name>
+  <version>0.1.0</version>
+  <description>
+    Integration tests (behavior tree + task planner + Nav2) and planner stress tests. Test harness only: it is
+    not part of the stack. Run it with tools/run_integration_tests.sh and tools/run_planner_stress.sh. See README.md.
+  </description>
+  <maintainer email="wiscohumanoids@example.com">WiscoHumanoids</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>humanoid_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

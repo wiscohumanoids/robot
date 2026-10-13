@@ -146,3 +146,13 @@ def test_the_planner_is_a_real_node_launched_by_a_true_false_switch():
 def test_the_old_stub_package_name_is_gone():
     assert not os.path.exists(os.path.join(SRC, 'task_planner_stub'))
     assert os.path.isdir(os.path.join(SRC, 'task_planner', 'task_planner'))
+
+
+def test_nav2_is_a_navigation_option_of_the_full_stack_launch():
+    launch = _read('src', 'bringup', 'launch', 'full_stack.launch.py')
+    assert "('stub', 'nav2', 'external') if arg == 'navigation'" in launch
+    assert "'nav2.launch.py'" in launch
+    assert '<exec_depend>nav2_config</exec_depend>' in _read('src', 'bringup', 'package.xml')
+    nav = next(n for n in _contract()['nodes'] if n['id'] == 'nav')
+    assert nav['launch_values'] == 'stub|nav2|external'
+    assert os.path.isfile(os.path.join(SRC, 'nav2_config', 'launch', 'nav2.launch.py'))
