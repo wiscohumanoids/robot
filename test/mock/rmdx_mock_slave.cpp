@@ -229,8 +229,11 @@ double RmdxMockSlave::drive_torque()
     default:
       break;
   }
-  // 0x6072 caps the torque in every mode (CiA402), and the motor its peak.
-  const double cap = std::min(std::abs(static_cast<double>(rx_.max_torque)) * nmpm, p_.peak_torque_nm);
+  // 0x6072 caps the torque in every mode (CiA402), and the motor its peak. As on
+  // the RMD-X (EtherCAT manual), 0x6072 = 0 means the stall-current limit, not 0.
+  const double lim = rx_.max_torque == 0 ? p_.peak_torque_nm :
+    std::abs(static_cast<double>(rx_.max_torque)) * nmpm;
+  const double cap = std::min(lim, p_.peak_torque_nm);
   return std::clamp(tau, -cap, cap);
 }
 

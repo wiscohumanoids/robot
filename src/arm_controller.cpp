@@ -362,6 +362,10 @@ controller_interface::return_type ArmController::update(
       {
         cap = std::min(cap, std::fabs(cmd->law.torque_clamp[i]));
       }
+      // 0x6072 = 0 is NOT zero torque on the RMD-X: the drive falls back to its
+      // stall-current limit. Never let a zero (or tiny, rounding to 0 per mille)
+      // clamp reach the drive: floor it at 1% of the configured max.
+      cap = std::max(cap, kMinTorqueCapFraction * cfg_.max_torque[i]);
       cmd_max_[i].get().set_value(cap);
     }
     if (requested == arm::kCsp || pending) {

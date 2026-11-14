@@ -147,6 +147,15 @@ def load_arm(path: str = 'config/arms/arm01.yaml',
 
         gains = row.get('gains') or {}
         rated = float(pick('rated_current_a', model.get('rated_current_a', 10.0)))
+        # The RT clamps may be raised from the bring-up limits toward the datasheet
+        # ratings after Phase 1, never past them.
+        for key, cap_key in (('max_torque_nm', 'rated_torque_nm'),
+                             ('max_vel_rad_s', 'no_load_velocity_rad_s')):
+            value, cap = row.get(key), model.get(cap_key)
+            if value is not None and cap is not None and float(value) > float(cap):
+                raise ValueError('%s: %s %.3g is above the %s datasheet %s %.3g (%s)'
+                                 % (row['name'], key, float(value), row['model'], cap_key,
+                                    float(cap), path))
         joints.append(JointSpec(
             name=row['name'],
             bus_position=int(row['bus_position']),

@@ -362,11 +362,33 @@ Assumptions that need the bench (also in the URDF ledger):
   land in `link_masses_kg`.
 - The ArmController writes each command's torque clamp to 0x6072 (`max_torque` command
   interface, `write_max_torque: true` in arm mode), so the drive's own CSP loop is capped
-  too, which matters when `arm limits` pushes into a hard stop. That 0x6072 is writable
-  cyclically in the RxPDO on the RMD-X is a bench check, like 0x60B2.
-- 0x60B2 (torque offset) in the CSP PDO map is not confirmed on the RMD-X drives; without it
-  Mode P loses its gravity feedforward. CSP gains being settable over SDO is also
-  unconfirmed (`mocap-repeat` leaves Kp/Kd out of its tuning if not).
+  too, which matters when `arm limits` pushes into a hard stop. 0x6072 is in the default
+  RxPDO 0x1600 (MyActuator ESI). **0x6072 = 0 is the drive's stall-current limit, not zero
+  torque**, so the controller never writes less than 1% of the joint's `max_torque`.
+- Drive facts from MyActuator's "EtherCAT control protocol V2.0" and ESI
+  `MT-Device_260424.xml` (firmware 26042402):
+  - 0x6071 / 0x6077 / 0x6072 are per mille of the **rated current** (0x6075, mA, read it
+    over SDO), so `effort_nm_per_permille` = Kt x I_rated / 1000 in
+    `config/actuator_models.yaml`. 0x6076 (rated torque) is not implemented.
+  - 0x60B2 (torque offset) is not in the default 0x1600 = [6040, 607A, 60FF, 6071, 6072,
+    6060, 2FFD]. Arm mode assigns the optional RxPDO 0x1603 = [60B0, 60B1, 60B2] next to
+    it, which needs firmware 26042402 or newer. Older firmware: Mode P has no gravity
+    feedforward.
+  - The CSP/CSV loop gains are 0x2002-0x2008 (REAL32, SDO only). The manuals give neither
+    units nor defaults and the loop is cascaded (position P into velocity PI), not a Nm/rad
+    PD: read them on the bench (`ethercat upload -p <pos> -t float 0x2002 0`) before
+  `mocap-repeat` tunes Kp/Kd. Saving to
+    flash is Controlword 0 -> 0x1000 -> 0 within 3 s with the motor disabled.
+  - Vendor 0x00202008 and product 0 (one generic device for every model), DC
+    AssignActivate 0x0300, minimum cycle 250 us. Read 0x6502 from the drive; the ESI
+    default is odd.
+- The model table uses the V4 "-E" datasheets (X4-10, X4-36, X6-60). The V4.1 "-L"
+  successors of the X4s have different torque and current: check the labels. The X4-10
+  ratio (12.5 in the table, 12.6 in the user manual, 1:13 on the label), the X4s'
+  counts_per_rev (131072 assumed for the 18-bit output encoder) and the X4s' Kt (the
+  datasheet Kt disagrees with rated torque / rated current) are marked "verify".
+- The RT clamps (`max_torque_nm`, `max_vel_rad_s`) are the rated values; 0x6072 caps each
+  drive at 1.2x the bring-up effort limit.
 - J7's axis sits about 62° from the forearm at zero because J6's zero is the CAD pose.
 - The PACE stage fits with a per-joint replay backend by default. The Isaac Lab backend
   (`arm_stack/pace/isaac_backend.py`, `fit(..., backend='isaac')`) replays the same logs or

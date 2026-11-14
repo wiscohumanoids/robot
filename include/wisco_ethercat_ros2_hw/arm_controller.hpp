@@ -67,6 +67,10 @@ constexpr size_t kPayloadBlock = 4;   // optional [kg, x, y, z] after the per-jo
 constexpr size_t kStateHeader = 5;
 constexpr size_t kStateBlocks = 5;
 
+// Smallest 0x6072 the controller writes, as a fraction of the joint's
+// configured max torque (0x6072 = 0 means the stall-current limit).
+constexpr double kMinTorqueCapFraction = 0.01;
+
 class ArmController : public controller_interface::ControllerInterface
 {
 public:

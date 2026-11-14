@@ -4,50 +4,91 @@
 # drive's slave config, the ros2_control block and the command controller's
 # limits from this file plus config/joints.yaml and the calibration file.
 #
-# Values marked "verify" have not been measured on the bench yet.
+# Datasheet values: MyActuator "X Series-V4 product manual" (261029; X4-10
+# pp.7-8, X4-36 pp.11-12, X6-60 pp.21-22), "EtherCAT control protocol V2.0"
+# (260425) and ESI MT-Device_260424.xml (firmware 26042402), from
+# myactuator.com/downloads-xseries and /downloads-ethercatesi. Models are the
+# V4 "-E" units: RMD-X4-P12-10-E, RMD-X4-P36-36-E, RMD-X6-P20-60-E. The V4.1
+# "-L" successors of the X4s have different numbers (X4-10-L peak 11 Nm,
+# X4-36-L peak 30 Nm): check the labels.
+#
+# Units (EtherCAT manual): 0x6071 / 0x6077 / 0x6072 are labelled per mille of
+# rated torque, but the formulas use the rated current (0x6075, mA, SDO), so
+# they are per mille of RATED CURRENT here. 0x6076 rated torque is not
+# implemented. 0x6072 = 0 means the stall-current limit, not zero torque.
+#
+# Values marked "verify" still need a bench measurement.
 
 defaults:
-  vendor_id: 0x00202008
-  product_id: 0x00000000
-  # DC SYNC0 activation word written by the master (MyActuator's guide says to
-  # run the drives DC-synchronous). Verify against the drive's ESI file; set to
-  # 0 to fall back to free-run if a drive will not reach OP with DC enabled.
+  vendor_id: 0x00202008       # ESI: Suzhou Micro Actuator Technology
+  product_id: 0x00000000      # ESI: one generic "MT_Device" for every model (no per-model code)
+  # DC SYNC0 activation word: the ESI's "DC-Synchron" OpMode uses AssignActivate
+  # 0x0300 with SYNC0 = the bus cycle (minimum cycle 250 us). Set to 0 for the
+  # ESI's "SM-Synchron" mode if a drive will not reach OP with DC enabled.
   dc_assign_activate: 0x0300
 
 models:
-  x4_10:
-    counts_per_rev: 131072            # 0x6064 counts per output revolution (verify: output or motor side)
-    # 0x6077 / 0x6071 scale: Nm per per-mille of rated current.
-    # verify: 1000 x 0.015 = 15 Nm rated, which is above peak_effort_nm.
-    effort_nm_per_permille: 0.015
+  x4_10:                              # RMD-X4-P12-10-E
+    gear_ratio: 12.5                  # manual table; user manual says 12.6, label photo 1:13 (verify)
+    counts_per_rev: 131072            # 0x6064 per output rev. Dual absolute encoder: 17-bit motor,
+                                      # 18-bit output; the CiA402 manual uses 131072 increments/rev.
+                                      # verify with `arm indicator` (a 262144 would read half the angle)
+    encoder_side: output
+    rated_current_a: 7.8              # phase, rms; 0x6075 default is the drive's internal value (read it)
+    peak_current_a: 19.5
+    kt_output_nm_per_a: 0.8           # datasheet; rated torque / rated current gives 0.51 (verify, `arm kt`)
+    rated_torque_nm: 4.0
+    # 0x6077 / 0x6071 scale: Nm per per-mille of rated current = Kt x I_rated / 1000
+    effort_nm_per_permille: 0.00624
     peak_effort_nm: 10.0
-    max_velocity_rad_s: 24.9
+    max_velocity_rad_s: 24.92         # rated speed 238 rpm (no-load 317 rpm = 33.2 rad/s)
+    no_load_velocity_rad_s: 33.20
+    backdrive_torque_nm: 0.8
+    backlash_arcmin: 15
     # Bring-up limits enforced by the command controller and the drive.
     bringup_velocity_limit_rad_s: 2.0
     bringup_effort_limit_nm: 2.5
-    max_torque_permille: 250          # 0x6072, drive-side torque cap
+    max_torque_permille: 480          # 0x6072 drive-side cap: 3.0 Nm, 1.2 x the bring-up limit
     damping_nm_s_per_rad: 0.2         # effort mode: damping applied when commands stop
     k_stiction: 0.35                  # used by multiple_act_command.py
 
-  x4_36:
-    counts_per_rev: 131072
-    effort_nm_per_permille: 0.03565   # verify: 35.65 Nm rated, above peak_effort_nm
+  x4_36:                              # RMD-X4-P36-36-E
+    gear_ratio: 36
+    counts_per_rev: 131072            # as x4_10: 18-bit output encoder, verify with `arm indicator`
+    encoder_side: output
+    rated_current_a: 6.1
+    peak_current_a: 21.5
+    kt_output_nm_per_a: 1.9           # datasheet; rated torque / rated current gives 1.72 (verify)
+    rated_torque_nm: 10.5
+    effort_nm_per_permille: 0.01159
     peak_effort_nm: 34.0
-    max_velocity_rad_s: 8.7
+    max_velocity_rad_s: 8.69          # rated 83 rpm (no-load 111 rpm = 11.6 rad/s)
+    no_load_velocity_rad_s: 11.62
+    backdrive_torque_nm: 1.14
+    backlash_arcmin: 15
     bringup_velocity_limit_rad_s: 2.0
     bringup_effort_limit_nm: 6.0
-    max_torque_permille: 250
+    max_torque_permille: 620          # 7.2 Nm
     damping_nm_s_per_rad: 0.5
     k_stiction: 0.90
 
-  x6_60:
-    counts_per_rev: 131072
-    effort_nm_per_permille: 0.039375  # verify
+  x6_60:                              # RMD-X6-P20-60-E
+    gear_ratio: 19.612                # manual tables; name and label say 1:20
+    counts_per_rev: 131072            # dual absolute encoder, 17-bit motor and 17-bit output
+    encoder_side: output
+    rated_current_a: 9.5
+    peak_current_a: 29.1
+    kt_output_nm_per_a: 2.1           # consistent with 20 Nm / 9.5 A
+    rated_torque_nm: 20.0
+    effort_nm_per_permille: 0.01995
     peak_effort_nm: 60.0
-    max_velocity_rad_s: 16.0
+    max_velocity_rad_s: 16.02         # rated 153 rpm (no-load 176 rpm = 18.4 rad/s)
+    no_load_velocity_rad_s: 18.43
+    backdrive_torque_nm: 1.6
+    backlash_arcmin: 15
     bringup_velocity_limit_rad_s: 2.0
     bringup_effort_limit_nm: 12.0
-    max_torque_permille: 450
+    max_torque_permille: 720          # 14.4 Nm
     damping_nm_s_per_rad: 1.0
     k_stiction: 1.50
 

@@ -491,6 +491,23 @@ TEST_F(ArmMock, MaxTorqueFollowsCommandClampInCsp)
   EXPECT_NEAR(a.cmd(1).max_torque, kMaxTorque[1], 1e-9);
 }
 
+// A zero torque clamp must not reach 0x6072 as 0, which the drive reads as
+// "stall-current limit": the controller floors it at 1% of the configured max.
+TEST_F(ArmMock, ZeroTorqueClampNeverWritesZeroMaxTorque)
+{
+  Arm a = make_arm(false, 0, true, false, true);
+  const std::vector<double> q0 = {0.2, -0.3};
+  a.h->stream(command(kModeP, q0));
+  a.h->cycle(100);
+  a.h->stream(command(kModeP, q0, {0.0, 0.0}, {kNaN, 0.0}));
+  a.h->cycle(6);
+  for (int k = 0; k < 100; ++k) {
+    a.h->cycle();
+    EXPECT_GE(a.h->hw().master(1).rx().max_torque, 1) << "cycle " << k;
+    EXPECT_LE(std::fabs(a.tau(1)), 0.01 * kMaxTorque[1] + 0.015) << "cycle " << k;
+  }
+}
+
 // --------------------------------------------------------------------------
 // Safety-layer rejections in the ArmController: malformed commands, a
 // missing Mode P target, targets past the soft limits, NaN gains.

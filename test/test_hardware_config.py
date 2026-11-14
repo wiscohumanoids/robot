@@ -62,8 +62,8 @@ def test_mixed_model_order_keeps_bus_positions(tmp_path):
     assert hw.mock_joints == ['c']
     eff_a = channel(hw.slave_config(hw.joints[0]), 'tpdo', 0x6077)['factor']
     eff_b = channel(hw.slave_config(hw.joints[1]), 'tpdo', 0x6077)['factor']
-    assert eff_a == pytest.approx(0.03565)
-    assert eff_b == pytest.approx(0.015)
+    assert eff_a == pytest.approx(0.01159)   # x4_36: 1.9 Nm/A x 6.1 A / 1000
+    assert eff_b == pytest.approx(0.00624)   # x4_10: 0.8 Nm/A x 7.8 A / 1000
 
 
 @pytest.mark.parametrize('direction', [1, -1])
@@ -91,7 +91,7 @@ def test_factors_fold_in_direction_and_zero(tmp_path, direction):
     eff_cmd = channel(cfg, 'rpdo', 0x6071)['factor']
     eff_state = channel(cfg, 'tpdo', 0x6077)['factor']
     assert eff_cmd * eff_state == pytest.approx(1.0)
-    assert eff_state == pytest.approx(direction * 0.015)
+    assert eff_state == pytest.approx(direction * 0.00624)
 
 
 def test_control_mode_selects_mode_and_interface(tmp_path):
@@ -120,8 +120,27 @@ def test_dc_sync_and_torque_cap(tmp_path):
     a = hw.slave_config(hw.joints[0])
     b = hw.slave_config(hw.joints[1])
     assert a['assign_activate'] == 0x0300
-    assert channel(a, 'rpdo', 0x6072)['default'] == 250
+    assert channel(a, 'rpdo', 0x6072)['default'] == 480
     assert channel(b, 'rpdo', 0x6072)['default'] == 100
+
+
+def test_arm_mode_maps_torque_offset_in_1603(tmp_path):
+    # The RMD-X carries 0x60B2 only in the optional RxPDO 0x1603 = [0x60B0,
+    # 0x60B1, 0x60B2] (firmware 26042402+); the default 0x1600 is unchanged.
+    hw = make(tmp_path, [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}],
+              control_mode='arm')
+    cfg = hw.slave_config(hw.joints[0])
+    pdos = {p['index']: [ch['index'] for ch in p['channels']] for p in cfg['rpdo']}
+    assert pdos[0x1603] == [0x60b0, 0x60b1, 0x60b2]
+    assert 0x60b2 not in pdos[0x1600]
+    off = channel(cfg, 'rpdo', 0x60b2)
+    assert off['command_interface'] == 'torque_offset'
+    assert off['type'] == 'int16'
+    assert off['factor'] == pytest.approx(1 / 0.00624)
+    assert 'torque_offset' in hw.command_interfaces
+
+    vel = make(tmp_path, [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}])
+    assert 0x1603 not in [p['index'] for p in vel.slave_config(vel.joints[0])['rpdo']]
 
 
 def test_controller_parameters_use_limits(tmp_path):
@@ -190,8 +209,11 @@ def test_warnings(tmp_path):
     hw = make(tmp_path, [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}])
     text = '\n'.join(hw.warnings())
     assert 'no zero offset for a' in text
-    # 1000 * 0.03565 = 35.65 Nm > 34 Nm peak for the X4-36.
-    assert 'model x4_36' in text
+    # The datasheet scales (Kt x I_rated) sit below each model's peak torque, so
+    # no model is flagged; a scale that implies more than peak still is.
+    assert 'effort_nm_per_permille implies' not in text
+    hw.models['x4_10'] = dict(hw.models['x4_10'], effort_nm_per_permille=0.015)
+    assert any('model x4_10' in w for w in hw.warnings())
 
 
 def test_shipped_tables_load(tmp_path):

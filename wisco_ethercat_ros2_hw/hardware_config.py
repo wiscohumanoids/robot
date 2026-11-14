@@ -232,11 +232,15 @@ class HardwareConfig:
         cmd_pos_factor, cmd_pos_offset = joint.position_command()
         arm = self.control_mode == 'arm'
         if arm:
-            # 0x60B2 torque offset (CSP feedforward). Not in the base template:
-            # whether the drive accepts it in its RxPDO map is a bench check.
-            channels = cfg['rpdo'][0]['channels']
-            at = next(i for i, ch in enumerate(channels) if ch['index'] == 0x6072)
-            channels.insert(at, {'index': 0x60b2, 'sub_index': 0, 'type': 'int16', 'default': 0})
+            # 0x60B2 torque offset (CSP feedforward). The drive carries it in its
+            # optional RxPDO 0x1603 (0x60B0, 0x60B1, 0x60B2: the vendor's CSP
+            # mapping, firmware 26042402+), assigned next to 0x1600, both at their
+            # default contents so no remapping is needed.
+            cfg['rpdo'].append({'index': 0x1603, 'channels': [
+                {'index': 0x60b0, 'sub_index': 0, 'type': 'int32', 'default': 0},   # position offset
+                {'index': 0x60b1, 'sub_index': 0, 'type': 'int32', 'default': 0},   # velocity offset
+                {'index': 0x60b2, 'sub_index': 0, 'type': 'int16', 'default': 0},   # torque offset
+            ]})
         for pdo in cfg['rpdo']:
             for ch in pdo['channels']:
                 index = ch['index']
