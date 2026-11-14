@@ -10,6 +10,8 @@ current calibration's model).
 With the drive gains known, the replay also simulates the held joints under
 their CSP loops through the hold-pose mass matrix (pace/backend.py), so the
 chirped joint's drag on them does not end up in its armature and viscous fit.
+The joint stiffness from plate / mocap-calib (run before PACE) puts the
+transmission compliance in the replay too.
 
 Pass: every joint's fit converges (cost drop > 90%, RMS error under 10% of
 the chirp amplitude), and the fitted delay (median over joints) is within
@@ -101,14 +103,22 @@ def armature_prior(ctx) -> np.ndarray:
     return armature(ctx)
 
 
+def stiffness_prior(ctx) -> np.ndarray:
+    """Joint stiffness from plate / mocap-calib (inf where not calibrated)."""
+    k = ctx.calibration.get('joint_stiffness_nm_per_rad') or {}
+    return np.array([float(k[n]) if k.get(n) else np.inf for n in ctx.arm.names])
+
+
 def fit(model, arm, logs, generations=60, popsize=14, seed=0, backend='joint', drive_gains=None,
-        hold_armature=None):
+        hold_armature=None, stiffness=None, fixed_delay=None, torque_limit=None):
+    """fixed_delay: per log, None (fit the delay) or seconds to pin it to."""
     if backend == 'isaac':
         sim = IsaacLabBackend(model, logs)
     else:
         # with the drive gains known, the held joints are simulated too (coupled
         # replay), with their rotor armature from hold_armature
-        sim = JointReplayBackend(model, logs, hold_gains=drive_gains, hold_armature=hold_armature)
+        sim = JointReplayBackend(model, logs, hold_gains=drive_gains, hold_armature=hold_armature,
+                                 stiffness=stiffness, torque_limit=torque_limit)
     maps, opts = [], []
     for k, log in enumerate(logs):
         spec = arm.joints[log.joint]
@@ -117,6 +127,9 @@ def fit(model, arm, logs, generations=60, popsize=14, seed=0, backend='joint', d
         if drive_gains is not None:
             known = {'kp': float(drive_gains[0][log.joint]), 'kd': float(drive_gains[1][log.joint])}
         lo, hi = default_bounds(spec, known)
+        if fixed_delay is not None and fixed_delay[k] is not None:
+            i = PARAMS.index('delay_s')
+            lo[i] = hi[i] = float(fixed_delay[k])
         m = _Map(lo, hi)
         maps.append(m)
         x0 = np.full(len(m.free), 0.5)
@@ -159,17 +172,30 @@ def run(ctx: StageContext, backend: str = 'joint') -> StageResult:
     logs = record_chirps(ctx)
     k = 2
     gains = ctx.client.drive_gains()
+    stiff = stiffness_prior(ctx)
+    # a chirp capped well below the bus rate cannot see a few ms of delay, which then
+    # trades off against armature: pin it to the stage 7 latency on those joints
+    latency = ctx.calibration.get('latency_ms')
+    low_band = [l.freq[1] < 0.8 * F1 for l in logs]
+    # (unless no chirp reaches the band: then the delay check needs every joint's fit)
+    fixed = [latency * 1e-3 if (lb and latency is not None and not all(low_band)) else None
+             for lb in low_band]
     fits = fit(ctx.model, arm, [decimate(l, k) for l in logs], generations=150 if ctx.quick else 300,
-               backend=backend, drive_gains=gains, hold_armature=armature_prior(ctx))
+               backend=backend, drive_gains=gains, hold_armature=armature_prior(ctx), stiffness=stiff,
+               fixed_delay=fixed, torque_limit=np.array([j.max_torque_nm for j in arm.joints], float))
     sim_dt = float((arm.raw.get('pace') or {}).get('sim_dt_s', 0.002))
     lines, flags = [], []
+    if not np.all(np.isfinite(stiff)):
+        flags.append('no joint stiffness for %s (run `arm plate` or `arm mocap-calib` first): the replay '
+                     'treats them as rigid, so their armature and viscous absorb the compliance' %
+                     ', '.join(n for n, v in zip(arm.names, stiff) if not np.isfinite(v)))
     if gains is None:
         flags.append('drive CSP gains unknown (no drive_gains in the joint config): kp/kd fitted too, '
                      'which trades off against the delay; read them over SDO and record them')
     ok = True
     writes = {n: {} for n in ('armature', 'viscous', 'friction', 'encoder_bias', 'drive_kp', 'drive_kd')}
     delays = []
-    for log, f in zip(logs, fits):
+    for idx, (log, f) in enumerate(zip(logs, fits)):
         name = arm.names[log.joint]
         p = f['params']
         amp = log.sweep[1]
@@ -184,16 +210,16 @@ def run(ctx: StageContext, backend: str = 'joint') -> StageResult:
         writes['encoder_bias'][name] = p['encoder_bias']
         writes['drive_kp'][name] = p['drive_kp']
         writes['drive_kd'][name] = p['drive_kd']
-        lines.append('%-15s armature %.4f, Fc %.3f, Fv %.3f, bias %+.3f deg, delay %.2f ms, kp %.0f kd %.2f, '
+        lines.append('%-15s armature %.4f, Fc %.3f, Fv %.3f, bias %+.3f deg, delay %.2f ms%s, kp %.0f kd %.2f, '
                      'chirp to %.1f Hz, rms %.3f deg (%.1f%% of amp)%s' % (
                          name, p['armature'], p['coulomb'], p['viscous'], p['encoder_bias'] / DEG,
-                         p['delay_s'] * 1e3, p['drive_kp'], p['drive_kd'], log.freq[1], f['rms_rad'] / DEG,
+                         p['delay_s'] * 1e3, ' (stage 7)' if fixed[idx] is not None else '',
+                         p['drive_kp'], p['drive_kd'], log.freq[1], f['rms_rad'] / DEG,
                          100 * f['rms_rad'] / amp,
                          '' if good else ('  <-- did not converge' if not f['converged'] else '  <-- FAIL (rms)')))
     if not delays:      # no chirp reached the bus-rate band: use every joint
         delays = [f['params']['delay_s'] for f in fits]
     delay = float(np.median(delays))
-    latency = ctx.calibration.get('latency_ms')
     if latency is None:
         flags.append('no stage 7 latency in the calibration; run `arm latency` first')
         ok = False

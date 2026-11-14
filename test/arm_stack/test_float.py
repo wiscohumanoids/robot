@@ -302,3 +302,17 @@ def test_cli_float_sim_records_a_teach_session(tmp_path):
     start = sess.events[names.index('float_start')]
     assert start['lock'][-1] == 1 and start['payload'] == [0.2, 0.0, 0.0, 0.02]
     assert len(sess.state['q']) > 1000                                # every cycle with --record
+
+
+def test_write_config_applies_repeatability_tuning(tmp_path):
+    arm = load_arm()
+    path = str(tmp_path / 'arm01.yaml')
+    shutil.copy(arm.path, path)
+    tuning = {'kp_scale': 1.8057117, 'kd_scale': 1.0, 'friction_ff_gain': 0.762, 'approach': -1, 'settle_s': 0.566}
+    done = update_joint_config(path, {'repeatability_tuning': tuning})
+    assert done and done[0].startswith('repeatability_tuning')
+    update_joint_config(path, {'repeatability_tuning': dict(tuning, approach=1)})   # second time: replaces
+    raw = open(path).read()
+    assert raw.count('repeatability_tuning:') == 1 and '# J4' in raw
+    got = load_arm(path.replace('\\', '/')).raw['repeatability_tuning']
+    assert got['approach'] == 1 and got['kp_scale'] == pytest.approx(1.806, abs=1e-3)

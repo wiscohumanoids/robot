@@ -201,8 +201,8 @@ ros2 run wisco_ethercat_ros2_hw arm export lerobot out_dir ~/arm_logs/A.mcap ~/a
 | 7 Latency | `arm latency` | `latency_ms` |
 | 8 Kinematics | `arm pivot` | `validation.pivot_spread_mm` |
 | Plate kinematics (no mocap) | `arm plate` | `zero_offsets_rad`, `kinematic_overlay`, `joint_stiffness_nm_per_rad` |
-| 9 PACE | `arm pace` | `pace` |
 | Mocap kinematics | `arm mocap-calib` | `zero_offsets_rad`, `kinematic_overlay`, `joint_stiffness_nm_per_rad` |
+| 9 PACE | `arm pace` | `pace` |
 | Mocap repeatability | `arm mocap-repeat` | `validation.repeatability_rp_mm` (+ tuned settings to apply) |
 | ISO 9283 repeatability | `arm repeat [--indicators]` | `validation.repeatability_rp_mm` |
 | Release gate | `arm validate` | `validation.*`, report beside the calibration file |
@@ -378,7 +378,15 @@ Assumptions that need the bench (also in the URDF ledger):
   joint's servo resonance (about 5 Hz on the shoulders) because the per-joint replay
   cannot follow the coupled arm above it, and PACE uses the drives' CSP gains from
   `drive_gains` in the joint config (read them over SDO) rather than fitting them.
-  Shoulder and elbow armature fits soak up arm coupling, so treat them as effective values.
+  With the gains known the replay also simulates the held joints under their CSP loops
+  (coupled replay), and it applies the calibrated `joint_stiffness_nm_per_rad`: the
+  encoder reads the motor side, link angle + tau / k. That is why `arm all` runs
+  plate / mocap-calib before PACE. A joint with no stiffness is replayed rigid (flagged),
+  and its armature and viscous then soak up the compliance.
+  The replay also clips each drive's total torque at `max_torque_nm` (0x6072), which a
+  shoulder chirp near its servo resonance reaches. Joints whose chirp stays well below the
+  bus rate get the stage 7 latency as their delay instead of fitting it, because delay and
+  armature trade off there.
 - `latency_ms` is the transport delay on the torque channel (0x6071 sent vs 0x6077 read,
   Mode T), not the spec's position cross-correlation, which includes the drive's servo lag
   (both are logged).

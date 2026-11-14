@@ -1,7 +1,7 @@
 """`arm <stage> [--sim]`: one command per calibration stage (spec: Calibration procedures).
 
-  arm bringup | indicator | zero | limits | kt | gravity | friction | latency | pivot | plate | pace
-  arm mocap-calib | mocap-repeat | repeat [--indicators] | validate
+  arm bringup | indicator | zero | limits | kt | gravity | friction | latency | pivot | plate
+  arm mocap-calib | pace | mocap-repeat | repeat [--indicators] | validate
   arm all --sim [--no-mocap]    every stage in order on one sim arm (Phase 0 gate run);
                                 with mocap: mocap-calib + mocap-repeat, without: plate +
                                 the indicator cube (repeat, validate)
@@ -55,7 +55,8 @@ STAGES = [
     ('bringup', 'bringup'), ('indicator', 'indicator'), ('zero', 'zero'), ('limits', 'limits'),
     ('kt', 'torque_constant'),
     ('gravity', 'gravity'), ('friction', 'friction'), ('latency', 'latency'), ('pivot', 'pivot'),
-    ('plate', 'plate'), ('pace', 'pace'), ('mocap-calib', 'mocap_calib'), ('mocap-repeat', 'mocap_repeat'),
+    # the kinematic stages (plate / mocap-calib) give PACE the joint stiffness
+    ('plate', 'plate'), ('mocap-calib', 'mocap_calib'), ('pace', 'pace'), ('mocap-repeat', 'mocap_repeat'),
     ('repeat', 'repeat'), ('validate', 'validate'),
 ]
 MODULES = dict(STAGES)
@@ -116,11 +117,21 @@ def session_meta(arm, store, calibration, client, operator):
 def update_joint_config(path: str, updates: Dict[str, Dict]) -> List[str]:
     """Targeted edit of per-joint `direction:` (bringup) and `float_friction_gain:`
     (gravity-check) lines in the joint YAML, keeping comments. A missing
-    float_friction_gain line is added under the joint's name."""
+    float_friction_gain line is added under the joint's name. The arm-level
+    `repeatability_tuning:` block (mocap-repeat) is replaced, or appended."""
     done = []
-    if not any((updates.get(k) or {}) for k in ('direction', 'float_friction_gain')):
+    if not any((updates.get(k) or {}) for k in ('direction', 'float_friction_gain', 'repeatability_tuning')):
         return done
     text = open(path).read()
+    tuning = updates.get('repeatability_tuning') or {}
+    if tuning:
+        block = 'repeatability_tuning:   # written by `arm mocap-repeat --write-config`\n' + ''.join(
+            '  %s: %s\n' % (k, ('%.4g' % v) if isinstance(v, float) else v) for k, v in tuning.items())
+        pat = re.compile(r'^repeatability_tuning:[^\n]*\n(?:[ \t]+[^\n]*\n)*', re.M)
+        text, k = pat.subn(lambda m: block, text, count=1)
+        if not k:
+            text = text.rstrip('\n') + '\n\n' + block
+        done.append('repeatability_tuning -> %s' % ', '.join('%s %s' % kv for kv in tuning.items()))
     for joint, value in (updates.get('direction') or {}).items():
         pat = re.compile(r'(-\s*name:\s*%s\b(?:(?!\n\s*-\s*name:).)*?\n\s*direction:\s*)(-?1)' % re.escape(joint),
                          re.S)
@@ -180,6 +191,10 @@ def run_stage(name, args, arm, store, client, recorder=None, extra=None):
                 print('  joint config: ' + line)
         elif any(result.joint_config_updates.values()):
             print('  joint config changes (apply with --write-config): %s' % result.joint_config_updates)
+            if args.sim and result.joint_config_updates.get('repeatability_tuning'):
+                # the operator applies the tuning before validating; in sim do it in memory
+                arm.raw['repeatability_tuning'] = dict(result.joint_config_updates['repeatability_tuning'])
+                print('  (sim) repeatability_tuning applied in memory for the stages that follow')
     if name == 'validate':
         target = path or store.latest_path()
         if target:

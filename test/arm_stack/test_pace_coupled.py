@@ -67,3 +67,37 @@ def test_population_rows_are_independent():
     alone = be.simulate(0, P)
     assert np.allclose(both[0], alone[0])
     assert not np.allclose(both[1], alone[0])
+
+
+def test_compliance_softens_the_loop_and_reduces_when_rigid():
+    model, log, P = _setup()
+    n = model.n
+    rigid = JointReplayBackend(model, [log], substeps=4).simulate(0, P)
+    inf = JointReplayBackend(model, [log], substeps=4, stiffness=np.full(n, np.inf)).simulate(0, P)
+    assert np.allclose(rigid, inf)
+    soft = JointReplayBackend(model, [log], substeps=4, stiffness=np.full(n, 1500.0)).simulate(0, P)
+    assert np.all(np.isfinite(soft))
+    assert np.max(np.abs(soft - rigid)) > 0.01 * log.sweep[1]
+    # the coupled replay with a rigid hold agrees with the per-joint one under compliance too
+    M = model.mass_matrix(log.q_hold)
+    kp = np.full(n, 2e4)
+    kd = 2 * np.sqrt(kp * np.diag(M))
+    stiff = np.where(np.arange(n) == log.joint, 1500.0, np.inf)
+    single = JointReplayBackend(model, [log], substeps=4, stiffness=stiff).simulate(0, P)
+    coupled = JointReplayBackend(model, [log], substeps=4, hold_gains=(kp, kd), hold_armature=np.full(n, 0.01),
+                                 stiffness=stiff).simulate(0, P)
+    assert np.max(np.abs(coupled - single)) < 0.05 * log.sweep[1]
+
+
+def test_torque_clamp_limits_the_replay():
+    model, log, P = _setup()
+    n = model.n
+    free = JointReplayBackend(model, [log], substeps=4).simulate(0, P)
+    inf = JointReplayBackend(model, [log], substeps=4, torque_limit=np.full(n, np.inf)).simulate(0, P)
+    assert np.allclose(free, inf)
+    # a clamp just above the hold torque cuts the chirp's swing
+    g = abs(model.gravity(log.q_hold)[log.joint])
+    tight = JointReplayBackend(model, [log], substeps=4, torque_limit=np.full(n, g + 0.5)).simulate(0, P)
+    assert np.all(np.isfinite(tight))
+    swing = lambda q: np.ptp(q[0, len(q[0]) // 2:])  # noqa: E731
+    assert swing(tight) < 0.9 * swing(free)

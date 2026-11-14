@@ -106,12 +106,14 @@ def test_pivot(rig):
     assert run(rig, 'pivot').passed
 
 
-def test_pace(rig):
-    assert run(rig, 'pace').passed
-
-
 def test_mocap_calib_recovers_kinematics(rig):
     r = run(rig, 'mocap-calib')
+    assert r.passed, r.report()
+
+
+def test_pace(rig):
+    # after mocap-calib, as in `arm all`: the replay uses its joint stiffness
+    r = run(rig, 'pace')
     assert r.passed, r.report()
 
 

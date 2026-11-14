@@ -46,10 +46,20 @@ class JointReplayBackend:
     mass matrix at the hold pose: the chirped joint drags them (and they it), which
     a one-joint model cannot show and which otherwise ends up in a biased armature
     and viscous fit. The chirp is small, so inertia is constant and gravity is the
-    chirped joint's exact curve plus a linear term in the others' deflection."""
+    chirped joint's exact curve plus a linear term in the others' deflection.
+
+    `stiffness` (Nm/rad per joint, from plate / mocap-calib; inf = rigid) adds the
+    transmission's compliance as the plant has it: the encoder, and so the drive's
+    PD and the log, read the motor angle, link angle + tau / k (tau from the last
+    substep). Without it a compliant shoulder's softer loop ends up in the fitted
+    armature and viscous.
+
+    `torque_limit` (Nm per joint) is the drive's 0x6072 clamp on its total torque.
+    A chirp near the servo resonance can hit it, and an unclipped replay then
+    overshoots exactly where the log is most informative."""
 
     def __init__(self, model, logs: List[JointLog], gravity_ff: bool = True, substeps: int = 1,
-                 hold_gains=None, hold_armature=None):
+                 hold_gains=None, hold_armature=None, stiffness=None, torque_limit=None):
         self.model = model
         self.logs = logs
         self.gravity_ff = gravity_ff
@@ -59,6 +69,9 @@ class JointReplayBackend:
         self.kp_hold = None if hold_gains is None else np.asarray(hold_gains[0], float)
         self.kd_hold = None if hold_gains is None else np.asarray(hold_gains[1], float)
         arm0 = np.zeros(n) if hold_armature is None else np.asarray(hold_armature, float)
+        k = np.full(n, np.inf) if stiffness is None else np.asarray(stiffness, float)
+        self.compliance = np.where(np.isfinite(k) & (k > 0), 1.0 / np.where(k > 0, k, 1.0), 0.0)
+        self.tau_max = np.full(n, np.inf) if torque_limit is None else np.asarray(torque_limit, float)
         self.inertia = []
         self.g_grid = []
         self.M0 = []          # mass matrix at the hold pose, others' armature on the diagonal
@@ -114,7 +127,11 @@ class JointReplayBackend:
         fc0, fv0 = self.friction_ff[k]
         # fractional delay: interpolate the command history
         tgrid = np.arange(T) * dt
-        q = np.full(pop, log.q_meas[0])          # true link angle
+        c = self.compliance[log.joint] if len(self.compliance) else 0.0
+        # start in static equilibrium: the drive holds gravity, the link sits tau / k
+        # below the motor angle the log starts at
+        tau = np.full(pop, float(np.interp(log.q_meas[0], grid, g)))
+        q = log.q_meas[0] - c * tau              # true link angle
         qd = np.zeros(pop)
         out = np.empty((pop, T))
         h = dt / self.substeps
@@ -129,12 +146,14 @@ class JointReplayBackend:
             ff = np.interp(q_sent, grid, g) if self.gravity_ff else 0.0
             ff = ff + fc0 * np.tanh(qdc / 0.02) + fv0 * qdc
             for _ in range(self.substeps):
-                tau = kp * (qc - (q + bias)) - kd * qd + ff
+                tau = kp * (qc - (q + c * tau + bias)) - kd * qd + ff
+                if len(self.tau_max):
+                    tau = np.clip(tau, -self.tau_max[log.joint], self.tau_max[log.joint])
                 fr = fc * np.tanh(qd / 0.01) + fv * qd
                 qdd = (tau - g_true - fr) / I
                 qd = qd + h * qdd
                 q = q + h * qd
-            out[:, t] = q + bias
+            out[:, t] = q + c * tau + bias
         return out
 
 
@@ -164,6 +183,9 @@ class JointReplayBackend:
         q = np.repeat(hold[None], pop, axis=0)
         q[:, j] = log.q_meas[0]
         qd = np.zeros((pop, n))
+        cmp = self.compliance
+        tau = np.repeat(np.array([np.interp(log.q_meas[0], grid, gv[:, i]) for i in range(n)])[None], pop, axis=0)
+        q = q - cmp[None] * tau                  # link angles; hold and the log are motor angles
         out = np.empty((pop, T))
         sub = self.sub_k[k]
         h = dt / sub
@@ -183,16 +205,18 @@ class JointReplayBackend:
                 g_true = np.stack([np.interp(q[:, j], grid, gcols[c]) for c in range(n)], axis=1)
                 dqo = np.where(others[None], q - hold[None], 0.0)
                 g_true = g_true + dqo @ G.T
+                enc = q + cmp[None] * tau          # motor angle (last substep's torque)
                 tau = ff.copy()
-                tau[:, j] += kp * (qc - (q[:, j] + bias)) - kd * qd[:, j]
-                tau[:, others] += kp_h[others] * (hold[others] - q[:, others]) - kd_h[others] * qd[:, others]
+                tau[:, j] += kp * (qc - (enc[:, j] + bias)) - kd * qd[:, j]
+                tau[:, others] += kp_h[others] * (hold[others] - enc[:, others]) - kd_h[others] * qd[:, others]
+                tau = np.clip(tau, -self.tau_max[None], self.tau_max[None])
                 fr = np.empty_like(qd)
                 fr[:, others] = Fc[others] * np.tanh(qd[:, others] / 0.01) + Fv[others] * qd[:, others]
                 fr[:, j] = fc * np.tanh(qd[:, j] / 0.01) + fv * qd[:, j]
                 qdd = np.einsum('pik,pk->pi', Minv, tau - g_true - fr)
                 qd = qd + h * qdd
                 q = q + h * qd
-            out[:, t] = q[:, j] + bias
+            out[:, t] = q[:, j] + cmp[j] * tau[:, j] + bias
         return out
 
 
