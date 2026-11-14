@@ -531,15 +531,26 @@ class IKTracker:
       (keeps the direction) so no joint exceeds max_vel * dt,
     - out-of-reach targets: returns the closest feasible pose the local solver
       reaches (a least-squares fit inside the limits) with reachable=False,
-      instead of jumping to a far restart.
+      instead of jumping to a far restart,
+    - stall escape: when the local solver fails and the tracker has stopped
+      moving (pinned at a joint limit in a local minimum, e.g. after stretching
+      for an unreachable target), a multistart solve looks for the reachable
+      solution closest to the current pose and the tracker heads there at the
+      velocity limit. An unreachable target is tried once per position (again
+      only after it moves `escape_retry_m`), so a held far target costs one solve.
 
     tracker = IKTracker(model, q_now, dt=0.01)
     out = tracker.update(target_se3)      # out.q -> joint command
     """
 
     def __init__(self, model, q0, dt: float = 0.01, method: str = 'clik', max_vel=None,
-                 max_iters: int = 30, **opts):
+                 max_iters: int = 30, escape: bool = True, escape_starts: int = 20,
+                 escape_retry_m: float = 0.01, **opts):
         self.model = model
+        self.escape = escape
+        self.escape_starts = int(escape_starts)
+        self.escape_retry_m = float(escape_retry_m)
+        self._escape_failed_at = None
         self.dt = float(dt)
         self.method = method
         if max_vel is None:
@@ -555,10 +566,29 @@ class IKTracker:
     def reset(self, q):
         self.q = np.clip(np.asarray(q, float), self.model.lower, self.model.upper)
         self.last = None
+        self._escape_failed_at = None
+
+    STALL_RAD = 1e-4
+
+    def _escape(self, target, res):
+        """Multistart from a stalled local solve; res unchanged if nothing better."""
+        pos = np.asarray(target.translation if hasattr(target, 'translation') else target, float)[:3]
+        if self._escape_failed_at is not None and                 np.linalg.norm(pos - self._escape_failed_at) < self.escape_retry_m:
+            return res
+        opts = {k: v for k, v in self.opts.items() if k not in ('min_iters', 'max_iters')}
+        alt = solve(self.model, target, self.q, method='multistart', n_starts=self.escape_starts,
+                    select='closest', seed=0, **opts)
+        if alt.success:
+            self._escape_failed_at = None
+            return alt
+        self._escape_failed_at = pos
+        return res
 
     def update(self, target: Target, dt: Optional[float] = None) -> TrackResult:
         dt = self.dt if dt is None else float(dt)
         res = solve(self.model, target, self.q, method=self.method, **self.opts)
+        if self.escape and not res.success and np.max(np.abs(res.q - self.q)) < self.STALL_RAD:
+            res = self._escape(target, res)
         dq = res.q - self.q
         lim = self.max_vel * dt
         ratio = float(np.max(np.abs(dq) / np.maximum(lim, 1e-12)))

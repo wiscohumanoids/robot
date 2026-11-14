@@ -20,8 +20,11 @@ GRAVITY = np.array([0.0, 0.0, -9.81])
 
 class ArmModel:
 
-    def __init__(self, urdf_path: str, joint_names: Sequence[str], tool_frame: str = 'tool0'):
+    def __init__(self, urdf_path: str, joint_names: Sequence[str], tool_frame: str = 'tool0',
+                 home: Optional[Sequence[float]] = None):
         self.urdf_path = urdf_path
+        # the arm's resting pose (joint config `home_pose_rad`); None: q = 0
+        self.home = None if home is None else np.asarray(home, float)
         full = pin.buildModelFromUrdf(urdf_path)
         self.joint_names = list(joint_names)
         missing = [n for n in self.joint_names if not full.existJointName(n)]

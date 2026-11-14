@@ -106,7 +106,11 @@ def _axial_free_overlay(model, names, rng, dxyz=0.0008, drot=0.002):
     or pose measurement can tell apart."""
     out = {}
     for k in range(1, len(names)):
-        a, b = model.axis_in_child(k), model.axis_in_child(k - 1)
+        # drot is applied in joint k's own frame (placement @ exp(drot)): the parent's
+        # axis goes into that frame through the nominal placement (link frames are not
+        # parallel at q = 0)
+        R = model.nominal.jointPlacements[model.jid[k]].rotation
+        a, b = model.axis_in_child(k), R.T @ model.axis_in_child(k - 1)
         t = np.cross(a, b)
         if np.linalg.norm(t) < 1e-3:
             t = np.cross(a, [1.0, 0.0, 0.0])

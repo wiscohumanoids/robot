@@ -1,0 +1,69 @@
+================================================================================
+arm01 design ledger
+================================================================================
+Robot      arm01: the 7-DOF MyActuator EtherCAT arm under test (right arm on a
+           post stand).
+Source     The CAD team's `full_assembly_urdf` export (14 Nov 2026, Onshape
+           capture f7727994091b4cb0be86ce6f, audited inertials and harness),
+           converted by tools/cad/import_full_assembly.py: renamed, re-based,
+           tool frames added. Geometry, joint senses, zeros, limits and
+           inertials are the export's. Regenerate with that script; do not
+           hand-edit.
+Consumers  Pinocchio (arm_stack model, sim, fits), robot_state_publisher /
+           RViz, ros2_control (urdf/arm01/arm01.ros2_control.xacro), Isaac Lab
+           (PACE, via `arm export pace`).
+Units      metres, kilograms, radians. Meshes are binary STL in metres, one per
+           link, in the link frame.
+
+Names (export -> here)
+  J1 shoulder_pitch, J2 shoulder_roll, J3 shoulder_yaw, J4 elbow,
+  J5 forearm_yaw, output_pivot wrist_pitch, J7 wrist_yaw;
+  J6 wrist_crank_joint and coupler_hinge wrist_rod_joint (mimics, below).
+  shoulder_flexion link1, shoulder_abduction link2, upper_arm link3,
+  forearm link4, wrist_base link5, wrist_output link6, tool_link link7,
+  input_crank wrist_crank, coupler wrist_rod.
+
+Frames
+  base_link  origin at the top centre of the stand's post, CAD (0, 0, 541) mm;
+             x forward (CAD -y), y to the robot's left (CAD +x), z up. The
+             export's base is the CAD frame; the J1 origin and base_link's
+             visual and inertial carry base = Rz(90 deg) (cad - [0 0 0.541]).
+  linkN      the export's frames: z is joint N's axis.
+  flange     J7 output face centre on the J7 axis, z out of the face toward
+             the tool, x toward the peg.
+  tool0      centre of the peg's end face (Ø20 mm PLA peg), z out of the tip,
+             x perpendicular to the peg and the J7 axis. Fitted to the link7
+             mesh.
+
+Zero pose  The export's: q = 0 closes the wrist loop. The CAD capture is
+           J1 80.80, J2 0.00, J3 3.30, J4 19.71, J5 -95.00, J6 28.04,
+           J7 2.05 deg. The export maps its Onshape mate angles to these
+           coordinates (sign, offset: J2 -1, J3 +3.911 deg, J4 -1 / -8.919
+           deg); they are NOT encoder readings. `arm zero` and the zeroing jig
+           set the encoder zeros, `arm bringup` the signs (joint config
+           `direction`). Keep J1/J2 unwrapped through 180 deg.
+
+Wrist      J6 turns a near-parallelogram (crank 41.75, coupler 70.0, ground
+           69.89 mm): output / crank = 0.996..1.004 over +-35 deg. wrist_pitch
+           is the output pivot, driven 1:1 by the J6 actuator here (error
+           about 0.15 deg at the ends of travel); the crank and coupler are
+           mimic joints of it (+1 / -1). Pinocchio locks the mimics and merges
+           their 30 g into link5. The export's model.py has the exact loop.
+
+Limits     The export's operating ranges: J1 [-90, 180], J2 [0, 190],
+           J3 +-90, J4 [0, 130], J5 +-90, J6 +-35, J7 +-90 deg. They are not
+           certified hardware stops: J1's stops are unverified, J2's lower
+           contact is at -0.12 deg, J6's at -35.09 / +35.04 deg. Effort and
+           velocity are the datasheet rated values. Stage 3 (`arm limits`)
+           finds the hard stops and writes soft limits into the calibration
+           file, not here.
+
+Inertials  The export's audited model: 5052 sheet, 6061 billet, steel hardware,
+           PLA peg (solid, 72 g), provisional actuator masses (X6 0.78, X4-36
+           0.36, X4-10 0.33 kg), and a 178 g harness estimate. Moving mass
+           3.918 kg. Weighed masses go in config/arms/arm01.yaml
+           `link_masses_kg`; stage 5 fits each link's COM. base_link's
+           inertial (fixture) is unused.
+
+Geometry   visual = collision = the link's STL.
+================================================================================

@@ -312,9 +312,13 @@ arm01 launch file is hard-wired to arm01's joint table).
 
 Layout:
 
-- `urdf/arm01/arm01.urdf`: URDF from the STEP (`tools/cad/extract_arm01.py` rebuilds the
-  meshes and numbers; the ledger at the top of the URDF lists every frame convention and
-  assumption). `arm01.ros2_control.xacro` adds the ros2_control block.
+- `urdf/arm01/arm01.urdf`: the CAD team's `full_assembly_urdf` export (Onshape capture,
+  audited inertials and harness), converted by `tools/cad/import_full_assembly.py` to this
+  repo's joint/link names and base frame, with `flange` and `tool0` added (the ledger at the
+  top of the URDF lists every frame convention and assumption; regenerate, don't hand-edit).
+  `tools/cad/arm01_capture.json` is the export's capture pose and link placements, which
+  `test/arm_stack/test_fk.py` checks the URDF against. `arm01.ros2_control.xacro` adds the
+  ros2_control block.
 - `config/arms/arm01.yaml`: the arm's joint config (`control_mode: arm`).
   `config/calib/arm01/<date>_v<N>.yaml`: calibration versions, append-only, written by the stages.
 - `src/arm_controller.cpp`, `include/.../arm_law.hpp`: the 1 kHz RT loop as a ros2_control
@@ -351,15 +355,23 @@ block does not export yet.
 
 Assumptions that need the bench (also in the URDF ledger):
 
-- Zeros: J1, J3, J5, J6 and J7 read 0 at the CAD pose; J4 reads 0 with the elbow straight
-  (the CAD has it flexed 24.7°, so the geometry past J4 was rotated back). J2's lower limit
-  is 0 (the given ROM is +190 only). Joint signs follow the right-hand rule about the URDF
-  axes; `arm bringup` checks them against gravity, and J3 is mounted inverted so its
-  `direction` may need to be −1.
-- The wrist pitch parallelogram (crank 41.75, rod 70.0, ground 69.9 mm) is modeled 1:1 with
-  mimic joints; only `wrist_pitch` is driven.
-- Link masses come from CAD volumes with placeholder densities until the weighed values
-  land in `link_masses_kg`.
+- Zeros and signs are the CAD export's operating coordinates (mapped from its Onshape mates),
+  not encoder readings: `arm zero` and the jig set the encoder zeros, `arm bringup` checks
+  the signs against gravity (J3 is mounted inverted, so its `direction` may need to be −1).
+  **q = 0 is the arm stretched out forward**, its worst gravity load, so every stage starts
+  from `home_pose_rad` in `arm01.yaml` (J1 +90°, elbow +45°: upper arm hanging, peg tip
+  10 cm above the stand's base plate), which is also the default jig pose. Hanging fully
+  straight (or at the export's CAD capture, J1 80.8, J4 19.7, J5 −95, J6 28°) the peg tip
+  is level with the base plate.
+- Ranges are the export's operating ROM (J1 −90..+180, J2 0..190, J3 ±90, J4 0..130,
+  J5 ±90, J6 ±35, J7 ±90°), not certified stops: J1's stops are unverified, J2's contact
+  onset is at −0.1° and J6's at ±35.1°. `arm limits` finds the real stops.
+- The wrist is a near-parallelogram (output/crank 0.996..1.004): the J6 encoder drives
+  `wrist_pitch` (the output pivot) 1:1, within 0.25° over ±35°; the crank and coupler are
+  mimic joints. The export's `model.py` has the exact loop.
+- Link masses are the export's audited model (provisional actuator masses, solid PLA peg,
+  178 g harness estimate; moving mass 3.92 kg) until the weighed values land in
+  `link_masses_kg`.
 - The ArmController writes each command's torque clamp to 0x6072 (`max_torque` command
   interface, `write_max_torque: true` in arm mode), so the drive's own CSP loop is capped
   too, which matters when `arm limits` pushes into a hard stop. 0x6072 is in the default
@@ -387,9 +399,9 @@ Assumptions that need the bench (also in the URDF ledger):
   ratio (12.5 in the table, 12.6 in the user manual, 1:13 on the label), the X4s'
   counts_per_rev (131072 assumed for the 18-bit output encoder) and the X4s' Kt (the
   datasheet Kt disagrees with rated torque / rated current) are marked "verify".
-- The RT clamps (`max_torque_nm`, `max_vel_rad_s`) are the rated values; 0x6072 caps each
-  drive at 1.2x the bring-up effort limit.
-- J7's axis sits about 62° from the forearm at zero because J6's zero is the CAD pose.
+- The RT clamps (`max_torque_nm`, `max_vel_rad_s`) stay at the bring-up limits (the
+  datasheet ratings are in the comments; loading refuses a clamp above them); 0x6072 caps
+  each drive at 1.2x the bring-up effort limit.
 - The PACE stage fits with a per-joint replay backend by default. The Isaac Lab backend
   (`arm_stack/pace/isaac_backend.py`, `fit(..., backend='isaac')`) replays the same logs or
   `arm export pace` npz files on the full arm, one env per candidate, but is untested

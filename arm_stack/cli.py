@@ -72,7 +72,7 @@ SIM_ROOT = os.path.join(os.path.expanduser('~'), '.cache', 'arm_stack', 'sim_cal
 
 
 def build_model(arm, calibration) -> ArmModel:
-    model = ArmModel(arm.urdf, arm.names)
+    model = ArmModel(arm.urdf, arm.names, home=arm.home)
     model.apply_calibration(calibration, arm.link_masses_kg)
     soft = calibration.get('soft_limits_rad') or {}
     for i, n in enumerate(arm.names):

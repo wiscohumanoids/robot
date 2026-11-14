@@ -27,6 +27,7 @@ Exits 1 on any FAIL (warnings, such as unweighed placeholder masses, do not).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -36,17 +37,11 @@ import numpy as np
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 
-# Measured ROM, degrees (spec / URDF design ledger): J1 +200/-80, J2 0..+190,
-# J3 +-90, J4 0..+130, J5 +-90, J6 +-35, J7 +-90.
-ROM_DEG = {
-    'shoulder_pitch': (-80.0, 200.0),
-    'shoulder_roll': (0.0, 190.0),
-    'shoulder_yaw': (-90.0, 90.0),
-    'elbow': (0.0, 130.0),
-    'forearm_yaw': (-90.0, 90.0),
-    'wrist_pitch': (-35.0, 35.0),
-    'wrist_yaw': (-90.0, 90.0),
-}
+# Operating ROM, degrees: the CAD export's (tools/cad/arm01_capture.json, written by
+# tools/cad/import_full_assembly.py): J1 -90..+180, J2 0..+190, J3 +-90, J4 0..+130,
+# J5 +-90, J6 +-35, J7 +-90.
+with open(os.path.join(REPO, 'tools', 'cad', 'arm01_capture.json')) as _f:
+    ROM_DEG = {k: tuple(v) for k, v in json.load(_f)['operating_limits_deg'].items()}
 LIMIT_TOL_DEG = 0.01
 AXIS_NORM_TOL = 1e-4
 MASS_TOL = 1e-6           # kg, bookkeeping (totals should match exactly)
@@ -102,9 +97,15 @@ def parse_urdf(path):
         axis = j.find('axis')
         lim = j.find('limit')
         mim = j.find('mimic')
+        org = j.find('origin')
+        r_, p_, y_ = [float(v) for v in ((org.get('rpy') if org is not None else None) or '0 0 0').split()]
+        Rx = np.array([[1, 0, 0], [0, np.cos(r_), -np.sin(r_)], [0, np.sin(r_), np.cos(r_)]])
+        Ry = np.array([[np.cos(p_), 0, np.sin(p_)], [0, 1, 0], [-np.sin(p_), 0, np.cos(p_)]])
+        Rz = np.array([[np.cos(y_), -np.sin(y_), 0], [np.sin(y_), np.cos(y_), 0], [0, 0, 1]])
         joints[j.get('name')] = dict(
             type=j.get('type'), parent=j.find('parent').get('link'), child=j.find('child').get('link'),
             axis=np.array([float(v) for v in (axis.get('xyz') if axis is not None else '1 0 0').split()]),
+            origin_rot=Rz @ Ry @ Rx,
             lower=float(lim.get('lower', 'nan')) if lim is not None else float('nan'),
             upper=float(lim.get('upper', 'nan')) if lim is not None else float('nan'),
             effort=float(lim.get('effort', 'nan')) if lim is not None else float('nan'),
@@ -213,16 +214,21 @@ def main():
         norm = np.linalg.norm(a)
         r.check(abs(norm - 1.0) < AXIS_NORM_TOL, '%-15s axis (% .5f % .5f % .5f) |a| = %.6f' % (n, a[0], a[1], a[2], norm))
         pa = ref['axes_parent'][i]
-        if np.dot(pa, a / norm) < 1 - 1e-9:
-            r.fail('%s Pinocchio axis %s differs from the URDF %s' % (n, np.round(pa, 5), np.round(a / norm, 5)))
+        a_parent = joints[n]['origin_rot'] @ (a / norm)        # the URDF axis, in the parent link frame
+        if np.dot(pa, a_parent) < 1 - 1e-9:
+            r.fail('%s Pinocchio axis %s differs from the URDF %s' % (n, np.round(pa, 5), np.round(a_parent, 5)))
     for n, j in mimics.items():
         norm = np.linalg.norm(j['axis'])
         r.check(abs(norm - 1.0) < AXIS_NORM_TOL, '%-15s axis |a| = %.6f (mimic)' % (n, norm))
-    if 'shoulder_yaw' in joints and 'forearm_yaw' in joints:
-        a3, a5 = joints['shoulder_yaw']['axis'], joints['forearm_yaw']['axis']
-        c = np.dot(a3, a5) / np.linalg.norm(a3) / np.linalg.norm(a5)
-        r.check(c > 1 - 1e-6, 'J5 axis parallel to J3 at q = 0 (straight elbow): angle %.4f deg'
-                % np.degrees(np.arccos(min(c, 1.0))))
+    if 'shoulder_yaw' in cfg and 'forearm_yaw' in cfg:
+        # the export's elbow zero is not straight: J4 = 0 leaves the forearm a few
+        # degrees off the upper arm (its contact onset is near -5 deg)
+        d0 = full.createData()
+        pin.forwardKinematics(full, d0, pin.neutral(full))
+        w = [d0.oMi[full.getJointId(n)].rotation @ np.array(full.joints[full.getJointId(n)].S)[3:, 0]
+             for n in ('shoulder_yaw', 'forearm_yaw')]
+        c = abs(np.dot(w[0], w[1])) / np.linalg.norm(w[0]) / np.linalg.norm(w[1])
+        print('  J5 axis vs J3 axis at q = 0: %.3f deg (elbow zero)' % np.degrees(np.arccos(min(c, 1.0))))
     dirs = {j.name: j.direction for j in arm.joints}
     r.check(all(d in (1, -1) for d in dirs.values()),
             'config directions are +-1: %s' % ', '.join('%s %+d' % kv for kv in dirs.items()))

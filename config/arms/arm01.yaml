@@ -25,12 +25,27 @@ arm: arm01
 urdf: urdf/arm01/arm01.urdf
 bus: {iface: enp3s0, cycle_us: 1000, dc_sync: true}
 
+# Resting pose every stage starts from and returns to (rad, 3 deg inside the limits
+# when used). The URDF's q = 0 is the arm stretched out forward, its worst gravity
+# load; this is the upper arm hanging (J1 +90 deg) with the elbow bent 45 deg, which
+# keeps the peg tip 10 cm above the stand's base plate (fully hanging, it is level with
+# the plate) at under 30% of any clamp. Also the zeroing jig pose unless `jig_pose_rad`
+# is given.
+home_pose_rad:
+  shoulder_pitch: 1.5708
+  shoulder_roll: 0.0
+  shoulder_yaw: 0.0
+  elbow: 0.7854
+  forearm_yaw: 0.0
+  wrist_pitch: 0.0
+  wrist_yaw: 0.0
+
 # velocity (CSV), effort (CST), or arm (CSP + CST with runtime switching, the
 # spec's Mode P / Mode T; needs the ArmController).
 control_mode: arm
 
 joints:
-  - name: shoulder_pitch      # J1, ROM -80..+200 deg
+  - name: shoulder_pitch      # J1, ROM -90..+180 deg (operating range; stops unverified)
     bus_position: 0
     model: x6_60
     direction: 1
@@ -41,7 +56,7 @@ joints:
     max_torque_nm: 12.0  # bring-up clamp (x6_60: datasheet rated 20 Nm, peak in the model table)
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 153 rpm = 16.0 rad/s)
     gains: {kp: 60.0, kd: 2.0}
-  - name: shoulder_roll       # J2, ROM 0..+190 deg (lower bound assumed 0)
+  - name: shoulder_roll       # J2, ROM 0..+190 deg
     bus_position: 1
     model: x6_60
     direction: 1
@@ -128,15 +143,15 @@ mocap:
 
 # Optional fixed validation poses (rad, 7 per pose). Empty: feasible random poses.
 validation:
-  # ISO 9283 poses on the 160 mm dexterous cube from tools/workspace_map.py
-  # (docs/workspace_report.md): one tool orientation, cond 15-44, >= 9 deg from
-  # every joint limit, inside the 60% gravity-torque rule
+  # ISO 9283 poses on the 135 mm cube at (0.170, -0.490, 0.210) from tools/workspace_map.py
+  # (docs/workspace_report.md): one tool orientation, cond 15-51, >= 9 deg from every
+  # joint limit, inside the 60% gravity-torque rule
   iso_poses_rad:
-    - [-0.6382, 0.7926, -0.8818, 1.6907, 1.3753, 0.4556, -0.6538]
-    - [-0.7324, 1.1009, -0.4689, 0.9683, 0.9153, 0.4260, -1.3491]
-    - [-1.2196, 0.7760, -0.5157, 2.0172, 1.0959, -0.0111, -1.0331]
-    - [-1.2459, 1.6004, -0.8126, 1.9875, 0.5424, -0.3564, -0.7259]
-    - [-0.3077, 1.4662, -0.3803, 0.9205, 0.8930, 0.3902, -0.8733]
+    - [1.1880, 0.8057, -1.2019, 1.6012, 0.4256, -0.1592, 0.6836]
+    - [2.0606, 1.1007, -0.9049, 1.3537, -0.5233, 0.4523, 1.0797]
+    - [2.0615, 0.7064, -0.9924, 2.1190, -0.0901, 0.4507, 0.5655]
+    - [0.4698, 0.6411, -1.2647, 1.6129, 1.1595, -0.4261, 0.8255]
+    - [0.5158, 1.2108, -1.3595, 0.6498, 1.0903, -0.1021, 1.1362]
 
 # Divot plate for `arm plate`: kinematic calibration without mocap. The probe tip
 # (tool0) is hand guided into each divot in several configurations; the fit uses the

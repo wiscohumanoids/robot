@@ -581,6 +581,9 @@ def main(argv=None):
         sug = suggest_iso(arm, model, bk, cube['center'], cube['side_m'], np.random.default_rng(a.seed + 5))
         log('ISO suggestion: side %.0f mm, %s' % (1000 * sug['side_m'],
                                                'min manip %.4f' % sug['min_manip'] if sug.get('q_rad') else 'none'))
+    configured = [list(map(float, q)) for q in (arm.raw.get('validation', {}).get('iso_poses_rad') or [])]
+    applied = bool(sug and sug.get('q_rad') and len(configured) == len(sug['q_rad'])
+                   and np.allclose(configured, np.round(sug['q_rad'], 4), atol=1e-3))
     files = render(m, a.out, cube, np.array([c['tool_m'] for c in cur]) if cur else None,
                    np.array(sug['points']) if sug else None)
     relaxed = None
@@ -594,7 +597,7 @@ def main(argv=None):
                    grid_cover_deg_p99=cov99, grid_cover_deg_median=cov50,
                    seconds=m['seconds'], ik_targets=m['targets'], shell_added=m['shell_added'],
                    origin=m['origin'].tolist(), shape=m['shape'].tolist(), **s,
-                   dex_threshold=dex, cubes=cubes, iso_current=cur, iso_suggested=sug, relaxed_j6=relaxed,
+                   dex_threshold=dex, cubes=cubes, iso_current=cur, iso_configured=bool(configured), iso_applied=applied, iso_suggested=sug, relaxed_j6=relaxed,
                    images=[os.path.relpath(f, os.path.dirname(a.report) or '.') for f in files])
     with open(os.path.join(a.out, 'summary.json'), 'w') as f:
         json.dump(summary, f, indent=1)
@@ -647,12 +650,15 @@ def write_report(path, S):
             L.append('| P%d | (%.3f, %.3f, %.3f) | %s | %.4f | %.3f | %.0f | %.0f deg (%s) |'
                      % (i + 1, *p, ', '.join('%.0f' % d for d in np.degrees(q)), qq['manip'], qq['sigma_min'],
                         qq['cond'], qq['min_clear_deg'], qq['tightest_joint']))
-        L.append('\nFor `validation.iso_poses_rad` in config/arms/arm01.yaml (not applied):\n')
+        L.append('\nFor `validation.iso_poses_rad` in config/arms/arm01.yaml (%s):\n'
+                 % ('applied' if S.get('iso_applied') else 'not applied'))
         L.append('```yaml\niso_poses_rad:\n' + ''.join('  - [%s]\n' % ', '.join('%.4f' % x for x in q)
                                                     for q in sug['q_rad']) + '```\n')
     elif sug:
         L.append('No single tool orientation reaches all five ISO points in the cube.\n')
-    L.append('## Current `mocap_repeat.iso_poses` (config list empty: feasible random poses, seed 42)\n')
+    L.append('## Current `mocap_repeat.iso_poses` (%s)\n'
+             % ('validation.iso_poses_rad from the config' if S.get('iso_configured')
+                else 'config list empty: feasible random poses, seed 42'))
     L.append('| pose | tool [m] | voxel frac | manip (voxel max) | sigma_min | cond | min clearance | in cube |'
              '\n|---|---|---|---|---|---|---|---|')
     for i, c in enumerate(S['iso_current']):

@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import numpy as np
 
-from .common import DEG, StageContext, StageResult
+from .common import DEG, StageContext, StageResult, safe_home
 
 SPREAD_LIMIT = 0.1 * DEG
 
 
 def jig_pose(ctx: StageContext) -> np.ndarray:
     pose = ctx.arm.raw.get('jig_pose_rad')
-    if pose is None:
-        return np.clip(np.zeros(ctx.arm.n), ctx.model.lower, ctx.model.upper)
+    if pose is None:          # the jig holds the arm at its home pose
+        return safe_home(ctx.model)
     return np.array([pose[n] for n in ctx.arm.names], float)
 
 

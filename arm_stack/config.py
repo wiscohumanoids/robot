@@ -19,6 +19,7 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import yaml
 
 PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -106,6 +107,17 @@ class ArmConfig:
 
     def hash(self) -> str:
         return file_hash(self.path)
+
+    @property
+    def home(self) -> Optional[np.ndarray]:
+        """`home_pose_rad`: the low-gravity pose stages start and rest at (None: q = 0)."""
+        pose = self.raw.get('home_pose_rad')
+        if pose is None:
+            return None
+        missing = [n for n in self.names if n not in pose]
+        if missing:
+            raise ValueError('%s: home_pose_rad has no %s' % (self.path, ', '.join(missing)))
+        return np.array([float(pose[n]) for n in self.names])
 
 
 def arm_path(name_or_path: str) -> str:

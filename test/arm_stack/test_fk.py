@@ -1,14 +1,14 @@
-"""Forward kinematics of arm01: URDF/Pinocchio against the CAD extraction, and
+"""Forward kinematics of arm01: URDF/Pinocchio against the CAD export, and
 self-consistency of the FK, Jacobian and kinematic overlay.
 
-The CAD numbers come from tools/cad/arm01_extract.json (written by
-tools/cad/extract_arm01.py from the assembly STEP). Its `joints` block is
-already in the URDF zero pose: everything past J4 rotated back by the CAD's
-elbow flexion so q4 = 0 is a straight elbow. Its `actuators` and `solids`
-blocks are raw CAD (mm, CAD axes, elbow flexed), so the FK at q4 = flexion
-has to land on them without the straightening step.
+The reference is tools/cad/arm01_capture.json, written by
+tools/cad/import_full_assembly.py from the CAD team's `full_assembly_urdf`
+export: its capture pose (all nine joints, the passive wrist ones at the
+export's exact four-bar solution), every link's captured CAD placement in
+this repo's base frame, the four-bar pins, and the operating ranges.
 """
 
+import importlib.util
 import json
 import math
 import os
@@ -18,28 +18,20 @@ import numpy as np
 import pinocchio as pin
 import pytest
 
+from arm_stack.calib.common import safe_home
 from arm_stack.config import load_arm
 from arm_stack.model.robot import ArmModel
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 URDF = os.path.join(ROOT, 'urdf', 'arm01', 'arm01.urdf')
-with open(os.path.join(ROOT, 'tools', 'cad', 'arm01_extract.json')) as _f:
-    CAD = json.load(_f)
+with open(os.path.join(ROOT, 'tools', 'cad', 'arm01_capture.json')) as _f:
+    CAP = json.load(_f)
+CAPTURE = CAP['capture_q_rad']
 
-POS_TOL = 1e-4                    # m: 0.1 mm
-ANG_TOL = math.radians(0.05)      # rad
-# CAD -> base_link (the URDF ledger: x forward = CAD -y, y left = CAD +x, z up),
-# as in tools/cad/extract_arm01.py
-R_CB = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]], float)
-ORIGIN_CAD_MM = np.array(CAD['base_origin_cad_mm'], float)
-FLEXION = math.radians(CAD['elbow_cad_flexion_deg'])
-ACTUATOR_JOINT = {'J1': 'shoulder_pitch', 'J2': 'shoulder_roll', 'J3': 'shoulder_yaw', 'J4': 'elbow',
-                  'J5': 'forearm_yaw', 'J6': 'wrist_crank_joint', 'J7': 'wrist_yaw'}
+POS_TOL = 1e-6                    # m: the export's numbers, re-based (1 um)
+ANG_TOL = 1e-6                    # rad
 LINK_FRAMES = ['link1', 'link2', 'link3', 'link4', 'link5', 'link6', 'link7', 'flange', 'tool0']
-
-
-def cad_to_base(p_mm):
-    return R_CB @ (np.asarray(p_mm, float) - ORIGIN_CAD_MM) * 1e-3
+DRIVEN_LINKS = ['link1', 'link2', 'link3', 'link4', 'link5', 'link6', 'link7']
 
 
 def unit(v):
@@ -51,21 +43,16 @@ def angle(u, v):
     return math.acos(min(1.0, abs(float(unit(u) @ unit(v)))))
 
 
-def signed_angle(u, v):
-    return math.acos(max(-1.0, min(1.0, float(unit(u) @ unit(v)))))
-
-
 def line_distance(p, point, direction):
     d = unit(direction)
     off = np.asarray(p, float) - point
     return float(np.linalg.norm(off - d * (off @ d)))
 
 
-def solid(name, path_end='', joint=None, vol=None):
-    out = [s for s in CAD['solids'] if s['name'] == name and s['path'].endswith(path_end)
-           and (joint is None or s['joint'] == joint) and (vol is None or abs(s['vol_mm3'] - vol) < 2.0)]
-    assert out, name
-    return out
+def placement_error(M, T):
+    T = np.asarray(T, float)
+    return (float(np.linalg.norm(M.translation - T[:3, 3])),
+            float(np.linalg.norm(pin.log3(M.rotation.T @ T[:3, :3]))))
 
 
 # --------------------------------------------------------------------------- models
@@ -135,161 +122,163 @@ def random_poses(model, count, seed):
     return [rng.uniform(model.lower, model.upper) for _ in range(count)]
 
 
-# =========================================================================== 1. FK vs CAD
-@pytest.mark.parametrize('name', list(CAD['joints']))
-def test_joint_axis_matches_cad_at_zero(full, name):
-    """Every joint's axis point and direction (URDF zero, straight elbow)."""
-    d = kinematics(full, pin.neutral(full))
-    j = full.getJointId(name)
-    cad = CAD['joints'][name]
-    assert np.linalg.norm(d.oMi[j].translation - cad['point_base']) < POS_TOL
-    a = joint_axis_world(d, j)
-    assert float(unit(a) @ unit(cad['axis'])) > 0, 'axis sign flipped'
-    assert angle(a, cad['axis']) < ANG_TOL
+
+# =========================================================================== 1. FK vs the CAD export
+@pytest.mark.parametrize('link', sorted(set(CAP['links_in_base']) - {'base_link'}))
+def test_capture_pose_reproduces_the_export(full, link):
+    """The whole tree at the CAD capture (the crank, coupler and output pivot at the
+    export's exact loop solution) puts every link where the export captured it."""
+    d = kinematics(full, full_q(full, **CAPTURE))
+    dp, dr = placement_error(d.oMf[full.getFrameId(link)], CAP['links_in_base'][link])
+    assert dp < POS_TOL and dr < ANG_TOL, (link, dp, dr)
 
 
-def test_driven_model_matches_cad_at_zero(model):
-    """The reduced model (mimic joints locked) the sim and controller use."""
-    d = kinematics(model.model, model._q(np.zeros(model.n)))
-    for k, (name, j) in enumerate(zip(model.joint_names, model.jid)):
-        cad = CAD['joints'][name]
-        assert np.linalg.norm(d.oMi[j].translation - cad['point_base']) < POS_TOL, name
-        a = d.oMi[j].rotation @ model.axis_in_child(k)
-        assert float(a @ unit(cad['axis'])) > 0 and angle(a, cad['axis']) < ANG_TOL, name
+def test_base_mesh_is_rebased_with_the_arm(full):
+    """base_link is the post top (CAD (0, 0, 541) mm, x = CAD -y): its mesh carries the
+    same transform the export's base frame gets."""
+    vis = ET.parse(URDF).getroot().find("link[@name='base_link']/visual/origin")
+    T = np.eye(4)
+    T[:3, :3] = _rpy(*_floats(vis.get('rpy'), '0 0 0'))
+    T[:3, 3] = _floats(vis.get('xyz'), '0 0 0')
+    np.testing.assert_allclose(T, CAP['links_in_base']['base_link'], atol=1e-8)
 
 
-def test_elbow_zero_is_straight_and_flexion_is_the_cad_pose(full):
-    j3, j4, j5 = (full.getJointId(n) for n in ('shoulder_yaw', 'elbow', 'forearm_yaw'))
-    d = kinematics(full, pin.neutral(full))
-    assert angle(joint_axis_world(d, j5), joint_axis_world(d, j3)) < ANG_TOL
-    d = kinematics(full, full_q(full, elbow=FLEXION))
-    a3, a4, a5 = (joint_axis_world(d, j) for j in (j3, j4, j5))
-    assert abs(signed_angle(a3, a5) - FLEXION) < ANG_TOL
-    # positive q4 flexes the forearm forward (+x), per the ledger
-    forearm = d.oMi[j5].translation - d.oMi[j4].translation
-    d0 = kinematics(full, pin.neutral(full))
-    assert forearm[0] > (d0.oMi[j5].translation - d0.oMi[j4].translation)[0]
+def test_driven_model_matches_the_capture(model):
+    """The reduced model the sim and controller use (mimics locked, wrist_pitch is
+    the output pivot) at the capture: every driven link lands on the export."""
+    q = np.array([CAPTURE[n] for n in model.joint_names])
+    for link in DRIVEN_LINKS:
+        dp, dr = placement_error(model.fk(q, link), CAP['links_in_base'][link])
+        assert dp < POS_TOL and dr < ANG_TOL, (link, dp, dr)
 
 
-@pytest.mark.parametrize('act', list(ACTUATOR_JOINT))
-def test_cad_pose_lands_on_raw_actuator_axes(full, act):
-    """At q4 = CAD flexion the FK reproduces the un-straightened CAD: each
-    actuator's cylinder axis (centre and direction) from the STEP."""
-    d = kinematics(full, full_q(full, elbow=FLEXION))
-    j = full.getJointId(ACTUATOR_JOINT[act])
-    raw = CAD['actuators'][act]
-    centre = cad_to_base(raw['center_cad_mm'])
-    a = joint_axis_world(d, j)
-    assert angle(a, R_CB @ np.array(raw['axis_cad'])) < ANG_TOL
-    if act == 'J7':
-        # link7's origin is the wrist-pitch pivot, which the extractor puts on
-        # the common perpendicular of the (0.2 mm skew) pitch-pin line and the
-        # J7 axis, so the URDF's J7 axis sits half the skew off the CAD's
-        skew = CAD['wrist_parallelogram']['pivot_to_j7_axis_mm'] * 1e-3
-        assert line_distance(centre, d.oMi[j].translation, a) < 0.5 * skew + 0.02e-3
-    else:
-        assert np.linalg.norm(d.oMi[j].translation - centre) < POS_TOL
+def test_limits_are_the_export_operating_ranges(model):
+    for k, name in enumerate(model.joint_names):
+        lo, hi = CAP['operating_limits_deg'][name]
+        assert model.lower[k] == pytest.approx(math.radians(lo), abs=1e-9), name
+        assert model.upper[k] == pytest.approx(math.radians(hi), abs=1e-9), name
 
 
-# --------------------------------------------------------------------------- wrist parallelogram
-def parallelogram_points(full):
-    """Crank pivot C, crank pin A, pitch pivot P, lever pin B in base_link at
-    the CAD pose (q4 = flexion), plus the pin axis."""
-    d = kinematics(full, full_q(full, elbow=FLEXION))
-    jc, jr, j6 = (full.getJointId(n) for n in ('wrist_crank_joint', 'wrist_rod_joint', 'wrist_pitch'))
-    ends = [s['com_cad_mm'] for s in solid('Part 2', 'Wrist v3 LEFT')]
-    B = cad_to_base(min(ends, key=lambda c: c[2]))          # rod end on the pitch lever
-    A_cad = cad_to_base(max(ends, key=lambda c: c[2]))      # rod end on the crank
-    return d, d.oMi[jc].translation, d.oMi[jr].translation, d.oMi[j6].translation, B, A_cad, \
-        unit(joint_axis_world(d, j6))
+def test_home_is_low_gravity_and_zero_is_stretched_out(arm):
+    """q = 0 is the arm held out forward (worst shoulder load); `home_pose_rad` hangs the
+    upper arm with the elbow bent, the peg tip clear of the stand's base plate (z -0.541)."""
+    m = ArmModel(arm.urdf, arm.names, home=arm.home)
+    clamp = np.array([j.max_torque_nm for j in arm.joints])
+    home = safe_home(m)
+    assert np.all(np.abs(m.gravity(home)) < 0.3 * clamp), m.gravity(home)
+    zero = np.clip(np.zeros(m.n), m.lower, m.upper)
+    assert np.abs(m.gravity(zero))[0] > 0.3 * clamp[0]
+    tip0, tiph = m.fk(zero).translation, m.fk(home).translation
+    assert tip0[0] > 0.4 and abs(tip0[2]) < 0.2           # out in front, near shoulder height
+    assert -0.49 < tiph[2] < -0.35 and tiph[0] < 0.35      # below the shoulder, peg clear of the base
+    # the capture (the arm hanging in CAD) is within 15 deg of home on the shoulder
+    assert abs(home[0] - CAPTURE['shoulder_pitch']) < math.radians(15)
 
 
-def test_parallelogram_geometry_matches_cad(full):
-    d, C, A, P, B, A_cad, a = parallelogram_points(full)
-    perp = lambda v: np.linalg.norm(v - a * (v @ a))   # noqa: E731
-    ref = CAD['wrist_parallelogram']
-    assert np.linalg.norm(A - A_cad) < POS_TOL              # URDF rod joint on the CAD rod end
-    assert abs(perp(A - C) * 1e3 - ref['crank_mm']) < 0.1
-    assert abs(perp(P - C) * 1e3 - ref['ground_mm']) < 0.1
-    assert abs(perp(B - A) * 1e3 - ref['rod_mm']) < 0.1
-    assert abs(perp(B - P) * 1e3 - ref['lever_mm']) < 0.1
-    # all three pin axes parallel to the wrist pitch
-    for n in ('wrist_crank_joint', 'wrist_rod_joint'):
-        assert angle(joint_axis_world(d, full.getJointId(n)), a) < ANG_TOL
+# --------------------------------------------------------------------------- wrist four-bar
+def four_bar():
+    """Crank pivot C, crank pin A, output pivot P, output pin B (link5 frame, at the CAD
+    capture: the export gives the pins where they sit in the capture), and the pin axis."""
+    fb = CAP['four_bar_in_link5']
+    return (np.array(fb['input_origin']), np.array(fb['input_pin']), np.array(fb['output_origin']),
+            np.array(fb['output_pin']), unit(fb['axis']))
 
 
-def test_parallelogram_mimic_keeps_closure_over_pitch_range(full):
-    """Crank = +q6 and rod = -q6 (the URDF mimics): the rod keeps link5's
-    orientation and its far end stays on link6's lever pin. The CAD linkage is
-    not an exact parallelogram (rod 70.00 vs ground 69.89 mm), so the pin
-    drifts apart by 2 sin(q6/2) times that mismatch, under 0.2 mm at 90 deg."""
-    d0, C, A, P, B, _, a = parallelogram_points(full)
-    j5, jr, j6 = (full.getJointId(n) for n in ('forearm_yaw', 'wrist_rod_joint', 'wrist_pitch'))
-    B_rod = d0.oMi[jr].actInv(B)           # lever pin, as a point on the rod
-    B_l6 = d0.oMi[j6].actInv(B)            # ... and as a point on link6
-    worst = 0.0
-    for deg in np.linspace(-90, 90, 37):
-        q6 = math.radians(deg)
-        d = kinematics(full, full_q(full, **wrist(q6, elbow=FLEXION)))
-        rel = d.oMi[j5].rotation.T @ d.oMi[jr].rotation
-        assert np.linalg.norm(pin.log3(rel)) < 1e-12, 'rod turned with the crank'
-        crank_pin = d.oMi[jr].translation
-        assert abs(np.linalg.norm(crank_pin - C) - np.linalg.norm(A - C)) < 1e-12
-        gap = np.linalg.norm(d.oMi[jr].act(B_rod) - d.oMi[j6].act(B_l6))
-        worst = max(worst, gap)
-        assert gap < 0.2e-3, 'parallelogram opens by %.3f mm at q6 = %.0f deg' % (gap * 1e3, deg)
-    assert worst > 0.05e-3   # the CAD mismatch is really there; the check above is not vacuous
+def capture_full(full):
+    return kinematics(full, full_q(full, **CAPTURE))
 
 
-def test_parallelogram_is_one_to_one_within_joint_limits(full):
-    """Solve the real four-bar (CAD pin positions) for the lever angle at each
-    crank angle: inside the wrist_pitch limits the 1:1 mimic is within 0.25 deg."""
-    _, C, A, P, B, _, a = parallelogram_points(full)
+def in_link5(full, d, point):
+    return d.oMf[full.getFrameId('link5')].act(point)
+
+
+def test_four_bar_pins_are_the_urdf_joints(full):
+    """At the capture the crank pivot, crank pin and output pivot are the URDF's crank,
+    coupler and wrist_pitch joints, all turning about the pin axis."""
+    C, A, P, B, a = four_bar()
+    d = capture_full(full)
+    R5 = d.oMf[full.getFrameId('link5')].rotation
+    for name, point in (('wrist_crank_joint', C), ('wrist_rod_joint', A), ('wrist_pitch', P)):
+        j = full.getJointId(name)
+        assert np.linalg.norm(d.oMi[j].translation - in_link5(full, d, point)) < POS_TOL, name
+        assert angle(R5.T @ joint_axis_world(d, j), a) < ANG_TOL, name
+
+
+def solve_output(phi):
+    """Exact four-bar: the output pivot angle for crank angle phi, both in the URDF's
+    coordinates (the capture pins sit at the captured crank and output angles)."""
+    C, A, P, B, a = four_bar()
+    phi_c, psi_c = CAPTURE['wrist_crank_joint'], CAPTURE['wrist_pitch']
     perp = lambda v: v - a * (v @ a)   # noqa: E731
     c0, l0, L = perp(A - C), perp(B - P), np.linalg.norm(perp(B - A))
+    d = perp(C + pin.exp3(a * (phi - phi_c)) @ c0 - P)
+    k = (l0 @ l0 + d @ d - L * L) / 2
+    x, y = l0 @ d, np.cross(a, l0) @ d
+    cands = [psi_c + math.atan2(y, x) + s * math.acos(k / math.hypot(x, y)) for s in (1, -1)]
+    return min(cands, key=lambda c: abs(math.remainder(c - phi, 2 * math.pi)))
+
+
+def test_exact_four_bar_closes_at_zero():
+    """The pin geometry alone puts the output at 0 when the crank is at 0: the
+    export's q = 0 closes the loop, which the 1:1 mimic relies on."""
+    assert solve_output(0.0) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_one_to_one_mimic_is_within_a_quarter_degree(full):
+    """Inside the wrist_pitch limits the output pivot follows the crank 1:1 within
+    0.25 deg (export: ratio 0.996..1.004), so driving wrist_pitch with the J6 encoder
+    is good to that."""
     j6 = full.getJointId('wrist_pitch')
     lo, hi = full.lowerPositionLimit[full.joints[j6].idx_q], full.upperPositionLimit[full.joints[j6].idx_q]
+    worst = max(abs(math.remainder(solve_output(phi) - phi, 2 * math.pi)) for phi in np.linspace(lo, hi, 71))
+    assert worst < math.radians(0.25), math.degrees(worst)
+    assert worst > math.radians(0.005)         # really not a parallelogram: the check is not vacuous
 
-    def rot(t):
-        return pin.exp3(a * t)
 
-    for phi in np.linspace(lo, hi, 29):
-        d = perp(C + rot(phi) @ c0 - P)
-        # |R(psi) l0 - d| = L  ->  cos(psi) l0.d + sin(psi) (a x l0).d = k
-        k = (l0 @ l0 + d @ d - L * L) / 2
-        x, y = l0 @ d, np.cross(a, l0) @ d
-        cands = [math.atan2(y, x) + s * math.acos(k / math.hypot(x, y)) for s in (1, -1)]
-        psi = min(cands, key=lambda c: abs(math.remainder(c - phi, 2 * math.pi)))
-        err = math.remainder(psi - phi, 2 * math.pi)
-        assert abs(err) < math.radians(0.25), 'lever %.3f deg off the crank at %.1f deg' % (
-            math.degrees(err), math.degrees(phi))
+def test_mimic_tree_keeps_the_loop_nearly_closed(full):
+    """With the URDF mimics (crank +q6, coupler -q6) the coupler keeps link5's
+    orientation and its far pin stays within 0.25 mm of the output link's pin."""
+    _, _, _, B, _ = four_bar()
+    dc = capture_full(full)
+    jr, j6 = full.getJointId('wrist_rod_joint'), full.getJointId('wrist_pitch')
+    Bw = in_link5(full, dc, B)
+    B_rod, B_out = dc.oMi[jr].actInv(Bw), dc.oMi[j6].actInv(Bw)    # body-fixed pin, both sides
+    d0 = kinematics(full, pin.neutral(full))
+    rel0 = d0.oMf[full.getFrameId('link5')].rotation.T @ d0.oMi[jr].rotation
+    lo, hi = full.lowerPositionLimit[full.joints[j6].idx_q], full.upperPositionLimit[full.joints[j6].idx_q]
+    for q6 in np.linspace(lo, hi, 29):
+        d = kinematics(full, full_q(full, **wrist(q6)))
+        rel = d.oMf[full.getFrameId('link5')].rotation.T @ d.oMi[jr].rotation
+        assert np.linalg.norm(pin.log3(rel0.T @ rel)) < 1e-9, 'coupler turned with the crank'
+        gap = np.linalg.norm(d.oMi[jr].act(B_rod) - d.oMi[j6].act(B_out))
+        assert gap < 0.25e-3, 'loop opens by %.3f mm at %.1f deg' % (gap * 1e3, math.degrees(q6))
 
 
 # --------------------------------------------------------------------------- flange and tool0
-def test_flange_and_tool0_match_cad_frames(model):
-    d = kinematics(model.model, model._q(np.zeros(model.n)))
-    l7 = np.array(CAD['joints']['wrist_yaw']['point_base'])
-    j7 = model.jid[model.joint_names.index('wrist_yaw')]
-    a7 = d.oMi[j7].rotation @ model.axis_in_child(model.joint_names.index('wrist_yaw'))
-    for name, x_hint in (('flange', (0, 0, -1)), ('tool0', (1, 0, 0))):
-        M = d.oMf[model.model.getFrameId(name)]
-        ref = CAD['frames'][name]
-        assert np.linalg.norm(M.translation - (l7 + ref['xyz'])) < POS_TOL, name
-        assert float(M.rotation[:, 2] @ unit(ref['z_axis'])) > math.cos(ANG_TOL), name
-        assert float(M.rotation[:, 0] @ np.array(x_hint)) > 0, name     # ledger x convention
-    flange = d.oMf[model.model.getFrameId('flange')]
-    # the flange sits on the J7 axis, z out along it
-    assert line_distance(flange.translation, d.oMi[j7].translation, a7) < POS_TOL
-    assert float(flange.rotation[:, 2] @ unit(a7)) > math.cos(ANG_TOL)
+def _importer():
+    spec = importlib.util.spec_from_file_location(
+        'import_full_assembly', os.path.join(ROOT, 'tools', 'cad', 'import_full_assembly.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
-def test_flange_on_the_raw_j7_output_face(full):
-    """At the CAD pose, the flange origin is in the plane of J7's output-face
-    solid (raw STEP centroid, independent of the extractor's frame math)."""
-    d = kinematics(full, full_q(full, elbow=FLEXION))
-    M = d.oMf[full.getFrameId('flange')]
-    face = cad_to_base(solid('X4-P12.5-10', 'Wrist v3 LEFT', joint='J7', vol=6861.0)[0]['com_cad_mm'])
-    assert abs(float((face - M.translation) @ M.rotation[:, 2])) < POS_TOL
+def test_flange_on_the_j7_axis_and_tool0_on_the_peg(model):
+    q = np.array([CAPTURE[n] for n in model.joint_names])
+    l7 = model.fk(q, 'link7')
+    flange = l7.actInv(model.fk(q, 'flange'))
+    tool0 = l7.actInv(model.fk(q, 'tool0'))
+    # flange: on the J7 axis (link7 z), z along it toward the tool side
+    assert np.linalg.norm(flange.translation[:2]) < 1e-9
+    assert flange.rotation[2, 2] > math.cos(1e-9)
+    # tool0: the peg sticks out perpendicular to J7, and z points out of its tip
+    assert abs(tool0.rotation[2, 2]) < math.sin(math.radians(1.0))
+    assert float(tool0.rotation[:, 2] @ tool0.translation) > 0.15
+    # an independent re-fit of the peg's end face on the shipped mesh lands on tool0
+    tip, axis, radius = _importer().peg_tip(os.path.join(ROOT, 'urdf', 'arm01', 'meshes', 'link7.stl'))
+    assert radius == pytest.approx(0.010, abs=0.0005)
+    assert np.linalg.norm(tip - tool0.translation) < 0.5e-3
+    assert angle(axis, tool0.rotation[:, 2]) < math.radians(0.5)
 
 
 def test_tool0_is_rigid_on_the_flange(model):
@@ -346,11 +335,9 @@ def test_overlay_translation_moves_downstream_frames_by_that_amount(model, arm, 
     for q in [np.zeros(model.n)] + random_poses(model, 10, seed=2):
         a = kinematics(model.model, model._q(q))
         b = kinematics(shifted.model, shifted._q(q))
-        # the shift is along dxyz in the parent joint's frame (in base_link at q = 0)
+        # the shift is along dxyz in the parent joint's frame
         R_parent = a.oMi[model.model.parents[j]].rotation
         expect = R_parent @ dxyz
-        if not q.any():
-            assert np.allclose(expect, dxyz, atol=1e-12)
         for fid, f in enumerate(frames):
             Ma, Mb = a.oMf[fid], b.oMf[fid]
             assert np.allclose(Ma.rotation, Mb.rotation, atol=1e-12), f.name

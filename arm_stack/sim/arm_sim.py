@@ -120,7 +120,7 @@ class SimArm(ArmClient):
         self.drive_kd0 = self.drive_kd.copy()
 
         # truth plant
-        self.truth = ArmModel(arm.urdf, arm.names)
+        self.truth = ArmModel(arm.urdf, arm.names, home=arm.home)
         if e.kinematic:
             self.truth.apply_overlay(e.kinematic)
         self._urdf_inertias = [self.truth.model.inertias[j].copy() for j in self.truth.jid]
@@ -138,7 +138,10 @@ class SimArm(ArmClient):
         self.payload: Optional[Payload] = None
 
         # plant state (link side)
-        self.q = np.array(q0 if q0 is not None else np.clip(np.zeros(n), self.truth.lower, self.truth.upper), float)
+        # power-on pose: the arm's home (hanging), or q = 0 for a config without one
+        start = self.truth.home if self.truth.home is not None else np.zeros(n)
+        self.q = np.array(q0 if q0 is not None else np.clip(start, self.truth.lower + math.radians(3),
+                                                             self.truth.upper - math.radians(3)), float)
         self.qd = np.zeros(n)
         self.tau_drive = np.zeros(n)     # motor torque actually produced
         self.tau_cycle = np.zeros(n)     # its mean over the last cycle: what 0x6077 reports
@@ -162,7 +165,7 @@ class SimArm(ArmClient):
     def reload_calibration(self, calibration: Dict):
         self.calibration = calibration
         self.units = Units(self.arm, calibration)
-        self.model = ArmModel(self.arm.urdf, self.arm.names)
+        self.model = ArmModel(self.arm.urdf, self.arm.names, home=self.arm.home)
         self.model.apply_calibration(calibration, self.arm.link_masses_kg)
         soft = calibration.get('soft_limits_rad') or {}
         lower = self.model.lower.copy()

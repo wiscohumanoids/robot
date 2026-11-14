@@ -180,7 +180,7 @@ def test_torque_never_exceeds_bring_up_clamp(arm):
     sim, _, model = make(arm)
     cfg = FloatConfig.from_arm(arm, model)
     # a hard shove that saturates the wrist, into the walls and the safety damping
-    res = run_float(sim, cfg, duration=2.0, operator=push_profile([0.0, 30.0, 10.0], 0.2, 0.8))
+    res = run_float(sim, cfg, duration=2.0, operator=push_profile([0.0, 60.0, 20.0], 0.2, 0.8))
     tau = np.abs(res.trace['tau_cmd'])
     assert np.all(tau <= cfg.torque_clamp + 1e-9)
     assert np.max(res.max_torque_fraction) == pytest.approx(1.0)        # and the clamp was reached

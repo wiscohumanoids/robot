@@ -55,9 +55,14 @@ def skipped(stage: str, why: str) -> StageResult:
 
 
 def safe_home(model: ArmModel) -> np.ndarray:
-    """Zero pose, clipped into the limits (J2 and J4 have zero at their lower stop)."""
+    """The arm's home pose (joint config `home_pose_rad`, else q = 0), 3 deg inside the limits.
+
+    arm01's q = 0 is the arm stretched out forward, its worst gravity load, so its home is
+    the hanging CAD capture pose."""
     margin = 3 * DEG
-    return np.clip(np.zeros(model.n), model.lower + margin, model.upper - margin)
+    home = getattr(model, 'home', None)
+    base = np.zeros(model.n) if home is None else home
+    return np.clip(base, model.lower + margin, model.upper - margin)
 
 
 def random_poses(model: ArmModel, count: int, rng, margin=10 * DEG, spread=1.0) -> np.ndarray:
