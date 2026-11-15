@@ -1,0 +1,13 @@
+# Video recording, replay, and dataset rendering.
+# TensorFlow 2.15 in the VLA-Adapter environment requires NumPy 1.x.
+# OpenCV 4.12+ pulls NumPy 2.x on Python 3.10.
+opencv-python<4.12
+numpy<2
+mujoco
+
+# Mesh preparation only -- needed by sim/prep_meshes.py, not at runtime.
+trimesh
+
+# Window and held-key input for teleop/keyboard.py. Already a mujoco
+# dependency; listed because that module imports it directly.
+glfw

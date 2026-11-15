@@ -1,0 +1,110 @@
+{
+  "upstream": "https://github.com/tonyzhaozh/act",
+  "commit": "742c753c0d4a5d87076c8f69e5628c79a8cc5488",
+  "benchmark": "sim_transfer_cube_scripted",
+  "dataset_source": "https://drive.google.com/drive/folders/1aRyoOhQwxhyt1J8XgEig4s6kzaw__LXj",
+  "implementation": "LeRobot ACT 0.4.4 via existing train_act.py",
+  "schedule": {
+    "steps": 10000,
+    "equivalent_epochs": 2000,
+    "batch_size": 8,
+    "chunk_size": 100,
+    "fps": 50,
+    "amp": false,
+    "gradient_clipping": false
+  },
+  "loader_parity": {
+    "episodes": [
+      0
+    ],
+    "timesteps": [
+      0,
+      123,
+      399
+    ],
+    "checks": [
+      "RGB values and layout",
+      "normalized qpos",
+      "normalized actions",
+      "same-timestep alignment",
+      "end padding"
+    ],
+    "result": "passed against upstream EpisodicDataset"
+  },
+  "smoke_test": {
+    "losses": [
+      86.33104705810547,
+      64.00572204589844,
+      51.008331298828125,
+      37.68202209472656,
+      31.250307083129883,
+      22.70562744140625,
+      21.1845703125,
+      16.35957908630371,
+      14.394381523132324,
+      14.688390731811523,
+      13.981651306152344,
+      12.947176933288574,
+      13.579858779907227,
+      14.312586784362793,
+      12.217172622680664,
+      10.093720436096191,
+      11.539863586425781,
+      10.904457092285156,
+      9.291893005371094,
+      9.315021514892578
+    ],
+    "elapsed_seconds": 6.686303469992708
+  },
+  "simulator_smoke": {
+    "checkpoint": "/home/zeb/Desktop/RobotArmLearning/outputs/act_reference/smoke",
+    "episodes": [
+      {
+        "seed": 1000,
+        "return": 0.0,
+        "highest_reward": 0.0,
+        "success": false
+      }
+    ],
+    "success_rate": 0.0,
+    "steps": 400,
+    "seed": 1000
+  },
+  "validation_difference": "Deterministic zero-latent inference loss instead of upstream posterior-conditioned VAE validation loss.",
+  "limitations": "No evidence yet that a trained model solves transfer or Panthera stacking. Smoke loss only establishes working optimization.",
+  "checkpoint_cleanup": [
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00096000",
+      "bytes": 619095152
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00098000",
+      "bytes": 619095152
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/checkpoints/step_00102000",
+      "bytes": 480053608
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/checkpoints/step_00098000",
+      "bytes": 619095625
+    }
+  ],
+  "tests": {
+    "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv-act/bin/python -m pytest -q tests",
+    "passed": 37,
+    "seconds": 9.3
+  },
+  "all_50_episode_validation": "passed",
+  "normalization_parity": "All state/action means and standard deviations match upstream",
+  "service": "act-reference-transfer-20260924.service",
+  "run_directory": "/home/zeb/Desktop/RobotArmLearning/outputs/act/reference_transfer_cube",
+  "training_started": {
+    "status": "training",
+    "step": 50,
+    "requested_steps": 10000,
+    "loss": 5.999063968658447,
+    "elapsed_seconds": 16.23228345399548,
+    "updated_at_unix": 1790251807.1383905
+  }
+}

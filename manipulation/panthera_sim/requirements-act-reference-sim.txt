@@ -1,0 +1,4 @@
+# Install only in .venv-act-sim so Panthera keeps its current MuJoCo version.
+mujoco==2.3.7
+dm-control==1.0.14
+pyquaternion==0.9.9

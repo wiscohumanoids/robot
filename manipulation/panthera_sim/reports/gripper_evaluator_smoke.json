@@ -1,0 +1,22 @@
+{
+  "seed": 230927,
+  "distribution": "matched",
+  "error": null,
+  "video": null,
+  "success": true,
+  "grasped": true,
+  "lifted": true,
+  "two_stacked": true,
+  "grasped_blocks": [
+    0,
+    2
+  ],
+  "max_stable_seconds": 1.0,
+  "time_to_success_s": 22.5,
+  "steps": 675,
+  "elapsed_s": 2.6743818459945032,
+  "clipped_action_fraction": 0.0,
+  "mean_control_inference_s": 3.6594578220198553e-06,
+  "validation": "pi05 evaluator with scripted commands; no learned weights",
+  "simulation_dynamics": "contact-v2"
+}

@@ -1,0 +1,2 @@
+# Keep original CAD exports byte-for-byte; inspect geometry through the scene.
+sim/actuator/source/*.obj -diff -whitespace

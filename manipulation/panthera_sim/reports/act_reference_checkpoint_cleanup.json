@@ -1,0 +1,18 @@
+[
+  {
+    "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00096000",
+    "bytes": 619095152
+  },
+  {
+    "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00098000",
+    "bytes": 619095152
+  },
+  {
+    "path": "outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/checkpoints/step_00102000",
+    "bytes": 480053608
+  },
+  {
+    "path": "outputs/act/panthera_two_block_fixed_30hz/checkpoints/step_00098000",
+    "bytes": 619095625
+  }
+]
