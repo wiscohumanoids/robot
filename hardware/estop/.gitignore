@@ -1,0 +1,25 @@
+# ESP-IDF: build output and generated config (sdkconfig holds your Wi-Fi password)
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+
+# Editors / IDE (the ESP-IDF VS Code extension writes .vscode, .devcontainer, .clangd)
+.vscode/
+.idea/
+.devcontainer/
+.clangd
+.cache/
+compile_commands.json
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / logs
+.DS_Store
+*.log

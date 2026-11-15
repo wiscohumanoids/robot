@@ -1,0 +1,2 @@
+# 1 ms FreeRTOS tick so short delays (5 ms loop) are exact. Default is 100 Hz (10 ms).
+CONFIG_FREERTOS_HZ=1000

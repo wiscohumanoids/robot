@@ -1,0 +1,43 @@
+menu "Wireless E-Stop Transmitter"
+
+    config ESTOP_WIFI_SSID
+        string "Wi-Fi SSID (the RK3588 hotspot)"
+        default "EstopNet"
+
+    config ESTOP_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default "SecureEstopPass"
+
+    config ESTOP_RECEIVER_IP
+        string "Receiver (RK3588) IP address"
+        default "10.42.0.1"
+        help
+            nmcli hotspots use 10.42.0.1 unless you change ipv4.addresses.
+            For laptop testing, put your laptop's IP here.
+
+    config ESTOP_RECEIVER_PORT
+        int "Receiver UDP port"
+        default 4242
+
+    config ESTOP_BUTTON_GPIO
+        int "E-stop button GPIO (normally-closed contact to GND)"
+        default 4
+
+    config ESTOP_HEARTBEAT_MS
+        int "ALIVE period (ms)"
+        default 50
+        help
+            Must be well under the receiver's timeout (150 ms): the receiver
+            trips after timeout/period - 1 = 2 lost packets in a row.
+
+    config ESTOP_STOP_PERIOD_MS
+        int "STOP resend period while pressed (ms)"
+        default 20
+
+    config ESTOP_RELEASE_MS
+        int "Button must read 'released' this long before ALIVE resumes (ms)"
+        default 50
+        help
+            Debounce applies only to RELEASE. A press is acted on at once.
+
+endmenu
