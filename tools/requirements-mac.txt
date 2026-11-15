@@ -1,0 +1,5 @@
+# Mac-side tools (sim2sim player). MuJoCo must match training (mjlab 1.6.0 -> 3.11.0).
+mujoco==3.11.0
+onnxruntime>=1.20
+numpy
+pyyaml

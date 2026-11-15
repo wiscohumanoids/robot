@@ -1,0 +1,110 @@
+# ============================================================================
+# Secrets and credentials (never commit)
+# ============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.netrc
+.aws/
+.ssh/
+
+# ============================================================================
+# Internal / sensitive documents (keep facts in markdown, not the source files)
+# ============================================================================
+# Emails, vendor correspondence, exported reports, office files, archives
+*.pdf
+*.PDF
+*.eml
+*.msg
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+# Generated duplicate of current_draw/REPORT.md (REPORT.md is the source)
+wiscohumanoids/hardware/current_draw/REPORT.html
+
+# ============================================================================
+# Python environments and caches
+# ============================================================================
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ============================================================================
+# ROS / colcon build output
+# ============================================================================
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+build/
+install/
+log/
+*.bag
+*.db3
+*.mcap
+
+# ============================================================================
+# Large regenerable artifacts
+# ============================================================================
+# Built environment worlds (tools/env_build.py regenerates them): build/, build_wisco/, build_<robot>/
+assets/envs/**/build/
+assets/envs/**/build_*/
+*.mjb
+# Manipulation sim build output (1 GB)
+training/manipulation/sim/build/
+# Training results: checkpoints, motion files, videos (store externally)
+# (anchored with / so docs/runs/ worklogs and phase_a/results/ reports stay tracked)
+/results/
+/runs/
+logs/
+outputs/
+wandb/
+training/*/data/
+scan_pipeline/**/data/
+*.npz
+*.mp4
+*.mov
+*.webm
+*.gif
+# Hugging Face / dataset caches
+.cache/
+**/.cache/huggingface/
+
+# Model weights: ignored by default...
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+# ...except the small deployed policies the ROS stack loads (manifest + policy, ~7 MB total)
+!models/**/policy.onnx
+
+# ============================================================================
+# Logs and OS / editor junk
+# ============================================================================
+MUJOCO_LOG.TXT
+**/MUJOCO_LOG.TXT
+*.log
+.DS_Store
+.vscode/
+.idea/
+*.swp
+.claude/settings.local.json

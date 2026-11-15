@@ -1,0 +1,155 @@
+diff -ruN a/ros2_ws/src/hsim_behavior/src/behavior_node.cpp b/ros2_ws/src/hsim_behavior/src/behavior_node.cpp
+--- a/ros2_ws/src/hsim_behavior/src/behavior_node.cpp	2026-11-10 03:41:25
++++ b/ros2_ws/src/hsim_behavior/src/behavior_node.cpp	2026-11-10 03:41:37
+@@ -33,6 +33,7 @@
+ #include "diagnostic_msgs/msg/diagnostic_array.hpp"
+ #include "geometry_msgs/msg/twist_stamped.hpp"
+ #include "hsim_interfaces/action/execute_plan.hpp"
++#include "hsim_interfaces/action/manipulate.hpp"
+ #include "nav2_msgs/action/navigate_to_pose.hpp"
+ #include "nav2_msgs/action/spin.hpp"
+ #include "nav_msgs/msg/occupancy_grid.hpp"
+@@ -48,6 +49,7 @@
+ using ExecutePlan = hsim_interfaces::action::ExecutePlan;
+ using NavigateToPose = nav2_msgs::action::NavigateToPose;
+ using Spin = nav2_msgs::action::Spin;
++using ManipulateAction = hsim_interfaces::action::Manipulate;
+ 
+ struct KnownObject {
+   std::string id, label;
+@@ -59,6 +61,7 @@
+   rclcpp::Node::SharedPtr node;
+   rclcpp_action::Client<NavigateToPose>::SharedPtr nav;
+   rclcpp_action::Client<Spin>::SharedPtr spin;
++  rclcpp_action::Client<ManipulateAction>::SharedPtr manip;   // /skills/manipulate (hsim_manipulation, VLA)
+   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr say;
+   rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr approach_cmd;   // -> twist_mux "approach"
+   std::shared_ptr<tf2_ros::Buffer> tf;
+@@ -764,9 +767,61 @@
+   PendingGoal<Spin> spin_;
+ };
+ 
+-class NotYetAvailable : public SkillBase {     // Pick / Place until Phase 5
++// Hand skill: one VLA goal on /skills/manipulate (hsim_manipulation). The robot must already stand at the surface
++// (navigate_to brings it to arm's reach, facing it). pick(X) followed by place(Y) in a plan becomes ONE goal
++// "pick up the X and put it on the Y" (to_xml merges them): the v1 policy is trained on whole pick-and-place.
++class Manipulate : public SkillBase {
+  public:
+   using SkillBase::SkillBase;
++  static BT::PortsList providedPorts() {
++    return {BT::InputPort<std::string>("instruction"), BT::InputPort<std::string>("object"),
++            BT::InputPort<std::string>("target"), BT::InputPort<int>("index")};
++  }
++  BT::NodeStatus onStart() override {
++    const std::string instr = in("instruction");
++    mark("manipulate(" + instr + ")");
++    if (!ctx_->manip->wait_for_action_server(1s)) {
++      ctx_->fail("my manipulation skill isn't running (start hsim_manipulation and the VLA server)");
++      return BT::NodeStatus::FAILURE;
++    }
++    ManipulateAction::Goal g;
++    g.instruction = instr;
++    g.object = in("object");
++    g.target = in("target");
++    done_ = std::make_shared<std::optional<std::pair<bool, std::string>>>();
++    handle_ = std::make_shared<rclcpp_action::ClientGoalHandle<ManipulateAction>::SharedPtr>();
++    rclcpp_action::Client<ManipulateAction>::SendGoalOptions opts;
++    auto done = done_;
++    auto hp = handle_;
++    opts.goal_response_callback = [done, hp](rclcpp_action::ClientGoalHandle<ManipulateAction>::SharedPtr gh) {
++      if (!gh) *done = std::make_pair(false, std::string("my manipulation skill is busy"));
++      else *hp = gh;
++    };
++    opts.result_callback = [done](const rclcpp_action::ClientGoalHandle<ManipulateAction>::WrappedResult& r) {
++      const bool ok = r.code == rclcpp_action::ResultCode::SUCCEEDED && r.result && r.result->success;
++      *done = std::make_pair(ok, r.result ? r.result->message : std::string("no result"));
++    };
++    ctx_->manip->async_send_goal(g, opts);
++    return BT::NodeStatus::RUNNING;
++  }
++  BT::NodeStatus onRunning() override {
++    if (!done_->has_value()) return BT::NodeStatus::RUNNING;
++    if ((*done_)->first) return BT::NodeStatus::SUCCESS;
++    ctx_->fail((*done_)->second.empty() ? "the hand skill failed" : (*done_)->second);
++    return BT::NodeStatus::FAILURE;
++  }
++  void onHalted() override {
++    if (*handle_ && !done_->has_value()) ctx_->manip->async_cancel_goal(*handle_);
++  }
++ private:
++  std::shared_ptr<std::optional<std::pair<bool, std::string>>> done_ = std::make_shared<std::optional<std::pair<bool, std::string>>>();
++  std::shared_ptr<rclcpp_action::ClientGoalHandle<ManipulateAction>::SharedPtr> handle_ =
++      std::make_shared<rclcpp_action::ClientGoalHandle<ManipulateAction>::SharedPtr>();
++};
++
++class NotYetAvailable : public SkillBase {     // kept for skills that have no implementation
++ public:
++  using SkillBase::SkillBase;
+   static BT::PortsList providedPorts() { return {BT::InputPort<std::string>("target"), BT::InputPort<int>("index")}; }
+   BT::NodeStatus onStart() override {
+     mark(name() + "(" + in("target") + ")");
+@@ -817,6 +872,7 @@
+   explicit BehaviorNode(rclcpp::Node::SharedPtr node) : node_(node), ctx_(std::make_shared<Context>()) {
+     ctx_->node = node;
+     ctx_->nav = rclcpp_action::create_client<NavigateToPose>(node, "/navigate_to_pose");
++    ctx_->manip = rclcpp_action::create_client<ManipulateAction>(node, "/skills/manipulate");
+     ctx_->spin = rclcpp_action::create_client<Spin>(node, "/spin");
+     ctx_->say = node->create_publisher<std_msgs::msg::String>("/robot/say", 10);
+     ctx_->approach_cmd = node->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel_approach", 10);
+@@ -865,8 +921,7 @@
+     factory_.registerNodeType<StepBack>("StepBack", ctx_);
+     factory_.registerNodeType<FindObject>("FindObject", ctx_);
+     factory_.registerNodeType<SearchFor>("SearchFor", ctx_);
+-    factory_.registerNodeType<NotYetAvailable>("Pick", ctx_);
+-    factory_.registerNodeType<NotYetAvailable>("Place", ctx_);
++    factory_.registerNodeType<Manipulate>("Manipulate", ctx_);
+     factory_.registerNodeType<Say>("Say", ctx_);
+     factory_.registerNodeType<IsSafe>("IsSafe", ctx_);
+ 
+@@ -900,7 +955,8 @@
+     std::ostringstream x;
+     x << "<root BTCPP_format=\"4\"><BehaviorTree ID=\"Plan\"><ReactiveSequence><IsSafe/><Sequence>";
+     int i = 0;
+-    for (const auto& s : plan.skills) {
++    for (size_t k = 0; k < plan.skills.size(); ++k) {
++      const auto& s = plan.skills[k];
+       const std::string idx = " index=\"" + std::to_string(i++) + "\"";
+       const std::string tgt = " target=\"" + escape(s.target) + "\"";
+       // motion skills first back off from a surface the robot stepped up to (no-op otherwise)
+@@ -913,8 +969,18 @@
+         for (size_t k = 0; k < s.hints.size(); ++k) hints += (k ? ";" : "") + s.hints[k];
+         x << "<SearchFor" << tgt << " hints=\"" << escape(hints) << "\"" << idx << "/>";
+       } else if (s.name == "look_around") x << "<LookAround" << idx << "/>";
+-      else if (s.name == "pick") x << "<Pick" << tgt << idx << "/>";
+-      else if (s.name == "place") x << "<Place" << tgt << idx << "/>";
++      else if (s.name == "pick" && k + 1 < plan.skills.size() && plan.skills[k + 1].name == "place") {
++        // pick(X) + place(Y) -> one hand-skill goal (the policy is trained on whole pick-and-place)
++        const auto& p = plan.skills[k + 1];
++        x << "<Manipulate instruction=\"" << escape("pick up the " + s.target + " and put it on the " + p.target)
++          << "\" object=\"" << escape(s.target) << "\" target=\"" << escape(p.target) << "\"" << idx << "/>";
++        ++k;
++        ++i;
++      } else if (s.name == "pick") {
++        x << "<Manipulate instruction=\"" << escape("pick up the " + s.target) << "\" object=\"" << escape(s.target) << "\"" << idx << "/>";
++      } else if (s.name == "place") {
++        x << "<Manipulate instruction=\"" << escape("put it on the " + s.target) << "\" target=\"" << escape(s.target) << "\"" << idx << "/>";
++      }
+       else if (s.name == "say") x << "<Say text=\"" << escape(s.text) << "\"" << idx << "/>";
+       else { error = "unknown skill '" + s.name + "'"; return ""; }
+     }
+diff -ruN a/ros2_ws/src/hsim_planner/hsim_planner/prompt.py b/ros2_ws/src/hsim_planner/hsim_planner/prompt.py
+--- a/ros2_ws/src/hsim_planner/hsim_planner/prompt.py	2026-11-10 03:41:25
++++ b/ros2_ws/src/hsim_planner/hsim_planner/prompt.py	2026-11-10 03:41:37
+@@ -17,8 +17,10 @@
+ - search_for(target, hints): look around, then visit each hint (remembered furniture, best first) and look
+   around there, until the object is seen. Use when you do not know where the object is.
+ - look_around(): turn in place once to see more of the room.
+-- pick(target) / place(target): hand skills. NOT INSTALLED yet: they will fail with a message. If the request
+-  needs them, still plan the steps up to and including them, so the person sees exactly how far the robot got.
++- pick(target) / place(target): hand skills, done standing at a counter or table. Always navigate_to the object
++  first (that brings the robot to arm's reach, facing the surface). For "put X on/in Y" plan pick(X) then place(Y)
++  right after each other: they run as one motion ("pick up the X and put it on the Y"), so Y must be within reach
++  of the same spot (same counter). If Y is somewhere else, say that the robot can't carry things between places yet.
+ - say(text): tell the person something short.
+ 
+ The robot only knows what it has seen. Its memory lists objects with label, position (meters, map frame),

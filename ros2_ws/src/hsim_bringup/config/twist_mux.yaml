@@ -1,0 +1,23 @@
+# One owner for /cmd_vel: twist_mux. Teleop beats the final approach, which beats navigation.
+twist_mux:
+  ros__parameters:
+    use_stamped: true
+    topics:
+      teleop:
+        topic: cmd_vel_teleop
+        timeout: 0.5
+        priority: 100
+      approach:                    # behavior tree's final step up to a target (after Nav2 arrives)
+        topic: cmd_vel_approach
+        timeout: 0.5
+        priority: 20
+      navigation:
+        topic: cmd_vel_nav
+        timeout: 0.5
+        priority: 10
+    # E-stop: while /safety/estop is true, nothing below priority 255 (i.e. nothing) gets through
+    locks:
+      estop:
+        topic: /safety/estop
+        timeout: 0.0
+        priority: 255

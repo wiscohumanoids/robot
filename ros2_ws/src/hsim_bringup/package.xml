@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+      <package format="3">
+        <name>hsim_bringup</name>
+        <version>0.1.0</version>
+        <description>Launch files, parameters, and the machine-readable interface contract</description>
+        <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+        <license>MIT</license>
+        <exec_depend>rclpy</exec_depend>
+<exec_depend>launch</exec_depend>
+<exec_depend>launch_ros</exec_depend>
+<exec_depend>ament_index_python</exec_depend>
+<exec_depend>rosidl_runtime_py</exec_depend>
+<exec_depend>tf2_msgs</exec_depend>
+<exec_depend>geometry_msgs</exec_depend>
+<exec_depend>nav_msgs</exec_depend>
+<exec_depend>twist_mux</exec_depend>
+<exec_depend>tf2_ros</exec_depend>
+<exec_depend>foxglove_bridge</exec_depend>
+<exec_depend>python3-yaml</exec_depend>
+<exec_depend>hsim_sim</exec_depend>
+<exec_depend>hsim_locomotion</exec_depend>
+<exec_depend>hsim_state_estimation</exec_depend>
+        <test_depend>python3-pytest</test_depend>
+        <export>
+          <build_type>ament_python</build_type>
+        </export>
+      </package>

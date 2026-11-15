@@ -1,0 +1,8 @@
+# Installed by setup_env_vm.sh into ~/hsim_envs/perception (torch comes from the PyTorch CUDA index there)
+transformers>=4.56
+accelerate
+fastapi
+uvicorn
+opencv-python-headless
+pillow
+numpy

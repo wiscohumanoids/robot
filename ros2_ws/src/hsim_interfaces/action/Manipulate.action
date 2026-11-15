@@ -1,0 +1,15 @@
+# Run a learned manipulation skill (VLA policy) where the robot is standing: arms + grippers only.
+# Server: hsim_manipulation (/skills/manipulate). Called by the behavior tree after navigate_to.
+string instruction        # e.g. "pick up the mug and put it on the plate"
+string object             # optional: object label for the success check (perception), e.g. "mug"
+string target             # optional: where it should end up, e.g. "plate"
+float32 max_duration_s    # 0 = node default
+---
+bool success
+bool verified             # true if success was checked with perception; false if it only ran to the end
+string message            # plain words, fed back to the planner
+int32 steps
+---
+int32 step
+string phase              # waiting_for_inputs | running | done
+float32 last_latency_ms
