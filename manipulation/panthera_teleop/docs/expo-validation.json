@@ -1,0 +1,68 @@
+{
+  "verified_date_local": "2026-10-05",
+  "timezone": "America/Chicago",
+  "implementation": "Experimental Panthera PyTorch EXPO-FT adaptation",
+  "subagents": {
+    "count": 7,
+    "model": "gpt-6.1-sol"
+  },
+  "real_robot_rl_trained": false,
+  "aws_mutations": false,
+  "aws_policy": "Existing training and inference left running; no GPU requests or allocations made on AWS.",
+  "tests": {
+    "expo": {
+      "command": "work/expo-venv/bin/python -m unittest discover -s tests -p 'test_expo_*.py' -q",
+      "run": 72,
+      "failed": 0,
+      "skipped": 0
+    },
+    "hardware_free_full_suite": {
+      "command": "work/teleop-venv/bin/python -m unittest discover -s tests -p 'test_*.py' -q",
+      "run": 181,
+      "failed": 0,
+      "skipped": 4
+    },
+    "hitl_export": {
+      "command": "work/postprocess-venv/bin/python -m unittest discover -s tests -p test_hitl_export.py -q",
+      "run": 2,
+      "failed": 0
+    },
+    "temporary_replay_cli_integration": "Passed two CPU updates from a disposable fixture replay and checked saved gripper bounds; fixture artifacts removed.",
+    "source_checks": [
+      "git diff --check passed",
+      "New Python modules compile",
+      "All new CLI help commands work"
+    ]
+  },
+  "laptop_training_check": {
+    "mode": "synthetic_bandit_algorithm_check_NOT_PANTHERA",
+    "batch_size": 256,
+    "completed_steps": 100,
+    "elapsed_s": 28.26739359000021,
+    "peak_allocated_gib": 0.25539684295654297,
+    "peak_reserved_gib": 0.296875,
+    "synthetic_reward_before": -0.36772316694259644,
+    "synthetic_reward_after": -0.10873662680387497,
+    "synthetic_reward_improved": true
+  },
+  "critic_updates": 2000,
+  "benchmark_report": "work/expo-runs/synthetic-local-b256-utd20-20261005/run.json",
+  "data_audit": {
+    "unique_processed_demonstrations": 277,
+    "hitl_rollouts": 10,
+    "faithful_q_transitions": 0,
+    "report": "work/expo-current-data-audit.json"
+  },
+  "unverified": [
+    "Real pi0.5 load and candidate inference in the new adapter",
+    "Real robot execution under EXPO",
+    "Full-model successful-only fine-tuning on actual robot supervision"
+  ],
+  "adaptation_limits": [
+    "Compact RGB block-mean features replace the upstream visual encoder",
+    "Default training freezes pi0.5; full base supervision is an explicit separate stage",
+    "Initial faithful critic replay excludes intervened episodes",
+    "Training uses fixed C=1 and disables blending; discount is per waypoint",
+    "UTD repeats its supplied minibatch rather than upstream partitioned minibatches"
+  ]
+}

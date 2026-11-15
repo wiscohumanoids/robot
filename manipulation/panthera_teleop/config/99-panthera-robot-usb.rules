@@ -1,0 +1,7 @@
+# Robot boards are not modems. Do not let modem probes touch their CDC ports.
+SUBSYSTEM=="usb", ATTR{idVendor}=="caf1", ATTR{idProduct}=="ffff", ENV{ID_MM_DEVICE_IGNORE}="1"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="caf1", ATTRS{idProduct}=="ffff", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+# Keep the boards awake after enumeration/reconnection.
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="caf1", ATTR{idProduct}=="ffff", TEST=="power/control", ATTR{power/control}="on"
+# The robot hub on this setup is a Terminus 14cd:8601.
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="14cd", ATTR{idProduct}=="8601", TEST=="power/control", ATTR{power/control}="on"

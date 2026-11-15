@@ -1,0 +1,2 @@
+# Install into work/teleop-venv; the existing environment supplies the vendor SDK, numpy and PyYAML.
+opencv-python-headless==4.13.0.92

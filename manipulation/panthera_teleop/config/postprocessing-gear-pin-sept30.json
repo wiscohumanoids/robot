@@ -1,0 +1,634 @@
+{
+  "processing_version": 2,
+  "recording_session_local_date": "2026-09-30",
+  "recording_timezone": "America/Chicago",
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Regular 50ms host-monotonic grid; nearest measured state and nearest frame per camera within the annotated crop; ties select earlier samples. No interpolation, numerical low-pass filter, or duplicated synthetic states. Some camera frames repeat because achieved capture rate is below 20 Hz; counts are reported per episode.",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.04,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Host receive timestamps, not hardware exposure timestamps. Offline nearest-frame alignment may choose a frame slightly later than the grid tick; all actual offsets are retained.",
+  "trim_method": "Manual visual review of both wrist-camera tails, assisted by gripper position and tool-motion plots; conservative contact-boundary cuts before the assembly becomes unsupported. No automatic contact sensor or exact release event exists.",
+  "trim_uncertainty_s": 0.15,
+  "episodes": [
+    {
+      "id": "20260930T200251-01281b3f",
+      "start_s": 0,
+      "end_s": 16.61,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 19.141762572
+    },
+    {
+      "id": "20260930T202331-4bc0e47e",
+      "start_s": 0,
+      "end_s": 14.17,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 16.440903165
+    },
+    {
+      "id": "20260930T202449-a4bedce3",
+      "start_s": 0,
+      "end_s": 14.2,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 16.215746118
+    },
+    {
+      "id": "20260930T202541-e99d184d",
+      "start_s": 0,
+      "end_s": 13.14,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.292130885
+    },
+    {
+      "id": "20260930T202807-6665e7db",
+      "start_s": 0,
+      "end_s": 13.4,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.010607972
+    },
+    {
+      "id": "20260930T202918-6458aa9b",
+      "start_s": 0,
+      "end_s": 12.78,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.523257048
+    },
+    {
+      "id": "20260930T202946-8d24c9ce",
+      "start_s": 0,
+      "end_s": 13.76,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.742506966
+    },
+    {
+      "id": "20260930T203013-b1c6894f",
+      "start_s": 0,
+      "end_s": 8.99,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.256154695
+    },
+    {
+      "id": "20260930T203351-53271f24",
+      "start_s": 0,
+      "end_s": 16.44,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 18.341414719
+    },
+    {
+      "id": "20260930T203441-704c3897",
+      "start_s": 0,
+      "end_s": 17.53,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 19.583909266
+    },
+    {
+      "id": "20260930T203533-838e0006",
+      "start_s": 0,
+      "end_s": 19.02,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 20.996545466
+    },
+    {
+      "id": "20260930T203639-5be28bf0",
+      "start_s": 0,
+      "end_s": 10.07,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.076216998
+    },
+    {
+      "id": "20260930T203715-b90aaf6b",
+      "start_s": 0,
+      "end_s": 16.78,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 18.903635123
+    },
+    {
+      "id": "20260930T203749-8ad2ff5d",
+      "start_s": 0,
+      "end_s": 13.76,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.582305132
+    },
+    {
+      "id": "20260930T203856-c8933df7",
+      "start_s": 0,
+      "end_s": 11.94,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.107508717
+    },
+    {
+      "id": "20260930T203927-f8caa372",
+      "start_s": 0,
+      "end_s": 8.86,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 10.927196382
+    },
+    {
+      "id": "20260930T204029-98f86d3b",
+      "start_s": 0,
+      "end_s": 12.22,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.121710976
+    },
+    {
+      "id": "20260930T211745-93901c36",
+      "start_s": 0,
+      "end_s": 13.75,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.941637953
+    },
+    {
+      "id": "20260930T211911-5842d3ae",
+      "start_s": 0,
+      "end_s": 12.31,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.497507651
+    },
+    {
+      "id": "20260930T212004-4771168b",
+      "start_s": 0,
+      "end_s": 15.36,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 17.686164502
+    },
+    {
+      "id": "20260930T212032-3084b6cd",
+      "start_s": 0,
+      "end_s": 9.83,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.140015983
+    },
+    {
+      "id": "20260930T212124-e691a47e",
+      "start_s": 0,
+      "end_s": 9.76,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.414968888
+    },
+    {
+      "id": "20260930T212145-b23d639f",
+      "start_s": 0,
+      "end_s": 15.38,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 17.28510195
+    },
+    {
+      "id": "20260930T212212-4e267ea4",
+      "start_s": 0,
+      "end_s": 13.85,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 15.449228226
+    },
+    {
+      "id": "20260930T212322-c4f17f38",
+      "start_s": 0,
+      "end_s": 11.31,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 13.325634416
+    },
+    {
+      "id": "20260930T212414-55694d46",
+      "start_s": 0,
+      "end_s": 10.01,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.699611145
+    },
+    {
+      "id": "20260930T212437-5e76c94f",
+      "start_s": 0,
+      "end_s": 8.67,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 10.736909624
+    },
+    {
+      "id": "20260930T212459-dedc17b8",
+      "start_s": 0,
+      "end_s": 8.99,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.4780524
+    },
+    {
+      "id": "20260930T212522-53227424",
+      "start_s": 0,
+      "end_s": 11.22,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 13.095910027
+    },
+    {
+      "id": "20260930T212546-3bbbe28a",
+      "start_s": 0,
+      "end_s": 12.38,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.193163133
+    },
+    {
+      "id": "20260930T212629-798cdff8",
+      "start_s": 0,
+      "end_s": 15.05,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 16.934181024
+    },
+    {
+      "id": "20260930T212657-43d58d5f",
+      "start_s": 0,
+      "end_s": 9.15,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.607325971
+    },
+    {
+      "id": "20260930T212819-191863fa",
+      "start_s": 0,
+      "end_s": 8.0,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 9.914167492
+    },
+    {
+      "id": "20260930T212927-0915ef55",
+      "start_s": 0,
+      "end_s": 10.27,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.364377954
+    },
+    {
+      "id": "20260930T212949-1ea36322",
+      "start_s": 0,
+      "end_s": 10.34,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.360180373
+    },
+    {
+      "id": "20260930T213039-1b98e8de",
+      "start_s": 0,
+      "end_s": 10.11,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.224734418
+    },
+    {
+      "id": "20260930T213102-c938fa8a",
+      "start_s": 0,
+      "end_s": 11.35,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 13.343040961
+    },
+    {
+      "id": "20260930T213130-1d73c1fa",
+      "start_s": 0,
+      "end_s": 12.38,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.305473506
+    },
+    {
+      "id": "20260930T213210-b69f7570",
+      "start_s": 0,
+      "end_s": 10.16,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.455627165
+    },
+    {
+      "id": "20260930T213355-6825b22d",
+      "start_s": 0,
+      "end_s": 12.31,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.253896294
+    },
+    {
+      "id": "20260930T213444-4a9d4e3a",
+      "start_s": 0,
+      "end_s": 11.09,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 13.16589115
+    },
+    {
+      "id": "20260930T213505-53a29695",
+      "start_s": 0,
+      "end_s": 10.2,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.322160757
+    },
+    {
+      "id": "20260930T213541-03969ff1",
+      "start_s": 0,
+      "end_s": 9.63,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.42839567
+    },
+    {
+      "id": "20260930T213604-ae6842f3",
+      "start_s": 0,
+      "end_s": 7.93,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 9.98510117
+    },
+    {
+      "id": "20260930T213712-4a5aee38",
+      "start_s": 0,
+      "end_s": 11.04,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 13.047136527
+    },
+    {
+      "id": "20260930T213736-aa50f154",
+      "start_s": 0,
+      "end_s": 10.17,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.893283989
+    },
+    {
+      "id": "20260930T213758-d86f3a70",
+      "start_s": 0,
+      "end_s": 8.87,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 10.800419536
+    },
+    {
+      "id": "20260930T213940-be559170",
+      "start_s": 0,
+      "end_s": 10.15,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 11.941421096
+    },
+    {
+      "id": "20260930T214004-0cc5fb99",
+      "start_s": 0,
+      "end_s": 9.87,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.903071818
+    },
+    {
+      "id": "20260930T214035-014aea00",
+      "start_s": 0,
+      "end_s": 10.22,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.394882499
+    },
+    {
+      "id": "20260930T214136-87ba9c10",
+      "start_s": 0,
+      "end_s": 14.05,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 16.454948931
+    },
+    {
+      "id": "20260930T214202-99cb143b",
+      "start_s": 0,
+      "end_s": 15.0,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 17.024227563
+    },
+    {
+      "id": "20260930T214227-6c88ef7b",
+      "start_s": 0,
+      "end_s": 9.95,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 12.110039195
+    },
+    {
+      "id": "20260930T214342-45006149",
+      "start_s": 0,
+      "end_s": 9.85,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.03985173
+    },
+    {
+      "id": "20260930T214403-f49b9978",
+      "start_s": 0,
+      "end_s": 14.22,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 16.265857459
+    },
+    {
+      "id": "20260930T214429-5740b56f",
+      "start_s": 0,
+      "end_s": 8.87,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 11.225272171
+    },
+    {
+      "id": "20260930T214451-3dd8ed56",
+      "start_s": 0,
+      "end_s": 11.47,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 13.457165745
+    },
+    {
+      "id": "20260930T214516-c868cc69",
+      "start_s": 0,
+      "end_s": 13.85,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 16.076068567
+    },
+    {
+      "id": "20260930T214543-0a62a11b",
+      "start_s": 0,
+      "end_s": 15.75,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 17.81632773
+    },
+    {
+      "id": "20260930T214646-f6b260e5",
+      "start_s": 0,
+      "end_s": 12.48,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.445534835
+    },
+    {
+      "id": "20260930T214710-86b907c0",
+      "start_s": 0,
+      "end_s": 13.61,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.667472992
+    },
+    {
+      "id": "20260930T214737-4628b985",
+      "start_s": 0,
+      "end_s": 10.39,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.284766794
+    },
+    {
+      "id": "20260930T214759-59704455",
+      "start_s": 0,
+      "end_s": 12.05,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.161812326
+    },
+    {
+      "id": "20260930T214823-bb511ad9",
+      "start_s": 0,
+      "end_s": 11.86,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 14.22411064
+    },
+    {
+      "id": "20260930T214858-6507df48",
+      "start_s": 0,
+      "end_s": 11.4,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 13.598584049
+    },
+    {
+      "id": "20260930T214929-552c470e",
+      "start_s": 0,
+      "end_s": 15.37,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 17.436205798
+    },
+    {
+      "id": "20260930T214955-9f590c6c",
+      "start_s": 0,
+      "end_s": 13.47,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.304173268
+    },
+    {
+      "id": "20260930T215030-e6b0c6a4",
+      "start_s": 0,
+      "end_s": 16.64,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 18.716810206
+    },
+    {
+      "id": "20260930T215057-3c33e804",
+      "start_s": 0,
+      "end_s": 11.9,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 13.439096275
+    },
+    {
+      "id": "20260930T215124-788dc994",
+      "start_s": 0,
+      "end_s": 10.34,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 12.696057743
+    },
+    {
+      "id": "20260930T215230-dc432e92",
+      "start_s": 0,
+      "end_s": 13.44,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review assisted by measured gripper position",
+      "original_end_s": 15.644607577
+    },
+    {
+      "id": "20260930T215255-7b23e915",
+      "start_s": 0,
+      "end_s": 11.65,
+      "reason": "Retain supported assembly; exclude terminal gripper release and pullback. Conservative wrist-camera review with right gripper position to locate release.",
+      "annotation_source": "visual wrist-camera boundary review; adjusted beyond early gripper-position drift",
+      "original_end_s": 13.755617941
+    }
+  ],
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified."
+}

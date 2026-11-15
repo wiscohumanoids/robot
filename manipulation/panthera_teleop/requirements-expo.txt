@@ -1,0 +1,5 @@
+# Lightweight learner only. The pi0.5 adapter requires the separately pinned
+# LeRobot training environment documented in docs/expo-ft.md.
+numpy==2.2.6
+Pillow==12.3.0
+torch==2.10.0

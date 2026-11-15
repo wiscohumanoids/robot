@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panthera · Collection</title>
+<style>
+:root{color-scheme:dark;font:15px/1.45 system-ui,sans-serif;background:#10151d;color:#e6edf6;--muted:#aab7c8;--border:#303e50}
+*{box-sizing:border-box}body{margin:0}main{max-width:1440px;margin:auto;padding:18px 24px 32px}
+header{display:flex;align-items:center;gap:16px;position:sticky;top:0;background:#10151d;z-index:5;padding:10px 0 14px}h1{font-size:1.4rem;letter-spacing:-.025em;line-height:1.2;margin:0}h2{font-size:1rem;margin:0}p{margin:0;color:var(--muted)}.title{margin-right:auto}.eyebrow{font-size:.72rem;letter-spacing:.14em;color:#86a4c9;text-transform:uppercase;margin-bottom:3px}
+button,input,select,textarea{font:inherit}button{border:1px solid #52647b;background:#26364a;color:#edf4ff;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:600;min-height:44px}button:hover:enabled{filter:brightness(1.14)}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #9ecbff;outline-offset:3px}.primary{background:#3688ee;border-color:#3688ee;color:#071322}.takeover{background:#ebba62;border-color:#ebba62;color:#201706}.stop{background:#ad293b;border-color:#e05264}.keep{background:#205940;border-color:#52b78c}.review{background:#554327;border-color:#b99149}.delete{background:#39212a;border-color:#bb5267}.badge{font-size:.82rem;padding:6px 10px;border:1px solid #3c4a5e;border-radius:20px;white-space:nowrap;text-transform:capitalize}kbd{font:500 .75rem system-ui,sans-serif;border:1px solid currentColor;border-radius:4px;padding:1px 5px;opacity:.7;margin-left:5px}
+.panel{background:#18212d;border:1px solid var(--border);border-radius:12px;padding:16px}.connection{display:flex;align-items:center;gap:14px;margin-bottom:14px}.connection p{font-size:.82rem}.connection button{flex-shrink:0}.connection .status{margin-left:auto;text-align:right}.error{border:1px solid #e05260;background:#331e28;border-radius:8px;padding:12px;color:#ffc2c9;margin-bottom:14px;white-space:pre-wrap}.error[hidden]{display:none}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.panel-heading p{font-size:.8rem}.camera-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.camera{margin:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0b1119}.feed{aspect-ratio:4/3;position:relative;display:grid;place-items:center;overflow:hidden;color:#8092aa;font-size:.8rem}.feed img{display:none;width:100%;height:100%;object-fit:contain;position:absolute;inset:0}.camera figcaption{padding:8px 10px;display:flex;justify-content:space-between;gap:5px;font-size:.8rem}.age{color:#9aacbf;font-size:.75rem}.camera span{padding:10px}.metrics{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px;color:var(--muted);font-size:.8rem}.metrics strong{color:#edf4ff;font-weight:600;margin-left:5px}.progress{height:4px;background:#293748;border-radius:4px;overflow:hidden;margin-top:12px}.progress div{height:100%;background:#63a9ff;width:0}.meta{font-size:.78rem;margin-top:10px;overflow-wrap:anywhere}
+.collection{display:grid;gap:14px}.motion-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.motion-buttons #resume{grid-column:1/-1}.motion-buttons button{min-height:52px;padding:10px}.hint{font-size:.83rem;line-height:1.5;margin-top:10px}.recording{padding:10px 12px;background:#101924;border-radius:7px;font-size:.82rem;margin:12px 0;overflow-wrap:anywhere;color:#b9c9db}.decision-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.decision-buttons button{display:flex;align-items:center;justify-content:center;gap:4px;min-height:54px;padding:9px 4px}.decision-buttons kbd{margin:0}.trash-note{font-size:.75rem;margin-top:8px}.milestone-row{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:.8rem}.milestone-row span{flex:1}.milestone-row button{padding:5px 9px;min-height:32px;font-size:.8rem}.milestone-row button[aria-pressed="true"]{outline:2px solid #9ecbff}.outcome-fields{margin-top:12px}.outcome-fields summary{font-size:.82rem;color:var(--muted)}
+details{border:1px solid var(--border);border-radius:10px;background:#141d29;margin-top:16px}summary{cursor:pointer;padding:13px 16px;font-weight:600;user-select:none}details[open]>summary{border-bottom:1px solid var(--border)}.details-body{padding:16px}.outcome-fields{border:0;background:transparent}.outcome-fields summary{padding:4px 0}.outcome-fields[open]>summary{border:0}.outcome-fields .details-body{padding:8px 0 0}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px}input,select,textarea{background:#101924;border:1px solid #52647b;border-radius:7px;color:#edf4ff;padding:9px 10px;width:100%;min-height:42px}textarea{resize:vertical;min-height:64px}.span-all{grid-column:1/-1}.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.settings-grid h2{margin-bottom:12px}.row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}.row p{flex:1;font-size:.8rem;min-width:160px}.preset{display:flex;gap:6px;margin-top:8px}.preset button{padding:5px 12px;min-height:32px;font-size:.8rem}.compact-note{font-size:.8rem;margin-top:10px}.plot{height:150px;width:100%;display:block;background:#101924;border-radius:8px}.legend{font-size:.8rem;color:var(--muted);margin-top:8px}.legend i{display:inline-block;width:18px;height:3px;background:#63a9ff;vertical-align:middle;margin-right:6px}.legend i.right{background:#efb45d;margin-left:18px}.table-wrap{overflow:auto;margin-top:14px}table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:right;padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}.footer{font-size:.75rem;margin-top:14px;color:#8e9db0}
+@media(max-width:1120px){.workspace{grid-template-columns:1fr}.collection{grid-template-columns:1fr 1fr}.camera-grid .feed{max-height:none}.panel-heading{margin-bottom:10px}.connection{padding:12px}.camera-grid{gap:8px}.metrics{margin-top:10px}.panel{padding:14px}.collection .panel{min-width:0}}
+@media(max-width:640px){main{padding:10px 12px 24px}header{gap:8px;flex-wrap:wrap}h1{font-size:1.2rem}.badge{font-size:.7rem}.stop{padding:9px 11px;font-size:.82rem}.stop kbd{display:none}.connection{align-items:flex-start;flex-wrap:wrap}.connection .status{margin-left:0;text-align:left;width:100%}.collection,.settings-grid{grid-template-columns:1fr}.camera figcaption{font-size:.68rem;flex-wrap:wrap;padding:6px}.camera .age{font-size:.65rem}.camera-grid{gap:5px}.feed{font-size:.7rem}.field-grid{gap:8px}.metrics{gap:8px;font-size:.72rem}.decision-buttons button{min-height:54px}.footer{font-size:.7rem}}
+</style>
+</head>
+<body><main>
+<header><div class="title"><p class="eyebrow">Panthera</p><h1 id="collection-title">Data collection</h1></div><span class="badge" id="mode" aria-live="polite">Connecting</span><button class="stop" id="stop">Stop &amp; hold <kbd>Esc</kbd></button></header>
+<div id="error" class="error" role="alert" hidden></div>
+<div class="panel connection"><button id="connect">Connect &amp; reset pose</button><p id="hold-status" aria-live="polite">Connect the arms to begin.</p><div class="status"><p id="session-summary">Full rollout recording starts with Play.</p></div></div>
+<div class="workspace">
+<section class="panel" aria-label="Live cameras"><div class="panel-heading"><h2>Live views</h2><p>Overhead + both wrists</p></div>
+<div class="camera-grid">
+<figure class="camera"><div class="feed"><span>Camera offline</span><img data-camera="overhead" alt="Overhead camera"></div><figcaption>Overhead <span class="age" id="age-overhead">Offline</span></figcaption></figure>
+<figure class="camera"><div class="feed"><span>Camera offline</span><img data-camera="wrist_port2" alt="Wrist camera on port 2"></div><figcaption>Wrist · port 2 <span class="age" id="age-wrist_port2">Offline</span></figcaption></figure>
+<figure class="camera"><div class="feed"><span>Camera offline</span><img data-camera="wrist_port3" alt="Wrist camera on port 3"></div><figcaption>Wrist · port 3 <span class="age" id="age-wrist_port3">Offline</span></figcaption></figure>
+</div>
+<div class="metrics"><span>Actions <strong id="action">0 / 1</strong></span><span>Steps <strong id="completed">0</strong></span><span>Prediction <strong id="latency">—</strong></span></div>
+<div class="progress" role="progressbar" aria-label="Step progress" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"><div id="progress"></div></div>
+<p class="meta" id="checkpoint">No policy connected.</p></section>
+<div class="collection">
+<section class="panel" aria-label="Policy and correction"><div class="panel-heading"><h2 id="policy-heading">Policy &amp; correction</h2></div>
+<div id="expo-start" hidden><button class="primary" id="record-trial" disabled>Record trial</button><p class="hint" id="expo-chunk-hint">Set the starting scene, then Play to record automatically. Fixed training chunk · no blending.</p></div>
+<div class="motion-buttons"><button class="primary" id="play" disabled>Play policy</button><button class="takeover" id="intervene" disabled>Take over <kbd>H</kbd></button><button id="resume" disabled>End correction &amp; hold <kbd>P</kbd></button></div>
+<p class="hint" id="workflow-hint">Take over holds the joints and frees the grippers. After calibration, pull a handle or move its gripper to start.</p><p class="hint" id="handoff-status" hidden></p></section>
+<section class="panel" aria-label="Finish recording"><div class="panel-heading"><h2>Finish recording</h2></div><p id="recording-status" class="recording" aria-live="polite">No recording yet</p>
+<div class="decision-buttons"><button class="keep" id="finish-success" disabled>Keep <kbd>K</kbd></button><button class="review" id="finish-failure" disabled>Review <kbd>R</kbd></button><button class="delete" id="finish-discard" disabled>Delete <kbd>D</kbd></button></div>
+<p class="trash-note" id="decision-hint">Available when a correction or full rollout is recording. Delete moves it to recoverable trash.</p>
+<div id="milestones" class="milestones"><p class="hint">Flag task stages · optional · leave unattempted stages unmarked</p></div>
+<details class="outcome-fields"><summary>Add notes / quality</summary><div class="details-body"><div class="field-grid"><div class="field"><label for="quality">Quality (1–5)</label><select id="quality"><option value="5">5 · Clean</option><option value="4">4 · Small imperfection</option><option value="3">3 · Minor mistake</option><option value="2">2 · Significant correction</option><option value="1">1 · Failure</option></select></div><div class="field"><label for="notes">Notes / failure reason</label><input id="notes" maxlength="1000" placeholder="Optional"></div></div></div></details>
+</section></div></div>
+<details id="settings"><summary>Session &amp; playback settings</summary><div class="details-body settings-grid">
+<section><h2>Recording</h2><div class="field-grid"><div class="field"><label for="operator">Operator</label><input id="operator" maxlength="120" value="Zeb"></div><div class="field"><label for="scene">Scene / setup</label><input id="scene" maxlength="120" value="desk-oct05"></div></div>
+<div class="row" id="begin-row"><button id="begin" disabled>Record full rollout</button><p>Play automatically starts full rollout recording. You can also start recording here.</p></div>
+<div class="row"><button id="reset" disabled>Reset collection pose</button><button id="recover" disabled>Reconnect arms</button></div><p class="compact-note">Clear the return path before reset. Reconnect releases powered hold; support both arms first.</p></section>
+<section><h2>Playback</h2><div class="field-grid"><div class="field"><label for="count">Actions per step</label><input id="count" type="number" min="1" max="50" step="1" value="1" inputmode="numeric"><div class="preset"><button data-count="1">1</button><button data-count="5">5</button><button data-count="10">10</button><button data-count="50">50</button></div></div><div class="field"><label for="blend">Blend actions</label><input id="blend" type="number" min="0" max="50" step="1" value="10" inputmode="numeric"><p class="compact-note">Overlap between predictions. 0 disables blending.</p></div></div><p class="compact-note" id="duration">1 action · 0.05 s of policy time</p>
+<div class="row"><button id="configure" disabled>Apply settings</button><button id="step" disabled>Execute 1 action</button><button id="predict" disabled>Preview prediction</button></div><p class="compact-note">Play replans from fresh cameras and positions. Each step ends in hold while the next prediction runs. Motion is bounded and may take longer than policy time.</p></section>
+</div></details>
+<details id="diagnostics"><summary>Prediction &amp; joint diagnostics</summary><div class="details-body"><svg id="plot" class="plot" viewBox="0 0 900 180" role="img" aria-label="Predicted joint changes relative to the measured pose"><text x="450" y="94" text-anchor="middle" fill="#aab7c8" font-size="16">Preview or execute to see a prediction</text></svg><div class="legend"><i></i>Left joints<i class="right"></i>Right joints · changes from measured pose, radians</div>
+<div class="table-wrap"><table><thead><tr><th>Arm / joint</th><th>Measured</th><th>Command</th><th>Next prediction</th></tr></thead><tbody id="joints"></tbody></table></div></div></details>
+<p class="footer">Esc stops motion and holds. K / R / D saves the outcome, then resets both arms to the collection pose. Clear the return path before finishing. Keep the hardware stop accessible.</p>
+</main>
+<script>
+let token=null,state=null,busy=false,clientError='',polling=false,lastCamera=0,playGeneration=0;
+const $=id=>document.getElementById(id);
+const count=()=>Number($('count').value),blend=()=>Number($('blend').value);
+const validSettings=()=>$('count').value!==''&&Number.isInteger(count())&&count()>=1&&count()<=50&&$('blend').value!==''&&Number.isInteger(blend())&&blend()>=0&&blend()<=50;
+const fmt=v=>Number.isFinite(v)?v.toFixed(3):'—';
+function buttons(){
+  const available=!busy&&!state?.recovering&&!state?.collection_pending;
+  const hold=available&&state?.mode==='holding'&&!state?.playing,active=!!state?.rollout_active;
+  const moving=['holding','queued','predicting','executing'].includes(state?.mode);
+  const expo=!!state?.expo_recording_enabled;
+  $('play').disabled=!hold||!validSettings();
+  $('step').disabled=!hold||!validSettings()||(expo&&!active);
+  $('predict').disabled=!hold;
+  $('intervene').disabled=!available||!moving||state?.handoff_ready===undefined;
+  $('resume').disabled=!available||!['takeover_hold','human'].includes(state?.mode);
+  $('begin').disabled=!hold||active;
+  $('record-trial').disabled=$('begin').disabled;
+  $('reset').disabled=!hold||active;
+  $('configure').disabled=expo||!available||!moving||!validSettings();
+  $('count').disabled=expo;$('blend').disabled=expo;
+  document.querySelectorAll('[data-count]').forEach(button=>{button.disabled=expo;});
+  $('connect').disabled=!!state?.connected||busy||!!state?.recovering;
+  $('connect').textContent=state?.connected?'Connected':'Connect & reset pose';
+  $('recover').disabled=busy||!!state?.recovering||!!state?.playing||!['fault','fault_hold','holding','stopped'].includes(state?.mode);
+  for(const id of ['finish-success','finish-failure','finish-discard']){
+    $(id).disabled=!available||!active||!['holding','queued','predicting','executing','takeover_hold','human'].includes(state?.mode);
+    $(id).title=active?'Finish this recording and reset both arms to the collection pose':expo?'Record a policy trial first':'Take over or record a full rollout first';
+  }
+}
+function counts(){
+  const n=count(),valid=Number.isInteger(n)&&n>=1&&n<=50;
+  $('duration').textContent=valid?`${n} action${n===1?'':'s'} · ${(n/(state?.fps||20)).toFixed(2)} s of policy time`:'Choose an integer from 1 to 50';
+  $('step').textContent=`Execute ${valid?n:'…'} action${n===1?'':'s'}`;
+  buttons();
+}
+async function post(path,body={}){
+  if(!token)throw Error('Dashboard is disconnected');
+  const res=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token},body:JSON.stringify(body)});
+  const data=await res.json();if(!res.ok)throw Error(data.error||'Request failed');return data;
+}
+async function command(path,body={}){
+  if(path==='stop')playGeneration++;
+  busy=true;clientError='';buttons();updateMilestones();
+  try{await post(path,body);}catch(e){clientError=e.message;}
+  finally{busy=false;await poll();}
+}
+const recordingNames=()=>({operator:$('operator').value.trim(),scene:$('scene').value.trim()});
+$('connect').onclick=()=>command('connect');
+$('stop').onclick=()=>command('stop');
+async function playRecorded(){
+  const generation=++playGeneration;
+  busy=true;clientError='';buttons();updateMilestones();
+  try{
+    if(!state?.rollout_active){
+      await post('collection/begin',recordingNames());
+      const deadline=Date.now()+5000;
+      while(true){
+        if(generation!==playGeneration)return;
+        const res=await fetch('/api/status',{cache:'no-store'});
+        if(!res.ok)throw Error('Dashboard is disconnected');
+        const s=await res.json();render(s);
+        if(s.error)throw Error(s.error);
+        if(s.rollout_active&&!s.collection_pending&&s.mode==='holding')break;
+        if(Date.now()>=deadline)throw Error('Recording did not start; policy remains held');
+        await new Promise(resolve=>setTimeout(resolve,50));
+      }
+    }
+    if(generation===playGeneration)await post('play',{count:count(),blend:blend()});
+  }catch(e){clientError=e.message;}
+  finally{busy=false;await poll();}
+}
+$('play').onclick=playRecorded;
+$('intervene').onclick=()=>command('collection/intervene',recordingNames());
+$('resume').onclick=()=>command('collection/resume');
+$('begin').onclick=()=>command('collection/begin',recordingNames());
+$('record-trial').onclick=()=>command('collection/begin',recordingNames());
+$('reset').onclick=()=>command('reset');
+$('configure').onclick=()=>command('configure',{count:count(),blend:blend()});
+$('step').onclick=()=>command('step',{count:count(),blend:blend()});
+$('predict').onclick=()=>command('predict');
+$('count').oninput=counts;$('blend').oninput=buttons;
+document.querySelectorAll('[data-count]').forEach(b=>b.onclick=()=>{$('count').value=b.dataset.count;counts();});
+const milestoneFlags={};
+let milestoneEpisode=null;
+for(const [key,label] of [['gear_pickup','Gear pickup'],['gear_transport','Gear transport'],['gear_insertion','Gear insertion'],['gear_seating','Gear seating'],['pin_pickup','Pin pickup'],['pin_insertion','Pin insertion'],['pin_pushing','Pin pushing']]){
+  const row=document.createElement('div');row.className='milestone-row';
+  const name=document.createElement('span');name.textContent=label;row.append(name);
+  for(const [value,text] of [['success','Succeeded'],['failure','Failed']]){
+    const button=document.createElement('button');button.textContent=text;button.dataset.milestone=key;button.dataset.result=value;button.setAttribute('aria-pressed','false');
+    button.onclick=()=>{if(milestoneFlags[key]===value)delete milestoneFlags[key];else milestoneFlags[key]=value;updateMilestones();};row.append(button);
+  }
+  $('milestones').append(row);
+}
+function updateMilestones(){
+  document.querySelectorAll('[data-milestone]').forEach(b=>{b.disabled=busy||!state?.rollout_active;b.setAttribute('aria-pressed',String(milestoneFlags[b.dataset.milestone]===b.dataset.result));});
+}
+for(const [id,label,success] of [['finish-success','kept',true],['finish-failure','review',false],['finish-discard','discarded',false]]){
+  $(id).onclick=()=>{
+    const outcome={label,success,quality:Number($('quality').value),notes:$('notes').value,milestones:{...milestoneFlags},reset_after_finish:true};
+    if(state?.expo_recording_enabled&&label==='review'&&!success)outcome.review_approved=true;
+    command('collection/finish',outcome);
+  };
+}
+$('recover').onclick=()=>{
+  if(window.confirm('Reconnect releases powered hold. Support BOTH arms before continuing. Are both arms supported?'))command('recover',{arms_supported:true});
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();command('stop');return;}
+  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
+  const id={h:'intervene',p:'resume',k:'finish-success',r:'finish-failure',d:'finish-discard'}[e.key.toLowerCase()];
+  if(id&&!$(id).disabled){e.preventDefault();$(id).click();}
+});
+window.addEventListener('pagehide',()=>{if(token)fetch('/api/stop',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','X-Session-Token':token},body:'{}'}).catch(()=>{});});
+let playbackLoaded=false;
+function render(s){
+  state=s;
+  const expo=!!s.expo_recording_enabled;
+  const gearInsertion=expo&&s.expo_objective==='gear_insertion';
+  const expoPrefix=s.expo_prefix_length||1;
+  if(expo){$('count').value=expoPrefix;$('blend').value=0;counts();$('expo-chunk-hint').textContent=`Play starts recording automatically. Fixed training chunk: ${expoPrefix} actions per prediction · no blending. Change the chunk length only when starting a new collector session.`;}
+  if(!playbackLoaded&&s.connected){
+    $('count').value=s.actions_per_step;$('blend').value=s.blend_actions;
+    playbackLoaded=true;counts();
+  }
+  state=s;buttons();
+  const episode=s.recording?.active||s.expo_recording?.source_episode_id||null;
+  if(episode&&milestoneEpisode&&episode!==milestoneEpisode){for(const key of Object.keys(milestoneFlags))delete milestoneFlags[key];}
+  if(episode)milestoneEpisode=episode;
+  updateMilestones();
+  const label={kept:'Kept',review:'Sent to Review',discarded:'Moved to trash'};
+  const recording=s.recording;
+  const capture=recording?.collecting===false?'Paused · both arms held':s.control_source==='human'?'● Human correction':'● Policy recording';
+  const pace=s.control_source==='policy'&&recording?.data_clock_rate>0?` · ${(recording.data_clock_rate*100).toFixed(0)}% capture pace`:'';
+  $('recording-status').textContent=recording?.active&&!s.rollout_active?'Saving recording…':recording?.active?`${capture}${pace} · ${recording.duration.toFixed(1)} s of data`:s.rollout_active?'Starting recording…':recording?.last_decision?label[recording.last_decision.label]||'Recording saved':'Not recording · Play starts full rollout capture';
+  $('recording-status').title=recording?.active||recording?.last_decision?.id||'';
+  $('decision-hint').textContent=s.rollout_active?'Keep a successful take, flag it for Review, or Delete to recoverable trash.':'Play starts full rollout recording automatically. Delete moves saved data to recoverable trash.';
+  $('collection-title').textContent=gearInsertion?'EXPO gear insertion':expo?'EXPO policy trials':'Data collection';
+  $('policy-heading').textContent=expo?'Record & run a trial':'Policy & correction';
+  $('expo-start').hidden=!expo;$('begin-row').hidden=expo;
+  $('play').textContent=expo?'Play':'Play policy';
+  $('finish-success').innerHTML=gearInsertion?'Gear seated <kbd>K</kbd>':expo?'Full success <kbd>K</kbd>':'Keep <kbd>K</kbd>';
+  $('finish-failure').innerHTML=expo?'Failed trial <kbd>R</kbd>':'Review <kbd>R</kbd>';
+  $('finish-discard').innerHTML=expo?'Discard <kbd>D</kbd>':'Delete <kbd>D</kbd>';
+  if(expo){
+    const ledger=s.expo_recording,last=ledger?.last_outcome;
+    const ended=last?.interrupted||last?.intervened||last?.complete===false?'Saved · interrupted trial excluded':last?.label==='discarded'?'Trial discarded':last?.success===true?(gearInsertion?'Gear insertion success saved':'Full success saved'):last?.success===false?'Failed trial saved':'Record trial before Play';
+    $('recording-status').textContent=ledger?.error?'EXPO ledger error · '+ledger.error:s.rollout_active?(ledger?.interrupted?'Trial interrupted · excluded from RL replay':`● Policy trial · ${ledger?.completed_decisions||0} completed chunks of ${expoPrefix} actions`):ended;
+    $('recording-status').title=ledger?.path||'Separate EXPO ledger enabled';
+    $('decision-hint').textContent=(gearInsertion?'K: gear fully seated and retained after policy release; pin not required.':'K: actual full gear-and-pin assembly success.')+' R: failed trial retained for RL. D: discard partial or unverified outcomes. Human help, Stop, or a partial chunk excludes the trial. Finish while waiting for inference is safe.';
+  }
+  const pullEnabled=s.handoff_ready!==undefined;
+  const gripperEnabled=!!s.handoff_gripper_enabled;
+  const takeover=pullEnabled&&['takeover_hold','human'].includes(s.mode);
+  $('handoff-status').hidden=!takeover;
+  $('handoff-status').textContent=['left','right'].map(side=>`${side==='left'?'Left':'Right'}: ${s.handoff_ready?.[side]?'hand guidance':'held'}`).join(' · ');
+  $('workflow-hint').textContent=!pullEnabled&&s.connected?'Handle-pull update is ready. Support both arms and use Reconnect arms in Session settings to load it.':takeover?(!s.handoff_baseline_ready?'Hold still briefly while takeover detection calibrates.':s.mode==='takeover_hold'?gripperEnabled?'Pull a handle or open/close its gripper to release that arm and start recording.':'Pull each handle to release that arm. Recording starts on the first release.':Object.values(s.handoff_ready).every(Boolean)?'Guide both arms and grippers by hand. End correction holds both arms; release the handles before Play.':gripperEnabled?'Guide the released arm; pull the other handle or move its gripper to release it. End correction holds both arms.':'Guide the released arm by hand; pull the other handle to release it. End correction holds both arms.'):s.playing?'Policy running. Take over holds the joints, then a handle pull or gripper movement starts your correction.':'Take over holds the joints and frees the grippers. After calibration, pull a handle or move its gripper to start.';
+  if(pullEnabled&&!gripperEnabled&&s.connected)$('workflow-hint').textContent='Gripper-start update is ready. Reconnect arms in Session settings to load it.';
+  if(expo)$('workflow-hint').textContent=takeover?'Human help interrupts this trial and excludes it from RL replay. Finish, then set up a new trial.':(gearInsertion?'Reset to the normal starting pose and restore the gear and carrier to their starting positions. Play starts recording and runs through gear pickup, transport, insertion, and release. Mark Gear seated only after full insertion and retention after policy release. Finish before pin handling, then reset for the next trial.':'Play starts recording automatically; let the policy run continuously. Mark full success only after actual insertion.')+' Use Failed trial for an unsuccessful attempt. Finish while waiting for the next prediction; a partially executed chunk is excluded.';
+  const mode=s.recovering?'Reconnecting':s.mode==='fault_hold'?'Fault · motion blocked':s.mode==='takeover_hold'?'Waiting for takeover':s.mode==='human'?'Human control':s.playing?'Policy running':s.mode==='holding'?'Holding':s.mode;
+  $('mode').textContent=(s.simulation?'Simulation · ':'')+mode;
+  $('mode').style.borderColor=s.mode.startsWith('fault')?'#e05260':s.mode==='human'?'#ebba62':s.playing?'#63a9ff':'#3c4a5e';
+  $('hold-status').textContent=s.mode==='takeover_hold'&&gripperEnabled?'Joints held · grippers passive':s.hold_status==='gravity_assist'?'Hand guidance · grippers passive':s.hold_status==='partial_hold'?'One arm in hand guidance · other arm held':s.hold_status==='failed'?'Hold failed — support both arms':s.hold_status==='commanded'?'Arms connected · '+(s.playing?'policy active':'position control'):s.connected?'Starting hardware connection…':'Connect the arms to begin.';
+  $('session-summary').textContent=s.simulation?'Simulation · no motor devices opened':`${$('operator').value||'Operator not set'} · ${$('scene').value||'Scene not set'}`;
+  if(expo)$('session-summary').textContent='Separate EXPO ledger enabled · '+(gearInsertion?'gear insertion':'gear + pin')+` · fixed C=${expoPrefix} · blend=0`+(s.simulation?' · simulation':'');
+  const error=clientError||s.error;$('error').hidden=!error;$('error').textContent=error||'';
+  $('action').textContent=`${s.action_index} / ${s.step_count}`;
+  $('completed').textContent=s.steps_completed;
+  $('latency').textContent=s.latency_s==null?'—':`${(s.latency_s*1000).toFixed(0)} ms`;
+  $('progress').style.width=`${Math.min(100,s.action_index/s.step_count*100)}%`;
+  const bar=$('progress').parentElement;bar.setAttribute('aria-valuemax',s.step_count);bar.setAttribute('aria-valuenow',s.action_index);
+  const checkpoint=s.checkpoint?.replace(/\/pretrained_model$/, '').split('/').pop();
+  $('checkpoint').textContent=checkpoint?`${checkpoint} · ${s.fps||20} Hz · ${s.actions_per_step} actions/step · blend ${s.blend_actions}`:'No policy connected.';
+  $('checkpoint').title=s.checkpoint||'';
+  for(const name of ['overhead','wrist_port2','wrist_port3']){
+    const c=s.cameras[name],live=s.connected&&c?.ok;
+    $('age-'+name).textContent=live?`${Math.round(c.age_s*1000)} ms`:'Offline';
+    const img=document.querySelector(`[data-camera="${name}"]`);img.style.display=live?'block':'none';img.previousElementSibling.style.visibility=live?'hidden':'visible';
+  }
+  const rows=[];
+  for(let i=0;i<14;i++){
+    const side=i<7?'Left':'Right',j=i%7;
+    rows.push(`<tr><td>${side} · ${j===6?'gripper':'joint '+(j+1)}</td><td>${fmt(s.measured?.[i])}</td><td>${fmt(s.target?.[i])}</td><td>${fmt(s.prediction?.[Math.min(s.action_index,49)]?.[i])}</td></tr>`);
+  }
+  $('joints').innerHTML=rows.join('');draw(s);
+  if(s.connected&&Date.now()-lastCamera>250&&Object.keys(s.cameras).length){
+    lastCamera=Date.now();document.querySelectorAll('[data-camera]').forEach(img=>{img.src='/camera/'+img.dataset.camera+'?t='+lastCamera;});
+  }
+}
+function draw(s){if(!s.prediction||!s.measured){$('plot').innerHTML='<text x="450" y="94" text-anchor="middle" fill="#aab7c8" font-size="16">Preview or execute to see a prediction</text>';return;}let limit=.02;for(const row of s.prediction)for(let j=0;j<14;j++)if(j%7!==6)limit=Math.max(limit,Math.abs(row[j]-s.measured[j]));limit=Math.ceil(limit*100)/100;let content=`<line x1="48" y1="90" x2="880" y2="90" stroke="#52647b"/><text x="8" y="24" fill="#aab7c8" font-size="14">+${limit.toFixed(2)}</text><text x="8" y="94" fill="#aab7c8" font-size="14">0</text><text x="8" y="166" fill="#aab7c8" font-size="14">−${limit.toFixed(2)}</text>`;for(let j=0;j<14;j++){if(j%7===6)continue;const points=s.prediction.map((row,i)=>`${48+i/Math.max(1,s.prediction.length-1)*832},${90-(row[j]-s.measured[j])/limit*68}`).join(' ');content+=`<polyline points="${points}" fill="none" stroke="${j<7?'#63a9ff':'#efb45d'}" stroke-width="1.6" opacity=".75"/>`;}const x=48+Math.max(0,s.action_index-1)/Math.max(1,s.prediction.length-1)*832;content+=`<line x1="${x}" y1="16" x2="${x}" y2="164" stroke="#edf4ff" stroke-dasharray="4 4"/>`;$('plot').innerHTML=content;}
+async function poll(){
+  if(polling)return;polling=true;
+  try{
+    const res=await fetch('/api/status',{cache:'no-store'});if(!res.ok)throw Error('Dashboard is disconnected');
+    const s=await res.json();token=s.token;render(s);if(s.connected)await post('heartbeat');
+  }catch(e){
+    clientError=e.message;$('error').hidden=false;$('error').textContent=e.message;$('mode').textContent='Disconnected';
+    if(state)state.mode='disconnected';buttons();
+  }finally{polling=false;}
+}
+counts();poll();setInterval(poll,400);
+</script></body></html>

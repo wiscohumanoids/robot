@@ -1,0 +1,67 @@
+{
+  "status": "ready",
+  "error": null,
+  "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_hitl355_20261007_050750",
+  "contract": {
+    "fps": 20,
+    "task": "put the gear in the carrier and put a pin in it",
+    "dataset_repo": "FoxNerdSaysMoo/panthera-today202-hitl153-20261007",
+    "dataset_revision": null,
+    "image_size": 256,
+    "image_crops_xyxy": {
+      "overhead": [
+        176,
+        224,
+        432,
+        480
+      ],
+      "wrist_port2": [
+        40,
+        0,
+        520,
+        480
+      ],
+      "wrist_port3": [
+        80,
+        0,
+        560,
+        480
+      ]
+    },
+    "max_observation_age_s": 2.0,
+    "max_camera_age_s": 0.2,
+    "max_joint_speed_rad_s": 1.0,
+    "max_joint_acceleration_rad_s2": 8.0,
+    "max_target_jump_rad": 0.5,
+    "max_tracking_error_rad": 0.1,
+    "gripper_speed_rad_s": 5.0,
+    "gripper_acceleration_rad_s2": 30.0,
+    "gripper_torque_limit_nm": 0.5,
+    "torque_limits_nm": [
+      5,
+      8,
+      8,
+      3,
+      2,
+      2
+    ]
+  },
+  "names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "verified_utc": "2026-10-08T15:40:08.130350+00:00",
+  "previous_checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500"
+}

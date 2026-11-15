@@ -1,0 +1,121 @@
+{
+  "request": {
+    "episode_id": "20260930T012727-67871a7e",
+    "label": "kept"
+  },
+  "measured_position_rad": {
+    "left": [
+      0.0,
+      0.25,
+      0.25,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "right": [
+      0.0,
+      0.25,
+      0.25,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "diagnostics": {
+    "max_joint_error_rad": {
+      "left": 0.0,
+      "right": 0.0
+    },
+    "reported_max_speed_rad_s": {
+      "left": 0.0,
+      "right": 0.0
+    },
+    "encoder_motion_window_rad": {
+      "left": 6.824936393812209e-09,
+      "right": 6.824936393812209e-09
+    },
+    "arrival_window_observed_seconds": 0.2508627630013507,
+    "planned_duration_seconds": 1.5625
+  },
+  "target_position_rad": {
+    "left": [
+      0,
+      0.25,
+      0.25,
+      0,
+      0,
+      0
+    ],
+    "right": [
+      0,
+      0.25,
+      0.25,
+      0,
+      0,
+      0
+    ]
+  },
+  "unix_ns": 1790731663313168596,
+  "tests_passed": 20,
+  "speed_multiplier": 2.5,
+  "live_physical_return_tested": true,
+  "latest_live_return": {
+    "request": {
+      "episode_id": "20260930T012813-5699783c",
+      "label": "discarded"
+    },
+    "measured_position_rad": {
+      "left": [
+        0.0,
+        0.249442458152771,
+        0.249442458152771,
+        -0.00188495556358248,
+        0.0,
+        0.00062831852119416
+      ],
+      "right": [
+        0.0,
+        0.249442458152771,
+        0.249442458152771,
+        -0.00125663704238832,
+        0.0,
+        0.0
+      ]
+    },
+    "diagnostics": {
+      "max_joint_error_rad": {
+        "left": 0.00188495556358248,
+        "right": 0.00125663704238832
+      },
+      "reported_max_speed_rad_s": {
+        "left": 0.0062831854447722435,
+        "right": 0.0031415927223861217
+      },
+      "encoder_motion_window_rad": {
+        "left": 0.0,
+        "right": 0.0
+      },
+      "arrival_window_observed_seconds": 0.2514885169948684,
+      "planned_duration_seconds": 1.5350110625149682
+    },
+    "target_position_rad": {
+      "left": [
+        0,
+        0.25,
+        0.25,
+        0,
+        0,
+        0
+      ],
+      "right": [
+        0,
+        0.25,
+        0.25,
+        0,
+        0,
+        0
+      ]
+    },
+    "unix_ns": 1790731704165728443
+  }
+}

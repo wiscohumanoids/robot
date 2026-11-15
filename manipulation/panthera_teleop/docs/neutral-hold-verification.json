@@ -1,0 +1,124 @@
+{
+  "tests_passed": 26,
+  "hold_seen": true,
+  "independent_release_seen": true,
+  "both_released": true,
+  "live_hold_verified": true,
+  "live_independent_releases_verified": true,
+  "live_events": [
+    {
+      "request": {
+        "episode_id": "20260930T013501-41247d8f",
+        "label": "discarded"
+      },
+      "hold_for_ready": true,
+      "measured_position_rad": {
+        "left": [
+          0.0,
+          0.249442458152771,
+          0.249442458152771,
+          -0.00125663704238832,
+          0.0,
+          0.0
+        ],
+        "right": [
+          0.0,
+          0.249442458152771,
+          0.249442458152771,
+          -0.00125663704238832,
+          0.0,
+          0.0
+        ]
+      },
+      "diagnostics": {
+        "max_joint_error_rad": {
+          "left": 0.00125663704238832,
+          "right": 0.00125663704238832
+        },
+        "reported_max_speed_rad_s": {
+          "left": 0.015707964077591896,
+          "right": 0.0062831854447722435
+        },
+        "encoder_motion_window_rad": {
+          "left": 0.0,
+          "right": 0.0
+        },
+        "arrival_window_observed_seconds": 0.2531367670017062,
+        "planned_duration_seconds": 1.5232300909701735
+      },
+      "target_position_rad": {
+        "left": [
+          0,
+          0.25,
+          0.25,
+          0,
+          0,
+          0
+        ],
+        "right": [
+          0,
+          0.25,
+          0.25,
+          0,
+          0,
+          0
+        ]
+      },
+      "unix_ns": 1790732114680737589
+    },
+    {
+      "event": "handle_pull_release",
+      "side": "left",
+      "request": {
+        "episode_id": "20260930T013501-41247d8f",
+        "label": "discarded"
+      },
+      "diagnostics": {
+        "torque_baseline_nm": [
+          -0.15307798981666565,
+          1.4893999099731445,
+          4.623909950256348,
+          1.06660795211792,
+          -0.021023999899625778,
+          -0.03679199889302254
+        ],
+        "torque_change_nm": [
+          0.13826399017125368,
+          0.6702299118041992,
+          0.8936400413513184,
+          1.0172279551625252,
+          0.026279999874532223,
+          0.16819200292229652
+        ]
+      },
+      "unix_ns": 1790732120115242329
+    },
+    {
+      "event": "handle_pull_release",
+      "side": "right",
+      "request": {
+        "episode_id": "20260930T013501-41247d8f",
+        "label": "discarded"
+      },
+      "diagnostics": {
+        "torque_baseline_nm": [
+          0.15307798981666565,
+          1.496169924736023,
+          4.549439907073975,
+          0.82464599609375,
+          0.057815998792648315,
+          0.01576799899339676
+        ],
+        "torque_change_nm": [
+          0.18270598910748959,
+          1.0154999494552612,
+          0.4400501251220703,
+          0.9826619923114777,
+          0.01576799899339676,
+          0.021023998968303204
+        ]
+      },
+      "unix_ns": 1790732120250793955
+    }
+  ]
+}

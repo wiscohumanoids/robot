@@ -1,0 +1,14 @@
+{
+  "status": "ready",
+  "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_035000",
+  "previous_checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_026250/pretrained_model",
+  "previous_checkpoint_preserved": true,
+  "dataset_repo": "FoxNerdSaysMoo/panthera-gear-carrier-pin-oct05-original-camera-20hz-202",
+  "action_shape": [
+    50,
+    14
+  ],
+  "synthetic_inference_latency_s": 3.394,
+  "mock": false,
+  "rollback_directory": "/mnt/pi05/inference/backups/pre-035000"
+}

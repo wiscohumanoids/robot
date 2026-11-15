@@ -1,0 +1,982 @@
+{
+  "processing_version": 2,
+  "recording_timezone": "America/Chicago",
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Regular 50ms host-monotonic grid; nearest measured state and nearest frame per camera within the annotated crop; ties select earlier samples. No interpolation, numerical low-pass filter, or duplicated synthetic states. Some camera frames repeat because achieved capture rate is below 20 Hz; counts are reported per episode.",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.04,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Host receive timestamps, not hardware exposure timestamps. Offline nearest-frame alignment may choose a frame slightly later than the grid tick; all actual offsets are retained.",
+  "trim_method": "Terminal opening proposed from right-gripper position, checked in both synchronized wrist views; original overhead crop checked at start, middle and cutoff. Episode 10 manually moved earlier to exclude an earlier release.",
+  "trim_uncertainty_s": 0.2,
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified.",
+  "source_kind": "operator_kept_real_recordings",
+  "camera_configuration": "Original camera setup restored, confirmed by operator; fixed original crops verified visually",
+  "lerobot_version": "0.4.4",
+  "format": "LeRobot v3.0",
+  "recording_session_local_dates": [
+    "2026-10-05"
+  ],
+  "episodes": [
+    {
+      "id": "20261005T150601-420f52fb",
+      "start_s": 0,
+      "end_s": 29.2,
+      "original_end_s": 32.107082529,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T150837-d76f2a97",
+      "start_s": 0,
+      "end_s": 26.05,
+      "original_end_s": 28.482054505,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T150916-21b5cdc7",
+      "start_s": 0,
+      "end_s": 24.4,
+      "original_end_s": 27.133651818,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151042-a012a60e",
+      "start_s": 0,
+      "end_s": 21.1,
+      "original_end_s": 24.094602711,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151116-0dd36513",
+      "start_s": 0,
+      "end_s": 13.4,
+      "original_end_s": 15.983811605,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151140-1f2f65ef",
+      "start_s": 0,
+      "end_s": 15.45,
+      "original_end_s": 18.271259783,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151208-21caf4e4",
+      "start_s": 0,
+      "end_s": 21.1,
+      "original_end_s": 24.084542262,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151450-9b9d51a9",
+      "start_s": 0,
+      "end_s": 22.35,
+      "original_end_s": 25.473901714,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151546-ed71a8a3",
+      "start_s": 0,
+      "end_s": 15.7,
+      "original_end_s": 18.287290762,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151613-787f583f",
+      "start_s": 0,
+      "end_s": 17.55,
+      "original_end_s": 20.866671032,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151643-5d2c71aa",
+      "start_s": 0,
+      "end_s": 23.95,
+      "original_end_s": 26.522645643,
+      "source_category": "kept",
+      "reason": "Retain final supported assembly; earlier release visible before the largest terminal opening. Manually cut before the first opening and pullback in both wrist views.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151720-35798975",
+      "start_s": 0,
+      "end_s": 21.15,
+      "original_end_s": 24.065691148,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151826-8f216d1f",
+      "start_s": 0,
+      "end_s": 19.35,
+      "original_end_s": 22.081632888,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151900-0b876678",
+      "start_s": 0,
+      "end_s": 20.05,
+      "original_end_s": 22.686746098,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T151938-d532b3c7",
+      "start_s": 0,
+      "end_s": 17.95,
+      "original_end_s": 20.733734195,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152045-9fe943ac",
+      "start_s": 0,
+      "end_s": 17.7,
+      "original_end_s": 20.613062255,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152135-f56f63ce",
+      "start_s": 0,
+      "end_s": 17.7,
+      "original_end_s": 20.197226949,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152204-70f6220e",
+      "start_s": 0,
+      "end_s": 22.9,
+      "original_end_s": 24.840534132,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152240-d09d5d59",
+      "start_s": 0,
+      "end_s": 15.1,
+      "original_end_s": 17.895678667,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152307-8f126091",
+      "start_s": 0,
+      "end_s": 19.8,
+      "original_end_s": 22.255535156,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152400-aa9d1c48",
+      "start_s": 0,
+      "end_s": 15.6,
+      "original_end_s": 19.517877239,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152430-bed935c0",
+      "start_s": 0,
+      "end_s": 18.65,
+      "original_end_s": 21.521722092,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152541-2c50685a",
+      "start_s": 0,
+      "end_s": 21.5,
+      "original_end_s": 26.219018901,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152618-de70a25d",
+      "start_s": 0,
+      "end_s": 20.4,
+      "original_end_s": 23.286943336,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152651-b0ded7ef",
+      "start_s": 0,
+      "end_s": 15.7,
+      "original_end_s": 18.262771582,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152734-42637ebb",
+      "start_s": 0,
+      "end_s": 15.45,
+      "original_end_s": 17.976505929,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152802-847eb319",
+      "start_s": 0,
+      "end_s": 18.55,
+      "original_end_s": 20.875184268,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T152834-f23fd37c",
+      "start_s": 0,
+      "end_s": 19.15,
+      "original_end_s": 22.089243978,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153010-1f79a814",
+      "start_s": 0,
+      "end_s": 15.4,
+      "original_end_s": 20.481138805,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153039-05e65e1e",
+      "start_s": 0,
+      "end_s": 22.1,
+      "original_end_s": 24.706722887,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153113-e4d71ff4",
+      "start_s": 0,
+      "end_s": 18.2,
+      "original_end_s": 20.800163729,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153144-ffb5eb1e",
+      "start_s": 0,
+      "end_s": 16.95,
+      "original_end_s": 19.791961708,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153214-8a7073ea",
+      "start_s": 0,
+      "end_s": 16.9,
+      "original_end_s": 19.557891876,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153244-d829a172",
+      "start_s": 0,
+      "end_s": 19.75,
+      "original_end_s": 22.595810309,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153321-75a26408",
+      "start_s": 0,
+      "end_s": 15.45,
+      "original_end_s": 18.3691847,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153405-40691402",
+      "start_s": 0,
+      "end_s": 15.85,
+      "original_end_s": 18.631779204,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153523-5e188586",
+      "start_s": 0,
+      "end_s": 16.9,
+      "original_end_s": 19.344466926,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153551-e843a7c8",
+      "start_s": 0,
+      "end_s": 17.55,
+      "original_end_s": 19.941831538,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153622-0b8e254b",
+      "start_s": 0,
+      "end_s": 16.05,
+      "original_end_s": 18.535510749,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153649-cc58dba1",
+      "start_s": 0,
+      "end_s": 16.9,
+      "original_end_s": 19.382732535,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153720-bddcda9d",
+      "start_s": 0,
+      "end_s": 16.0,
+      "original_end_s": 18.557013384,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153751-cdf4a347",
+      "start_s": 0,
+      "end_s": 18.25,
+      "original_end_s": 21.553546624,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153825-cc0e7506",
+      "start_s": 0,
+      "end_s": 17.6,
+      "original_end_s": 20.053940255,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153855-b2ea4a76",
+      "start_s": 0,
+      "end_s": 16.25,
+      "original_end_s": 18.871440206,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153925-b34bc93b",
+      "start_s": 0,
+      "end_s": 18.3,
+      "original_end_s": 20.957178661,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T153955-074f6496",
+      "start_s": 0,
+      "end_s": 18.75,
+      "original_end_s": 21.469537592,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T154052-f4a68581",
+      "start_s": 0,
+      "end_s": 20.7,
+      "original_end_s": 23.178607376,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T154126-edcbef41",
+      "start_s": 0,
+      "end_s": 15.75,
+      "original_end_s": 18.282819685,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T154153-a0611307",
+      "start_s": 0,
+      "end_s": 19.65,
+      "original_end_s": 22.3259481,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T154224-9182af72",
+      "start_s": 0,
+      "end_s": 20.55,
+      "original_end_s": 23.543543233,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff followed by visual review of both wrist views and original overhead crop"
+    },
+    {
+      "id": "20261005T214526-3905bbb0",
+      "start_s": 0,
+      "end_s": 17.95,
+      "original_end_s": 20.075189452,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214555-efe6fa34",
+      "start_s": 0,
+      "end_s": 17.85,
+      "original_end_s": 20.223116581,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214623-603b5b75",
+      "start_s": 0,
+      "end_s": 17.65,
+      "original_end_s": 19.73875635,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214653-af1cd2af",
+      "start_s": 0,
+      "end_s": 17.75,
+      "original_end_s": 20.03638706,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214727-012b4ad6",
+      "start_s": 0,
+      "end_s": 13.65,
+      "original_end_s": 15.751219344,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214752-07c25448",
+      "start_s": 0,
+      "end_s": 15.75,
+      "original_end_s": 17.952672649,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214819-42f49ad5",
+      "start_s": 0,
+      "end_s": 14.15,
+      "original_end_s": 16.323548167,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214845-935988e1",
+      "start_s": 0,
+      "end_s": 13.3,
+      "original_end_s": 15.364566616,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214910-d3b4ac58",
+      "start_s": 0,
+      "end_s": 13.35,
+      "original_end_s": 15.653865654,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T214937-51a82d20",
+      "start_s": 0,
+      "end_s": 17.35,
+      "original_end_s": 19.496889999,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215008-547a4f87",
+      "start_s": 0,
+      "end_s": 14.5,
+      "original_end_s": 16.687919573,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215034-c84325ca",
+      "start_s": 0,
+      "end_s": 15.75,
+      "original_end_s": 17.955290718,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215100-9c29cbec",
+      "start_s": 0,
+      "end_s": 18.8,
+      "original_end_s": 20.960289807,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215130-0bfadf89",
+      "start_s": 0,
+      "end_s": 14.55,
+      "original_end_s": 16.710474386,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215155-fa80b90f",
+      "start_s": 0,
+      "end_s": 15.85,
+      "original_end_s": 18.128124476,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215224-0d0ed5d8",
+      "start_s": 0,
+      "end_s": 13.55,
+      "original_end_s": 15.502068019,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215247-04e94e6c",
+      "start_s": 0,
+      "end_s": 14.85,
+      "original_end_s": 17.136738078,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215313-fada418d",
+      "start_s": 0,
+      "end_s": 15.05,
+      "original_end_s": 17.376133319,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215338-1ab14e43",
+      "start_s": 0,
+      "end_s": 14.45,
+      "original_end_s": 16.5274102,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215406-2d23d985",
+      "start_s": 0,
+      "end_s": 17.6,
+      "original_end_s": 19.595515905,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215434-d2e3872b",
+      "start_s": 0,
+      "end_s": 14.05,
+      "original_end_s": 15.997337369,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215500-19f7b9b7",
+      "start_s": 0,
+      "end_s": 15.1,
+      "original_end_s": 17.049517428,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215528-ec60efb1",
+      "start_s": 0,
+      "end_s": 15.3,
+      "original_end_s": 17.323475743,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215554-c55d0ca7",
+      "start_s": 0,
+      "end_s": 12.75,
+      "original_end_s": 14.589728844,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215617-100b48c7",
+      "start_s": 0,
+      "end_s": 15.1,
+      "original_end_s": 17.426591661,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215645-23967f2c",
+      "start_s": 0,
+      "end_s": 14.95,
+      "original_end_s": 17.063806162,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215710-8d2a8140",
+      "start_s": 0,
+      "end_s": 14.2,
+      "original_end_s": 16.427608982,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215807-0266bdd2",
+      "start_s": 0,
+      "end_s": 14.7,
+      "original_end_s": 16.680228603,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215831-38a24f09",
+      "start_s": 0,
+      "end_s": 16.15,
+      "original_end_s": 18.235925279,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215856-d1f141df",
+      "start_s": 0,
+      "end_s": 14.3,
+      "original_end_s": 16.397281975,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215920-9703ee66",
+      "start_s": 0,
+      "end_s": 14.65,
+      "original_end_s": 16.85714463,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T215945-4f166f35",
+      "start_s": 0,
+      "end_s": 14.65,
+      "original_end_s": 16.656819035,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220010-d0267555",
+      "start_s": 0,
+      "end_s": 16.4,
+      "original_end_s": 18.394563226,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220036-998cc3d8",
+      "start_s": 0,
+      "end_s": 13.55,
+      "original_end_s": 15.447845165,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220059-90d03bac",
+      "start_s": 0,
+      "end_s": 13.8,
+      "original_end_s": 15.923146082,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220123-8438ef22",
+      "start_s": 0,
+      "end_s": 16.65,
+      "original_end_s": 18.645642591,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220149-23eed062",
+      "start_s": 0,
+      "end_s": 13.15,
+      "original_end_s": 15.717953845,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220218-8dba6a67",
+      "start_s": 0,
+      "end_s": 13.25,
+      "original_end_s": 15.397043399,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220243-9e12967d",
+      "start_s": 0,
+      "end_s": 14.7,
+      "original_end_s": 16.878193314,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220308-fda5d1ff",
+      "start_s": 0,
+      "end_s": 17.0,
+      "original_end_s": 19.415059683,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220337-d9188f51",
+      "start_s": 0,
+      "end_s": 17.75,
+      "original_end_s": 19.906460302,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220404-c467610e",
+      "start_s": 0,
+      "end_s": 14.2,
+      "original_end_s": 16.248548646,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220429-d1cb31e9",
+      "start_s": 0,
+      "end_s": 18.85,
+      "original_end_s": 20.932543304,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220457-4a56a7ea",
+      "start_s": 0,
+      "end_s": 15.15,
+      "original_end_s": 17.634522362,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220523-75bb629b",
+      "start_s": 0,
+      "end_s": 13.55,
+      "original_end_s": 15.54185576,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220546-c6861c4a",
+      "start_s": 0,
+      "end_s": 13.05,
+      "original_end_s": 15.119590187,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220609-78f69cad",
+      "start_s": 0,
+      "end_s": 15.75,
+      "original_end_s": 18.093817921,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220636-e9fe5f74",
+      "start_s": 0,
+      "end_s": 17.7,
+      "original_end_s": 19.566455266,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220704-d4953e74",
+      "start_s": 0,
+      "end_s": 13.95,
+      "original_end_s": 16.060397291,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220728-9cb51814",
+      "start_s": 0,
+      "end_s": 14.7,
+      "original_end_s": 16.889059567,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220752-376212b2",
+      "start_s": 0,
+      "end_s": 14.05,
+      "original_end_s": 16.163607977,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    },
+    {
+      "id": "20261005T220816-e0ac268d",
+      "start_s": 0,
+      "end_s": 14.5,
+      "original_end_s": 16.808615081,
+      "source_category": "kept",
+      "reason": "Retain completed supported assembly/contact; exclude terminal gripper opening and pullback.",
+      "annotation_source": "Gripper-assisted cutoff visually checked in both synchronized wrist views; overhead crop checked at start, middle and cutoff."
+    }
+  ]
+}
