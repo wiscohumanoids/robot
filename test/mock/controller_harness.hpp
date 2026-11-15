@@ -55,7 +55,7 @@ public:
     hardware_interface::HardwareInfo info;
     info.name = "EtherCATSystem";
     info.type = "system";
-    info.hardware_class_type = "mock/MockEthercatSystem";
+    info.hardware_plugin_name = "mock/MockEthercatSystem";
     info.hardware_parameters = hw_params;
     for (const auto & j : joints) {
       hardware_interface::ComponentInfo c;
@@ -102,7 +102,14 @@ public:
       .parameter_overrides(params)
       .allow_undeclared_parameters(true)
       .automatically_declare_parameters_from_overrides(true);
-    if (controller_->init(name, "", options) != controller_interface::return_type::OK) {
+    controller_interface::ControllerInterfaceParams ci_params;
+    ci_params.controller_name = name;
+    ci_params.robot_description = "";
+    ci_params.update_rate = 1000;
+    ci_params.controller_manager_update_rate = 1000;
+    ci_params.node_namespace = "";
+    ci_params.node_options = options;
+    if (controller_->init(ci_params) != controller_interface::return_type::OK) {
       return false;
     }
     if (controller_->configure().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE) {

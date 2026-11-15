@@ -234,7 +234,7 @@ controller_interface::CallbackReturn ArmController::on_activate(const rclcpp_lif
     cmd_pos_[i].get().set_value(q_target_prev_[i]);
     cmd_eff_[i].get().set_value(0.0);
     cmd_off_[i].get().set_value(0.0);
-    cmd_mode_[i].get().set_value(arm::kCsp);
+    cmd_mode_[i].get().set_value(static_cast<double>(arm::kCsp));
     if (write_max_torque_) {cmd_max_[i].get().set_value(cfg_.max_torque[i]);}
   }
   last_mode_ = arm::kModeP;
@@ -256,7 +256,7 @@ controller_interface::CallbackReturn ArmController::on_deactivate(const rclcpp_l
     cmd_pos_[i].get().set_value(st_pos_[i].get().get_value());
     cmd_eff_[i].get().set_value(0.0);
     cmd_off_[i].get().set_value(0.0);
-    cmd_mode_[i].get().set_value(arm::kCsp);
+    cmd_mode_[i].get().set_value(static_cast<double>(arm::kCsp));
   }
   command_buffer_.writeFromNonRT(std::shared_ptr<Command>());
   return controller_interface::CallbackReturn::SUCCESS;
@@ -350,7 +350,7 @@ controller_interface::return_type ArmController::update(
     // Torque channel: 0x60B2 offset in CSP, 0x6071 target in CST. While a
     // switch is pending, 0x60B2, which CiA402 adds in both modes, so the
     // torque is applied whichever mode the drive runs this cycle.
-    cmd_mode_[i].get().set_value(requested);
+    cmd_mode_[i].get().set_value(static_cast<double>(requested));
     cmd_pos_[i].get().set_value(target);
     if (write_max_torque_) {
       // 0x6072 caps the drive's TOTAL torque, so in CSP the drive's own
