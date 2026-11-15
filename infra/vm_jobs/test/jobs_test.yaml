@@ -1,0 +1,38 @@
+# Test jobs for vmjobs (dummy, no GPU). Outputs under ~/hsim_runs/_vmjobs_test/.
+defaults:
+  repo: ~/humanoid-sim-stack
+  runs: ~/hsim_runs/_vmjobs_test
+  env: {PYTHONUNBUFFERED: "1"}
+jobs:
+  T1_rl:
+    kind: rl
+    workdir: "{repo}/infra/vm_jobs/test"
+    command: "python3 fake_rl.py --log-root {log_root} --iters 40"
+  T2_after_T1:
+    kind: step
+    workdir: "{repo}"
+    command: "echo step after T1 ran; ls {runs}/T1_rl"
+    depends_on: [T1_rl]
+  T3_crash_resume:
+    kind: rl
+    workdir: "{repo}/infra/vm_jobs/test"
+    command: "python3 fake_rl.py --log-root {log_root} --iters 30 --fail-at 12"
+    auto_resume: 1
+  T4_long:
+    kind: rl
+    workdir: "{repo}/infra/vm_jobs/test"
+    command: "python3 fake_rl.py --log-root {log_root} --iters 2000"
+  T5_gpu:
+    kind: step
+    workdir: "{repo}"
+    command: "{repo}/training/locomotion/.venv/bin/python -c \"import torch,time; x=torch.zeros(256,1024,1024,device='cuda'); print('holding 1 GB'); time.sleep(25); print('bye')\""
+  T6_g1v1:
+    description: copy of the 2026-11-08 G1 v1 run's last checkpoint (report test only, never launched)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "true"
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Mjlab-Velocity-Flat-Unitree-G1
+      eval: "{repo}/training/locomotion/.venv/bin/python scripts/eval_commands.py {checkpoint}"

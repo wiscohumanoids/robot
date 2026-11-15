@@ -1,0 +1,291 @@
+manifest_version: 2
+policy_id: wisco_velocity_v2
+created: '2026-11-10T21:49:14+00:00'
+source:
+  run_dir: /private/tmp/claude-501/-Users-soham-Desktop-OneDrive-Download-robotics-humanoid-sim-stack/9b7b0bfd-73bf-4ba7-b1c9-5657ce3d267e/scratchpad/wisco_run
+  onnx_file: wisco_velocity_v2_J3h_model_4650.onnx
+  onnx_sha256: fbb98ab50772e85d0ac84d635ac891229a882431add121fdd34daeffb1f8023c
+  wandb_run_path: wisco_velocity_v2_J3h_model_4650
+timing:
+  sim_dt: 0.005
+  decimation: 4
+  policy_hz: 50.0
+  source: env.yaml
+joints:
+- name: left_hip_pitch
+  default_pos: 0.3
+  kp: 120.0
+  kd: 11.34
+  action_scale: 0.25
+  role: policy
+- name: left_hip_roll
+  default_pos: 0.0
+  kp: 120.0
+  kd: 10.6
+  action_scale: 0.25
+  role: policy
+- name: left_hip_yaw
+  default_pos: 0.0
+  kp: 50.0
+  kd: 1.95
+  action_scale: 0.3
+  role: policy
+- name: left_knee
+  default_pos: 0.6
+  kp: 120.0
+  kd: 4.97
+  action_scale: 0.25
+  role: policy
+- name: left_ankle_pitch
+  default_pos: 0.3
+  kp: 35.0
+  kd: 2.14
+  action_scale: 0.618
+  role: policy
+- name: left_ankle_roll
+  default_pos: 0.0
+  kp: 35.0
+  kd: 0.88
+  action_scale: 0.251
+  role: policy
+- name: right_hip_pitch
+  default_pos: 0.3
+  kp: 120.0
+  kd: 11.34
+  action_scale: 0.25
+  role: policy
+- name: right_hip_roll
+  default_pos: 0.0
+  kp: 120.0
+  kd: 10.6
+  action_scale: 0.25
+  role: policy
+- name: right_hip_yaw
+  default_pos: 0.0
+  kp: 50.0
+  kd: 1.95
+  action_scale: 0.3
+  role: policy
+- name: right_knee
+  default_pos: 0.6
+  kp: 120.0
+  kd: 4.97
+  action_scale: 0.25
+  role: policy
+- name: right_ankle_pitch
+  default_pos: 0.3
+  kp: 35.0
+  kd: 2.14
+  action_scale: 0.613
+  role: policy
+- name: right_ankle_roll
+  default_pos: 0.0
+  kp: 35.0
+  kd: 0.88
+  action_scale: 0.251
+  role: policy
+- name: torso_yaw
+  default_pos: 0.0
+  kp: 100.0
+  kd: 7.52
+  action_scale: 0.3
+  role: policy
+- name: torso_roll
+  default_pos: 0.0
+  kp: 100.0
+  kd: 11.89
+  action_scale: 0.195
+  role: policy
+- name: torso_pitch
+  default_pos: 0.0
+  kp: 100.0
+  kd: 10.06
+  action_scale: 0.209
+  role: policy
+- name: left_shoulder_pitch
+  default_pos: 0.0
+  kp: 40.0
+  kd: 3.7
+  role: held
+- name: left_shoulder_roll
+  default_pos: 0.2
+  kp: 40.0
+  kd: 3.42
+  role: held
+- name: left_shoulder_yaw
+  default_pos: 0.0
+  kp: 40.0
+  kd: 1.53
+  role: held
+- name: left_elbow
+  default_pos: 0.5
+  kp: 30.0
+  kd: 1.73
+  role: held
+- name: left_forearm_yaw
+  default_pos: 0.0
+  kp: 20.0
+  kd: 0.9
+  role: held
+- name: left_wrist_pitch
+  default_pos: 0.0
+  kp: 20.0
+  kd: 0.58
+  role: held
+- name: left_wrist_roll
+  default_pos: 0.0
+  kp: 20.0
+  kd: 0.39
+  role: held
+- name: right_shoulder_pitch
+  default_pos: 0.0
+  kp: 40.0
+  kd: 3.7
+  role: held
+- name: right_shoulder_roll
+  default_pos: 0.2
+  kp: 40.0
+  kd: 3.42
+  role: held
+- name: right_shoulder_yaw
+  default_pos: 0.0
+  kp: 40.0
+  kd: 1.53
+  role: held
+- name: right_elbow
+  default_pos: 0.5
+  kp: 30.0
+  kd: 1.73
+  role: held
+- name: right_forearm_yaw
+  default_pos: 0.0
+  kp: 20.0
+  kd: 0.9
+  role: held
+- name: right_wrist_pitch
+  default_pos: 0.0
+  kp: 20.0
+  kd: 0.58
+  role: held
+- name: right_wrist_roll
+  default_pos: 0.0
+  kp: 20.0
+  kd: 0.39
+  role: held
+action:
+  type: joint_position
+  formula: target = default_pos + action_scale * action
+  joints:
+  - left_hip_pitch
+  - left_hip_roll
+  - left_hip_yaw
+  - left_knee
+  - left_ankle_pitch
+  - left_ankle_roll
+  - right_hip_pitch
+  - right_hip_roll
+  - right_hip_yaw
+  - right_knee
+  - right_ankle_pitch
+  - right_ankle_roll
+  - torso_yaw
+  - torso_roll
+  - torso_pitch
+held_joints:
+  names:
+  - left_shoulder_pitch
+  - left_shoulder_roll
+  - left_shoulder_yaw
+  - left_elbow
+  - left_forearm_yaw
+  - left_wrist_pitch
+  - left_wrist_roll
+  - right_shoulder_pitch
+  - right_shoulder_roll
+  - right_shoulder_yaw
+  - right_elbow
+  - right_forearm_yaw
+  - right_wrist_pitch
+  - right_wrist_roll
+  source_topic: /arm/joint_targets
+  behaviour: default_pos until the first message on source_topic, then the latest commanded target per joint (no timeout).
+    In training these joints followed scripted random targets (stand-in for the ROS arm controller).
+observation:
+  terms:
+  - base_lin_vel
+  - base_ang_vel
+  - projected_gravity
+  - joint_pos
+  - joint_vel
+  - actions
+  - command
+  scale:
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  clip:
+  - - -.inf
+    - .inf
+  - - -.inf
+    - .inf
+  - - -.inf
+    - .inf
+  - - -.inf
+    - .inf
+  - - -.inf
+    - .inf
+  - - -.inf
+    - .inf
+  - - -.inf
+    - .inf
+  history_length:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  flatten_history_dim:
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+commands:
+- twist
+io:
+  inputs:
+  - name: obs
+    shape:
+    - 1
+    - 85
+    type: tensor(float)
+  outputs:
+  - name: actions
+    shape:
+    - 1
+    - 15
+  cpu_inference_ms: 0.008
+notes:
+- Floats in ONNX metadata are rounded to 3 decimals by mjlab; hsim_locomotion compares kp/kd here against the MuJoCo model
+  and refuses to start if they differ by more than that.
+raw_metadata_keys:
+- action_scale
+- command_names
+- default_joint_pos
+- joint_damping
+- joint_names
+- joint_stiffness
+- observation_names
+- observation_terms_clip
+- observation_terms_flatten_history_dim
+- observation_terms_history_length
+- observation_terms_scale
+- run_path

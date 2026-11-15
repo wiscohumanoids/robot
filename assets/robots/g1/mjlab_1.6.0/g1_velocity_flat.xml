@@ -1,0 +1,10 @@
+<!-- G1 velocity-flat training world from mjlab 1.6.0, for deployment on CPU.
+     scene.xml is mjlab's `export-scene Mjlab-Velocity-Flat-Unitree-G1` output, unmodified.
+     export-scene does not write the physics options (mjlab sets them in Python), so they
+     are restated here from the training run's params/env.yaml (sim.mujoco). -->
+<mujoco model="g1_velocity_flat">
+  <option timestep="0.005" integrator="implicitfast" cone="pyramidal" jacobian="auto"
+          solver="Newton" iterations="10" tolerance="1e-8" ls_iterations="20"
+          ls_tolerance="0.01" ccd_iterations="50" impratio="1" gravity="0 0 -9.81"/>
+  <include file="scene.xml"/>
+</mujoco>

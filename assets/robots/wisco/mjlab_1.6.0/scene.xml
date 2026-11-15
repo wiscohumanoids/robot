@@ -1,0 +1,502 @@
+<mujoco model="mjlab scene">
+  <compiler angle="radian" meshdir="assets"/>
+
+  <size nkey="1"/>
+
+  <visual>
+    <global azimuth="135" elevation="-25" offwidth="1920" offheight="1080"/>
+    <quality shadowsize="8192"/>
+    <headlight ambient="0.3 0.3 0.3" diffuse="0.6 0.6 0.6" specular="0 0 0"/>
+    <scale forcewidth="0.25" contactwidth="0.4" contactheight="0.15" framelength="5" framewidth="0.3"/>
+    <rgba haze="0.15 0.25 0.35 1" force="1 0 0 1"/>
+  </visual>
+
+  <statistic meansize="0.03" extent="2"/>
+
+  <default>
+    <default class="robot/main">
+      <site size="0.006 0.005 0.005" rgba="1 0.3 0.2 1"/>
+      <default class="robot/visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" rgba="0.72 0.74 0.78 1"/>
+      </default>
+      <default class="robot/collision">
+        <geom group="3" friction="0.9 0.02 0.01" rgba="0.2 0.7 0.6 0.4"/>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="2d" colorspace="auto" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <texture type="2d" colorspace="auto" name="robot/grid" builtin="checker" rgb1="0.25 0.27 0.3" rgb2="0.32 0.34 0.38" width="512" height="512"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="4 4" reflectance="0.2"/>
+    <material name="robot/grid" texture="robot/grid" texrepeat="4 4" reflectance="0.05"/>
+    <mesh name="robot/pelvis" content_type="model/stl" file="pelvis.stl"/>
+    <mesh name="robot/pelvis_collision" content_type="model/stl" file="pelvis_collision.stl"/>
+    <mesh name="robot/left_hip_pitch_link" content_type="model/stl" file="left_hip_pitch_link.stl"/>
+    <mesh name="robot/left_hip_pitch_link_collision" content_type="model/stl" file="left_hip_pitch_link_collision.stl"/>
+    <mesh name="robot/left_hip_roll_link" content_type="model/stl" file="left_hip_roll_link.stl"/>
+    <mesh name="robot/left_hip_roll_link_collision" content_type="model/stl" file="left_hip_roll_link_collision.stl"/>
+    <mesh name="robot/left_hip_yaw_link" content_type="model/stl" file="left_hip_yaw_link.stl"/>
+    <mesh name="robot/left_hip_yaw_link_collision" content_type="model/stl" file="left_hip_yaw_link_collision.stl"/>
+    <mesh name="robot/left_knee_link" content_type="model/stl" file="left_knee_link.stl"/>
+    <mesh name="robot/left_knee_link_collision" content_type="model/stl" file="left_knee_link_collision.stl"/>
+    <mesh name="robot/left_ankle_pitch_link" content_type="model/stl" file="left_ankle_pitch_link.stl"/>
+    <mesh name="robot/left_ankle_pitch_link_collision" content_type="model/stl" file="left_ankle_pitch_link_collision.stl"/>
+    <mesh name="robot/left_ankle_roll_link" content_type="model/stl" file="left_ankle_roll_link.stl"/>
+    <mesh name="robot/right_hip_pitch_link" content_type="model/stl" file="right_hip_pitch_link.stl"/>
+    <mesh name="robot/right_hip_pitch_link_collision" content_type="model/stl" file="right_hip_pitch_link_collision.stl"/>
+    <mesh name="robot/right_hip_roll_link" content_type="model/stl" file="right_hip_roll_link.stl"/>
+    <mesh name="robot/right_hip_roll_link_collision" content_type="model/stl" file="right_hip_roll_link_collision.stl"/>
+    <mesh name="robot/right_hip_yaw_link" content_type="model/stl" file="right_hip_yaw_link.stl"/>
+    <mesh name="robot/right_hip_yaw_link_collision" content_type="model/stl" file="right_hip_yaw_link_collision.stl"/>
+    <mesh name="robot/right_knee_link" content_type="model/stl" file="right_knee_link.stl"/>
+    <mesh name="robot/right_knee_link_collision" content_type="model/stl" file="right_knee_link_collision.stl"/>
+    <mesh name="robot/right_ankle_pitch_link" content_type="model/stl" file="right_ankle_pitch_link.stl"/>
+    <mesh name="robot/right_ankle_pitch_link_collision" content_type="model/stl" file="right_ankle_pitch_link_collision.stl"/>
+    <mesh name="robot/right_ankle_roll_link" content_type="model/stl" file="right_ankle_roll_link.stl"/>
+    <mesh name="robot/torso_yaw_link" content_type="model/stl" file="torso_yaw_link.stl"/>
+    <mesh name="robot/torso_yaw_link_collision" content_type="model/stl" file="torso_yaw_link_collision.stl"/>
+    <mesh name="robot/torso_roll_link" content_type="model/stl" file="torso_roll_link.stl"/>
+    <mesh name="robot/torso_roll_link_collision" content_type="model/stl" file="torso_roll_link_collision.stl"/>
+    <mesh name="robot/torso" content_type="model/stl" file="torso.stl"/>
+    <mesh name="robot/torso_collision" content_type="model/stl" file="torso_collision.stl"/>
+    <mesh name="robot/head_yaw_link" content_type="model/stl" file="head_yaw_link.stl"/>
+    <mesh name="robot/head_yaw_link_collision" content_type="model/stl" file="head_yaw_link_collision.stl"/>
+    <mesh name="robot/head" content_type="model/stl" file="head.stl"/>
+    <mesh name="robot/head_collision" content_type="model/stl" file="head_collision.stl"/>
+    <mesh name="robot/left_shoulder_pitch_link" content_type="model/stl" file="left_shoulder_pitch_link.stl"/>
+    <mesh name="robot/left_shoulder_pitch_link_collision" content_type="model/stl" file="left_shoulder_pitch_link_collision.stl"/>
+    <mesh name="robot/left_shoulder_roll_link" content_type="model/stl" file="left_shoulder_roll_link.stl"/>
+    <mesh name="robot/left_shoulder_roll_link_collision" content_type="model/stl" file="left_shoulder_roll_link_collision.stl"/>
+    <mesh name="robot/left_shoulder_yaw_link" content_type="model/stl" file="left_shoulder_yaw_link.stl"/>
+    <mesh name="robot/left_shoulder_yaw_link_collision" content_type="model/stl" file="left_shoulder_yaw_link_collision.stl"/>
+    <mesh name="robot/left_elbow_link" content_type="model/stl" file="left_elbow_link.stl"/>
+    <mesh name="robot/left_elbow_link_collision" content_type="model/stl" file="left_elbow_link_collision.stl"/>
+    <mesh name="robot/left_forearm_yaw_link" content_type="model/stl" file="left_forearm_yaw_link.stl"/>
+    <mesh name="robot/left_forearm_yaw_link_collision" content_type="model/stl" file="left_forearm_yaw_link_collision.stl"/>
+    <mesh name="robot/left_wrist_pitch_link" content_type="model/stl" file="left_wrist_pitch_link.stl"/>
+    <mesh name="robot/left_wrist_pitch_link_collision" content_type="model/stl" file="left_wrist_pitch_link_collision.stl"/>
+    <mesh name="robot/left_hand" content_type="model/stl" file="left_hand.stl"/>
+    <mesh name="robot/left_hand_collision" content_type="model/stl" file="left_hand_collision.stl"/>
+    <mesh name="robot/right_shoulder_pitch_link" content_type="model/stl" file="right_shoulder_pitch_link.stl"/>
+    <mesh name="robot/right_shoulder_pitch_link_collision" content_type="model/stl" file="right_shoulder_pitch_link_collision.stl"/>
+    <mesh name="robot/right_shoulder_roll_link" content_type="model/stl" file="right_shoulder_roll_link.stl"/>
+    <mesh name="robot/right_shoulder_roll_link_collision" content_type="model/stl" file="right_shoulder_roll_link_collision.stl"/>
+    <mesh name="robot/right_shoulder_yaw_link" content_type="model/stl" file="right_shoulder_yaw_link.stl"/>
+    <mesh name="robot/right_shoulder_yaw_link_collision" content_type="model/stl" file="right_shoulder_yaw_link_collision.stl"/>
+    <mesh name="robot/right_elbow_link" content_type="model/stl" file="right_elbow_link.stl"/>
+    <mesh name="robot/right_elbow_link_collision" content_type="model/stl" file="right_elbow_link_collision.stl"/>
+    <mesh name="robot/right_forearm_yaw_link" content_type="model/stl" file="right_forearm_yaw_link.stl"/>
+    <mesh name="robot/right_forearm_yaw_link_collision" content_type="model/stl" file="right_forearm_yaw_link_collision.stl"/>
+    <mesh name="robot/right_wrist_pitch_link" content_type="model/stl" file="right_wrist_pitch_link.stl"/>
+    <mesh name="robot/right_wrist_pitch_link_collision" content_type="model/stl" file="right_wrist_pitch_link_collision.stl"/>
+    <mesh name="robot/right_hand" content_type="model/stl" file="right_hand.stl"/>
+    <mesh name="robot/right_hand_collision" content_type="model/stl" file="right_hand_collision.stl"/>
+  </asset>
+
+  <worldbody>
+    <light name="sun" pos="0 0 1.5" dir="0 0 -1" type="directional"/>
+    <body name="terrain">
+      <geom name="terrain" size="0 0 0.01" type="plane" material="groundplane"/>
+    </body>
+    <body name="robot/pelvis" pos="0 0 0.7015">
+      <inertial pos="-0.000370946 3.97043e-06 0.0333947" quat="0.999994 7.91524e-05 0.000392584 0.00330368" mass="4.73908" diaginertia="0.0217746 0.0166181 0.0126314"/>
+      <joint name="robot/floating_base" type="free"/>
+      <geom class="robot/visual" mesh="robot/pelvis"/>
+      <geom name="robot/pelvis_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/pelvis_collision"/>
+      <site name="robot/imu" pos="-0.051791 -0.000257852 0.0345015" quat="0.5 -0.5 0.5 -0.5" size="0.006" rgba="1 0.3 0.2 1"/>
+      <site name="robot/imu_policy" pos="-0.051791 -0.000257852 0.0345015" size="0.006" rgba="1 0.3 0.2 1"/>
+      <body name="robot/left_hip_pitch_link" pos="-6.04604e-05 0.142629 -2.82412e-06">
+        <inertial pos="0.000213564 -0.00599759 -0.0178477" quat="0.566046 0.399154 -0.40446 0.597227" mass="1.88958" diaginertia="0.00344499 0.00324422 0.00283971"/>
+        <joint name="robot/left_hip_pitch" pos="0 0 0" axis="0 -1 0" range="-2.79253 2.79253" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+        <geom class="robot/visual" mesh="robot/left_hip_pitch_link"/>
+        <geom name="robot/left_hip_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_hip_pitch_link_collision"/>
+        <body name="robot/left_hip_roll_link" pos="0.00015173 0 -0.0199776">
+          <inertial pos="0.000995226 0.000151962 -0.0950312" quat="0.705323 0.0576862 0.0577203 0.704173" mass="1.45291" diaginertia="0.00419865 0.00325994 0.00244375"/>
+          <joint name="robot/left_hip_roll" pos="0 0 0" axis="1 0 0" range="-0.610865 2.79253" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+          <geom class="robot/visual" mesh="robot/left_hip_roll_link"/>
+          <geom name="robot/left_hip_roll_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_hip_roll_link_collision"/>
+          <body name="robot/left_hip_yaw_link" pos="0 3.72318e-05 0">
+            <inertial pos="-0.0181776 -0.000144207 -0.274215" quat="0.995333 -0.000603996 0.0958639 0.0110002" mass="2.12883" diaginertia="0.00865692 0.00833628 0.00322051"/>
+            <joint name="robot/left_hip_yaw" pos="0 0 0" axis="0 0 -1" range="-2.75762 2.75762" armature="0.0253856" damping="0.02" frictionloss="1.6"/>
+            <geom class="robot/visual" mesh="robot/left_hip_yaw_link"/>
+            <geom name="robot/left_hip_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_hip_yaw_link_collision"/>
+            <body name="robot/left_knee_link" pos="-0.025 0 -0.299994">
+              <inertial pos="0.0200513 0.000757993 -0.14822" quat="0.995283 -0.0185766 -0.0327647 0.0894049" mass="2.09076" diaginertia="0.0152641 0.0150494 0.00249201"/>
+              <joint name="robot/left_knee" pos="0 0 0" axis="0 1 0" range="-0.0872665 2.79253" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+              <geom class="robot/visual" mesh="robot/left_knee_link"/>
+              <geom name="robot/left_knee_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_knee_link_collision"/>
+              <body name="robot/left_ankle_pitch_link" pos="0.025 0 -0.32">
+                <inertial pos="0.00018085 -0.000209147 -0.00703098" quat="0.999964 -0.000543075 -0.00818371 0.00235606" mass="0.133457" diaginertia="3.28189e-05 3.11529e-05 2.7463e-05"/>
+                <joint name="robot/left_ankle_pitch" pos="0 0 0" axis="0 -1 0" range="-0.546 0.785398" armature="0.126052" damping="0.100505" frictionloss="2.9029"/>
+                <geom class="robot/visual" mesh="robot/left_ankle_pitch_link"/>
+                <geom name="robot/left_ankle_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_ankle_pitch_link_collision"/>
+                <body name="robot/left_ankle_roll_link" pos="0 -0.00035 -0.0175">
+                  <inertial pos="0.0395989 -8.69524e-05 -0.0240202" quat="0.497018 0.501294 0.526255 0.47406" mass="0.641709" diaginertia="0.00231961 0.00218978 0.00081953"/>
+                  <joint name="robot/left_ankle_roll" pos="0 0 0" axis="1 0 0" range="-0.261799 0.261799" armature="0.0208049" damping="0.0165883" frictionloss="1.17933"/>
+                  <geom class="robot/visual" mesh="robot/left_ankle_roll_link"/>
+                  <geom name="robot/left_foot_collision" class="robot/collision" size="0.105 0.0425 0.01" pos="0.0501587 0.000141269 -0.0340279" type="box" priority="1" friction="0.6"/>
+                  <site name="robot/left_sole" pos="0.0501587 0.000141269 -0.044028" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/left_sole_heel_r" pos="-0.0548413 -0.0423587 -0.044028" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/left_sole_heel_l" pos="-0.0548413 0.0426413 -0.044028" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/left_sole_toe_r" pos="0.155159 -0.0423587 -0.044028" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/left_sole_toe_l" pos="0.155159 0.0426413 -0.044028" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/left_foot" pos="0.0501587 0.000141269 -0.044028" size="0.006" rgba="1 0.3 0.2 1"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="robot/right_hip_pitch_link" pos="-6.04604e-05 -0.142629 -2.82412e-06">
+        <inertial pos="1.02781e-05 0.00607496 -0.0176951" quat="0.413517 0.578715 -0.582177 0.393907" mass="1.88564" diaginertia="0.00343427 0.00323923 0.00283012"/>
+        <joint name="robot/right_hip_pitch" pos="0 0 0" axis="0 -1 0" range="-2.79253 2.79253" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+        <geom class="robot/visual" mesh="robot/right_hip_pitch_link"/>
+        <geom name="robot/right_hip_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_hip_pitch_link_collision"/>
+        <body name="robot/right_hip_roll_link" pos="0.00015173 0 -0.0199776">
+          <inertial pos="0.00126564 7.74219e-05 -0.0952855" quat="0.705393 0.0568904 0.0569285 0.704233" mass="1.45764" diaginertia="0.00421035 0.0032664 0.00244868"/>
+          <joint name="robot/right_hip_roll" pos="0 0 0" axis="-1 0 0" range="-0.610865 2.79253" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+          <geom class="robot/visual" mesh="robot/right_hip_roll_link"/>
+          <geom name="robot/right_hip_roll_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_hip_roll_link_collision"/>
+          <body name="robot/right_hip_yaw_link" pos="0 -3.72318e-05 0">
+            <inertial pos="-0.0185368 0.000494338 -0.273878" quat="0.995252 0.00272447 0.0964619 0.0127329" mass="2.12397" diaginertia="0.00865555 0.00833599 0.00320603"/>
+            <joint name="robot/right_hip_yaw" pos="0 0 0" axis="0 0 1" range="-2.75762 2.75762" armature="0.0253856" damping="0.02" frictionloss="1.6"/>
+            <geom class="robot/visual" mesh="robot/right_hip_yaw_link"/>
+            <geom name="robot/right_hip_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_hip_yaw_link_collision"/>
+            <body name="robot/right_knee_link" pos="-0.025 0 -0.299994">
+              <inertial pos="0.0196999 -0.000551007 -0.147593" quat="0.995256 0.0181974 -0.0313961 -0.0902748" mass="2.08804" diaginertia="0.015096 0.0148856 0.00249796"/>
+              <joint name="robot/right_knee" pos="0 0 0" axis="0 1 0" range="-0.0872665 2.79253" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+              <geom class="robot/visual" mesh="robot/right_knee_link"/>
+              <geom name="robot/right_knee_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_knee_link_collision"/>
+              <body name="robot/right_ankle_pitch_link" pos="0.025 0 -0.32">
+                <inertial pos="-0.000139511 0.000490891 -0.00697231" quat="0.999953 0.000339955 -0.00936164 -0.00238663" mass="0.133457" diaginertia="3.28241e-05 3.11379e-05 2.74425e-05"/>
+                <joint name="robot/right_ankle_pitch" pos="0 0 0" axis="0 -1 0" range="-0.546 0.785398" armature="0.123795" damping="0.0987051" frictionloss="2.87679"/>
+                <geom class="robot/visual" mesh="robot/right_ankle_pitch_link"/>
+                <geom name="robot/right_ankle_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_ankle_pitch_link_collision"/>
+                <body name="robot/right_ankle_roll_link" pos="0 0.00035 -0.0175">
+                  <inertial pos="0.0399826 0.000522591 -0.0240939" quat="0.534257 0.463562 0.530292 0.467409" mass="0.641709" diaginertia="0.00231212 0.00220841 0.000789407"/>
+                  <joint name="robot/right_ankle_roll" pos="0 0 0" axis="-1 0 0" range="-0.261799 0.261799" armature="0.0207974" damping="0.0165823" frictionloss="1.17899"/>
+                  <geom class="robot/visual" mesh="robot/right_ankle_roll_link"/>
+                  <geom name="robot/right_foot_collision" class="robot/collision" size="0.105 0.0425 0.01" pos="0.0498413 0.000141267 -0.0339721" type="box" priority="1" friction="0.6"/>
+                  <site name="robot/right_sole" pos="0.0498413 0.000141267 -0.0439721" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/right_sole_heel_r" pos="-0.0551587 -0.0423587 -0.0439721" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/right_sole_heel_l" pos="-0.0551587 0.0426413 -0.0439721" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/right_sole_toe_r" pos="0.154841 -0.0423587 -0.0439721" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/right_sole_toe_l" pos="0.154841 0.0426413 -0.0439721" size="0.006" rgba="1 0.3 0.2 1"/>
+                  <site name="robot/right_foot" pos="0.0498413 0.000141267 -0.0439721" size="0.006" rgba="1 0.3 0.2 1"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="robot/torso_yaw_link" pos="0 0 0.173855">
+        <inertial pos="0.0129705 -3.6624e-10 -0.027676" quat="0 0.71872 0 0.6953" mass="0.241289" diaginertia="0.000286145 0.000204663 0.000130146"/>
+        <joint name="robot/torso_yaw" pos="0 0 0" axis="0 0 1" range="-2.61799 2.61799" armature="0.0461557" damping="0.13" frictionloss="0.34"/>
+        <geom class="robot/visual" mesh="robot/torso_yaw_link"/>
+        <geom name="robot/torso_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/torso_yaw_link_collision"/>
+        <body name="robot/torso_roll_link" pos="0 0 -4.77492e-06">
+          <inertial pos="-0.004 9.33596e-07 3.52751e-06" quat="3.03093e-05 0.707107 3.03093e-05 0.707107" mass="0.0701929" diaginertia="2.03504e-05 1.20019e-05 1.20005e-05"/>
+          <joint name="robot/torso_roll" pos="0 0 0" axis="1 0 0" range="-0.523599 0.523599" armature="0.0214671" damping="0.0169128" frictionloss="2.08079"/>
+          <geom class="robot/visual" mesh="robot/torso_roll_link"/>
+          <geom name="robot/torso_roll_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/torso_roll_link_collision"/>
+          <body name="robot/torso" pos="-0.004 0 0">
+            <inertial pos="-0.00584494 -0.000435844 0.173589" quat="0.999998 0.00173021 0.000213889 -0.000775534" mass="8.44789" diaginertia="0.104604 0.0826754 0.0405269"/>
+            <joint name="robot/torso_pitch" pos="0 0 0" axis="0 -1 0" range="-0.523599 0.523599" armature="0.0247061" damping="0.0194646" frictionloss="2.23225"/>
+            <geom class="robot/visual" mesh="robot/torso"/>
+            <geom name="robot/torso_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/torso_collision"/>
+            <body name="robot/head_yaw_link" pos="0.008 0 0.419097">
+              <inertial pos="0.000121325 -0.00762523 -0.00172159" quat="0.729921 0.675983 -0.0700674 0.0731691" mass="0.377346" diaginertia="0.000269324 0.000261375 0.000210501"/>
+              <geom class="robot/visual" mesh="robot/head_yaw_link"/>
+              <geom name="robot/head_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/head_yaw_link_collision"/>
+              <body name="robot/head" pos="0.000135314 0 0">
+                <inertial pos="-0.00855833 -0.000449979 -0.0666979" quat="0.945932 -0.0221305 0.304005 -0.110924" mass="2.13992" diaginertia="0.0165059 0.0162776 0.00727426"/>
+                <geom class="robot/visual" mesh="robot/head"/>
+                <geom name="robot/head_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/head_collision"/>
+                <site name="robot/head_camera" pos="0.0847853 -4.88679e-06 0.0152735" size="0.006" rgba="1 0.3 0.2 1"/>
+              </body>
+            </body>
+            <body name="robot/left_shoulder_pitch_link" pos="0.00468319 0.189654 0.294465">
+              <inertial pos="-0.00293053 -0.00491065 -0.0183981" quat="0.563952 0.447213 -0.405661 0.563381" mass="1.05151" diaginertia="0.00119816 0.00112119 0.00087552"/>
+              <joint name="robot/left_shoulder_pitch" pos="0 0 0" axis="0 -0.996195 -0.0871557" range="-2.35619 3.14159" armature="0.0253856" damping="0.02" frictionloss="1.6"/>
+              <geom class="robot/visual" mesh="robot/left_shoulder_pitch_link"/>
+              <geom name="robot/left_shoulder_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_shoulder_pitch_link_collision"/>
+              <body name="robot/left_shoulder_roll_link" pos="-3.92456e-09 0.00174414 -0.0199493">
+                <inertial pos="-0.00367394 -0.000777838 -0.0750973" quat="0.701116 -0.097757 -0.0973359 0.699575" mass="0.543788" diaginertia="0.0010366 0.000852492 0.00040162"/>
+                <joint name="robot/left_shoulder_roll" pos="0 0 0" axis="1 0 0" range="-0.436332 2.96706" armature="0.0253856" damping="0.02" frictionloss="1.6"/>
+                <geom class="robot/visual" mesh="robot/left_shoulder_roll_link"/>
+                <geom name="robot/left_shoulder_roll_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_shoulder_roll_link_collision"/>
+                <body name="robot/left_shoulder_yaw_link" pos="-5.8769e-05 -1.27712e-06 6.77727e-10">
+                  <inertial pos="0.0200859 -0.000696943 -0.188426" quat="0.991663 0.00657758 -0.126739 -0.0223132" mass="0.568839" diaginertia="0.00143273 0.00130578 0.000416856"/>
+                  <joint name="robot/left_shoulder_yaw" pos="0 0 0" axis="0 0 -1" range="-2.61799 2.61799" armature="0.03888" damping="0.031" frictionloss="1.14"/>
+                  <geom class="robot/visual" mesh="robot/left_shoulder_yaw_link"/>
+                  <geom name="robot/left_shoulder_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_shoulder_yaw_link_collision"/>
+                  <body name="robot/left_elbow_link" pos="0.0274403 -0.00010191 -0.210008">
+                    <inertial pos="-0.0263469 -0.000549463 -0.0582691" quat="0.97524 -0.187321 0.117342 0.00699687" mass="0.452978" diaginertia="0.000410608 0.000324912 0.000281663"/>
+                    <joint name="robot/left_elbow" pos="0 0 0" axis="0 -1 0" range="0 2.61799" armature="0.03888" damping="0.031" frictionloss="1.14"/>
+                    <geom class="robot/visual" mesh="robot/left_elbow_link"/>
+                    <geom name="robot/left_elbow_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_elbow_link_collision"/>
+                    <body name="robot/left_forearm_yaw_link" pos="-0.0275384 8.29241e-05 -0.129992">
+                      <inertial pos="0.000429038 0.00382678 -0.000363737" quat="0.988218 0.148901 0.0353778 -0.00148938" mass="0.471026" diaginertia="0.000412059 0.000324797 0.000291787"/>
+                      <joint name="robot/left_forearm_yaw" pos="0 0 0" axis="0 0 -1" range="-2.61799 2.61799" armature="0.03888" damping="0.031" frictionloss="1.14"/>
+                      <geom class="robot/visual" mesh="robot/left_forearm_yaw_link"/>
+                      <geom name="robot/left_forearm_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_forearm_yaw_link_collision"/>
+                      <body name="robot/left_wrist_pitch_link">
+                        <inertial pos="0.0175763 0.000113038 -0.0670406" quat="0.04607 0.781718 -0.397867 0.478013" mass="0.454455" diaginertia="0.000351301 0.000321559 0.000262797"/>
+                        <joint name="robot/left_wrist_pitch" pos="0 0 0" axis="0 -1 0" range="-0.610865 0.610865" armature="0.00390625" frictionloss="0.8"/>
+                        <geom class="robot/visual" mesh="robot/left_wrist_pitch_link"/>
+                        <geom name="robot/left_wrist_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_wrist_pitch_link_collision"/>
+                        <body name="robot/left_hand" pos="-1.95496e-05 -4.09588e-06 -0.0686971">
+                          <inertial pos="0.0165347 -0.00931563 -0.0875558" quat="0.961151 -0.0142734 0.107587 -0.253791" mass="0.387791" diaginertia="0.000795558 0.000742749 0.000315961"/>
+                          <joint name="robot/left_wrist_roll" pos="0 0 0" axis="1 0 0" range="-1.5708 1.5708" armature="0.00390625" frictionloss="0.8"/>
+                          <geom class="robot/visual" mesh="robot/left_hand"/>
+                          <geom name="robot/left_hand_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/left_hand_collision"/>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+            <body name="robot/right_shoulder_pitch_link" pos="0.00468319 -0.189654 0.294465">
+              <inertial pos="-0.00411884 0.003111 -0.0183823" quat="0.448555 0.562007 -0.565237 0.404294" mass="1.05151" diaginertia="0.00119818 0.00112119 0.000875512"/>
+              <joint name="robot/right_shoulder_pitch" pos="0 0 0" axis="0 -0.996195 0.0871557" range="-2.35619 3.14159" armature="0.0253856" damping="0.02" frictionloss="1.6"/>
+              <geom class="robot/visual" mesh="robot/right_shoulder_pitch_link"/>
+              <geom name="robot/right_shoulder_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_shoulder_pitch_link_collision"/>
+              <body name="robot/right_shoulder_roll_link" pos="-3.92456e-09 -0.00174414 -0.0199493">
+                <inertial pos="-0.00485895 -0.00102925 -0.0750808" quat="0.701817 -0.0978952 -0.0975969 0.698817" mass="0.543788" diaginertia="0.0010366 0.000852492 0.00040162"/>
+                <joint name="robot/right_shoulder_roll" pos="0 0 0" axis="-1 0 0" range="-0.436332 2.96706" armature="0.0253856" damping="0.02" frictionloss="1.6"/>
+                <geom class="robot/visual" mesh="robot/right_shoulder_roll_link"/>
+                <geom name="robot/right_shoulder_roll_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_shoulder_roll_link_collision"/>
+                <body name="robot/right_shoulder_yaw_link" pos="-5.8769e-05 1.27712e-06 6.77727e-10">
+                  <inertial pos="0.0189024 -0.00127709 -0.188524" quat="0.991814 -0.0070211 -0.126058 0.0191023" mass="0.570503" diaginertia="0.00143751 0.00130968 0.000421024"/>
+                  <joint name="robot/right_shoulder_yaw" pos="0 0 0" axis="0 0 1" range="-2.61799 2.61799" armature="0.03888" damping="0.031" frictionloss="1.14"/>
+                  <geom class="robot/visual" mesh="robot/right_shoulder_yaw_link"/>
+                  <geom name="robot/right_shoulder_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_shoulder_yaw_link_collision"/>
+                  <body name="robot/right_elbow_link" pos="0.0274403 0.00010191 -0.210008">
+                    <inertial pos="-0.027423 -0.00131198 -0.0582498" quat="0.975256 0.187647 0.116455 -0.0101204" mass="0.452978" diaginertia="0.000410608 0.000324911 0.000281663"/>
+                    <joint name="robot/right_elbow" pos="0 0 0" axis="0 -1 0" range="0 2.61799" armature="0.03888" damping="0.031" frictionloss="1.14"/>
+                    <geom class="robot/visual" mesh="robot/right_elbow_link"/>
+                    <geom name="robot/right_elbow_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_elbow_link_collision"/>
+                    <body name="robot/right_forearm_yaw_link" pos="-0.0275384 -8.29241e-05 -0.129992">
+                      <inertial pos="-0.00079924 -0.00566756 -0.000310642" quat="0.9884 -0.148056 0.0338289 -0.000171659" mass="0.473354" diaginertia="0.000412567 0.000327865 0.000294536"/>
+                      <joint name="robot/right_forearm_yaw" pos="0 0 0" axis="0 0 1" range="-2.61799 2.61799" armature="0.03888" damping="0.031" frictionloss="1.14"/>
+                      <geom class="robot/visual" mesh="robot/right_forearm_yaw_link"/>
+                      <geom name="robot/right_forearm_yaw_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_forearm_yaw_link_collision"/>
+                      <body name="robot/right_wrist_pitch_link">
+                        <inertial pos="0.0167754 -0.00201096 -0.0670202" quat="-0.0334455 0.775438 0.400409 0.487083" mass="0.457508" diaginertia="0.000354496 0.000325072 0.000263911"/>
+                        <joint name="robot/right_wrist_pitch" pos="0 0 0" axis="0 -1 0" range="-0.610865 0.610865" armature="0.00390625" frictionloss="0.8"/>
+                        <geom class="robot/visual" mesh="robot/right_wrist_pitch_link"/>
+                        <geom name="robot/right_wrist_pitch_link_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_wrist_pitch_link_collision"/>
+                        <body name="robot/right_hand" pos="-1.95496e-05 4.09588e-06 -0.0686971">
+                          <inertial pos="0.0156443 0.00732638 -0.0875289" quat="0.962002 0.014493 0.107282 0.250663" mass="0.387792" diaginertia="0.00079556 0.00074275 0.000315961"/>
+                          <joint name="robot/right_wrist_roll" pos="0 0 0" axis="-1 0 0" range="-1.5708 1.5708" armature="0.00390625" frictionloss="0.8"/>
+                          <geom class="robot/visual" mesh="robot/right_hand"/>
+                          <geom name="robot/right_hand_collision" class="robot/collision" type="mesh" condim="1" mesh="robot/right_hand_collision"/>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="robot/pelvis" body2="robot/left_hip_roll_link"/>
+    <exclude body1="robot/pelvis" body2="robot/right_hip_roll_link"/>
+    <exclude body1="robot/pelvis" body2="robot/torso_roll_link"/>
+    <exclude body1="robot/pelvis" body2="robot/torso"/>
+    <exclude body1="robot/left_hip_pitch_link" body2="robot/left_hip_yaw_link"/>
+    <exclude body1="robot/left_hip_pitch_link" body2="robot/right_hip_pitch_link"/>
+    <exclude body1="robot/left_hip_pitch_link" body2="robot/torso_yaw_link"/>
+    <exclude body1="robot/left_hip_roll_link" body2="robot/left_knee_link"/>
+    <exclude body1="robot/left_hip_yaw_link" body2="robot/left_ankle_pitch_link"/>
+    <exclude body1="robot/left_knee_link" body2="robot/left_ankle_roll_link"/>
+    <exclude body1="robot/right_hip_pitch_link" body2="robot/right_hip_yaw_link"/>
+    <exclude body1="robot/right_hip_pitch_link" body2="robot/torso_yaw_link"/>
+    <exclude body1="robot/right_hip_roll_link" body2="robot/right_knee_link"/>
+    <exclude body1="robot/right_hip_yaw_link" body2="robot/right_ankle_pitch_link"/>
+    <exclude body1="robot/right_knee_link" body2="robot/right_ankle_roll_link"/>
+    <exclude body1="robot/torso_yaw_link" body2="robot/torso"/>
+    <exclude body1="robot/torso_roll_link" body2="robot/head_yaw_link"/>
+    <exclude body1="robot/torso_roll_link" body2="robot/left_shoulder_pitch_link"/>
+    <exclude body1="robot/torso_roll_link" body2="robot/right_shoulder_pitch_link"/>
+    <exclude body1="robot/torso" body2="robot/head"/>
+    <exclude body1="robot/torso" body2="robot/left_shoulder_roll_link"/>
+    <exclude body1="robot/torso" body2="robot/right_shoulder_roll_link"/>
+    <exclude body1="robot/head_yaw_link" body2="robot/left_shoulder_pitch_link"/>
+    <exclude body1="robot/head_yaw_link" body2="robot/right_shoulder_pitch_link"/>
+    <exclude body1="robot/left_shoulder_pitch_link" body2="robot/left_shoulder_yaw_link"/>
+    <exclude body1="robot/left_shoulder_pitch_link" body2="robot/right_shoulder_pitch_link"/>
+    <exclude body1="robot/left_shoulder_roll_link" body2="robot/left_elbow_link"/>
+    <exclude body1="robot/left_shoulder_yaw_link" body2="robot/left_forearm_yaw_link"/>
+    <exclude body1="robot/left_elbow_link" body2="robot/left_wrist_pitch_link"/>
+    <exclude body1="robot/left_forearm_yaw_link" body2="robot/left_hand"/>
+    <exclude body1="robot/right_shoulder_pitch_link" body2="robot/right_shoulder_yaw_link"/>
+    <exclude body1="robot/right_shoulder_roll_link" body2="robot/right_elbow_link"/>
+    <exclude body1="robot/right_shoulder_yaw_link" body2="robot/right_forearm_yaw_link"/>
+    <exclude body1="robot/right_elbow_link" body2="robot/right_wrist_pitch_link"/>
+    <exclude body1="robot/right_forearm_yaw_link" body2="robot/right_hand"/>
+  </contact>
+
+  <actuator>
+    <general name="robot/left_hip_pitch" joint="robot/left_hip_pitch" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="120" biasprm="0 -120 -11.34"/>
+    <general name="robot/left_hip_roll" joint="robot/left_hip_roll" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="120" biasprm="0 -120 -10.6"/>
+    <general name="robot/left_knee" joint="robot/left_knee" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="120" biasprm="0 -120 -4.97"/>
+    <general name="robot/right_hip_pitch" joint="robot/right_hip_pitch" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="120" biasprm="0 -120 -11.34"/>
+    <general name="robot/right_hip_roll" joint="robot/right_hip_roll" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="120" biasprm="0 -120 -10.6"/>
+    <general name="robot/right_knee" joint="robot/right_knee" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="120" biasprm="0 -120 -4.97"/>
+    <general name="robot/torso_yaw" joint="robot/torso_yaw" ctrllimited="false" ctrlrange="-120 120" forcelimited="true" forcerange="-120 120" biastype="affine" gainprm="100" biasprm="0 -100 -7.52"/>
+    <general name="robot/left_hip_yaw" joint="robot/left_hip_yaw" ctrllimited="false" ctrlrange="-60 60" forcelimited="true" forcerange="-60 60" biastype="affine" gainprm="50" biasprm="0 -50 -1.95"/>
+    <general name="robot/right_hip_yaw" joint="robot/right_hip_yaw" ctrllimited="false" ctrlrange="-60 60" forcelimited="true" forcerange="-60 60" biastype="affine" gainprm="50" biasprm="0 -50 -1.95"/>
+    <general name="robot/left_shoulder_pitch" joint="robot/left_shoulder_pitch" ctrllimited="false" ctrlrange="-60 60" forcelimited="true" forcerange="-60 60" biastype="affine" gainprm="40" biasprm="0 -40 -3.7"/>
+    <general name="robot/left_shoulder_roll" joint="robot/left_shoulder_roll" ctrllimited="false" ctrlrange="-60 60" forcelimited="true" forcerange="-60 60" biastype="affine" gainprm="40" biasprm="0 -40 -3.42"/>
+    <general name="robot/right_shoulder_pitch" joint="robot/right_shoulder_pitch" ctrllimited="false" ctrlrange="-60 60" forcelimited="true" forcerange="-60 60" biastype="affine" gainprm="40" biasprm="0 -40 -3.7"/>
+    <general name="robot/right_shoulder_roll" joint="robot/right_shoulder_roll" ctrllimited="false" ctrlrange="-60 60" forcelimited="true" forcerange="-60 60" biastype="affine" gainprm="40" biasprm="0 -40 -3.42"/>
+    <general name="robot/left_shoulder_yaw" joint="robot/left_shoulder_yaw" ctrllimited="false" ctrlrange="-34 34" forcelimited="true" forcerange="-34 34" biastype="affine" gainprm="40" biasprm="0 -40 -1.53"/>
+    <general name="robot/left_elbow" joint="robot/left_elbow" ctrllimited="false" ctrlrange="-34 34" forcelimited="true" forcerange="-34 34" biastype="affine" gainprm="30" biasprm="0 -30 -1.73"/>
+    <general name="robot/left_forearm_yaw" joint="robot/left_forearm_yaw" ctrllimited="false" ctrlrange="-34 34" forcelimited="true" forcerange="-34 34" biastype="affine" gainprm="20" biasprm="0 -20 -0.9"/>
+    <general name="robot/right_shoulder_yaw" joint="robot/right_shoulder_yaw" ctrllimited="false" ctrlrange="-34 34" forcelimited="true" forcerange="-34 34" biastype="affine" gainprm="40" biasprm="0 -40 -1.53"/>
+    <general name="robot/right_elbow" joint="robot/right_elbow" ctrllimited="false" ctrlrange="-34 34" forcelimited="true" forcerange="-34 34" biastype="affine" gainprm="30" biasprm="0 -30 -1.73"/>
+    <general name="robot/right_forearm_yaw" joint="robot/right_forearm_yaw" ctrllimited="false" ctrlrange="-34 34" forcelimited="true" forcerange="-34 34" biastype="affine" gainprm="20" biasprm="0 -20 -0.9"/>
+    <general name="robot/left_wrist_pitch" joint="robot/left_wrist_pitch" ctrllimited="false" ctrlrange="-10 10" forcelimited="true" forcerange="-10 10" biastype="affine" gainprm="20" biasprm="0 -20 -0.58"/>
+    <general name="robot/left_wrist_roll" joint="robot/left_wrist_roll" ctrllimited="false" ctrlrange="-10 10" forcelimited="true" forcerange="-10 10" biastype="affine" gainprm="20" biasprm="0 -20 -0.39"/>
+    <general name="robot/right_wrist_pitch" joint="robot/right_wrist_pitch" ctrllimited="false" ctrlrange="-10 10" forcelimited="true" forcerange="-10 10" biastype="affine" gainprm="20" biasprm="0 -20 -0.58"/>
+    <general name="robot/right_wrist_roll" joint="robot/right_wrist_roll" ctrllimited="false" ctrlrange="-10 10" forcelimited="true" forcerange="-10 10" biastype="affine" gainprm="20" biasprm="0 -20 -0.39"/>
+    <general name="robot/torso_roll" joint="robot/torso_roll" ctrllimited="false" ctrlrange="-78.0296 78.0296" forcelimited="true" forcerange="-78.0296 78.0296" biastype="affine" gainprm="100" biasprm="0 -100 -11.89"/>
+    <general name="robot/torso_pitch" joint="robot/torso_pitch" ctrllimited="false" ctrlrange="-83.7094 83.7094" forcelimited="true" forcerange="-83.7094 83.7094" biastype="affine" gainprm="100" biasprm="0 -100 -10.06"/>
+    <general name="robot/left_ankle_pitch" joint="robot/left_ankle_pitch" ctrllimited="false" ctrlrange="-86.5776 86.5776" forcelimited="true" forcerange="-86.5776 86.5776" biastype="affine" gainprm="35" biasprm="0 -35 -2.14"/>
+    <general name="robot/left_ankle_roll" joint="robot/left_ankle_roll" ctrllimited="false" ctrlrange="-86.5776 86.5776" forcelimited="true" forcerange="-35.173 35.173" biastype="affine" gainprm="35" biasprm="0 -35 -0.88"/>
+    <general name="robot/right_ankle_pitch" joint="robot/right_ankle_pitch" ctrllimited="false" ctrlrange="-86.5776 86.5776" forcelimited="true" forcerange="-85.799 85.799" biastype="affine" gainprm="35" biasprm="0 -35 -2.14"/>
+    <general name="robot/right_ankle_roll" joint="robot/right_ankle_roll" ctrllimited="false" ctrlrange="-86.5776 86.5776" forcelimited="true" forcerange="-35.1628 35.1628" biastype="affine" gainprm="35" biasprm="0 -35 -0.88"/>
+  </actuator>
+
+  <sensor>
+    <gyro site="robot/imu_policy" name="robot/imu_ang_vel"/>
+    <velocimeter site="robot/imu_policy" name="robot/imu_lin_vel"/>
+    <accelerometer site="robot/imu_policy" name="robot/imu_lin_acc"/>
+    <framezaxis objtype="site" objname="robot/imu_policy" name="robot/imu_upvector"/>
+    <subtreeangmom body="robot/pelvis" name="robot/root_angmom"/>
+    <contact subtree1="robot/left_ankle_roll_link" body2="terrain" reduce="netforce" name="feet_ground_contact_left_ankle_roll_link_found"/>
+    <contact subtree1="robot/left_ankle_roll_link" body2="terrain" data="force" reduce="netforce" name="feet_ground_contact_left_ankle_roll_link_force"/>
+    <contact subtree1="robot/right_ankle_roll_link" body2="terrain" reduce="netforce" name="feet_ground_contact_right_ankle_roll_link_found"/>
+    <contact subtree1="robot/right_ankle_roll_link" body2="terrain" data="force" reduce="netforce" name="feet_ground_contact_right_ankle_roll_link_force"/>
+    <contact body1="robot/left_hip_pitch_link" subtree2="robot/right_hip_pitch_link" name="selfcol_leg_leg_left_hip_pitch_link_found"/>
+    <contact body1="robot/left_hip_pitch_link" subtree2="robot/right_hip_pitch_link" data="force" name="selfcol_leg_leg_left_hip_pitch_link_force"/>
+    <contact body1="robot/left_hip_roll_link" subtree2="robot/right_hip_pitch_link" name="selfcol_leg_leg_left_hip_roll_link_found"/>
+    <contact body1="robot/left_hip_roll_link" subtree2="robot/right_hip_pitch_link" data="force" name="selfcol_leg_leg_left_hip_roll_link_force"/>
+    <contact body1="robot/left_hip_yaw_link" subtree2="robot/right_hip_pitch_link" name="selfcol_leg_leg_left_hip_yaw_link_found"/>
+    <contact body1="robot/left_hip_yaw_link" subtree2="robot/right_hip_pitch_link" data="force" name="selfcol_leg_leg_left_hip_yaw_link_force"/>
+    <contact body1="robot/left_knee_link" subtree2="robot/right_hip_pitch_link" name="selfcol_leg_leg_left_knee_link_found"/>
+    <contact body1="robot/left_knee_link" subtree2="robot/right_hip_pitch_link" data="force" name="selfcol_leg_leg_left_knee_link_force"/>
+    <contact body1="robot/left_ankle_pitch_link" subtree2="robot/right_hip_pitch_link" name="selfcol_leg_leg_left_ankle_pitch_link_found"/>
+    <contact body1="robot/left_ankle_pitch_link" subtree2="robot/right_hip_pitch_link" data="force" name="selfcol_leg_leg_left_ankle_pitch_link_force"/>
+    <contact body1="robot/left_ankle_roll_link" subtree2="robot/right_hip_pitch_link" name="selfcol_leg_leg_left_ankle_roll_link_found"/>
+    <contact body1="robot/left_ankle_roll_link" subtree2="robot/right_hip_pitch_link" data="force" name="selfcol_leg_leg_left_ankle_roll_link_force"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/pelvis" name="selfcol_legs_pelvis_left_hip_pitch_link_found"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_left_hip_pitch_link_force"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/pelvis" name="selfcol_legs_pelvis_left_hip_roll_link_found"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_left_hip_roll_link_force"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/pelvis" name="selfcol_legs_pelvis_left_hip_yaw_link_found"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_left_hip_yaw_link_force"/>
+    <contact body1="robot/left_knee_link" body2="robot/pelvis" name="selfcol_legs_pelvis_left_knee_link_found"/>
+    <contact body1="robot/left_knee_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_left_knee_link_force"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/pelvis" name="selfcol_legs_pelvis_left_ankle_pitch_link_found"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_left_ankle_pitch_link_force"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/pelvis" name="selfcol_legs_pelvis_left_ankle_roll_link_found"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_left_ankle_roll_link_force"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/pelvis" name="selfcol_legs_pelvis_right_hip_pitch_link_found"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_right_hip_pitch_link_force"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/pelvis" name="selfcol_legs_pelvis_right_hip_roll_link_found"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_right_hip_roll_link_force"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/pelvis" name="selfcol_legs_pelvis_right_hip_yaw_link_found"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_right_hip_yaw_link_force"/>
+    <contact body1="robot/right_knee_link" body2="robot/pelvis" name="selfcol_legs_pelvis_right_knee_link_found"/>
+    <contact body1="robot/right_knee_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_right_knee_link_force"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/pelvis" name="selfcol_legs_pelvis_right_ankle_pitch_link_found"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_right_ankle_pitch_link_force"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/pelvis" name="selfcol_legs_pelvis_right_ankle_roll_link_found"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/pelvis" data="force" name="selfcol_legs_pelvis_right_ankle_roll_link_force"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_left_hip_pitch_link_found"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_left_hip_pitch_link_force"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_left_hip_roll_link_found"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_left_hip_roll_link_force"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_left_hip_yaw_link_found"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_left_hip_yaw_link_force"/>
+    <contact body1="robot/left_knee_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_left_knee_link_found"/>
+    <contact body1="robot/left_knee_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_left_knee_link_force"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_left_ankle_pitch_link_found"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_left_ankle_pitch_link_force"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_left_ankle_roll_link_found"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_left_ankle_roll_link_force"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_right_hip_pitch_link_found"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_right_hip_pitch_link_force"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_right_hip_roll_link_found"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_right_hip_roll_link_force"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_right_hip_yaw_link_found"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_right_hip_yaw_link_force"/>
+    <contact body1="robot/right_knee_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_right_knee_link_found"/>
+    <contact body1="robot/right_knee_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_right_knee_link_force"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_right_ankle_pitch_link_found"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_right_ankle_pitch_link_force"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/torso_yaw_link" name="selfcol_legs_torso_yaw_right_ankle_roll_link_found"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/torso_yaw_link" data="force" name="selfcol_legs_torso_yaw_right_ankle_roll_link_force"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_left_hip_pitch_link_found"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_left_hip_pitch_link_force"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_left_hip_roll_link_found"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_left_hip_roll_link_force"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_left_hip_yaw_link_found"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_left_hip_yaw_link_force"/>
+    <contact body1="robot/left_knee_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_left_knee_link_found"/>
+    <contact body1="robot/left_knee_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_left_knee_link_force"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_left_ankle_pitch_link_found"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_left_ankle_pitch_link_force"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_left_ankle_roll_link_found"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_left_ankle_roll_link_force"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_right_hip_pitch_link_found"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_right_hip_pitch_link_force"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_right_hip_roll_link_found"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_right_hip_roll_link_force"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_right_hip_yaw_link_found"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_right_hip_yaw_link_force"/>
+    <contact body1="robot/right_knee_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_right_knee_link_found"/>
+    <contact body1="robot/right_knee_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_right_knee_link_force"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_right_ankle_pitch_link_found"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_right_ankle_pitch_link_force"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/torso_roll_link" name="selfcol_legs_torso_roll_right_ankle_roll_link_found"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/torso_roll_link" data="force" name="selfcol_legs_torso_roll_right_ankle_roll_link_force"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/torso" name="selfcol_legs_torso_left_hip_pitch_link_found"/>
+    <contact body1="robot/left_hip_pitch_link" body2="robot/torso" data="force" name="selfcol_legs_torso_left_hip_pitch_link_force"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/torso" name="selfcol_legs_torso_left_hip_roll_link_found"/>
+    <contact body1="robot/left_hip_roll_link" body2="robot/torso" data="force" name="selfcol_legs_torso_left_hip_roll_link_force"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/torso" name="selfcol_legs_torso_left_hip_yaw_link_found"/>
+    <contact body1="robot/left_hip_yaw_link" body2="robot/torso" data="force" name="selfcol_legs_torso_left_hip_yaw_link_force"/>
+    <contact body1="robot/left_knee_link" body2="robot/torso" name="selfcol_legs_torso_left_knee_link_found"/>
+    <contact body1="robot/left_knee_link" body2="robot/torso" data="force" name="selfcol_legs_torso_left_knee_link_force"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/torso" name="selfcol_legs_torso_left_ankle_pitch_link_found"/>
+    <contact body1="robot/left_ankle_pitch_link" body2="robot/torso" data="force" name="selfcol_legs_torso_left_ankle_pitch_link_force"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/torso" name="selfcol_legs_torso_left_ankle_roll_link_found"/>
+    <contact body1="robot/left_ankle_roll_link" body2="robot/torso" data="force" name="selfcol_legs_torso_left_ankle_roll_link_force"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/torso" name="selfcol_legs_torso_right_hip_pitch_link_found"/>
+    <contact body1="robot/right_hip_pitch_link" body2="robot/torso" data="force" name="selfcol_legs_torso_right_hip_pitch_link_force"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/torso" name="selfcol_legs_torso_right_hip_roll_link_found"/>
+    <contact body1="robot/right_hip_roll_link" body2="robot/torso" data="force" name="selfcol_legs_torso_right_hip_roll_link_force"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/torso" name="selfcol_legs_torso_right_hip_yaw_link_found"/>
+    <contact body1="robot/right_hip_yaw_link" body2="robot/torso" data="force" name="selfcol_legs_torso_right_hip_yaw_link_force"/>
+    <contact body1="robot/right_knee_link" body2="robot/torso" name="selfcol_legs_torso_right_knee_link_found"/>
+    <contact body1="robot/right_knee_link" body2="robot/torso" data="force" name="selfcol_legs_torso_right_knee_link_force"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/torso" name="selfcol_legs_torso_right_ankle_pitch_link_found"/>
+    <contact body1="robot/right_ankle_pitch_link" body2="robot/torso" data="force" name="selfcol_legs_torso_right_ankle_pitch_link_force"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/torso" name="selfcol_legs_torso_right_ankle_roll_link_found"/>
+    <contact body1="robot/right_ankle_roll_link" body2="robot/torso" data="force" name="selfcol_legs_torso_right_ankle_roll_link_force"/>
+  </sensor>
+
+  <keyframe>
+    <key name="init_state" qpos="0 0 0.68765 1 0 0 0 0.3 0 0 0.6 0.3 0 0.3 0 0 0.6 0.3 0 0 0 0 0 0.2 0 0.5 0 0 0 0 0.2 0 0.5 0 0 0" ctrl="0.3 0 0.6 0.3 0 0.6 0 0 0 0 0.2 0 0.2 0 0.5 0 0 0.5 0 0 0 0 0 0 0 0.3 0 0.3 0"/>
+  </keyframe>
+</mujoco>

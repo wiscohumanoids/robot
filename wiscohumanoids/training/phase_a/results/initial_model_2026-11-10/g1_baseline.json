@@ -1,0 +1,41 @@
+{
+ "stand_10s": {
+  "pelvis_height_change_m": 0.625,
+  "max_tilt_deg": 101.39,
+  "final_tilt_deg": 96.5,
+  "horizontal_drift_m": 0.9089,
+  "max_joint_sag_rad": {
+   "left_elbow_joint": 0.1593,
+   "right_elbow_joint": 0.1591,
+   "left_wrist_pitch_joint": 0.1198,
+   "right_wrist_pitch_joint": 0.1197
+  },
+  "knee_hold_nm": 4.2
+ },
+ "step_response": {
+  "left_hip_pitch_joint": {
+   "kp": 40.2,
+   "reached_frac": 0.527,
+   "overshoot_frac": 0.618,
+   "settle_s": 0.975
+  },
+  "left_knee_joint": {
+   "kp": 99.1,
+   "reached_frac": 0.944,
+   "overshoot_frac": 0.014,
+   "settle_s": 0.175
+  },
+  "left_ankle_pitch_joint": {
+   "kp": 28.5,
+   "reached_frac": 0.988,
+   "overshoot_frac": 0.003,
+   "settle_s": 0.18
+  },
+  "left_elbow_joint": {
+   "kp": 14.3,
+   "reached_frac": 0.877,
+   "overshoot_frac": 0.016,
+   "settle_s": 0.16
+  }
+ }
+}

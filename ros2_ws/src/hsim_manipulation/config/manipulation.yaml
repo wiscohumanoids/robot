@@ -1,0 +1,17 @@
+manipulation:
+  ros__parameters:
+    use_sim_time: true
+    vla_url: http://host.docker.internal:8200      # Mac: ssh -N -L 8200:localhost:8200 hsim-gpu
+    image_topic: /camera/head/color/image_raw      # must show the same view as training (F1 ego camera: G1 D435 mount)
+    joint_states_topic: /joint_states
+    targets_topic: /arm/joint_targets
+    objects_topic: /perception/objects
+    control_hz: 20.0
+    max_duration_s: 40.0
+    image_width: 320
+    image_height: 240
+    waist_state: zeros
+    gripper_joints: [left_dex1_finger_joint_1, left_dex1_finger_joint_2, right_dex1_finger_joint_1, right_dex1_finger_joint_2]
+    gripper_open: 0.0245
+    gripper_closed: -0.020
+    prefetch_steps: 6                              # >= server latency (~0.3 s) / 50 ms

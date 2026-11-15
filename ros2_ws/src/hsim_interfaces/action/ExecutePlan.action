@@ -1,0 +1,10 @@
+# Run a skill plan on the behavior tree. A new goal preempts the running one.
+SkillPlan plan
+---
+bool success
+int32 failed_skill_index      # -1 if none
+string message                # why it failed, in plain words (fed back to the planner)
+---
+int32 current_skill_index
+string current_skill
+string status

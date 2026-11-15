@@ -1,0 +1,67 @@
+<!-- test/table_room: an 8 m x 6 m room built from simple shapes.
+     The floor comes from the G1 training world (plane at z = 0), so this file adds only
+     walls, furniture and loose objects. Units: meters. +x points toward the table. -->
+<mujoco model="table_room">
+  <asset>
+    <material name="wall"  rgba="0.82 0.80 0.76 1"/>
+    <material name="wood"  rgba="0.55 0.38 0.22 1"/>
+    <material name="couch" rgba="0.30 0.38 0.52 1"/>
+    <material name="shelf" rgba="0.62 0.60 0.56 1"/>
+    <material name="ottoman" rgba="0.45 0.30 0.30 1"/>
+  </asset>
+  <worldbody>
+    <!-- walls: 1.2 m tall (lower than a real room so the viewer camera can see in) -->
+    <body name="walls">
+      <geom name="wall_north" type="box" pos="0  3.05 0.6" size="4.1 0.05 0.6" material="wall"/>
+      <geom name="wall_south" type="box" pos="0 -3.05 0.6" size="4.1 0.05 0.6" material="wall"/>
+      <geom name="wall_east"  type="box" pos=" 4.05 0 0.6" size="0.05 3.0 0.6" material="wall"/>
+      <geom name="wall_west"  type="box" pos="-4.05 0 0.6" size="0.05 3.0 0.6" material="wall"/>
+    </body>
+
+    <!-- table: 1.2 x 0.8 m top at 0.75 m, the "walk to the table" target -->
+    <body name="table" pos="2.0 0 0">
+      <geom name="table_top" type="box" pos="0 0 0.73" size="0.6 0.4 0.02" material="wood"/>
+      <geom name="table_leg1" type="box" pos=" 0.55  0.35 0.36" size="0.03 0.03 0.36" material="wood"/>
+      <geom name="table_leg2" type="box" pos=" 0.55 -0.35 0.36" size="0.03 0.03 0.36" material="wood"/>
+      <geom name="table_leg3" type="box" pos="-0.55  0.35 0.36" size="0.03 0.03 0.36" material="wood"/>
+      <geom name="table_leg4" type="box" pos="-0.55 -0.35 0.36" size="0.03 0.03 0.36" material="wood"/>
+    </body>
+
+    <!-- pickable blocks on the table (5 cm cubes, free to move) -->
+    <body name="red_block" pos="1.85 -0.15 0.78">
+      <freejoint name="red_block"/>
+      <geom name="red_block" type="box" size="0.025 0.025 0.025" rgba="0.85 0.12 0.12 1" mass="0.08"/>
+    </body>
+    <body name="green_block" pos="2.0 0.1 0.78">
+      <freejoint name="green_block"/>
+      <geom name="green_block" type="box" size="0.025 0.025 0.025" rgba="0.15 0.65 0.20 1" mass="0.08"/>
+    </body>
+    <body name="blue_block" pos="2.15 -0.05 0.78">
+      <freejoint name="blue_block"/>
+      <geom name="blue_block" type="box" size="0.025 0.025 0.025" rgba="0.15 0.30 0.85 1" mass="0.08"/>
+    </body>
+
+    <!-- couch against the north wall -->
+    <body name="couch" pos="-1.0 2.55 0">
+      <geom name="couch_seat" type="box" pos="0 0 0.22" size="1.0 0.4 0.22" material="couch"/>
+      <geom name="couch_back" type="box" pos="0 0.32 0.55" size="1.0 0.08 0.33" material="couch"/>
+    </body>
+
+    <!-- shelf in the south-east corner -->
+    <body name="shelf" pos="3.65 -2.4 0">
+      <geom name="shelf_box" type="box" pos="0 0 0.6" size="0.25 0.5 0.6" material="shelf"/>
+    </body>
+
+    <!-- TEST-ONLY: a box parked far outside the room (on no map, in no object list). Tests drop it
+         into the robot's path with /sim/set_body_pose, like a person dropping a box. -->
+    <body name="obstacle_box" pos="20 20 0.2">
+      <freejoint name="obstacle_box"/>
+      <geom name="obstacle_box" type="box" size="0.2 0.2 0.2" rgba="0.75 0.55 0.25 1" mass="4"/>
+    </body>
+
+    <!-- low ottoman off to the side: an obstacle Nav2 must plan around -->
+    <body name="ottoman" pos="0.0 -1.3 0">
+      <geom name="ottoman_box" type="box" pos="0 0 0.22" size="0.3 0.3 0.22" material="ottoman"/>
+    </body>
+  </worldbody>
+</mujoco>

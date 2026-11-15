@@ -1,0 +1,56 @@
+# Manipulation scenes and object sets (F1). Object paths are relative to the RoboCasa object library
+# (~/hsim_third_party/robocasa/robocasa/models/assets/objects on the Mac). Scenes are compiled on the Mac
+# into self-contained .mjb files (kitchen + robot + all objects of a version), so the VM needs no RoboCasa.
+
+scenes:
+  kitchen_l1_s1:
+    room: assets/envs/robocasa/kitchen_l1_s1/room.xml
+    # G1 pelvis pose (world). Counter front edge y=-0.655, toe-kick y=-0.600, counter top z=0.92,
+    # clear counter between the sink (x<1.7) and the stove (x>2.7).
+    robot_xy: [2.2, -0.80]           # torso front ~6 cm from the counter edge; toes clear the toe-kick
+    robot_yaw_deg: 90.0              # robot +x (forward) -> world +y (facing the counter)
+    counter_top_z: 0.92
+    # counter work area (world): objects and targets are placed inside this rectangle
+    work_area: {x: [1.92, 2.48], y: [-0.62, -0.40]}
+    # Collision-free reach band of each arm, robot frame (x forward, |y| outboard of that arm's shoulder), probed
+    # with collision-aware IK (fingers pitched 15 deg down). The counter (0.92 m) is high for a G1 (shoulder 1.08 m):
+    # reaching in front of the chest drives the elbow into the counter edge, so each arm works on its own side.
+    reach_area_robot: {x: [0.27, 0.46], y_abs: [0.12, 0.30]}
+
+# Per-episode randomization (all versions)
+randomize:
+  robot_xy_jitter: 0.03              # m, pelvis position jitter (walking won't stop at an exact spot)
+  robot_yaw_jitter_deg: 5.0
+  robot_z_jitter: 0.02               # m, crouch variation (knees-bent stance is ~3 cm lower than straight legs)
+  object_yaw: full                    # random yaw about z
+  min_obj_target_dist: 0.14           # m between object and target centers
+  light_jitter: true
+
+versions:
+  v1:
+    description: pick up a cup and put it on the plate
+    instruction_templates:
+      - "pick up the {obj} and put it on the plate"
+      - "put the {obj} on the plate"
+      - "place the {obj} onto the plate"
+    objects:          # graspable (outer width <= 82 mm; Dex1-1 opens 95 mm)
+      cup: [aigen_objs/cup_0, aigen_objs/cup_1, aigen_objs/cup_2, aigen_objs/cup_3, aigen_objs/cup_4, aigen_objs/cup_5,
+            aigen_objs/cup_6, aigen_objs/cup_8, aigen_objs/cup_9, aigen_objs/cup_10, aigen_objs/cup_11, aigen_objs/cup_12,
+            aigen_objs/cup_13, aigen_objs/cup_14, aigen_objs/cup_15, aigen_objs/cup_16, aigen_objs/cup_17,
+            aigen_objs/cup_7, objaverse/cup_2]
+    targets:
+      plate: [aigen_objs/plate_0, aigen_objs/plate_1, aigen_objs/plate_3, aigen_objs/plate_5,
+              objaverse/plate_0, objaverse/plate_1, objaverse/plate_5, objaverse/plate_9]
+  v2:
+    description: many shapes (planned; same targets)
+    objects:
+      cup: same_as_v1
+      mug: [aigen_objs/mug_0, aigen_objs/mug_1, aigen_objs/mug_3, aigen_objs/mug_5, objaverse/mug_2, objaverse/mug_11, objaverse/mug_18]
+      can: [aigen_objs/can_0, aigen_objs/can_2, aigen_objs/can_3, aigen_objs/can_4]
+      fruit: [apple, orange, lemon, peach, tomato, lime]          # categories; instances picked by size at build time
+      packaged: [boxed_drink, yogurt, bottled_water, canned_food]
+      bowl_small: [bowl]                                           # rim grasp, width filter at build time
+  v3:
+    description: plates (rim pinch / edge slide) and wider reach (two counters, reach to 0.55 m)
+    objects:
+      plate: [aigen_objs/plate_0, objaverse/plate_1, objaverse/plate_9]

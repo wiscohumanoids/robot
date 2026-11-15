@@ -1,0 +1,689 @@
+# Overnight jobs on the GPU VM (hsim-gpu), 2026-11-10. Read by tools/vm_jobs.sh (infra/vm_jobs/vmjobs.py).
+#
+# Placeholders in command / env / report values:
+#   {repo}     ~/humanoid-sim-stack          {log_root}  ~/hsim_runs/<job id>
+#   {runs}     ~/hsim_runs                   {data}      ~/hsim_data       {envs}  ~/hsim_envs
+# kind: rl       -> mjlab/rsl_rl training: status parses rsl_rl output; `resume` appends
+#                   --agent.resume True --agent.load-run <latest run dir>; morning report exports/plays it.
+#       service  -> long-running server (status shows last line).
+#       step     -> one-shot step of a pipeline (datagen, convert, finetune).
+# enabled: false -> skipped by launch-all (placeholders not yet filled in by their owner).
+# auto_resume: n -> after a crash (nonzero exit that wasn't a `stop`), relaunch with resume args up to n times.
+# depends_on: the job waits (polling every 30 s) until each listed job has exited with code 0;
+#             if one of them fails or is stopped, this job is marked "blocked" and does not run.
+
+defaults:
+  repo: ~/humanoid-sim-stack
+  runs: ~/hsim_runs
+  data: ~/hsim_data
+  envs: ~/hsim_envs
+  env:
+    MUJOCO_GL: egl
+    WANDB_MODE: offline
+    PYTHONUNBUFFERED: "1"
+    PATH: "~/.local/bin:{PATH}"          # uv lives in ~/.local/bin on this VM
+    HF_HOME: "~/hsim_data/hf-cache"
+
+jobs:
+  # ------------------------------------------------------------------ locomotion (owner B)
+  J1_g1_vel_v2:
+    description: G1 velocity v2 (legs+waist, v2 recipe), owner B. SUPERSEDED by J1b (stood still)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "bash scripts/train_g1_velocity_v2.sh --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2              # confirmed (B)
+      import_path: "{repo}/training/locomotion"   # sys.path entry so the task module imports
+      import_module: hsim_tasks                   # registers the task
+      eval: "{repo}/training/locomotion/.venv/bin/python scripts/eval_commands.py {checkpoint} --task Hsim-G1-Velocity-Flat-v2 --script deadband"
+
+  J1b_g1_vel_v2:
+    description: G1 velocity v2 + performance-gated curriculum (fix for J1 standing still), owner B. SUPERSEDED by J1c (arm self-collisions, no turning)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "bash scripts/train_g1_velocity_v2.sh --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+      eval: "{repo}/training/locomotion/.venv/bin/python scripts/eval_commands.py {checkpoint} --task Hsim-G1-Velocity-Flat-v2 --script deadband"
+
+  J1c_g1_vel_v2:
+    description: G1 velocity v2, resumed from J1b model_500 with arm-free self-collision penalty, safe arm ranges, slower curriculum gated on turning too, owner B. SUPERSEDED by J1d (arm-driven angular momentum)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1b_g1_vel_v2/g1_velocity_v2/2026-11-10_10-07-12/model_500.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0          # resume wrapper; relaunch manually if it crashes
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+      eval: "{repo}/training/locomotion/.venv/bin/python scripts/eval_commands.py {checkpoint} --task Hsim-G1-Velocity-Flat-v2 --script deadband"
+
+  J1z_g1_vel_v2:
+    description: re-run of the J1v recipe (torso rate -2.0) from J1v model_11900 (deployed); J1v's best came ~350 iterations in and later checkpoints shuffled more, so a fresh run from the winner, checked early. Takes J1w's slot
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-2.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 ITERS=1500 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1v_g1_vel_v2/g1_velocity_v2/2026-11-11_12-43-26/model_11900.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: [J1w_g1_vel_v2]
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1y_g1_vel_v2:
+    description: from J1v model_11900 (deployed) - J1v settings with feet air-time reward 0.1 (was 0.2); Mac test favours fewer/calmer steps, later J1v checkpoints stepped more. Takes J1v's slot
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-2.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 G1_AIRTIME_W=0.1 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1v_g1_vel_v2/g1_velocity_v2/2026-11-11_12-43-26/model_11900.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: [J1v_g1_vel_v2]
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1x_g1_vel_v2:
+    description: from J1v model_11900 (deployed) - J1v settings with foot slip -2.0 (was -1.0); what won on the Mac test was less sliding and fewer shuffle steps. Takes J1u's slot (done)
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-2.0 G1_FLAT_W=-20 G1_SLIP_W=-2.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1v_g1_vel_v2/g1_velocity_v2/2026-11-11_12-43-26/model_11900.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1w_g1_vel_v2:
+    description: from J1v model_11900 (deployed) - J1v settings with torso roll/pitch rate -3.0 (was -2.0; -1.0 -> -2.0 was the overnight winner). Takes J1t's slot (done)
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-3.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1v_g1_vel_v2/g1_velocity_v2/2026-11-11_12-43-26/model_11900.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1v_g1_vel_v2:
+    description: from J1r model_11500 (deployed) - J1r settings with torso roll/pitch rate -2.0 (was -1.0); the Mac steadiness test (what the user sees) tracks rocking. Takes J1r's slot (done)
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-2.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1r_g1_vel_v2/g1_velocity_v2/2026-11-11_10-13-31/model_11500.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1u_g1_vel_v2:
+    description: from J1r model_11500 (deployed) - J1r settings + pelvis tilt -40 (was -20; 11500's one regression was max tilt 9.5 deg at 1 m/s). Replaces J1s (behind)
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-1.0 G1_FLAT_W=-40 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1r_g1_vel_v2/g1_velocity_v2/2026-11-11_10-13-31/model_11500.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1t_g1_vel_v2:
+    description: from J1r model_10150 (deployed) - J1r settings + smoother joints (action rate -0.3, joint acc -5e-7) for less jerky motion. Takes J1p2's slot (finished)
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-1.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 G1_ACTRATE_W=-0.3 G1_JACC_W=-5e-7 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1r_g1_vel_v2/g1_velocity_v2/2026-11-11_10-13-31/model_10150.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1s_g1_vel_v2:
+    description: from J1r model_10150 (deployed) - J1r settings + precise tracking 0.5 (std 0.1 m/s / 0.2 rad/s; slow 0.2 m/s starts) + stand-still -2.0 (drift). Replaces J1q (behind J1r on every measure)
+    kind: rl
+    enabled: false   # STOPPED ~12:00 UTC: behind J1r (rock 8.3/15.4); slot -> J1u
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-1.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 G1_PRECISE_W=0.5 G1_STAND_W=-2.0 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1r_g1_vel_v2/g1_velocity_v2/2026-11-11_10-13-31/model_10150.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1r_g1_vel_v2:
+    description: from J1p2 model_9800 (steadiest, 0 falls; left 0.8 rad/s in-place turn only 0.29) - strong anti-rocking (torso rate -1.0, tilt -20, slip -1.0) + turn tracking weight 3.0 (stock 2.0) + 40 % in-place turns. Replaces J1o2 (plateaued)
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-1.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 G1_YAW_W=3.0 G1_TURN_FRAC=0.4 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1p2_g1_vel_v2/g1_velocity_v2/2026-11-11_09-00-42/model_9800.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1q_g1_vel_v2:
+    description: turn-friendly anti-rocking from J1o final (8550) - torso rate -0.4, pelvis tilt -10, foot slip back to stock (-0.1, only when moving; pivot turns slide the feet), 40 % in-place turn commands (was 30 %). J1o/J1p lost 0.8 rad/s in-place turning
+    kind: rl
+    enabled: false   # STOPPED ~10:55 UTC: behind J1r (rock 9.5 vs 6.8); slot -> J1s
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-0.4 G1_FLAT_W=-10 G1_TURN_FRAC=0.4 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from $(ls -t /home/ubuntu/hsim_runs/J1o_g1_vel_v2/g1_velocity_v2/2*/model_*.pt | head -1) --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1o2_g1_vel_v2:
+    description: J1o continued (+3000 iterations, same settings) from its final checkpoint; user asked for meaningful training time
+    kind: rl
+    enabled: false   # STOPPED 10:10 UTC: plateaued (rock ~9, left 0.8 turn 0.33 -> 0.26); slot -> J1r
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-0.4 G1_FLAT_W=-10 G1_SLIP_W=-0.5 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from $(ls -t /home/ubuntu/hsim_runs/J1o_g1_vel_v2/g1_velocity_v2/2*/model_*.pt | head -1) --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: [J1o_g1_vel_v2]
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1p2_g1_vel_v2:
+    description: J1p continued (+3000 iterations, same settings) from its final checkpoint
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-1.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 ITERS=3000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from $(ls -t /home/ubuntu/hsim_runs/J1p_g1_vel_v2/g1_velocity_v2/2*/model_*.pt | head -1) --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: [J1p_g1_vel_v2]
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1o_g1_vel_v2:
+    description: anti-rocking fine-tune from J1j model_6550 - J1k stand-still/smoothness + torso roll/pitch rate -0.4 (was -0.05), pelvis tilt -10, foot slip -0.5 also while standing; no precise tracking
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-0.4 G1_FLAT_W=-10 G1_SLIP_W=-0.5 ITERS=2000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1j_g1_vel_v2/g1_velocity_v2/2026-11-10_17-59-53/model_6550.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1p_g1_vel_v2:
+    description: J1o variant, strong - torso roll/pitch rate -1.0, pelvis tilt -20, foot slip -1.0
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "G1_BODYANG_W=-1.0 G1_FLAT_W=-20 G1_SLIP_W=-1.0 ITERS=2000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1j_g1_vel_v2/g1_velocity_v2/2026-11-10_17-59-53/model_6550.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1n_g1_vel_v2:
+    description: from J1k model_7900.pt (steady standing) + precise tracking terms (std 0.1 m/s, 0.2 rad/s, weight 1.0 each) so slow moves/turns are worth starting; J1k smoothness settings otherwise. 1500 iterations
+    kind: rl
+    enabled: false   # STOPPED: model_8250 deployed briefly; steadier drift but rocks more while moving (steadiness.py) -> J1o/J1p
+    workdir: "{repo}/training/locomotion"
+    command: "G1_PRECISE_W=1.0 ITERS=1500 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1k_g1_vel_v2/g1_velocity_v2/2026-11-11_06-44-54/model_7900.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1m_g1_vel_v2:
+    description: J1k variant (balanced) - J1k model_7000 stood steady but got lazy starting slow moves/turns; stand-still -1.0 kept, air time back to 0.25, action rate -0.15, joint acc -2.5e-7; from J1j model_6550, 2000 iterations
+    kind: rl
+    enabled: false   # STOPPED: model_7000 as lazy on slow commands as J1k; replaced by J1n (precise tracking)
+    workdir: "{repo}/training/locomotion"
+    command: "G1_AIRTIME_W=0.25 G1_ACTRATE_W=-0.15 ITERS=2000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1j_g1_vel_v2/g1_velocity_v2/2026-11-10_17-59-53/model_6550.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1l_g1_vel_v2:
+    description: J1k variant run in parallel (stricter) - stand-still -2.0, action rate -0.3, joint acc -5e-7; same start (J1j model_6550), 2000 iterations
+    kind: rl
+    enabled: false   # STOPPED 2026-11-11: J1k at -0.2 action rate already too lazy starting moves; stricter is the wrong way
+    workdir: "{repo}/training/locomotion"
+    command: "G1_STAND_W=-2.0 G1_ACTRATE_W=-0.3 G1_JACC_W=-5e-7 ITERS=2000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1j_g1_vel_v2/g1_velocity_v2/2026-11-10_17-59-53/model_6550.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1k_g1_vel_v2:
+    description: G1 velocity v2 smoothness fine-tune for kitchen use, resumed from J1j model_6550 (current g1_v2) at L=1, L2=1; stand-still penalty, 25 % standing, 2-6 s command switches, action rate -0.2, joint acc penalty, air time 0.2. 2000 iterations
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "ITERS=2000 G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1j_g1_vel_v2/g1_velocity_v2/2026-11-10_17-59-53/model_6550.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 1
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1j_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1i model_5250 at L=1, L2=1; feet air-time reward 0.25 for commands > 0.1 (short steps on slow commands). Fallback best so far J1i model_5150 (8/10), owner B
+    kind: rl
+    enabled: false   # DONE 2026-11-11: plateaued; best = J1j model_6550 (models/locomotion/g1_velocity_v2)
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1i_g1_vel_v2/g1_velocity_v2/2026-11-10_15-59-55/model_5250.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1i_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1h model_4150.pt at L=1, L2=1; 20 % small-command practice (slow walk/sidestep/turn), forward cap 1.5 m/s, owner B
+    kind: rl
+    enabled: false   # SUPERSEDED by J1j (air-time reward); model_5150 kept as fallback
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=2.0 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1h_g1_vel_v2/g1_velocity_v2/2026-11-10_14-47-19/model_4150.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1h_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1g model_3200 at L=1, L2=0.60; turn reward is yaw rate only (roll/pitch rocking no longer counts as turn error), owner B
+    kind: rl
+    enabled: false   # SUPERSEDED by J1i (small-command practice)
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=1.60 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1g_g1_vel_v2/g1_velocity_v2/2026-11-10_14-27-08/model_3200.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J3i_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3h newest (model_5050) at L=1, L2=1; forward command capped at 1.5 m/s (stock stages went to 2 m/s at 5k), air-time as J3h. Best so far J3h model_4650 (10/10 both), owner A
+    kind: rl
+    enabled: false   # DONE 2026-11-10: best = J3h model_4650 (results/velocity_models/wisco/)
+    workdir: "{repo}/training/locomotion"
+    command: "WISCO_START_LEVEL=1.0 WISCO_START_LEVEL2=1.0 bash ../../wiscohumanoids/training/vm/resume_latest.sh /home/ubuntu/hsim_runs/J3h_wisco_vel_v2 {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J3h_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3g model_4200 (best, 10/10) at L=1, L2=1; feet air-time reward 0.25 for commands > 0.1 (short steps on slow commands, as G1 J1j), owner A
+    kind: rl
+    enabled: false   # SUPERSEDED by J3i (1.5 m/s cap); model_4650 = best (10/10 both)
+    workdir: "{repo}/training/locomotion"
+    command: "WISCO_CKPT_N=4200 WISCO_START_LEVEL=1.0 WISCO_START_LEVEL2=1.0 bash ../../wiscohumanoids/training/vm/resume_latest.sh /home/ubuntu/hsim_runs/J3g_wisco_vel_v2 {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J3g_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3f newest checkpoint at L=1, L2=1; turn reward is yaw rate only, ankle clamp + thermal as before, owner A
+    kind: rl
+    enabled: false   # SUPERSEDED by J3h (air-time reward); model_4200 = best so far
+    workdir: "{repo}/training/locomotion"
+    command: "WISCO_START_LEVEL=1.0 WISCO_START_LEVEL2=1.0 bash ../../wiscohumanoids/training/vm/resume_latest.sh /home/ubuntu/hsim_runs/J3f_wisco_vel_v2 {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J1g_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1f model_3000 at L=1, L2=0.40; no turn gate on L2 (turn tightening is what fixes slow in-place turns), 30 % in-place turn commands 0.2-1.5 rad/s, owner B
+    kind: rl
+    enabled: false   # SUPERSEDED by J1h (yaw-only turn reward)
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=1.40 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1f_g1_vel_v2/g1_velocity_v2/2026-11-10_13-57-29/model_3000.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1f_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1e model_2650 at L=1, L2=0.15; curriculum gate measured with fixed starting stds (L2 tightening no longer stalls it), L2 turn gate 0.35, owner B
+    kind: rl
+    enabled: false   # SUPERSEDED by J1g (no L2 turn gate, more slow-turn practice)
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=1.15 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1e_g1_vel_v2/g1_velocity_v2/2026-11-10_13-35-55/model_2650.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J3f_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3e newest checkpoint at L=1, L2=0.65; curriculum gate measured with fixed starting stds, ankle clamp + thermal as J3e, owner A
+    kind: rl
+    enabled: false   # SUPERSEDED by J3g (yaw-only turn reward)
+    workdir: "{repo}/training/locomotion"
+    command: "WISCO_START_LEVEL=1.0 WISCO_START_LEVEL2=0.65 bash ../../wiscohumanoids/training/vm/resume_latest.sh /home/ubuntu/hsim_runs/J3e_wisco_vel_v2 {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J1e_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1d model_2400 at L=1, L2=0.05; L2 turn gate lowered 0.40 -> 0.35 so the small-command tightening can progress, owner B
+    kind: rl
+    enabled: false   # SUPERSEDED by J1f (fixed-std curriculum gate)
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=1.05 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1d_g1_vel_v2/g1_velocity_v2/2026-11-10_11-50-46/model_2400.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+
+  J1d_g1_vel_v2:
+    description: G1 velocity v2 resumed from J1c (model_1000.pt) with angular momentum over policy-controlled bodies only, start level 0.1, owner B. SUPERSEDED by J1e (lower L2 turn gate)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "G1_START_LEVEL=0.1 bash scripts/train_g1_velocity_v2_resume.sh --from /home/ubuntu/hsim_runs/J1c_g1_vel_v2/g1_velocity_v2/2026-11-10_11-13-08/model_1000.pt --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Hsim-G1-Velocity-Flat-v2
+      import_path: "{repo}/training/locomotion"
+      import_module: hsim_tasks
+      eval: "{repo}/training/locomotion/.venv/bin/python scripts/eval_commands.py {checkpoint} --task Hsim-G1-Velocity-Flat-v2 --script deadband"
+
+  # ------------------------------------------------------------------ tracking (owner C)
+  # One policy per clip. Clip names follow the LAFAN1 G1 CSV file names; C confirms them.
+  J2a_g1_track_dance1:
+    description: G1 tracking, LAFAN1 dance1, owner C
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../tracking/train_g1_tracking.sh dance1_subject2 --log-root {log_root}"
+    gpu_mem_gb: 10
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Mjlab-Tracking-Flat-Unitree-G1
+      motion_file: "{data}/motions/g1/dance1_subject2.npz"   # confirmed (C)
+
+  J2b_g1_track_jumps1:
+    description: G1 tracking, LAFAN1 jumps1, owner C
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../tracking/train_g1_tracking.sh jumps1_subject1 --log-root {log_root}"
+    gpu_mem_gb: 10
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Mjlab-Tracking-Flat-Unitree-G1
+      motion_file: "{data}/motions/g1/jumps1_subject1.npz"
+
+  J2c_g1_track_fallgetup1:
+    description: G1 tracking, LAFAN1 fallAndGetUp1, owner C
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../tracking/train_g1_tracking.sh fallAndGetUp1_subject1 --log-root {log_root}"
+    gpu_mem_gb: 10
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Mjlab-Tracking-Flat-Unitree-G1
+      motion_file: "{data}/motions/g1/fallAndGetUp1_subject1.npz"
+
+  # ------------------------------------------------------------------ Wisco (owners A, C)
+  J3_wisco_vel_v2:
+    description: Wisco velocity v2 (legs+waist, RP1-style gains, MIT-mode model), owner A. SUPERSEDED by J3b (stood still)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../../wiscohumanoids/training/vm/train_velocity.sh --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat                  # confirmed (A)
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J3b_wisco_vel_v2:
+    description: Wisco velocity v2 + performance-gated curriculum (fix for J3 standing still), owner A. SUPERSEDED by J3c (arm self-collisions, angular momentum cost)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../../wiscohumanoids/training/vm/train_velocity.sh --log-root {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J3c_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3b model_1000 with arm-free self-collision, safe arm ranges, turning-gated slow curriculum, angular_momentum -0.005, owner A. SUPERSEDED by J3d (GPU stale-COM angular momentum)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../../wiscohumanoids/training/vm/train_velocity.sh --log-root {log_root} --agent.resume True --agent.load-run J3b_model_1000 --agent.load-checkpoint model_1000.pt"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0          # resumed run; relaunch manually if it crashes
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J3d_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3c model_1300, angular momentum over policy bodies (avoids GPU stale-COM bug after payload changes), start level 0.25, owner A. SUPERSEDED by J3e (per-motor ankle clamp)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "WISCO_START_LEVEL=0.25 bash ../../wiscohumanoids/training/vm/train_velocity.sh --log-root {log_root} --agent.resume True --agent.load-run J3c_model_1300 --agent.load-checkpoint model_1300.pt"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J3e_wisco_vel_v2:
+    description: Wisco velocity v2 resumed from J3d newest checkpoint with exact per-motor ankle clamp (34 N*m + torque-speed via linkage) and ankle thermal penalty, start level 1.0, owner A
+    kind: rl
+    enabled: false   # SUPERSEDED by J3f (fixed-std curriculum gate)
+    workdir: "{repo}/training/locomotion"
+    command: "WISCO_START_LEVEL=1.0 bash ../../wiscohumanoids/training/vm/resume_latest.sh /home/ubuntu/hsim_runs/J3d_wisco_vel_v2 {log_root}"
+    gpu_mem_gb: 12
+    depends_on: []
+    auto_resume: 0
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Velocity-Flat
+      import_path: "{repo}/wiscohumanoids/training/mjlab_task"
+      import_module: wisco_mjlab
+
+  J4_wisco_track_dance1:
+    description: Wisco tracking, LAFAN1 dance1 retargeted to Wisco, owner C
+    kind: rl
+    enabled: true
+    workdir: "{repo}/training/locomotion"
+    command: "bash ../../wiscohumanoids/training/tracking/train_wisco_tracking.sh dance1_subject2 --log-root {log_root}"
+    gpu_mem_gb: 10
+    depends_on: []
+    auto_resume: 2
+    report:
+      venv: "{repo}/training/locomotion/.venv"
+      task: Wisco-V2-Tracking-Flat                  # confirmed (C)
+      import_path: "{repo}/wiscohumanoids/training/tracking"
+      import_module: wisco_tracking                 # confirmed (C)
+      motion_file: "{data}/motions/wisco/dance1_subject2.npz"
+
+  # ------------------------------------------------------------------ perception (owner E): placeholder
+  S1_perception:
+    description: Perception server (Grounding DINO + SAM 2 + depth), owner E
+    kind: service
+    enabled: false        # started manually 2026-11-10 with run_server.sh (tmux hsim-svc-perception); restart: bash run_server.sh
+    workdir: "{repo}/services/perception_server"
+    command: "bash run_server.sh"
+    gpu_mem_gb: 6
+    depends_on: []
+    auto_resume: 3
+
+  # ------------------------------------------------------------------ manipulation v1 chain (owners F1, F2): placeholders
+  M1_datagen:
+    description: Manipulation v1 (cups) scripted demos + MimicGen -> {data}/manip/v1/raw, owner F1
+    kind: step
+    enabled: true
+    workdir: "{repo}/training/manipulation"
+    command: "bash datagen/generate.sh v1 1000 3"     # 100 scripted sources + 900 MimicGen, 3 CPU workers (F1)
+    gpu_mem_gb: 2
+    depends_on: []
+    auto_resume: 0
+
+  M1_convert:
+    description: Raw episodes -> LeRobot v2 for GR00T N1.6, owner F2
+    kind: step
+    enabled: true
+    workdir: "{repo}/training/manipulation"
+    command: "env -u LD_LIBRARY_PATH ~/hsim_envs/gr00t/Isaac-GR00T/.venv/bin/python groot/raw_to_lerobot.py --raw ~/hsim_data/manip/v1/raw --out ~/hsim_data/manip/v1/lerobot"
+    gpu_mem_gb: 0
+    depends_on: [M1_datagen]
+    auto_resume: 0
+
+  M1_finetune:
+    description: GR00T N1.6 fine-tune on manip v1 (pinned to N1.6, open weights), owner F2
+    kind: step
+    enabled: false   # DONE 2026-11-11 00:42 UTC: 20000 steps, final loss 0.005, checkpoint-20000
+    workdir: "{repo}/training/manipulation"
+    command: "GROOT=n16 bash groot/finetune.sh v1"
+    gpu_mem_gb: 45
+    depends_on: [M1_convert]
+    auto_resume: 1

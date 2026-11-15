@@ -1,0 +1,101 @@
+{
+ "1_task_builds": {
+  "pass": true,
+  "actions": 15,
+  "obs": {
+   "actor": [
+    32,
+    85
+   ],
+   "critic": [
+    32,
+    97
+   ]
+  },
+  "build_s": 0.5,
+  "rewards": [
+   "track_linear_velocity",
+   "track_angular_velocity",
+   "upright",
+   "pose",
+   "body_ang_vel",
+   "angular_momentum",
+   "dof_pos_limits",
+   "action_rate_l2",
+   "air_time",
+   "foot_clearance",
+   "foot_swing_height",
+   "foot_slip",
+   "soft_landing",
+   "self_collisions",
+   "ankle_motor_overload"
+  ],
+  "events": [
+   "reset_base",
+   "reset_robot_joints",
+   "push_robot",
+   "foot_friction",
+   "encoder_bias",
+   "base_com",
+   "mass_inertia",
+   "armature_x8",
+   "armature_other",
+   "joint_friction",
+   "joint_damping",
+   "arm_targets_reset",
+   "arm_targets",
+   "hand_payload",
+   "pd_gains"
+  ],
+  "terminations": [
+   "time_out",
+   "fell_over"
+  ]
+ },
+ "2_joints_and_pose": {
+  "pass": true,
+  "joints": 29,
+  "default_pose_max_err": 0.0,
+  "left_ankle_pitch_soft_limits": [
+   -0.4790000021457672,
+   0.718999981880188
+  ]
+ },
+ "3_mass_randomized": {
+  "pass": true,
+  "robot_mass_min": 38.35,
+  "robot_mass_max": 43.28,
+  "nominal": 40.55
+ },
+ "4_ankle_penalty_matches": {
+  "pass": true,
+  "max_diff_nm": 4.943809166491064e-07,
+  "example_motor_torques_nm": [
+   -2.6700000762939453,
+   7.980000019073486,
+   7.090000152587891,
+   -3.690000057220459
+  ]
+ },
+ "5_zero_action_5s": {
+  "pass": true,
+  "nan": false,
+  "fraction_fell": 1.0,
+  "note": "pushes are on, so some falls are expected; the policy learns to recover"
+ },
+ "6_speed": {
+  "pass": true,
+  "num_envs": 32,
+  "env_steps_per_s": 913,
+  "gpu_mem_gb": null
+ },
+ "7_v2_recipe": {
+  "pass": true,
+  "arm_target_max_dev_rad": 1.708,
+  "pure_yaw_share": 0.168,
+  "left_hand_mass_kg_min_max": [
+   0.497,
+   1.386
+  ]
+ }
+}

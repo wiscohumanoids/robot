@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>hsim_safety</name>
+  <version>0.1.0</version>
+  <description>Safety monitor (e-stop, fall, battery, sensor heartbeats) and the operator e-stop CLI</description>
+  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <license>MIT</license>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

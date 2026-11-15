@@ -1,0 +1,7 @@
+# TEST-ONLY (privileged): move a free body in the simulated world, e.g. drop an obstacle in
+# the robot's path. Like a person moving things around; the robot stack never calls this.
+string body                   # body name in the world, e.g. "room/obstacle_box"
+geometry_msgs/Pose pose
+---
+bool success
+string message
