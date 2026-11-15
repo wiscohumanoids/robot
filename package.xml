@@ -3,21 +3,41 @@
 <package format="3">
   <name>wisco_ethercat_ros2_hw</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>ros2_control bring-up for MyActuator RMD-X drives on EtherCAT (ICube ethercat_driver_ros2), driven by one joint table.</description>
   <maintainer email="lilrichardh@gmail.com">richard</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
-  <depend>rclpy</depend>
-  <depend>std_msgs</depend>
+  <depend>controller_interface</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>launch</depend>
-  <depend>launch_ros</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>realtime_tools</depend>
+  <depend>std_msgs</depend>
+  <depend>pinocchio</depend>
+  <depend>yaml-cpp</depend>
 
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>ethercat_driver</exec_depend>
+  <exec_depend>ethercat_generic_plugins</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>ros2_control</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

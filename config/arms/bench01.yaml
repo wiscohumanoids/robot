@@ -1,0 +1,65 @@
+# Joint config for bench01, the single-joint lever-and-weight rig (spec: Phase 1
+# single joint bring-up, Phase 2 single joint characterization).
+#
+# Same schema as arm01.yaml. One spare actuator on a stand with a lever on its
+# output; test masses hang from the hook. Every actuator, spares included, goes
+# through this rig, so set `model` (or pass --model) and the actuator `serial`
+# (or pass --serial) before each run: calibration versions are stored per serial
+# (config/calib/bench01/<serial>/) because Kt varies unit to unit.
+#
+# Fields set to null are filled by the Phase 1 bench tests, not guessed; code
+# falls back to the actuator model table and says so. `arm indicator` lists
+# every null left in the joint row (Phase 1 gate: none left).
+#
+# Geometry (urdf/bench01/bench01.urdf): shaft axis horizontal (+y), q = 0 with
+# the lever horizontal, q = +90 deg with it hanging straight down.
+
+arm: bench01
+urdf: urdf/bench01/bench01.urdf
+bus: {iface: enp3s0, cycle_us: 1000, dc_sync: true}
+
+control_mode: arm
+
+joints:
+  - name: bench_joint
+    bus_position: 0
+    model: x4_36              # the actuator on the rig today; --model overrides
+    serial: null              # label on the actuator housing; --serial overrides
+    direction: 1
+    gear_ratio: null
+    counts_per_rev: null
+    encoder_side: null        # motor or output
+    rated_current_a: null
+    max_torque_nm: null
+    max_vel_rad_s: null
+    gains: {kp: 30.0, kd: 1.0}
+
+# Weighed on the bench (kg). null: the URDF's placeholder mass is used.
+link_masses_kg:
+  lever: null
+
+# Zero reference: the lever level (spirit level / inclinometer on the bar).
+jig_pose_rad:
+  bench_joint: 0.0
+
+# The rig (stage 4 `arm kt` reads it; everything is in the lever link frame,
+# x along the bar from the shaft axis).
+rig:
+  lever_link: lever
+  lever_length_m: 0.30              # shaft axis to bar tip
+  hook_offset_m: [0.25, 0.0, 0.0]   # where the test masses hang
+  # Three loads per model (Kt linearity). Sized so lever + heaviest load stays
+  # under 80% of the model's bring-up torque limit at the horizontal lever.
+  test_masses_kg:
+    x4_10: [0.15, 0.30, 0.45]
+    x4_36: [0.50, 1.00, 1.50]
+    x6_60: [1.00, 2.00, 3.00]
+    x8_120: [2.00, 4.00, 6.00]
+
+# No mocap on the rig: mocap-calib / mocap-repeat / validate skip on a 1-joint arm.
+mocap:
+  topic: null
+  length_bar_error_m: null
+
+validation:
+  iso_poses_rad: []

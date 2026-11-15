@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!--
+  bench01: the single-joint lever-and-weight rig (spec: Phase 1 / Phase 2).
+
+  One spare actuator, output shaft horizontal, bolted to a stand. A flat bar
+  (the lever) is bolted to the output flange; test masses hang from a hook on
+  the lever. Read by arm_stack (config/arms/bench01.yaml); plain URDF so
+  Pinocchio loads it without xacro.
+
+  Ledger (assumptions to confirm on the real rig):
+    * Shaft axis = base +y, 0.30 m above the base plate.
+    * q = 0: lever horizontal, pointing along base +x (set with a spirit level
+      or inclinometer; this is the zero "jig").
+    * q > 0 lowers the lever (right-hand rule about +y turns +x toward -z),
+      so q = +90 deg is the lever hanging straight down.
+    * Lever: 6061 bar 300 x 30 x 10 mm plus hub clamp and hook, 0.30 kg total,
+      COM 0.15 m out along the lever (placeholder until weighed).
+    * Hook (mass hanging point) 0.25 m from the shaft axis, on the lever
+      centerline: frame `hook` (= tool0).
+    * URDF limits +-100 deg: the stand's stop bolts sit just past them.
+-->
+<robot name="bench01">
+  <material name="cad_aluminum"><color rgba="0.68 0.70 0.73 1.0"/></material>
+  <material name="arm_dark"><color rgba="0.22 0.24 0.27 1.0"/></material>
+  <material name="accent_red"><color rgba="0.72 0.12 0.25 1.0"/></material>
+
+  <!-- stand + actuator housing (fixed) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 -0.06 0.15" rpy="0 0 0"/>
+      <geometry><box size="0.12 0.02 0.30"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0 -0.02 0.30" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.045" length="0.05"/></geometry>
+      <material name="accent_red"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 -0.04 0.15" rpy="0 0 0"/>
+      <mass value="5.0"/>
+      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05"/>
+    </inertial>
+  </link>
+
+  <!-- the actuator under test -->
+  <joint name="bench_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="lever"/>
+    <origin xyz="0 0 0.30" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.7453" upper="1.7453" effort="60.0" velocity="16.0"/>
+  </joint>
+
+  <link name="lever">
+    <visual>
+      <origin xyz="0.15 0.01 0" rpy="0 0 0"/>
+      <geometry><box size="0.30 0.01 0.03"/></geometry>
+      <material name="cad_aluminum"/>
+    </visual>
+    <collision>
+      <origin xyz="0.15 0.01 0" rpy="0 0 0"/>
+      <geometry><box size="0.30 0.01 0.03"/></geometry>
+    </collision>
+    <inertial>
+      <!-- bar about its COM: m L^2 / 12 about y and z -->
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <mass value="0.30"/>
+      <inertia ixx="0.00003" ixy="0" ixz="0" iyy="0.00225" iyz="0" izz="0.00225"/>
+    </inertial>
+  </link>
+
+  <!-- hook: where the test masses hang (also the tool frame) -->
+  <joint name="hook_joint" type="fixed">
+    <parent link="lever"/>
+    <child link="hook"/>
+    <origin xyz="0.25 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="hook"/>
+
+  <joint name="tool0_joint" type="fixed">
+    <parent link="hook"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="tool0"/>
+</robot>

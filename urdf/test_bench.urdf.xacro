@@ -5,76 +5,12 @@
     <compiler strippath="false" discardvisual="false" />
   </mujoco>
 
-  <!-- ==================== SETTINGS AND PART CHOICE ==================== -->
-  <xacro:arg name="actuator_type" default="x4_10"/>
-  <xacro:arg name="num_actuators" default="0"/>
-  <xacro:arg name="n_x4_10" default="0"/>
-  <xacro:arg name="n_x4_36" default="0"/>
-  <xacro:arg name="n_x6_60" default="0"/>
-  <xacro:arg name="n_x8_120" default="0"/>
-
-  <xacro:property name="actuator_type" value="$(arg actuator_type)"/>
-  <xacro:property name="n_x4_10" value="$(arg n_x4_10)"/>
-  <xacro:property name="n_x4_36" value="$(arg n_x4_36)"/>
-  <xacro:property name="n_x6_60" value="$(arg n_x6_60)"/>
-  <xacro:property name="n_x8_120" value="$(arg n_x8_120)"/>
-  <xacro:property name="chain_types" value="${(['x4_10']*int(n_x4_10) + ['x4_36']*int(n_x4_36) + ['x6_60']*int(n_x6_60) + ['x8_120']*int(n_x8_120)) if (int(n_x4_10)+int(n_x4_36)+int(n_x6_60)+int(n_x8_120)) > 0 else [actuator_type]*int(num_actuators)}"/>
-  <xacro:property name="num_actuators" value="${len(chain_types)}"/>
-
-  <xacro:property name="effort_map" value="disabled"/>
-  <xacro:property name="velocity_map" value="enabled"/>
-  <xacro:property name="yaml_map" value="disabled"/>
+  <!-- Hardware manifest and ros2_control macros: urdf/ros2_control_macros.xacro.
+       The launch file generates the manifest from config/joints.yaml. -->
+  <xacro:include filename="ros2_control_macros.xacro"/>
 
   <!-- ==================== JOINT NAMING ==================== -->
-  <xacro:property name="all_joint_names" value="${['torso_yaw', 'torso_roll', 'torso_pitch', 'head_yaw', 'head_pitch', 'left_shoulder_pitch', 'left_shoulder_roll', 'left_shoulder_yaw', 'left_elbow', 'left_forearm_yaw', 'left_wrist_pitch', 'left_wrist_roll', 'left_hip_pitch', 'left_hip_roll', 'left_hip_yaw', 'left_knee', 'left_ankle_pitch', 'left_ankle_roll', 'right_shoulder_pitch', 'right_shoulder_roll', 'right_shoulder_yaw', 'right_elbow', 'right_forearm_yaw', 'right_wrist_pitch', 'right_wrist_roll', 'right_hip_pitch', 'right_hip_roll', 'right_hip_yaw', 'right_knee', 'right_ankle_pitch', 'right_ankle_roll']}"/>
-
   <xacro:property name="actuated_joint_names" value="${['left_shoulder_pitch', 'left_shoulder_roll', 'left_shoulder_yaw', 'left_elbow', 'left_forearm_yaw', 'left_wrist_pitch', 'left_wrist_roll', 'right_shoulder_pitch', 'right_shoulder_roll', 'right_shoulder_yaw', 'right_elbow', 'right_forearm_yaw', 'right_wrist_pitch', 'right_wrist_roll', 'left_hip_pitch', 'left_hip_roll', 'left_hip_yaw', 'left_knee', 'left_ankle_pitch', 'left_ankle_roll', 'right_hip_pitch', 'right_hip_roll', 'right_hip_yaw', 'right_knee', 'right_ankle_pitch', 'right_ankle_roll', 'torso_yaw', 'torso_roll', 'torso_pitch', 'head_yaw', 'head_pitch']}"/>
-
-  <xacro:property name="module_names" value="${['actuator_1', 'actuator_2', 'actuator_3', 'actuator_4', 'actuator_5', 'actuator_6', 'actuator_7', 'actuator_8', 'actuator_9', 'actuator_10', 'actuator_11', 'actuator_12', 'actuator_13', 'actuator_14', 'actuator_15', 'actuator_16', 'actuator_17', 'actuator_18', 'actuator_19', 'actuator_20', 'actuator_21', 'actuator_22', 'actuator_23', 'actuator_24', 'actuator_25', 'actuator_26', 'actuator_27', 'actuator_28', 'actuator_29', 'actuator_30', 'actuator_31', 'actuator_32', 'actuator_33', 'actuator_34', 'actuator_35']}"/>
-
-  <!-- ==================== MACRO: actuated joint hardware interface ==================== -->
-  <xacro:macro name="actuator_joint" params="idx n">
-    <xacro:if value="${idx &lt;= n}">
-      <xacro:property name="this_type" value="${chain_types[idx - 1]}"/>
-      <xacro:if value="${this_type == 'x4_10'}">
-        <xacro:property name="this_yaml" value="rmd_x4_10.yaml"/>
-        <xacro:property name="this_effort" value="10.0"/>
-        <xacro:property name="this_velocity" value="24.9"/>
-      </xacro:if>
-      <xacro:if value="${this_type == 'x4_36'}">
-        <xacro:property name="this_yaml" value="rmd_x4_36.yaml"/>
-        <xacro:property name="this_effort" value="34.0"/>
-        <xacro:property name="this_velocity" value="8.7"/>
-      </xacro:if>
-      <xacro:if value="${this_type == 'x6_60'}">
-        <xacro:property name="this_yaml" value="rmd_x6_60.yaml"/>
-        <xacro:property name="this_effort" value="60.0"/>
-        <xacro:property name="this_velocity" value="16.0"/>
-      </xacro:if>
-      <xacro:if value="${this_type == 'x8_120'}">
-        <xacro:property name="this_yaml" value="rmd_x8_120.yaml"/>
-        <xacro:property name="this_effort" value="120.0"/>
-        <xacro:property name="this_velocity" value="13.3"/>
-      </xacro:if>
-      <joint name="${actuated_joint_names[idx - 1]}">
-        <state_interface name="position"/>
-        <state_interface name="velocity"/>
-        <state_interface name="effort"/>
-        <command_interface name="effort"/>
-        <xacro:if value="${velocity_map != 'disabled'}">
-          <command_interface name="velocity"/>
-        </xacro:if>
-        <ec_module name="${module_names[idx - 1]}">
-          <plugin>ethercat_generic_plugins/EcCiA402Drive</plugin>
-          <param name="alias">0</param>
-          <param name="position">${idx - 1}</param>
-          <param name="slave_id">${idx - 1}</param>
-          <param name="slave_config">$(find wisco_ethercat_ros2_hw)/config/${this_yaml}</param>
-        </ec_module>
-      </joint>
-      <xacro:actuator_joint idx="${idx + 1}" n="${n}"/>
-    </xacro:if>
-  </xacro:macro>
 
   <!-- ==================== MATERIALS ==================== -->
   <material name="cad_aluminum"><color rgba="0.68 0.70 0.73 1.0"/></material>
@@ -88,7 +24,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="${rpy}"/>
         <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
-        <material name="${'accent_red' if int(joint_idx) &lt;= int(num_actuators) else 'arm_dark'}"/>
+        <material name="${'accent_red' if actuated_joint_names[int(joint_idx) - 1] in hw_names else 'arm_dark'}"/>
       </visual>
     </link>
     <joint name="${parent_link}_hub_fixed" type="fixed">
@@ -1078,35 +1014,6 @@
   </joint>
 
   <!-- ==================== ROS2_CONTROL ==================== -->
-  <ros2_control name="EtherCATSystem" type="system">
-    <hardware>
-      <plugin>ethercat_driver/EthercatDriver</plugin>
-      <param name="master_id">0</param>
-      <param name="loop_rate">1000</param>
-      <param name="interface_type">EtherCAT</param>
-      <param name="pdo_mapping">true</param>
-      <param name="slave_count">${num_actuators}</param>
-    </hardware>
-    <xacro:actuator_joint idx="1" n="${int(num_actuators)}"/>
-  </ros2_control>
-
-  <!-- Mock hardware for remaining joints -->
-  <xacro:macro name="unactuated_joint" params="idx">
-    <xacro:if value="${idx &lt;= 31}">
-      <joint name="${actuated_joint_names[idx - 1]}">
-        <state_interface name="position">
-          <param name="initial_value">0.0</param>
-        </state_interface>
-      </joint>
-      <xacro:unactuated_joint idx="${idx + 1}"/>
-    </xacro:if>
-  </xacro:macro>
-
-  <ros2_control name="MockSystem" type="system">
-    <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
-    </hardware>
-    <xacro:unactuated_joint idx="${int(num_actuators) + 1}"/>
-  </ros2_control>
+  <xacro:ros2_control_systems state_only_names="${[n for n in actuated_joint_names if n not in hw_names]}"/>
 
 </robot>

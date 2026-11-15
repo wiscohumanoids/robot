@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<!--
+  ros2_control blocks shared by every robot description in this package.
+
+  Include this file, then call <xacro:ros2_control_systems state_only_names="[...]"/>.
+  It reads the hardware manifest (written by the launch file from the joint
+  table, see wisco_ethercat_ros2_hw/hardware_config.py) and emits:
+    * EtherCATSystem: one EcCiA402Drive per joint on the ring, or the same
+      joints on mock_components when the manifest says use_mock_hardware,
+    * MockSystem: state-only joints for URDF joints with no drive, so the
+      joint state broadcaster publishes the whole robot.
+  With no manifest it emits only MockSystem, so the description still loads
+  on its own (RViz, sim).
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ==================== HARDWARE MANIFEST ==================== -->
+  <!-- The launch file generates hardware_manifest from config/joints.yaml.
+       It lists, in bus order, which joints are on the EtherCAT ring and the
+       slave config for each drive. With no manifest every joint is mock
+       hardware, so the URDF still loads on its own (RViz, sim). -->
+  <xacro:arg name="hardware_manifest" default=""/>
+  <xacro:property name="hardware_manifest" value="$(arg hardware_manifest)"/>
+  <xacro:property name="hw" value="${xacro.load_yaml(hardware_manifest) if hardware_manifest else dict()}"/>
+  <xacro:property name="hw_joints" value="${hw.get('ethercat', [])}"/>
+  <xacro:property name="hw_names" value="${[j['name'] for j in hw_joints]}"/>
+  <xacro:property name="use_mock_hardware" value="${bool(hw.get('use_mock_hardware', False))}"/>
+  <xacro:property name="command_interface" value="${hw.get('command_interface', 'velocity')}"/>
+  <!-- arm mode exports several per joint (position, effort, torque_offset, mode_of_operation, max_torque) -->
+  <xacro:property name="command_interfaces" value="${hw.get('command_interfaces', [command_interface])}"/>
+  <xacro:property name="mode_of_operation" value="${hw.get('mode_of_operation', 9)}"/>
+  <xacro:property name="control_frequency" value="${hw.get('control_frequency', 100.0)}"/>
+
+  <xacro:macro name="command_interfaces" params="names">
+    <xacro:if value="${len(names) &gt; 0}">
+      <command_interface name="${names[0]}"/>
+      <xacro:command_interfaces names="${names[1:]}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <!-- ==================== MACROS: ros2_control joints ==================== -->
+  <!-- One drive on the ring. Bus position and slave config come from the
+       manifest, so the joint-to-drive mapping is whatever config/joints.yaml
+       says, in any model order. Only the command interface for the selected
+       control mode is exported, so a controller cannot claim the other one. -->
+  <xacro:macro name="ethercat_joints" params="idx">
+    <xacro:if value="${idx &lt; len(hw_joints)}">
+      <xacro:property name="j" value="${hw_joints[idx]}"/>
+      <joint name="${j['name']}">
+        <xacro:command_interfaces names="${command_interfaces}"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="effort"/>
+        <ec_module name="drive_${j['position']}">
+          <plugin>ethercat_generic_plugins/EcCiA402Drive</plugin>
+          <param name="alias">0</param>
+          <param name="position">${j['position']}</param>
+          <param name="mode_of_operation">${mode_of_operation}</param>
+          <param name="slave_config">${j['slave_config']}</param>
+        </ec_module>
+      </joint>
+      <xacro:ethercat_joints idx="${idx + 1}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <!-- The same joints on mock hardware, for testing the launch, controllers and
+       scripts without drives. In velocity mode calculate_dynamics integrates
+       commands into position; in effort mode (which it does not support) the
+       commanded torque is echoed into the effort state and joints stay put. -->
+  <xacro:macro name="mock_hardware_joints" params="idx">
+    <xacro:if value="${idx &lt; len(hw_joints)}">
+      <joint name="${hw_joints[idx]['name']}">
+        <xacro:command_interfaces names="${command_interfaces}"/>
+        <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+        <state_interface name="velocity"/>
+        <state_interface name="effort"/>
+      </joint>
+      <xacro:mock_hardware_joints idx="${idx + 1}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <!-- Joints with no drive yet: state only, so the joint state broadcaster
+       publishes the whole robot. -->
+  <xacro:macro name="state_only_joints" params="names">
+    <xacro:if value="${len(names) &gt; 0}">
+      <joint name="${names[0]}">
+        <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+        <state_interface name="velocity"/>
+        <state_interface name="effort"/>
+      </joint>
+      <xacro:state_only_joints names="${names[1:]}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <xacro:macro name="ros2_control_systems" params="state_only_names">
+    <!-- ==================== ROS2_CONTROL ==================== -->
+    <xacro:if value="${len(hw_joints) &gt; 0 and not use_mock_hardware}">
+      <ros2_control name="EtherCATSystem" type="system">
+        <hardware>
+          <plugin>ethercat_driver/EthercatDriver</plugin>
+          <param name="master_id">0</param>
+          <!-- Must equal controller_manager update_rate; the launch file sets both. -->
+          <param name="control_frequency">${control_frequency}</param>
+        </hardware>
+        <xacro:ethercat_joints idx="0"/>
+      </ros2_control>
+    </xacro:if>
+
+    <xacro:if value="${len(hw_joints) &gt; 0 and use_mock_hardware}">
+      <ros2_control name="EtherCATSystem" type="system">
+        <hardware>
+          <plugin>mock_components/GenericSystem</plugin>
+          <param name="calculate_dynamics">${'true' if command_interface == 'velocity' else 'false'}</param>
+        </hardware>
+        <xacro:mock_hardware_joints idx="0"/>
+      </ros2_control>
+    </xacro:if>
+
+    <xacro:if value="${len(state_only_names) &gt; 0}">
+      <ros2_control name="MockSystem" type="system">
+        <hardware>
+          <plugin>mock_components/GenericSystem</plugin>
+        </hardware>
+        <xacro:state_only_joints names="${state_only_names}"/>
+      </ros2_control>
+    </xacro:if>
+  </xacro:macro>
+
+</robot>

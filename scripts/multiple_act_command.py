@@ -1,164 +1,123 @@
 #!/usr/bin/env python3
+"""Effort-mode demo: a feedforward torque wave sized to break each joint's stiction.
+
+Per-joint stiction comes from the joint table (k_stiction on a row) or the
+actuator model's default, and the torque is capped at the controller's
+max_command, so this script and the controller cannot disagree on limits.
+
+  ros2 launch wisco_ethercat_ros2_hw test_bench.launch.py control_mode:=effort demo:=true
+"""
 
 import math
+import os
+
 import rclpy
+from ament_index_python.packages import get_package_share_directory
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
+from std_msgs.msg import Float64MultiArray
 
-# per-joint characterization overrides (Manually tune values HERE)
-JOINT_CHARACTERIZATION_OVERRIDES = {
-    'left_shoulder_pitch': {'k_stiction': 5.3},
-    'left_shoulder_roll':  {'k_stiction': 0.869},
-    'left_shoulder_yaw':   {'k_stiction': 1.5725},
-    'left_elbow':          {'k_stiction': 1.952},
-}
+from wisco_ethercat_ros2_hw.hardware_config import load_joint_profiles
+from wisco_ethercat_ros2_hw.ros_tools import get_controller_limits
 
-# defaults (Do not overwrite)
-ACTUATOR_PROFILES = {
-    'x4_10':  {'k_stiction': 0.35, 'torque_limit': 2.5},
-    'x4_36':  {'k_stiction': 0.90, 'torque_limit': 6.0},
-    'x6_60':  {'k_stiction': 1.50, 'torque_limit': 12.0},
-    'x8_120': {'k_stiction': 2.80, 'torque_limit': 25.0},
-}
-
-
-def _merge_profile(model, joint):
-    """Return a per-joint profile: Tier 1 model defaults merged with Tier 2 overrides."""
-    base = dict(ACTUATOR_PROFILES.get(model, ACTUATOR_PROFILES['x4_10']))
-    base.update(JOINT_CHARACTERIZATION_OVERRIDES.get(joint, {}))
-    return base
+PACKAGE = 'wisco_ethercat_ros2_hw'
 
 
 class MultiActuatorTorqueController(Node):
 
     def __init__(self):
         super().__init__('multi_actuator_torque_controller')
-
-        # ----------------------- ROS parameters -----------------------
-        self.declare_parameter('joint_names', ['joint_1', 'joint_2', 'joint_3', 'joint_4'])
-        self.declare_parameter('actuator_chain', ['x4_10', 'x4_10', 'x4_36', 'x4_36'])
-        self.declare_parameter('topic_names', ['/effort_controller/commands'])
+        config_dir = os.path.join(get_package_share_directory(PACKAGE), 'config')
+        self.declare_parameter('controller', 'effort_controller')
+        self.declare_parameter('joints_file', os.path.join(config_dir, 'joints.yaml'))
+        self.declare_parameter('models_file', os.path.join(config_dir, 'actuator_models.yaml'))
         self.declare_parameter('speed_factor', 1.5)
         self.declare_parameter('amplitude', 1.0)
         self.declare_parameter('phase_offset', 0.4)
+        # Stiction feedforward never exceeds this fraction of the joint's max_command.
+        self.declare_parameter('stiction_fraction', 0.4)
 
-        self.joint_names = list(self.get_parameter('joint_names').value)
-        chain = list(self.get_parameter('actuator_chain').value) or ['x4_10']
-        chain += [chain[-1]] * max(0, len(self.joint_names) - len(chain))
-        self.actuator_chain = chain
+        p = lambda name: self.get_parameter(name).value  # noqa: E731
+        controller = p('controller')
+        limits = get_controller_limits(self, controller)
+        if limits['interface_name'] != 'effort':
+            raise RuntimeError('%s commands %s, not effort' % (controller, limits['interface_name']))
+        self.joints = limits['joints']
+        self.torque_limit = dict(zip(self.joints, limits['max_command']))
+        profiles = load_joint_profiles(p('models_file'), p('joints_file'))
+        missing = [j for j in self.joints if j not in profiles]
+        if missing:
+            raise RuntimeError('joints %s are not in %s' % (missing, p('joints_file')))
+        self.profiles = {j: profiles[j] for j in self.joints}
 
-        self.topic_names = list(self.get_parameter('topic_names').value)
-        self.speed_factor = float(self.get_parameter('speed_factor').value)
-        self.amplitude = float(self.get_parameter('amplitude').value)
-        self.phase_offset = float(self.get_parameter('phase_offset').value)
+        self.speed_factor = float(p('speed_factor'))
+        self.amplitude = float(p('amplitude'))
+        self.phase_offset = float(p('phase_offset'))
+        self.stiction_fraction = float(p('stiction_fraction'))
 
-        # Map joint -> actuator model
-        self.joint_model = dict(zip(self.joint_names, self.actuator_chain))
-
-        # Build per-joint gain profiles
-        self.profiles = {
-            joint: _merge_profile(self.joint_model.get(joint, 'x4_10'), joint)
-            for joint in self.joint_names
-        }
-
-        # ----------------------- timing / state -----------------------
         self.start_time = self.get_clock().now()
-        self.last_print_time = self.get_clock().now()
-
+        self.last_print_time = self.start_time
         self.vel_alpha = 0.35
-        self.current_cmd = {joint: 0.0 for joint in self.joint_names}
-        self.latest_states = {
-            joint: {'velocity': 0.0, 'raw_velocity': 0.0, 'effort': 0.0}
-            for joint in self.joint_names
-        }
+        self.velocity = {j: 0.0 for j in self.joints}
+        self.current_cmd = {j: 0.0 for j in self.joints}
+        self.target_v = {j: 0.0 for j in self.joints}
 
-        self._last_target_v = {joint: 0.0 for joint in self.joint_names}
-        self._last_ff = {joint: 0.0 for joint in self.joint_names}
+        self.pub = self.create_publisher(Float64MultiArray, '/%s/commands' % controller, 10)
+        self.create_subscription(JointState, '/joint_states', self.joint_state_callback, 10)
+        self.get_logger().info('feedforward torque wave on %s' % ', '.join(
+            '%s (%s)' % (j, self.profiles[j]['model']) for j in self.joints))
 
-        # ----------------------- publishers & subscriber --------------
-        self.cmd_pubs = [
-            self.create_publisher(Float64MultiArray, topic, 10)
-            for topic in self.topic_names
-        ]
-        self.joint_state_sub = self.create_subscription(
-            JointState, '/joint_states', self.joint_state_callback, 10)
-
-        self.get_logger().info(
-            'MultiActuatorTorqueController initialized (pure feedforward wave mode) | joints: %s | models: %s' %
-            (', '.join(self.joint_names), ', '.join(self.actuator_chain)))
-
-    def joint_state_callback(self, msg: JointState):
+    def joint_state_callback(self, msg):
         now = self.get_clock().now()
         t = (now - self.start_time).nanoseconds / 1e9
-
         for i, name in enumerate(msg.name):
-            if name in self.latest_states:
-                raw_vel = msg.velocity[i] if i < len(msg.velocity) else self.latest_states[name]['raw_velocity']
-                self.latest_states[name]['raw_velocity'] = raw_vel
+            if name in self.velocity and i < len(msg.velocity):
+                self.velocity[name] = ((1.0 - self.vel_alpha) * self.velocity[name] +
+                                       self.vel_alpha * msg.velocity[i])
 
-                prev_vel = self.latest_states[name]['velocity']
-                self.latest_states[name]['velocity'] = ((1.0 - self.vel_alpha) * prev_vel +
-                                                        self.vel_alpha * raw_vel)
-                if i < len(msg.effort):
-                    self.latest_states[name]['effort'] = msg.effort[i]
-
-        cmd_array = [0.0] * len(self.joint_names)
-        self._run_pure_ff_control(t, cmd_array)
-
-        cmd_msg = Float64MultiArray()
-        cmd_msg.data = cmd_array
-        for pub in self.cmd_pubs:
-            pub.publish(cmd_msg)
+        ramp = min(1.0, t / 2.0)
+        cmd = []
+        for idx, joint in enumerate(self.joints):
+            target_v = ramp * self.amplitude * math.cos(self.speed_factor * t -
+                                                        idx * self.phase_offset)
+            limit = self.torque_limit[joint]
+            stiction = min(self.profiles[joint]['k_stiction'], self.stiction_fraction * limit)
+            torque = max(-limit, min(limit, stiction * math.tanh(2.0 * target_v)))
+            self.target_v[joint] = target_v
+            self.current_cmd[joint] = torque
+            cmd.append(torque)
+        self.pub.publish(Float64MultiArray(data=cmd))
 
         if (now - self.last_print_time).nanoseconds / 1e9 >= 1.0:
             self.last_print_time = now
-            self._log_diagnostics()
+            lines = ['[feedforward torque]']
+            for joint in self.joints:
+                lines.append('%-22s target vel %+6.3f  vel %+6.3f  torque %+6.3f / %.2f Nm' % (
+                    joint, self.target_v[joint], self.velocity[joint], self.current_cmd[joint],
+                    self.torque_limit[joint]))
+            self.get_logger().info('\n'.join(lines))
 
-    def _run_pure_ff_control(self, t, cmd_array):
-        ramp_scale = min(1.0, t / 2.0)
-
-        for idx, joint in enumerate(self.joint_names):
-            prof = self.profiles[joint]
-
-            target_v = ramp_scale * self.amplitude * math.cos(
-                self.speed_factor * t - idx * self.phase_offset)
-            self._last_target_v[joint] = target_v
-
-            safe_stiction = min(prof['k_stiction'], prof['torque_limit'] * 0.4)
-            raw_cmd = safe_stiction * math.tanh(target_v * 2)
-            self._last_ff[joint] = raw_cmd
-
-            tl = prof['torque_limit']
-            clamped_cmd = max(-tl, min(tl, raw_cmd))
-
-            self.current_cmd[joint] = clamped_cmd
-            cmd_array[idx] = clamped_cmd
-
-    def _log_diagnostics(self):
-        lines = ['\n[Pure FF Torque Diagnostics]']
-        for joint in self.joint_names:
-            model = self.joint_model.get(joint, '?')
-            prof = self.profiles[joint]
-            vel = self.latest_states[joint]['velocity']
-            cmd = self.current_cmd[joint]
-            lines.append(
-                '[%s | %s] Tgt Vel: %+6.3f | Act Vel: %+6.3f | Cmd Eff: %+6.3f / %+6.3f N.m (FF Torque)' %
-                (joint, model,
-                 self._last_target_v[joint], vel,
-                 cmd, prof['torque_limit']))
-        self.get_logger().info("\n".join(lines))
+    def stop(self):
+        for _ in range(3):
+            self.pub.publish(Float64MultiArray(data=[0.0] * len(self.joints)))
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MultiActuatorTorqueController()
+    node = None
     try:
+        node = MultiActuatorTorqueController()
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        node.destroy_node()
+        if node is not None:
+            try:
+                node.stop()
+            except Exception:  # noqa: BLE001 - context may already be shut down
+                pass
+            node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
 

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+  arm01 robot description for ros2_control: the plain URDF (arm01.urdf, the
+  source of truth for kinematics, meshes and inertials) plus the ros2_control
+  block generated from the hardware manifest.
+
+  The launch file (launch/arm01.launch.py) passes hardware_manifest, built
+  from config/arms/arm01.yaml. Without it every arm joint is state-only mock
+  hardware, so this file also loads on its own in RViz.
+
+  The wrist parallelogram's crank and rod are mimic joints of wrist_pitch;
+  robot_state_publisher computes them, so they are not ros2_control joints.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="arm01">
+  <xacro:include filename="arm01.urdf"/>
+  <xacro:include filename="../ros2_control_macros.xacro"/>
+
+  <xacro:property name="arm_joint_names"
+                  value="${['shoulder_pitch', 'shoulder_roll', 'shoulder_yaw', 'elbow', 'forearm_yaw', 'wrist_pitch', 'wrist_yaw']}"/>
+  <xacro:ros2_control_systems state_only_names="${[n for n in arm_joint_names if n not in hw_names]}"/>
+</robot>

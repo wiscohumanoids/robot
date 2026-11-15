@@ -1,0 +1,411 @@
+{
+ "n": 2000,
+ "seed": 0,
+ "fk_us": 2.5749939995876048,
+ "jac_us": 3.7731000002168003,
+ "full": {
+  "dls": {
+   "nominal": {
+    "n": 2000,
+    "success": 0.7615,
+    "t_med": 1.275896999914039,
+    "t_p95": 21.608607299663163,
+    "t_max": 31.35969400000249,
+    "it_med": 15.0,
+    "it_p95": 300.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "limit": 382,
+     "max_iters": 77,
+     "local_min": 16,
+     "singular": 2
+    }
+   },
+   "near": {
+    "n": 2000,
+    "success": 0.997,
+    "t_med": 0.2814174999912211,
+    "t_p95": 1.6040820002672256,
+    "t_max": 27.660851000291586,
+    "it_med": 2.0,
+    "it_p95": 21.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "max_iters": 4,
+     "local_min": 2
+    }
+   }
+  },
+  "lm": {
+   "nominal": {
+    "n": 2000,
+    "success": 0.869,
+    "t_med": 0.686476999817387,
+    "t_p95": 4.322404449976602,
+    "t_max": 19.38726599973961,
+    "it_med": 8.0,
+    "it_p95": 40.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "limit": 242,
+     "max_iters": 20
+    }
+   },
+   "near": {
+    "n": 2000,
+    "success": 1.0,
+    "t_med": 0.16198099979192193,
+    "t_p95": 0.4702561500380396,
+    "t_max": 2.12451700008387,
+    "it_med": 3.0,
+    "it_p95": 3.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {}
+   }
+  },
+  "clik": {
+   "nominal": {
+    "n": 2000,
+    "success": 0.748,
+    "t_med": 2.977887999804807,
+    "t_p95": 17.046277049644228,
+    "t_max": 61.134592999678716,
+    "it_med": 17.0,
+    "it_p95": 86.04999999999995,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "limit": 484,
+     "max_iters": 18,
+     "local_min": 2
+    }
+   },
+   "near": {
+    "n": 2000,
+    "success": 0.9935,
+    "t_med": 0.5022054999699321,
+    "t_p95": 1.3863209499731965,
+    "t_max": 43.38776499980668,
+    "it_med": 3.0,
+    "it_p95": 7.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "max_iters": 11,
+     "local_min": 2
+    }
+   }
+  },
+  "multistart-lm": {
+   "nominal": {
+    "n": 2000,
+    "success": 1.0,
+    "t_med": 0.7099045001268678,
+    "t_p95": 17.288701300276436,
+    "t_max": 105.78071800000544,
+    "it_med": 8.0,
+    "it_p95": 158.04999999999995,
+    "starts_mean": 1.429,
+    "limits_ok": true,
+    "fail": {}
+   },
+   "near": {
+    "n": 2000,
+    "success": 1.0,
+    "t_med": 0.2901769998970849,
+    "t_p95": 0.4297517997201794,
+    "t_max": 11.195931000202108,
+    "it_med": 3.0,
+    "it_p95": 3.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {}
+   }
+  },
+  "multistart-clik": {
+   "nominal": {
+    "n": 2000,
+    "success": 0.9985,
+    "t_med": 3.0287590000170894,
+    "t_p95": 67.2903708001513,
+    "t_max": 964.9219990001257,
+    "it_med": 17.0,
+    "it_p95": 341.0999999999999,
+    "starts_mean": 1.7445,
+    "limits_ok": true,
+    "fail": {
+     "max_iters": 2,
+     "limit": 1
+    }
+   },
+   "near": {
+    "n": 2000,
+    "success": 0.9995,
+    "t_med": 0.536415499936993,
+    "t_p95": 1.3752899998507924,
+    "t_max": 878.6008679999213,
+    "it_med": 3.0,
+    "it_p95": 7.0,
+    "starts_mean": 1.035,
+    "limits_ok": true,
+    "fail": {
+     "max_iters": 1
+    }
+   }
+  }
+ },
+ "masked": {
+  "lm": {
+   "position": {
+    "n": 500,
+    "success": 0.986,
+    "t_med": 0.5741280001529958,
+    "t_p95": 1.246308300392229,
+    "t_max": 21.06895999986591,
+    "it_med": 6.0,
+    "it_p95": 11.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "max_iters": 4,
+     "limit": 3
+    }
+   },
+   "free_z": {
+    "n": 500,
+    "success": 0.85,
+    "t_med": 0.6841414997325046,
+    "t_p95": 8.702447349878634,
+    "t_max": 19.81620499964265,
+    "it_med": 8.0,
+    "it_p95": 109.59999999999945,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "max_iters": 20,
+     "limit": 52,
+     "singular": 3
+    }
+   }
+  },
+  "clik": {
+   "position": {
+    "n": 500,
+    "success": 0.98,
+    "t_med": 1.4236170000003767,
+    "t_p95": 3.355638899734003,
+    "t_max": 42.41079700022965,
+    "it_med": 9.0,
+    "it_p95": 20.049999999999955,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "limit": 7,
+     "local_min": 2,
+     "max_iters": 1
+    }
+   },
+   "free_z": {
+    "n": 500,
+    "success": 0.81,
+    "t_med": 2.252209500056779,
+    "t_p95": 15.331568849660432,
+    "t_max": 60.67909500006863,
+    "it_med": 14.0,
+    "it_p95": 80.0,
+    "starts_mean": 1.0,
+    "limits_ok": true,
+    "fail": {
+     "limit": 86,
+     "local_min": 4,
+     "max_iters": 3,
+     "singular": 2
+    }
+   }
+  },
+  "multistart-lm": {
+   "position": {
+    "n": 500,
+    "success": 1.0,
+    "t_med": 0.5860285002654564,
+    "t_p95": 1.1891041002400013,
+    "t_max": 34.591028000249935,
+    "it_med": 6.0,
+    "it_p95": 11.0,
+    "starts_mean": 1.032,
+    "limits_ok": true,
+    "fail": {}
+   },
+   "free_z": {
+    "n": 500,
+    "success": 1.0,
+    "t_med": 0.7700950000071316,
+    "t_p95": 19.008162149975757,
+    "t_max": 109.97076400008154,
+    "it_med": 8.0,
+    "it_p95": 194.04999999999995,
+    "starts_mean": 1.328,
+    "limits_ok": true,
+    "fail": {}
+   }
+  }
+ },
+ "all_in_limits": true,
+ "traj": {
+  "dt": 0.01,
+  "steps_per_loop": 1000,
+  "loops": 4,
+  "runs": [
+   {
+    "name": "dls",
+    "ok": 1.0,
+    "rate_limited": 0,
+    "jumps": 0,
+    "max_step_rad": 0.009933280371151598,
+    "max_vel_rad_s": 0.9933280371151598,
+    "t_med_ms": 0.1477174998854025,
+    "t_p95_ms": 0.2320512998721824,
+    "loop_dq_deg": [
+     0.932859997519569,
+     0.920300573765961,
+     0.9070360274983805
+    ],
+    "loop_delbow_mm": [
+     1.2057349365477361,
+     1.1863399360084663,
+     1.1663985490697157
+    ],
+    "first_loop_deg": 0.932859997519569,
+    "later_loop_deg": 0.9136683006321707,
+    "later_loop_elbow_mm": 1.176369242539091,
+    "total_drift_deg": 2.7601965987839105,
+    "swivel_range_deg": 129.18555260339087
+   },
+   {
+    "name": "lm",
+    "ok": 1.0,
+    "rate_limited": 0,
+    "jumps": 0,
+    "max_step_rad": 0.009932838598918137,
+    "max_vel_rad_s": 0.9932838598918137,
+    "t_med_ms": 0.1268070000151056,
+    "t_p95_ms": 0.25441950017466297,
+    "loop_dq_deg": [
+     0.9256302316874838,
+     0.9127288544091452,
+     0.8993380265295677
+    ],
+    "loop_delbow_mm": [
+     1.1963453329881457,
+     1.1766139546329588,
+     1.156554017698647
+    ],
+    "first_loop_deg": 0.9256302316874838,
+    "later_loop_deg": 0.9060334404693564,
+    "later_loop_elbow_mm": 1.166583986165803,
+    "total_drift_deg": 2.7376971126261966,
+    "swivel_range_deg": 129.15138972836417
+   },
+   {
+    "name": "clik",
+    "ok": 1.0,
+    "rate_limited": 0,
+    "jumps": 0,
+    "max_step_rad": 0.018666627367287136,
+    "max_vel_rad_s": 1.8666627367287136,
+    "t_med_ms": 0.20679049998761911,
+    "t_p95_ms": 0.47096134994717426,
+    "loop_dq_deg": [
+     22.03302031180018,
+     9.859719512536902e-14,
+     1.3994440598439473e-13
+    ],
+    "loop_delbow_mm": [
+     27.871339144395435,
+     2.2548736224414668e-13,
+     4.557009943521669e-13
+    ],
+    "first_loop_deg": 22.03302031180018,
+    "later_loop_deg": 1.1927080055488187e-13,
+    "later_loop_elbow_mm": 3.405941782981568e-13,
+    "total_drift_deg": 22.033020311800332,
+    "swivel_range_deg": 125.44138048058038
+   },
+   {
+    "name": "clik min_iters=1",
+    "ok": 1.0,
+    "rate_limited": 0,
+    "jumps": 0,
+    "max_step_rad": 0.018150604455511365,
+    "max_vel_rad_s": 1.8150604455511365,
+    "t_med_ms": 0.3301100000498991,
+    "t_p95_ms": 0.4966789502304891,
+    "loop_dq_deg": [
+     21.088310293037377,
+     3.180554681463517e-14,
+     1.6538884343610288e-13
+    ],
+    "loop_delbow_mm": [
+     26.665854937709142,
+     8.582937747229195e-14,
+     3.6248664865870466e-13
+    ],
+    "first_loop_deg": 21.088310293037377,
+    "later_loop_deg": 9.859719512536903e-14,
+    "later_loop_elbow_mm": 2.241580130654983e-13,
+    "total_drift_deg": 21.088310293037352,
+    "swivel_range_deg": 125.43367146781198
+   },
+   {
+    "name": "tracker-clik",
+    "ok": 1.0,
+    "rate_limited": 9,
+    "jumps": 0,
+    "max_step_rad": 0.015000000000000013,
+    "max_vel_rad_s": 1.5000000000000013,
+    "t_med_ms": 0.3382385000350041,
+    "t_p95_ms": 0.45013149979240513,
+    "loop_dq_deg": [
+     21.159381079463316,
+     2.671665932429354e-13,
+     2.1627771833951915e-13
+    ],
+    "loop_delbow_mm": [
+     26.756530487898548,
+     2.727435500648127e-13,
+     3.4247501166243164e-13
+    ],
+    "first_loop_deg": 21.159381079463316,
+    "later_loop_deg": 2.417221557912273e-13,
+    "later_loop_elbow_mm": 3.0760928086362217e-13,
+    "total_drift_deg": 21.159381079463344,
+    "swivel_range_deg": 125.43367245961984
+   }
+  ]
+ },
+ "unreachable": {
+  "first_unreachable_offset_m": 0.04,
+  "first_truly_unreachable_m": 0.04,
+  "agree": 1.0,
+  "false_unreachable": 0,
+  "final_pos_err_m": 0.551175163643717,
+  "final_reachable": false,
+  "q_in_limits": true
+ },
+ "packages": "TRAC-IK (trac_ik / tracikpy / trac_ik_python) and pink are not importable in WSL. `pin-pink` and `qpsolvers` are pure Python (~170 kB of wheels), but pink needs a compiled QP backend (quadprog, proxsuite, daqp, osqp: none installed), so it was not installed or benchmarked. pink is a differential (velocity-level QP) IK like `clik` here, with inequality limits instead of WLN weights.",
+ "seconds": 95.27720665931702,
+ "findings": [
+  "- From the nominal seed the single-shot solvers reach dls 76.1%, lm 86.9%, clik 74.8% of the targets. Almost all failures end with a joint at a stop: the solution lies across a joint limit from the seed (J1..J7 ROM, above all J6 +-35 deg), a local minimum that gradient methods cannot leave. Restarts fix it: multistart-lm 100.0%, multistart-clik 99.9%.",
+  "- From a near seed (tracking) all solvers converge in a few iterations: dls 99.7% (0.28 ms median), lm 100.0% (0.16 ms median), clik 99.4% (0.50 ms median).",
+  "- Tracking: plain pseudo-inverse solvers (dls, lm) have no preference in the null space, so the posture is not cyclic: each loop of the same closed tool path leaves the joints 0.91 deg (dls) / 0.91 deg (lm) further away (elbow 1.2 / 1.2 mm per loop), without bound. CLIK with the rest-posture term moves toward rest during the first loop (21.1 deg) and is then cyclic (0.000 deg/loop; IKTracker 0.000 deg/loop)."
+ ],
+ "recommendation": [
+  "- **Teleop / task-space control:** `IKTracker(model, q_now, dt, method='clik')` (defaults: max_iters 30, min_iters 1, k_rest 0.05 toward mid-range, k_limits 0.2, WLN on, ns_step 0.05 rad, joint speed cap min(URDF, 1.5 rad/s)). It is the only option that is both continuous and cyclic.",
+  "- **One-shot targets (calibration poses, planning):** `ik.solve(model, T, q_seed, method='multistart', base='clik', n_starts=40)` (add `select='rest'` to prefer the posture nearest mid-range). `base='lm'` is the fastest if posture does not matter.",
+  "- `lm` is the fastest local solver (best for many warm-started solves, e.g. batch planning; `solve_batch` is its vectorized form). `dls` is kept as the reference baseline."
+ ]
+}

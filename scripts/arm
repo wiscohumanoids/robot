@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""`arm <stage> [--sim]`: run an arm-stack procedure (see arm_stack/cli.py).
+
+Installed to lib/wisco_ethercat_ros2_hw, so `ros2 run wisco_ethercat_ros2_hw arm zero --sim`.
+The arm_stack package itself is installed to share/wisco_ethercat_ros2_hw.
+"""
+import os
+import sys
+
+here = os.path.dirname(os.path.realpath(__file__))
+candidates = [
+    os.path.join(here, '..', '..', 'share', 'wisco_ethercat_ros2_hw'),  # installed
+    os.path.join(here, '..'),                                           # source tree
+]
+for c in candidates:
+    if os.path.isdir(os.path.join(c, 'arm_stack')):
+        sys.path.insert(0, os.path.abspath(c))
+        break
+
+from arm_stack.cli import main  # noqa: E402
+
+sys.exit(main())
