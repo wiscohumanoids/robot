@@ -231,6 +231,81 @@ TEST_F(ArmMock, CommissioningStartupAndTimeoutHoldWithoutGravity)
   h.deactivate();
 }
 
+TEST_F(ArmMock, RelativeReferenceHoldsStartupPoseAndRejectsPositionAndTorqueCommands)
+{
+  for (const bool legacy : {false, true}) {
+    auto joints = arm_joints();
+    // Outside the CAD bounds: relative coordinates cannot use those limits.
+    joints[0].initial_position = 2.0;
+    joints[1].initial_position = -1.2;
+    joints[0].supports_torque_offset = !legacy;
+    ControllerHarness h(joints);
+    h.set_realtime(false);
+    h.run_bus(50);
+    auto params = arm_params(true, true);
+    params.emplace_back("hold_only", true);
+    params.emplace_back("torque_offset_enabled", std::vector<bool>{!legacy, true});
+    // gravity_enabled defaults true, and hold_on_startup defaults false:
+    // hold_only must override both without relying on launch configuration.
+    ASSERT_TRUE(h.load(std::make_shared<ArmController>(), "arm_controller", params, "/command"));
+    h.cycle(20);
+    const std::vector<double> held = {h.hw().commands(0).position, h.hw().commands(1).position};
+    EXPECT_NEAR(held[0], 2.0, 0.001);
+    EXPECT_NEAR(held[1], -1.2, 0.001);
+    for (const int mode : {kModeP, kModeT}) {
+      h.send(command(mode, {0.0, 0.0}, {10.0, 2.0}));
+      h.cycle(100);
+      for (size_t i = 0; i < 2; ++i) {
+        EXPECT_EQ(h.hw().commands(i).mode_of_operation, cia402::kModeCsp);
+        EXPECT_DOUBLE_EQ(h.hw().commands(i).position, held[i]);
+        if (joints[i].supports_torque_offset) {
+          EXPECT_DOUBLE_EQ(h.hw().commands(i).torque_offset, 0.0);
+        }
+        EXPECT_DOUBLE_EQ(h.hw().commands(i).effort, 0.0);
+      }
+    }
+    h.deactivate();
+  }
+}
+
+TEST_F(ArmMock, RelativePositionModeUsesOnlyLocalGravityAndEnforcesLimits)
+{
+  ControllerHarness h(arm_joints());
+  h.set_realtime(false);
+  h.run_bus(50);
+  auto params = arm_params(true, true);
+  params.emplace_back("position_only", true);
+  params.emplace_back("local_center", std::vector<double>{0.0, 0.0});
+  params.emplace_back("local_bias", std::vector<double>{0.5, 0.2});
+  params.emplace_back("local_jacobian", std::vector<double>{0.1, 0.2, 0.3, 0.4});
+  params.emplace_back("local_lower", std::vector<double>{-0.5, -0.5});
+  params.emplace_back("local_upper", std::vector<double>{0.5, 0.5});
+  ASSERT_TRUE(h.load(std::make_shared<ArmController>(), "arm_controller", params, "/command"));
+  h.cycle(10);
+  auto target = std::vector<double>{h.hw().states(0).position, h.hw().states(1).position};
+  h.send(command(kModeP, target, {100.0, 100.0}));
+  h.cycle();
+  const double q0 = h.hw().states(0).position, q1 = h.hw().states(1).position;
+  EXPECT_NEAR(h.hw().commands(0).torque_offset, 0.5+0.1*q0+0.2*q1, 1e-9);
+  EXPECT_NEAR(h.hw().commands(1).torque_offset, 0.2+0.3*q0+0.4*q1, 1e-9);
+  h.send(command(kModeT, {0.0, 0.0}, {10.0, 2.0}));
+  h.cycle(10);
+  EXPECT_EQ(h.hw().commands(0).mode_of_operation, cia402::kModeCsp);
+  auto outside = command(kModeP, {10.0, 10.0});
+  outside[1] = 3.0;  // attempt to bypass software limits
+  h.stream(outside);
+  h.cycle(1000);
+  EXPECT_LE(h.hw().commands(0).position, 1.5);
+  EXPECT_LE(h.hw().commands(1).position, 0.5);
+  EXPECT_DOUBLE_EQ(h.hw().commands(0).torque_offset, 0.0);  // no extrapolation
+  h.stop_stream();
+  std::this_thread::sleep_for(std::chrono::milliseconds(60));
+  h.cycle(10);
+  EXPECT_EQ(h.hw().commands(0).mode_of_operation, cia402::kModeCsp);
+  EXPECT_DOUBLE_EQ(h.hw().commands(0).torque_offset, 0.0);
+  h.deactivate();
+}
+
 TEST_F(ArmMock, MixedFirmwareWithoutTorqueOffset)
 {
   auto joints = arm_joints();

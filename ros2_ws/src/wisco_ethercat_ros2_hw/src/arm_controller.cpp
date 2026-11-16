@@ -41,6 +41,11 @@ controller_interface::CallbackReturn ArmController::on_init()
     auto_declare<bool>("hold_on_startup", false);
     auto_declare<bool>("hold_on_timeout", false);
     auto_declare<bool>("gravity_enabled", true);
+    auto_declare<bool>("hold_only", false);
+    auto_declare<bool>("position_only", false);
+    for (const char * name : {"local_center", "local_bias", "local_jacobian", "local_lower", "local_upper"}) {
+      auto_declare<std::vector<double>>(name, std::vector<double>{});
+    }
     auto_declare<bool>("write_max_torque", false);
     auto_declare<std::vector<bool>>("torque_offset_enabled", std::vector<bool>{});
     auto_declare<std::string>("calibration_file", "");
@@ -94,7 +99,42 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
   drive_feedback_ = node->get_parameter("drive_feedback").as_bool();
   hold_on_startup_ = node->get_parameter("hold_on_startup").as_bool();
   hold_on_timeout_ = node->get_parameter("hold_on_timeout").as_bool();
-  gravity_enabled_ = node->get_parameter("gravity_enabled").as_bool();
+  hold_only_ = node->get_parameter("hold_only").as_bool();
+  position_only_ = node->get_parameter("position_only").as_bool();
+  hold_on_startup_ = hold_on_startup_ || hold_only_ || position_only_;
+  hold_on_timeout_ = hold_on_timeout_ || hold_only_ || position_only_;
+  gravity_enabled_ = node->get_parameter("gravity_enabled").as_bool() && !hold_only_ && !position_only_;
+  if (hold_only_) {
+    RCLCPP_WARN(logger, "Relative reference: position holding only; motion commands ignored, "
+      "gravity disabled. Joint angles are not registered to the CAD model.");
+  }
+  local_center_ = node->get_parameter("local_center").as_double_array();
+  local_bias_ = node->get_parameter("local_bias").as_double_array();
+  local_jacobian_ = node->get_parameter("local_jacobian").as_double_array();
+  local_lower_ = node->get_parameter("local_lower").as_double_array();
+  local_upper_ = node->get_parameter("local_upper").as_double_array();
+  local_gravity_enabled_ = !local_bias_.empty();
+  if (local_gravity_enabled_) {
+    const auto finite = [](const std::vector<double> & v) {
+        return std::all_of(v.begin(), v.end(), [](double x) {return std::isfinite(x);});
+      };
+    if (!position_only_ || hold_only_ || local_center_.size() != n || local_bias_.size() != n ||
+      local_jacobian_.size() != n*n || local_lower_.size() != n || local_upper_.size() != n ||
+      !finite(local_center_) || !finite(local_bias_) || !finite(local_jacobian_) ||
+      !finite(local_lower_) || !finite(local_upper_))
+    {
+      RCLCPP_ERROR(logger, "Invalid local gravity parameters");
+      return controller_interface::CallbackReturn::ERROR;
+    }
+    for (size_t i = 0; i < n; ++i) {
+      if (!(local_lower_[i] < local_center_[i] && local_center_[i] < local_upper_[i]) ||
+        local_lower_[i] < cfg_.lower[i] || local_upper_[i] > cfg_.upper[i])
+      {
+        RCLCPP_ERROR(logger, "Local gravity domain must be inside the position bounds");
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    }
+  }
   write_max_torque_ = node->get_parameter("write_max_torque").as_bool();
   torque_offset_enabled_ = node->get_parameter("torque_offset_enabled").as_bool_array();
   if (torque_offset_enabled_.empty()) {torque_offset_enabled_.assign(n, true);}
@@ -149,6 +189,11 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
   subscription_ = node->create_subscription<std_msgs::msg::Float64MultiArray>(
     "~/command", rclcpp::SystemDefaultsQoS(),
     [this, n, expected](const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+      if (hold_only_) {
+        RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 2000,
+          "Ignoring motion command: relative reference permits position holding only");
+        return;
+      }
       if (msg->data.size() != expected && msg->data.size() != expected + kPayloadBlock) {
         RCLCPP_WARN_THROTTLE(
           get_node()->get_logger(), *get_node()->get_clock(), 2000,
@@ -163,6 +208,12 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
       const int flags = std::isfinite(d[1]) ? static_cast<int>(d[1]) : 1;
       c->law.gravity_ff = flags & 1;
       c->law.ignore_soft_limits = flags & 2;
+      if (position_only_ && c->law.mode != arm::kModeP) {
+        RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 2000,
+          "Relative calibration only permits bounded position commands");
+        return;
+      }
+      if (position_only_) {c->law.ignore_soft_limits = false;}
       c->law.friction_ff_gain = std::isfinite(d[2]) ? d[2] : 1.0;
       auto block = [&](size_t b) {
           return std::vector<double>(d.begin() + kCommandHeader + b * n,
@@ -173,6 +224,7 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
       c->law.kp = block(2);
       c->law.kd = block(3);
       c->law.tau_ff = block(4);
+      if (position_only_) {std::fill(c->law.tau_ff.begin(), c->law.tau_ff.end(), 0.0);}
       c->law.torque_clamp = block(5);
       if (d.size() == expected + kPayloadBlock && std::isfinite(d[expected])) {
         c->has_payload = true;
@@ -339,11 +391,22 @@ controller_interface::return_type ArmController::update(
       gravity_->set_payload(payload_[0], payload_[1], payload_[2], payload_[3]);
     }
   }
-  if (gravity_enabled_) {gravity_->gravity(q_, g_);} else {std::fill(g_.begin(), g_.end(), 0.0);}
+  if (local_gravity_enabled_) {
+    bool inside = true;
+    for (size_t i = 0; i < n; ++i) {
+      inside = inside && std::isfinite(q_[i]) && q_[i] >= local_lower_[i] && q_[i] <= local_upper_[i];
+    }
+    for (size_t i = 0; i < n; ++i) {
+      g_[i] = inside ? local_bias_[i] : 0.0;
+      if (inside) {
+        for (size_t j = 0; j < n; ++j) {g_[i] += local_jacobian_[i*n+j]*(q_[j]-local_center_[j]);}
+      }
+    }
+  } else if (gravity_enabled_) {gravity_->gravity(q_, g_);} else {std::fill(g_.begin(), g_.end(), 0.0);}
   arm::compute(cfg_, cmd && all_enabled ? cmd->law : kNone, q_, qd_, g_, out_);
   const bool hold = out_.fallback && (hold_on_timeout_ || (hold_on_startup_ && !cmd));
   if (hold) {
-    if (!holding_) {q_hold_ = q_;}
+    if (!holding_ || ((hold_only_ || position_only_) && !all_enabled)) {q_hold_ = q_;}
     out_.mode = arm::kModeP;
     out_.q_target = q_hold_;
     std::fill(out_.tau.begin(), out_.tau.end(), 0.0);

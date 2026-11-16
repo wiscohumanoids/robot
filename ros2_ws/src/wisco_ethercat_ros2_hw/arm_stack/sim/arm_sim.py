@@ -294,15 +294,16 @@ class SimArm(ArmClient):
         tau_stop = np.zeros(self.n)
         over = q - self.stop_upper
         under = self.stop_lower - q
-        tau_stop -= np.where(over > 0, 2000.0 * over + 20.0 * qd, 0.0)
-        tau_stop += np.where(under > 0, 2000.0 * under - 20.0 * qd, 0.0)
+        tau_stop -= np.where(over > 0, 2000.0 * over, 0.0)
+        tau_stop += np.where(under > 0, 2000.0 * under, 0.0)
         tau_net = tau_motor + tau_stop + self.tau_ext
         M = self.truth.mass_matrix(q) + np.diag(self.armature)
         bias = self.truth.rnea(q, qd, np.zeros(self.n))  # C qd + g
         # semi-implicit viscous term for stability
-        Md = M + h * np.diag(self.viscous)
+        damping = self.viscous + np.where((over > 0) | (under > 0), 20.0, 0.0)
+        Md = M + h * np.diag(damping)
         Minv = np.linalg.inv(Md)
-        qd_free = qd + h * (Minv @ (tau_net - bias - self.viscous * qd))
+        qd_free = qd + h * (Minv @ (tau_net - bias - damping * qd))
         # Coulomb + Stribeck stiction as a velocity-level impulse (time-stepping
         # friction): per joint at most h * F, never more than it takes to stop
         # the joint. Sticks while the net torque is under the breakaway, and an

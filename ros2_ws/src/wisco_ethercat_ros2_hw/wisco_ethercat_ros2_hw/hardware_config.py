@@ -133,6 +133,8 @@ class HardwareConfig:
         models = load_yaml(models_file)
         table = load_yaml(joints_file)
         calibration = load_yaml(calibration_file) if calibration_file else {}
+        if calibration.get('coordinate_frame', 'urdf') not in ('urdf', 'relative'):
+            raise ConfigError('Unknown calibration coordinate_frame')
         self.calibration = calibration
         self.auto_state_transitions = True
 
@@ -163,6 +165,20 @@ class HardwareConfig:
             lo, hi = (soft.get(joint.name) or [None, None])
             if 'soft_limits_rad' not in row and lo is not None and hi is not None:
                 joint.position_limits = (float(lo), float(hi))
+        if calibration.get('coordinate_frame') == 'relative':
+            if self.control_mode != 'arm':
+                raise ConfigError('A relative reference supports arm position holding only.')
+            # CAD limits do not describe an arbitrary encoder reference. The
+            # controller rejects motion commands and holds its startup position.
+            local_motion = (calibration.get('commissioning') or {}).get('relative_motion', False)
+            for joint in self.joints:
+                if local_motion:
+                    lo, hi = (soft.get(joint.name) or [None, None])
+                    if lo is None or hi is None or not math.isfinite(lo) or not math.isfinite(hi) or not lo < hi or hi-lo > math.radians(20) + 1e-12:
+                        raise ConfigError('Relative motion needs finite local bounds no wider than 20 degrees.')
+                    joint.position_limits = (float(lo), float(hi))
+                else:
+                    joint.position_limits = (-math.inf, math.inf)
         hw_names = {j.name for j in self.joints}
         self.mock_joints = [n for n in self.urdf_joints if n not in hw_names]
 
@@ -346,6 +362,8 @@ class HardwareConfig:
         arm_config = arm_config or {}
         rows = {r['name']: r for r in arm_config.get('joints') or []}
         gains = [rows.get(j.name, {}).get('gains') or {} for j in self.joints]
+        relative = self.calibration.get('coordinate_frame') == 'relative'
+        local_motion = relative and (self.calibration.get('commissioning') or {}).get('relative_motion', False)
         params = {
             'joints': [j.name for j in self.joints],
             'max_torque': [float(rows.get(j.name, {}).get('max_torque_nm') or j.max_effort)
@@ -363,11 +381,33 @@ class HardwareConfig:
             'drive_feedback': True,
             'hold_on_startup': True,
             'hold_on_timeout': True,
-            'gravity_enabled': bool(self.calibration.get('link_inertials')) and
+            'hold_only': relative and not local_motion,
+            'position_only': relative,
+            'gravity_enabled': self.calibration.get('coordinate_frame') != 'relative' and
+                bool(self.calibration.get('link_inertials')) and
                 (self.calibration.get('gravity_validation') or {'passed': True}).get('passed', False),
             'torque_offset_enabled': [j.supports_torque_offset for j in self.joints],
             'calibration_file': calibration_file or '',
         }
+        local = self.calibration.get('local_gravity')
+        if relative and local_motion and local:
+            n = len(self.joints)
+            if local.get('kind') != 'local_affine' or local.get('validated') is not True:
+                raise ConfigError('Local gravity must have passed independent validation.')
+            fields = {'local_center': 'center_rad', 'local_bias': 'bias_nm',
+                      'local_lower': 'lower_rad', 'local_upper': 'upper_rad'}
+            for param, key in fields.items():
+                values = local.get(key) or []
+                if len(values) != n or not all(isinstance(v, (int, float)) and math.isfinite(v) for v in values):
+                    raise ConfigError('Invalid local gravity ' + key)
+                params[param] = [float(v) for v in values]
+            matrix = local.get('jacobian_nm_per_rad') or []
+            if len(matrix) != n or any(not isinstance(row, list) or len(row) != n for row in matrix):
+                raise ConfigError('Invalid local gravity Jacobian dimensions')
+            flat = [v for row in matrix for v in row]
+            if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in flat):
+                raise ConfigError('Invalid local gravity Jacobian entries')
+            params['local_jacobian'] = [float(v) for v in flat]
         # Weighed link masses: the Python model (sim, calibration) applies them
         # under the calibration's link_inertials, so the controller's gravity
         # model must too. Nulls (not weighed yet) keep the URDF mass; ROS

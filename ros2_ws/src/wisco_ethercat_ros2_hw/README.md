@@ -13,7 +13,7 @@ ros2_control_node (one real-time process on the RK3588)
 ├── EthercatDriver (hardware interface): one CiA 402 drive per row of the joint table
 ├── joint_state_broadcaster
 ├── SafeCommandController   velocity or torque commands with timeouts, clamps and soft limits
-└── ArmController           1 kHz arm control: gravity compensation (Pinocchio) + PD, two drive modes
+└── ArmController           arm control at the cycle rate: gravity compensation (Pinocchio) + PD, two drive modes
 ```
 
 The arm this is tested on is described in [`robots/arm01/`](../../../robots/arm01/README.md) (the `arm01_description`
@@ -27,14 +27,16 @@ package): its model, joint config, calibration procedures and results.
 | `config/drive_pdo_template.yaml` | the PDO map shared by every RMD-X drive |
 | `config/joints.yaml`, `config/calibration.yaml` | the test-bench joint table (left-arm drives) and its zero offsets |
 | `wisco_ethercat_ros2_hw/hardware_config.py` | generates every drive's slave config, the hardware manifest and the controller parameters from a joint table, and checks the table first |
+| `wisco_ethercat_ros2_hw/calibration_files.py` | finds an arm's calibration versions (`<date>_v<N>.yaml`, newest last), ignoring reports that share the folder |
 | `urdf/ros2_control_macros.xacro`, `urdf/test_bench.urdf.xacro` | the `<ros2_control>` block built from the manifest; the test-bench robot |
 | `launch/test_bench.launch.py`, `launch/arm01.launch.py` | bring up the bench or arm01, on drives or on mock hardware |
 | `src/safe_command_controller.cpp`, `include/.../safety_logic.hpp` | `SafeCommandController` and its unit-tested safety functions |
 | `src/arm_controller.cpp`, `src/gravity_model.cpp`, `include/.../arm_law.hpp` | `ArmController`: the arm's real-time control law |
+| `src/pp_test.cpp`, `src/pp_motion.hpp`, `config/pp_test.yaml` | `pp_test`: profile-position check of one drive or the whole bus, straight on the IgH master (see below); built only where the EtherCAT libraries are installed |
 | `src/current_sensor_node.cpp`, `src/ads7128.hpp` | power-rail current readout (ADS7128 I2C ADC + ACS758 sensors); not yet built or published |
 | `arm_stack/` | Python toolkit: commissioning and calibration stages, the same control law, a simulated arm, PACE system identification, IK, MCAP logging and export; `scripts/arm` is its CLI |
 | `scripts/` | `bringup_check.py` (wiring and direction check), `check_urdf.py` (URDF vs actuator limits), two demo scripts |
-| `tools/` | model checks, IK benchmark, workspace map, Isaac Lab USD import, parity golden-file writer (outputs go to `robots/arm01/docs/`) |
+| `tools/` | model checks, IK benchmark, workspace map, Isaac Lab USD import, parity golden-file writer (reports go to `build/analysis/`, not kept in the repo) |
 | `test/` | C++ tests (safety logic, control law, mock drives, controllers against the mock bus, C++/Python gravity parity) and Python tests |
 
 ## One joint table
@@ -78,7 +80,7 @@ MyActuator mode 5 (position + kp + kd every cycle, PD in the drive); see `robots
 - **bad input:** NaN commands count as stale, wrong-length arrays are ignored with a warning, the joints are stopped on
   activate and deactivate.
 
-**`ArmController`**, the arm's 1 kHz control law:
+**`ArmController`**, the arm's control law, run every cycle:
 - **Mode P:** CSP position target (0x607A) plus a gravity and friction torque offset (0x60B2), so the drive's own
   position loop tracks while the host cancels gravity.
 - **Mode T:** CST torque (0x6071) = host PD + gravity + friction feedforward.
@@ -88,6 +90,10 @@ MyActuator mode 5 (position + kp + kd every cycle, PD in the drive); see `robots
   per-joint switch for drives whose firmware lacks the torque-offset object (those joints use the plain position path).
 - It writes each command's torque clamp to the drive's torque limit (0x6072), so the drive's own position loop is capped
   too. 0x6072 = 0 means the drive's stall-current limit, not zero torque, so it never writes less than 1% of the limit.
+- With a **relative** calibration (a resting-pose reference, see `robots/arm01/README.md`) it only holds the position it
+  starts at (`hold_only`), or, after a passing local calibration, accepts position commands inside the measured local
+  envelope (at most 20° wide per joint) with the fitted local gravity model; CAD gravity and torque mode stay off until the arm has a
+  registered (URDF) calibration.
 - Command and state layouts are documented in `include/wisco_ethercat_ros2_hw/arm_controller.hpp`.
 
 ## Run it
@@ -109,11 +115,11 @@ ros2 launch wisco_ethercat_ros2_hw arm01.launch.py enable_motion:=true
 | `joints_file` | `config/joints.yaml` | joint table |
 | `calibration_file` | `config/calibration.yaml` | zero offsets (arm01: its newest calibration version) |
 | `control_mode` | from the table | `velocity`, `effort` or `arm` |
-| `update_rate` | `100` | controller manager rate **and** EtherCAT cycle, Hz (1000 with PREEMPT_RT) |
-| `joint_state_rate` | `100` | `/joint_states` rate (capped at `update_rate`) |
+| `update_rate` | `100` | controller manager rate **and** EtherCAT cycle, Hz; raise toward 1000 only after checking loop timing on the target |
+| `joint_state_rate` | `100` (arm01: `50`) | `/joint_states` rate (capped at `update_rate`) |
 | `command_timeout` | `0.1` | seconds without a command before the joints are stopped |
 | `use_mock_hardware` | `false` | `mock_components/GenericSystem` instead of drives |
-| `enable_motion` | `false` | let the drives go to Operation Enabled (arm mode on real drives) |
+| `enable_motion` | `false` | let the drives go to Operation Enabled (arm mode on real drives). Off by default: the arm launch starts with the motors disabled; set it after a reference or calibration exists |
 | `demo` | `false` | start the demo script for the selected mode |
 
 To run without sudo, give the EtherCAT device to your user:
@@ -127,18 +133,20 @@ To run without sudo, give the EtherCAT device to your user:
 3. Passive commissioning, with ROS stopped and the drives disabled: `ros2 run wisco_ethercat_ros2_hw arm commission`.
    You move each joint by hand to measured angles; it reads the encoders over SDO and derives direction, counts per
    output revolution, zero offset and software limits, and writes a calibration version.
-4. Launch in velocity mode with the joints clear, then `ros2 run wisco_ethercat_ros2_hw bringup_check.py`: it jogs
-   each drive in bus order and checks that only the named joint moved, by about the commanded amount, in the commanded
+4. For an arm, record a reference or calibrate before enabling motion (`arm reference`, `arm autocal`; see
+   `robots/arm01/README.md`). For a bench joint, launch in velocity mode with the joints clear, then
+   `ros2 run wisco_ethercat_ros2_hw bringup_check.py`: it jogs each drive in bus order and checks that only the named joint moved, by about the commanded amount, in the commanded
    direction. A failure means a wrong `bus_position` or `direction`.
 5. Only then raise the bring-up limits in the model table or per joint. The full calibration chain for an arm is in
    `robots/arm01/README.md`.
 
-## Real-time setup (for 1 kHz)
+## Real-time setup (toward 1 kHz)
 
 - PREEMPT_RT kernel; run `ros2_control_node` with real-time priority (`rtprio` and `memlock` limits for the user).
 - Isolate a core for the control loop (`isolcpus=`, `nohz_full=`) and pin the EtherCAT NIC's interrupts to it.
-- `update_rate:=1000`: the launch uses the same value for the EtherCAT cycle, so the two cannot drift apart.
-- Keep `joint_state_rate` at 100–250 Hz: the controllers read state interfaces directly, and a 1 kHz JointState stream
+- Start at the default `update_rate:=100` and raise it only after checking sustained loop timing and bus stability on
+  the target machine; the launch uses the same value for the EtherCAT cycle, so the two cannot drift apart.
+- Keep `joint_state_rate` at 50–250 Hz: the controllers read state interfaces directly, and a 1 kHz JointState stream
   only loads DDS.
 - Distributed clocks are on (`dc_assign_activate: 0x0300` in the model table); check it against the drive's ESI.
 
@@ -152,10 +160,34 @@ From MyActuator's EtherCAT control protocol and ESI file (`MT-Device`, firmware 
 - The drives' own CSP/CSV loop gains are 0x2002–0x2008 (REAL32, SDO only), a cascaded position-P / velocity-PI loop
   with no documented units: read them on the bench (`ethercat upload -p <pos> -t float 0x2002 0`) before tuning.
   Saving to flash is Controlword 0 → 0x1000 → 0 within 3 s with the motor disabled.
-- One generic device for every model: vendor 0x00202008, product 0; minimum cycle 250 µs.
+- One generic device for every model: vendor 0x00202008, product 0, revision 0x00010000; minimum cycle 250 µs.
+- **Firmware:** all seven arm01 drives run the 26042402 PDO profile (the older 5.12 profile, with base PDOs only and no
+  torque offset, is no longer used). Read a drive's version from 0x100A; `pp_test` prints it.
+- The 26042402 ESI (`MT-Device_260424.xml`) maps kp and kd (0x2000 / 0x2001, int32) into RxPDO 0x1601, next to the
+  controlword, targets and mode: the objects the walking joints' mode 5 needs. Profile-position parameters are in
+  RxPDO 0x1602 (0x6081 velocity, 0x6083 / 0x6084 acceleration / deceleration, 0x6085 quick stop), and 0x603F (error
+  code) is in TxPDO 0x1A00 (`config/pp_test.yaml`).
+- **Torque clamps:** a joint row with `use_peak_torque_limit: true` may set `max_torque_nm` up to the model's peak
+  torque; otherwise the ceiling is the rated torque. Loading refuses anything above.
 - The model table uses the "-E" EtherCAT datasheets. Marked "verify" there: the X4-10 gear ratio (12.5 in the table,
   12.6 in the user manual, 1:13 on the label), the X4s' encoder counts per output revolution (131072 assumed), and the
   X4s' torque constant (the datasheet Kt disagrees with rated torque / rated current).
+
+## Profile-position drive check (`pp_test`)
+
+A direct test of the drives that bypasses `ros2_control`: it checks a drive's PDO mapping against the
+profile-position configuration and, if asked, moves it one small step. Stop any launch that owns IgH master 0 first,
+and identify drives by their bus position (`ethercat slaves`).
+
+```bash
+ros2 run wisco_ethercat_ros2_hw pp_test --position 0          # mapping only: controlword stays 0, nothing moves
+ros2 run wisco_ethercat_ros2_hw pp_test --position 0 --move   # same checks, then +5° at 2°/s (type MOVE to confirm)
+ros2 run wisco_ethercat_ros2_hw pp_test --all --move          # every drive in bus order, one confirmation
+```
+It compares the live CoE descriptors with `config/pp_test.yaml`, brings the drive to OP, reads back the SM2
+(0x1601 + 0x1602) and SM3 (0x1A00) mappings, verifies the profile values over SDO, and for a move checks the step
+reached its target within 0.15°. Keep the load supported and clear in the positive direction; a failure or Ctrl-C
+stops the sequence.
 
 ## Mock EtherCAT
 

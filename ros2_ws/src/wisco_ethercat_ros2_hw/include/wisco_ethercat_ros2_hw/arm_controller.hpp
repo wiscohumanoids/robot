@@ -121,6 +121,10 @@ private:
   bool hold_on_startup_ = false;
   bool hold_on_timeout_ = false;
   bool gravity_enabled_ = true;
+  bool hold_only_ = false;  // relative reference: reject motion commands, no model gravity
+  bool position_only_ = false;
+  bool local_gravity_enabled_ = false;
+  std::vector<double> local_center_, local_bias_, local_jacobian_, local_lower_, local_upper_;
   bool holding_ = false;
   std::vector<double> q_hold_;
   // write_max_torque (parameter, default false): also claims <joint>/max_torque

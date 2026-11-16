@@ -7,10 +7,8 @@
 #
 # max_torque_nm / max_vel_rad_s are the RT controller's per-joint clamps, and
 # every calibration stage scales its excitation from them (PACE chirps run to
-# 0.7 x max_vel). They are set to the model's BRING-UP limits, well under the
-# datasheet ratings, until Phase 1 has checked signs, zeros and limits on the
-# real arm; raise them toward the rated values after that. Loading refuses a
-# clamp above the datasheet rated torque or no-load speed.
+# 0.7 x max_vel). Each joint uses its model peak torque as the command ceiling.
+# Continuous ratings are listed separately in config/actuator_models.yaml.
 #
 # Read by both sides: the launch file (bus positions, models, directions ->
 # EtherCAT slave configs and the ros2_control block) and arm_stack (units,
@@ -53,31 +51,32 @@ joints:
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
     rated_current_a: 9.5  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 12.0  # bring-up clamp (x6_60: datasheet rated 20 Nm, peak in the model table)
+    use_peak_torque_limit: true
+    max_torque_nm: 60.0
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 153 rpm = 16.0 rad/s)
     gains: {kp: 60.0, kd: 2.0}
   - name: shoulder_roll       # J2, ROM 0..+190 deg
     bus_position: 1
     model: x6_60
-    pdo_profile: legacy  # firmware 5.12: base PDOs, 0x5FFE padding, no torque offset
     direction: 1
     gear_ratio: 19.612  # datasheet
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
     rated_current_a: 9.5  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 12.0  # bring-up clamp (x6_60: datasheet rated 20 Nm, peak in the model table)
+    use_peak_torque_limit: true
+    max_torque_nm: 60.0
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 153 rpm = 16.0 rad/s)
     gains: {kp: 60.0, kd: 2.0}
   - name: shoulder_yaw        # J3, ROM -90..+90 deg
     bus_position: 2
     model: x4_36
-    pdo_profile: legacy  # firmware 5.12
     direction: 1
     gear_ratio: 36  # datasheet
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
     rated_current_a: 6.1  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 6.0  # bring-up clamp (x4_36: datasheet rated 10.5 Nm, peak in the model table)
+    use_peak_torque_limit: true
+    max_torque_nm: 34.0
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 83 rpm = 8.7 rad/s)
     gains: {kp: 30.0, kd: 1.0}
   - name: elbow               # J4, ROM 0..+130 deg
@@ -88,19 +87,21 @@ joints:
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
     rated_current_a: 6.1  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 6.0  # bring-up clamp (x4_36: datasheet rated 10.5 Nm, peak in the model table)
+    use_peak_torque_limit: true
+    max_torque_nm: 34.0
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 83 rpm = 8.7 rad/s)
     gains: {kp: 30.0, kd: 1.0}
   - name: forearm_yaw         # J5, ROM -90..+90 deg
     bus_position: 4
-    model: x4_36
+    model: x4_10
     direction: 1
-    gear_ratio: 36  # datasheet
+    gear_ratio: 12.5  # datasheet
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
-    rated_current_a: 6.1  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 6.0  # bring-up clamp (x4_36: datasheet rated 10.5 Nm, peak in the model table)
-    max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 83 rpm = 8.7 rad/s)
+    rated_current_a: 7.8  # datasheet rms; 0x6075 holds the drive value (read over SDO)
+    use_peak_torque_limit: true
+    max_torque_nm: 10.0
+    max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 238 rpm = 24.9 rad/s)
     gains: {kp: 20.0, kd: 0.6}
   - name: wrist_pitch         # J6, ROM -35..+35 deg
     bus_position: 5
@@ -110,7 +111,8 @@ joints:
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
     rated_current_a: 7.8  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 2.5  # bring-up clamp (x4_10: datasheet rated 4.0 Nm, peak in the model table)
+    use_peak_torque_limit: true
+    max_torque_nm: 10.0
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 238 rpm = 24.9 rad/s)
     gains: {kp: 10.0, kd: 0.3}
   - name: wrist_yaw           # J7, ROM -90..+90 deg
@@ -121,7 +123,8 @@ joints:
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
     encoder_side: output  # dual absolute encoder, 0x6064 output-referred (verify)
     rated_current_a: 7.8  # datasheet rms; 0x6075 holds the drive value (read over SDO)
-    max_torque_nm: 2.5  # bring-up clamp (x4_10: datasheet rated 4.0 Nm, peak in the model table)
+    use_peak_torque_limit: true
+    max_torque_nm: 10.0
     max_vel_rad_s: 2.0  # bring-up clamp (datasheet rated 238 rpm = 24.9 rad/s)
     gains: {kp: 10.0, kd: 0.3}
 
@@ -146,7 +149,7 @@ mocap:
 # Optional fixed validation poses (rad, 7 per pose). Empty: feasible random poses.
 validation:
   # ISO 9283 poses on the 135 mm cube at (0.170, -0.490, 0.210) from tools/workspace_map.py
-  # (robots/arm01/docs/workspace_report.md): one tool orientation, cond 15-51, >= 9 deg from every
+  # (regenerate with wisco_ethercat_ros2_hw/tools/workspace_map.py): one tool orientation, cond 15-51, >= 9 deg from every
   # joint limit, inside the 60% gravity-torque rule
   iso_poses_rad:
     - [1.1880, 0.8057, -1.2019, 1.6012, 0.4256, -0.1592, 0.6836]

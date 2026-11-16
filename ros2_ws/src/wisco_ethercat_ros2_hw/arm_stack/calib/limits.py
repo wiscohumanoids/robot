@@ -2,9 +2,9 @@
 
 Each joint moves slowly toward each URDF limit and on past it in Mode P, with
 gravity feedforward and 0x6072 clamped to the model gravity torque plus a
-margin, until it stalls (tracking error grows while the joint stops). The
-stall position is the hard stop. Then each joint is swept to its new soft
-limits to confirm no stop is reached first.
+margin. Confirm contact from sustained low speed and measured torque in the
+approach direction above gravity. Then sweep to the inset software limits.
+Contact detection is adapted from Enactic's OpenArm zero-position calibration.
 """
 
 from __future__ import annotations
@@ -30,27 +30,44 @@ def path_gravity(model, home, j, end, samples=25):
     return worst
 
 
-def find_stop(ctx, j, direction, home, clamp):
+def find_stop(ctx, j, direction, home, clamp, reference=None):
     client, model = ctx.client, ctx.model
     speed = SPEED * (2 if ctx.quick else 1)
-    s = client.state()
-    target_end = (model.upper[j] + SEARCH_BEYOND) if direction > 0 else (model.lower[j] - SEARCH_BEYOND)
+    if reference is None:
+        reference = model.upper[j] if direction > 0 else model.lower[j]
+    target_end = reference + direction * SEARCH_BEYOND
     # approach to just inside the URDF limit at normal speed
     near = home.copy()
-    near[j] = (model.upper[j] - 8 * DEG) if direction > 0 else (model.lower[j] + 8 * DEG)
+    near[j] = np.clip(reference - direction * 8 * DEG, model.lower[j], model.upper[j])
     move_to(client, near, max_speed=0.4, torque_clamp=clamp)
     s = client.state()
     q_cmd = s.q.copy()
     n = int(abs(target_end - q_cmd[j]) / speed / client.cmd_dt) + 1
     stall_q = None
+    contact_since = None
+    # Scale contact detection to the existing search torque margin for this joint.
+    # Subtract modeled gravity: a stationary, loaded shoulder already draws current.
+    contact_nm = 0.04 * ctx.arm.joints[j].peak_torque_nm
     for k in range(n):
         q_cmd[j] += direction * speed * client.cmd_dt
         qd = np.zeros(model.n)
         qd[j] = direction * speed
         s = stream(client, [q_cmd.copy()], [qd], torque_clamp=clamp, ignore_soft_limits=True)
-        if abs(q_cmd[j] - s.q[j]) > STALL_ERROR:
-            stall_q = s.q[j]
+        lag = direction * (q_cmd[j] - s.q[j])
+        if lag > 2 * STALL_ERROR:
+            print(f'{ctx.arm.names[j]}: search stopped at {s.q[j]/DEG:.2f} deg, '
+                  f'lag {lag/DEG:.2f} deg, speed {s.qd[j]:.3f} rad/s, torque {s.tau[j]:.2f} Nm')
             break
+        if lag > STALL_ERROR and abs(s.qd[j]) < 0.02:
+            excess_torque = direction * (s.tau[j] - model.gravity(s.q)[j])
+            if excess_torque >= contact_nm:
+                if contact_since is None:
+                    contact_since = s.t
+                if s.t - contact_since >= 0.04:
+                    stall_q = float(s.q[j])
+                    break
+                continue
+        contact_since = None
     # back off
     move_to(client, near, max_speed=0.3, torque_clamp=clamp)
     return stall_q
@@ -78,10 +95,9 @@ def run(ctx: StageContext) -> StageResult:
                                 arm.names[int(np.argmax(g / max_t))]))
             stop = find_stop(ctx, j, direction, home, clamp)
             if stop is None:
-                flags.append('%s: no stop found within %.0f deg past the URDF %s limit'
+                flags.append('%s: no confirmed stop on bounded search (maximum %.0f deg past the %s limit)'
                              % (name, SEARCH_BEYOND / DEG, 'upper' if direction > 0 else 'lower'))
-                stop = (model.upper[j] if direction > 0 else model.lower[j]) + direction * SEARCH_BEYOND
-                ok = False
+                return StageResult('limits', False, {'hard_stops_rad': stops}, {}, lines, flags)
             found.append(stop)
         lo, hi = found
         soft[name] = [float(lo + INSET), float(hi - INSET)]

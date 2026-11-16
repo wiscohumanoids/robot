@@ -3,8 +3,8 @@
 A standalone prototype of a humanoid arm on a test stand, used to develop and validate the arm's hardware interface,
 controller and calibration before they go on a full robot. It is a separate hardware item from Wisco V1
 (`robots/wisco_v1/`, the full-body model). Seven joints: shoulder pitch, roll and yaw (2× MyActuator RMD-X6-60,
-1× X4-36), elbow (X4-36), forearm yaw (X4-36), wrist pitch and wrist yaw (2× X4-10); the wrist pitch is a near-parallelogram
-linkage. Moving mass about 3.9 kg.
+1× X4-36), elbow (X4-36), forearm yaw, wrist pitch and wrist yaw (3× X4-10); the wrist pitch is a near-parallelogram
+linkage. Moving mass about 3.9 kg. All seven drives run the 26042402 firmware PDO profile.
 
 This folder is the `arm01_description` ROS package (linked into the workspace as `ros2_ws/src/arm01_description`). The
 controllers, drive configuration and the calibration toolkit that act on it live in
@@ -19,19 +19,59 @@ controllers, drive configuration and the calibration toolkit that act on it live
 | `urdf/bench01.urdf` | the single-actuator bench rig: one actuator with a lever on its output |
 | `meshes/` | visual and collision meshes |
 | `config/arm01.yaml`, `config/bench01.yaml` | joint configs: bus order, motor models, directions, gains, home pose, limits, calibration fixtures |
-| `calibration/<arm>/<date>_v<N>.yaml` | calibration versions, append-only, written by the calibration stages (bench results per actuator serial under `calibration/bench01/<serial>/`) |
-| `cad/` | CAD import tool, the export's capture pose (checked against the URDF by the tests) and the frame-convention ledger |
-| `docs/` | IK solver benchmark and workspace / reachability map (written by the tools in `wisco_ethercat_ros2_hw/tools/`) |
+| `calibration/<arm>/<date>_v<N>.yaml` | calibration versions, append-only, written by the calibration stages (bench results per actuator serial under `calibration/bench01/<serial>/`). `arm01/2026-11-15_v1.yaml` is the first resting-pose reference recorded on the physical arm |
+| `cad/` | CAD import tool, the export's capture pose and contact angles (checked against the URDF by the tests, used by stop zeroing) and the frame-convention ledger |
+
+The IK benchmark and workspace map (`wisco_ethercat_ros2_hw/tools/ik_benchmark.py`, `workspace_map.py`) write their
+reports to `build/analysis/`; rerun them when the model or joint limits change.
 
 ## Bring it up
 
 ```bash
 ros2 launch wisco_ethercat_ros2_hw arm01.launch.py use_mock_hardware:=true     # no drives
-ros2 launch wisco_ethercat_ros2_hw arm01.launch.py enable_motion:=true         # on the drives
+ros2 launch wisco_ethercat_ros2_hw arm01.launch.py                             # on the drives, motors disabled
+ros2 launch wisco_ethercat_ros2_hw arm01.launch.py enable_motion:=true         # powered holding (needs a reference)
 ```
-The launch loads the newest calibration version automatically and runs `ArmController` at 1 kHz.
+The launch loads the newest calibration version and runs `ArmController` at 100 Hz (`update_rate`). Motors stay
+disabled unless `enable_motion:=true`; then the controller holds the position it reads at startup. It never moves to
+the zero or home pose on its own. On real drives the launch refuses to enable motion without a usable calibration,
+or if the joint table changed since it was written (its `joint_config_hash`); record a new reference then.
 
-## Calibration and identification
+## First-time calibration
+
+Run `arm status` to see whether the active coordinates are **relative** (a resting-pose reference) or **URDF**
+(registered to the model). Every command below runs with the arm launch stopped unless noted; autocal starts its own.
+
+1. **Watch the encoders** (optional, drives disabled): `arm telemetry --cyclic` streams joint positions and drive
+   status; `arm telemetry --log-angles poses.csv` records labelled poses.
+2. **Resting reference** (no fixture needed): let the arm settle, supported, with the drives powered but disabled, then
+   `arm reference`. Every joint's resting position becomes 0 relative degrees; nothing is enabled or moved. This allows
+   powered position holding only: CAD poses, gravity compensation and torque mode stay blocked. Record it once and reuse
+   it (check encoder continuity after a power cycle); re-running it replaces the coordinates.
+3. **Local calibration**: `arm autocal`. With a relative reference it captures the start pose, prints the motion
+   envelope (±10° by default, `--travel-deg` down to 0.5°) and asks `yes` before enabling the motors. After you remove
+   the support and press Enter, each joint in turn sweeps through the envelope (up to 12°/s) while the motors hold the
+   others; holding torque is measured at 24 settled poses approached from both sides, and a local gravity model is
+   fitted and checked on held-out poses. A passing run saves the measured envelope (typically ±7°) and the model; any
+   failure (tracking, too little encoder motion, friction asymmetry, faults, saturation, a failed fit) keeps the
+   previous calibration. Every joint needs clearance both ways: autocal never searches for stops.
+4. **Registered (URDF) calibration**, when a rest or fixture holds the arm at a known model pose: without a relative
+   reference, `arm autocal` prints the reference pose (`home_pose_rad`); you set the arm there with the motors
+   disabled and confirm, it derives the zero offsets from that pose, then runs the same checks in a ±3° envelope.
+5. **Measured coordinates** beyond the local envelope: `arm commission --write-config` (two known angles and the usable
+   endpoints per joint, by hand), `arm kt` with test masses, `arm limits` (powered stop search on an assessed setup).
+   With the powered launch running, `arm bringup --soak-s 10` jogs each joint by at most 3° with confirmation and
+   checks holding.
+
+**Stop zeroing**: `arm autocal --stop-zero --sim --quick --fresh` rehearses zeroing each joint against its mechanical
+stop (the CAD contact angles in `cad/arm01_capture.json`; J1 uses its configured −90° / +180° range).
+`arm autocal --verify-stop shoulder_pitch` checks one stop on the hardware: with the drives disabled, seat it by hand
+twice and it reports the angle against the configured endpoint. `arm autocal --check-encoder <joint>` compares every
+encoder during a small hand movement. Physical stop angles and contact loads still need measuring on the assembled arm.
+
+Without hardware: `arm autocal --sim --quick --fresh` runs the whole automatic sequence on the simulated arm.
+
+## Calibration and identification stages
 
 One command per stage, from `ros2 run wisco_ethercat_ros2_hw arm <stage>` (or `python3 -m arm_stack.cli <stage>` in the
 hardware package). `--sim` runs the identical procedure on a simulated arm with injected errors, so every stage can be

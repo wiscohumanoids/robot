@@ -76,7 +76,7 @@ def test_float_config_is_safe_by_construction(arm):
     _, _, model = make(arm)
     cfg = FloatConfig.from_arm(arm, model, friction_gain=1.7)
     assert np.all(cfg.friction_gain < 1.0)                       # never all of the friction
-    assert cfg.torque_clamp.tolist() == [j.max_torque_nm for j in arm.joints] == [12, 12, 6, 6, 6, 2.5, 2.5]
+    assert cfg.torque_clamp.tolist() == [j.max_torque_nm for j in arm.joints] == [60, 60, 34, 34, 10, 10, 10]   # model peaks
     assert np.allclose(cfg.vel_limit_fraction * cfg.max_vel, 1.0)    # 0.5 x bring-up 2 rad/s
 
 
@@ -180,7 +180,7 @@ def test_torque_never_exceeds_bring_up_clamp(arm):
     sim, _, model = make(arm)
     cfg = FloatConfig.from_arm(arm, model)
     # a hard shove that saturates the wrist, into the walls and the safety damping
-    res = run_float(sim, cfg, duration=2.0, operator=push_profile([0.0, 60.0, 20.0], 0.2, 0.8))
+    res = run_float(sim, cfg, duration=2.0, operator=push_profile([0.0, 300.0, 100.0], 0.2, 0.8))
     tau = np.abs(res.trace['tau_cmd'])
     assert np.all(tau <= cfg.torque_clamp + 1e-9)
     assert np.max(res.max_torque_fraction) == pytest.approx(1.0)        # and the clamp was reached

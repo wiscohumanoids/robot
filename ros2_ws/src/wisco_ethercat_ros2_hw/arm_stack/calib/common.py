@@ -25,6 +25,7 @@ class StageContext:
     quick: bool = False              # fewer poses/cycles (tests, smoke runs)
     log: Optional[Any] = None        # log.recorder.Recorder
     rng: np.random.Generator = field(default_factory=lambda: np.random.default_rng(0))
+    motion_speed: float = 0.4         # position-move speed cap for calibration
 
     def note(self, text: str):
         if self.log is not None:

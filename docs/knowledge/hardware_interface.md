@@ -164,9 +164,10 @@ Each layer assumes the one above it can fail.
 | Concept | This repo |
 |---|---|
 | Hardware interface + controllers | `ros2_ws/src/wisco_ethercat_ros2_hw/`: `ethercat_driver_ros2` + IgH master, `SafeCommandController`, `ArmController` |
+| Drive firmware | MyActuator 26042402 PDO profile on every arm01 drive; `pp_test` checks a drive's mapping and moves it one step without ros2_control |
 | Drive configuration | generated at launch from one joint table, the actuator model table and the calibration file (`hardware_config.py`) |
 | Legs, waist, head | MyActuator mode 5 with the trained kp / kd (`robots/wisco_v1/README.md`, "Drive modes and gains"; not wired yet) |
-| Arms | `ArmController` at 1 kHz: CSP + gravity torque offset (0x60B2), or CST with host PD; tested on the arm01 test arm |
+| Arms | `ArmController` at the cycle rate (100 Hz by default, 1 kHz once timing is verified on the RK3588): CSP + gravity torque offset (0x60B2), or CST with host PD; tested on the arm01 test arm |
 | No drives | `use_mock_hardware:=true` (GenericSystem), or the mock EtherCAT bus in `test/mock/` (a simulated RMD-X drive with the CiA 402 state machine, run under the real controllers in tests) |
 | Simulation | MuJoCo applies the same PD at the physics step; `ros2_ws/src/mujoco_ros2_control/` is the planned ros2_control backend for sim |
 | Hardware e-stop | `hardware/estop/` |

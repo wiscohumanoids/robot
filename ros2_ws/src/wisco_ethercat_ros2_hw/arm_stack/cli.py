@@ -1,5 +1,11 @@
 """`arm <stage> [--sim]`: one command per calibration stage (spec: Calibration procedures).
 
+  arm reference                  save the resting encoder pose as relative zero; no motor enabling
+  arm commission --write-config  passive encoder direction/scale, zeros and usable limits;
+                                  stop ROS first and follow the physical angle-reference prompts
+  arm autocal                    capture the start, check motion and fit gravity in a bounded envelope;
+                                  manages its own arm launch and holds position afterward
+
   arm bringup | indicator | zero | limits | kt | gravity | friction | latency | pivot | plate
   arm mocap-calib | pace | mocap-repeat | repeat [--indicators] | validate
   arm all --sim [--no-mocap]    every stage in order on one sim arm (Phase 0 gate run);
@@ -14,6 +20,8 @@
   arm gravity-check [--payload KG@x,y,z]
                                 float drift -> gravity residual per joint, and the largest
                                 friction help that does not creep (float_friction_gain)
+  arm telemetry --cyclic        start live joint position and drive status with motor enabling off
+  arm telemetry --log-angles CSV  save labeled poses from live feedback (Ctrl-C to finish)
   arm status                    latest calibration version and what it holds
   arm export pace SESSION.mcap OUT
   arm export lerobot OUT SESSION.mcap [...]
@@ -21,11 +29,13 @@
 Each stage prints its report and, if it passed, writes a new calibration
 version (robots/<robot>/calibration/<arm>/<date>_v<N>.yaml; --sim writes to a separate sim
 store so sim runs never mix with the arm's files). --force writes a failing
-stage too, for debugging. Every run is recorded to one MCAP session in
---log-dir with the calibration version in its meta.
+stage too, for debugging. Stage commands record MCAP sessions in --log-dir
+with the calibration version in their metadata. Autocal stores its measured
+holding torques and validation results in the calibration YAML.
 
-Hardware runs need arm01.launch.py up first; --sim needs nothing but
-Pinocchio and numpy. --arm takes a path or a joint config name under robots/*/config/
+Hardware stage commands use a running arm01.launch.py. Autocal starts its own
+launch. Passive commission uses an idle EtherCAT master with the arm launch
+stopped. --sim needs Pinocchio and numpy. --arm takes a path or a joint config name under robots/*/config/
 (e.g. --arm bench01, the single-joint lever rig). Stages that need more
 joints than the arm has (pivot, mocap, validate on the 1-joint rig) report
 SKIP.
@@ -72,6 +82,9 @@ SIM_ROOT = os.path.join(os.path.expanduser('~'), '.cache', 'arm_stack', 'sim_cal
 
 
 def build_model(arm, calibration) -> ArmModel:
+    if calibration.get('coordinate_frame') == 'relative':
+        raise ValueError('This reference uses relative angles, not URDF angles. '
+                         'CAD gravity and kinematic stages need a registered physical pose first.')
     model = ArmModel(arm.urdf, arm.names, home=arm.home)
     model.apply_calibration(calibration, arm.link_masses_kg)
     soft = calibration.get('soft_limits_rad') or {}
@@ -165,10 +178,6 @@ def run_stage(name, args, arm, store, client, recorder=None, extra=None):
             recorder.event('stage_skipped', stage=name, reason=result.lines[0])
         return result
     calibration = store.latest()
-    if not args.sim and args.stage in ('float', 'gravity-check', 'friction', 'latency'):
-        if not calibration.get('link_inertials') or not (
-                calibration.get('gravity_validation') or {'passed': True}).get('passed'):
-            p.error('Run arm gravity --fit-masses successfully and restart the launch before this stage.')
     if args.sim and hasattr(client, 'reload_calibration'):
         client.reload_calibration(calibration)
     ctx = StageContext(arm=arm, client=client, calibration=calibration, model=build_model(arm, calibration),
@@ -232,7 +241,16 @@ def cmd_status(args):
     cal = store.latest()
     print('%s%s: v%s (%s, stage %s) %s' % (arm.arm, ' actuator %s' % store.serial if store.serial else '',
                                            cal.get('version'), cal.get('date'), cal.get('stage'), path))
-    for key in ('zero_offsets_rad', 'soft_limits_rad', 'kt_output_nm_per_a', 'link_inertials', 'friction',
+    print('  coordinates: %s%s' % (cal.get('coordinate_frame', 'urdf'),
+          (' (bounded position mode; local holding-torque fit)'
+           if (cal.get('commissioning') or {}).get('relative_motion') else
+           ' (position holding only; gravity and travel limits uncalibrated)')
+          if cal.get('coordinate_frame') == 'relative' else ''))
+    if cal.get('joint_config_hash') != arm.hash():
+        print('  Joint configuration changed since this calibration.')
+        if (cal.get('commissioning') or {}).get('method') == 'passive_relative_reference':
+            print('  Run arm autocal from the supported resting pose to capture the updated reference.')
+    for key in ('local_gravity', 'zero_offsets_rad', 'soft_limits_rad', 'kt_output_nm_per_a', 'link_inertials', 'friction',
                 'latency_ms', 'joint_stiffness_nm_per_rad', 'kinematic_overlay', 'pace', 'validation'):
         v = cal.get(key)
         filled = bool(v) and (not isinstance(v, dict) or any(x not in (None, [None, None], {}) for x in v.values()))
@@ -308,12 +326,25 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog='arm', description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('stage', choices=[s for s, _ in STAGES] + ['gravity-check', 'float', 'all', 'rig', 'status',
-                                                               'export', 'commission'])
+                                                               'export', 'commission', 'autocal', 'reference', 'telemetry'])
     p.add_argument('paths', nargs='*', help='export: kind and files')
+    p.add_argument('--manual-shoulders', action='store_true', help='log externally measured J2 and J3 angles alongside telemetry')
+    p.add_argument('--log-angles', metavar='CSV', help='telemetry: capture labeled poses from cyclic feedback')
+    p.add_argument('--diagnose-encoders', action='store_true', help='telemetry: compare drive encoder registers with cyclic positions')
+    p.add_argument('--cyclic', action='store_true', help='telemetry: start cyclic EtherCAT with drive enabling disabled')
     p.add_argument('--sim', action='store_true', help='run on the sim backend')
     p.add_argument('--quick', action='store_true', help='fewer poses and cycles (smoke runs)')
     p.add_argument('--fit-masses', action='store_true', help='gravity: fit masses and centers of mass together')
     p.add_argument('--soak-s', type=float, default=None, help='bringup: seconds to check position holding')
+    stops = p.add_mutually_exclusive_group()
+    stops.add_argument('--record-sweep', action='store_true', help='autocal: record a relative joint sweep to CSV')
+    stops.add_argument('--check-encoder', metavar='JOINT', help='compare all encoder readings during a small hand movement')
+    stops.add_argument('--verify-stop', metavar='JOINT',
+                       help='autocal: compare a hand-seated stop with its reference angle, drives disabled')
+    stops.add_argument('--stop-zero', action='store_true',
+                   help='autocal: simulate zeroing each axis against a known mechanical stop')
+    p.add_argument('--travel-deg', type=float, default=None,
+                   help='autocal: maximum travel on each side, degrees (relative default 10, CAD default 3)')
     p.add_argument('--arm', default='arm01', help='joint config name in robots/*/config/ (arm01, bench01) or a path')
     p.add_argument('--serial', default=None, help='bench: serial of the actuator on the rig')
     p.add_argument('--model', default=None, help='bench: actuator model on the rig (x4_10, x4_36, x6_60)')
@@ -342,6 +373,41 @@ def main(argv=None) -> int:
                    help='the client reports no mocap (sim: the plate + indicator-cube chain)')
     p.add_argument('--indicators', action='store_true', help='repeat: measure with the dial-indicator cube')
     args = p.parse_args(argv)
+    if args.record_sweep and args.stage != 'autocal':
+        p.error('--record-sweep applies to autocal')
+    if args.cyclic and args.stage != 'telemetry':
+        p.error('--cyclic applies to telemetry')
+    if args.manual_shoulders and not args.log_angles:
+        p.error('--manual-shoulders requires --log-angles CSV')
+    if args.diagnose_encoders and (args.stage != 'telemetry' or args.log_angles or args.duration is not None):
+        p.error('--diagnose-encoders needs interactive telemetry without angle logging')
+    if args.log_angles and (args.stage != 'telemetry' or args.duration is not None):
+        p.error('--log-angles needs telemetry and runs until Ctrl-C')
+    if args.check_encoder:
+        if args.stage != 'autocal':
+            p.error('--check-encoder applies to autocal')
+        from .calib.stop_zero import check_encoder
+        return check_encoder(args)
+    if args.verify_stop:
+        if args.stage != 'autocal':
+            p.error('--verify-stop applies to autocal')
+        from .calib.stop_zero import verify_stop
+        return verify_stop(args)
+    if args.stop_zero:
+        if args.stage != 'autocal':
+            p.error('--stop-zero applies to autocal')
+        from .calib.stop_zero import run
+        return run(args)
+    if args.stage == 'autocal':
+        from .calib.autocal import run
+        return run(args)
+    if args.stage == 'reference':
+        from .calib.reference import run
+        try:
+            return run(args)
+        except (RuntimeError, ValueError, OSError) as error:
+            print('reference: %s' % error, file=sys.stderr)
+            return 1
     if args.stage == 'commission':
         from .calib.commission import run
         try:
@@ -350,6 +416,11 @@ def main(argv=None) -> int:
             print('commission: %s' % error, file=sys.stderr)
             return 1
 
+    if args.stage == 'telemetry':
+        if args.sim:
+            p.error('telemetry reads the physical EtherCAT bus')
+        from .hw.telemetry import run
+        return run(args)
     if args.stage == 'status':
         return cmd_status(args)
     if args.stage == 'export':
@@ -375,6 +446,13 @@ def main(argv=None) -> int:
         root = tempfile.mkdtemp(prefix='arm_sim_calib_')
     store = CalibrationStore(arm, root, serial)
     calibration = store.latest()
+    if calibration.get('coordinate_frame') == 'relative':
+        p.error('Relative reference: position holding only. Gravity, automatic motion and '
+                'CAD calibration stages require a registered physical pose first.')
+    if not args.sim and args.stage in ('float', 'gravity-check', 'friction', 'latency'):
+        if not calibration.get('link_inertials') or not (
+                calibration.get('gravity_validation') or {'passed': True}).get('passed'):
+            p.error('Run arm gravity --fit-masses successfully and restart the launch before this stage.')
     if calibration.get('version') in (None, 0) and not args.sim and args.stage not in (
             'bringup', 'indicator', 'zero', 'all', 'rig'):
         print('warning: no calibration file yet for %s; run arm bringup and arm zero first' % arm.arm)

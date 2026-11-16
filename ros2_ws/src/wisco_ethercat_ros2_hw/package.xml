@@ -10,6 +10,9 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <depend>ament_index_cpp</depend>
+  <depend>ethercat_generic_slave</depend>
+  <depend>ethercat_interface</depend>
   <depend>controller_interface</depend>
   <depend>hardware_interface</depend>
   <depend>pluginlib</depend>

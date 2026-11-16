@@ -6,18 +6,18 @@
       optionally followed by [payload_kg, x, y, z] (point mass in tool0; sticky in the
       controller, kg <= 0 clears it); sent only when Command.payload is set
   /arm_controller/state    Float64MultiArray, every RT cycle:
-      [t, mode, fallback, limit_hit, clamped, q[n], qd[n], tau[n], tau_out[n], q_target[n]]
+      [t, mode, fallback, limit_hit, clamped, q[n], qd[n], tau[n], tau_out[n], q_target[n], status_word[n], mode_display[n]]
 
 The RT loop owns timing and the 50 ms watchdog; this client only streams
 targets. Keep the layouts in sync with arm_controller.hpp.
 
-What the state topic does not carry, and how this client fills it:
+Values reconstructed from the controller state:
   raw_counts    re-derived from q with the configured units (a later unit fix
                 cannot reprocess these; log 0x6064 directly once the drive
                 manifest exposes it as a state interface)
   raw_permille  re-derived from tau the same way
-  status        0x6041 is not exposed by the controller yet; reported as
-                0x1237 (operation enabled) unless the watchdog fallback is on
+Drive status comes from the cyclic 0x6041 feedback. The client requires a finite
+status word for every joint before it returns a hardware state.
 """
 
 from __future__ import annotations
@@ -66,9 +66,10 @@ def decode_state(data, n: int):
 class RosArmClient(ArmClient):
 
     def __init__(self, arm: ArmConfig, calibration: dict, controller: str = 'arm_controller',
-                 power_on_monotonic: Optional[float] = None, node_name: str = 'arm_stack'):
+                 power_on_monotonic: Optional[float] = None, node_name: str = 'arm_stack',
+                 state_timeout: float = 5.0, check_launch=None):
         import rclpy
-        from rclpy.executors import SingleThreadedExecutor
+        from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
         from rclpy.qos import QoSProfile, ReliabilityPolicy
         from std_msgs.msg import Float64MultiArray
 
@@ -91,14 +92,36 @@ class RosArmClient(ArmClient):
         self.node.create_subscription(Float64MultiArray, '/%s/state' % controller, self._on_state, qos)
         self.executor = SingleThreadedExecutor()
         self.executor.add_node(self.node)
-        self._spin = threading.Thread(target=self.executor.spin, daemon=True)
+
+        def spin():
+            try:
+                self.executor.spin()
+            except ExternalShutdownException:
+                pass
+
+        self._spin = threading.Thread(target=spin, daemon=True)
         self._spin.start()
         self._power_on = power_on_monotonic
         self._mocap = None
         self._last_cmd = None
-        if not self._wait_state(5.0):
+        try:
+            deadline = time.monotonic() + state_timeout
+            while True:
+                if check_launch is not None:
+                    check_launch()
+                if not rclpy.ok():
+                    raise KeyboardInterrupt
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise RuntimeError(f'No /{controller}/state within {state_timeout:g} s. Check the arm launch.')
+                if self._wait_state(min(0.25, remaining)):
+                    break
+            self._check_calibration(controller, calibration)
+        except BaseException:
             self.close()
-            raise RuntimeError('no /%s/state within 5 s: is the arm launched (arm01.launch.py)?' % controller)
+            raise
+
+    def _check_calibration(self, controller, calibration):
         from rcl_interfaces.srv import GetParameters
         from ..config import load_yaml
         service = self.node.create_client(GetParameters, '/%s/get_parameters' % controller)
@@ -113,11 +136,9 @@ class RosArmClient(ArmClient):
                 raise RuntimeError('controller parameters timed out')
             path = future.result().values[0].string_value
             live = load_yaml(path) if path else {}
-            if (live.get('version') or 0) != (calibration.get('version') or 0):
+            if (live.get('version') or 0) != (calibration.get('version') or 0) or (
+                    live.get('version') and live != calibration):
                 raise RuntimeError('Calibration changed. Restart arm01.launch.py to load the latest file.')
-        except Exception:
-            self.close()
-            raise
         finally:
             self.node.destroy_client(service)
 
@@ -213,6 +234,7 @@ class RosArmClient(ArmClient):
 
     def close(self) -> None:
         self.executor.shutdown()
+        self._spin.join()
         self.node.destroy_node()
 
 

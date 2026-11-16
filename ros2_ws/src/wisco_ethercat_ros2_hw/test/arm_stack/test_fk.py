@@ -168,7 +168,8 @@ def test_home_is_low_gravity_and_zero_is_stretched_out(arm):
     home = safe_home(m)
     assert np.all(np.abs(m.gravity(home)) < 0.3 * clamp), m.gravity(home)
     zero = np.clip(np.zeros(m.n), m.lower, m.upper)
-    assert np.abs(m.gravity(zero))[0] > 0.3 * clamp[0]
+    # Compared with home rather than the clamp: the clamps are now the motors' peak torque.
+    assert abs(m.gravity(zero)[0]) > 2 * abs(m.gravity(home)[0])
     tip0, tiph = m.fk(zero).translation, m.fk(home).translation
     assert tip0[0] > 0.4 and abs(tip0[2]) < 0.2           # out in front, near shoulder height
     assert -0.49 < tiph[2] < -0.35 and tiph[0] < 0.35      # below the shoulder, peg clear of the base

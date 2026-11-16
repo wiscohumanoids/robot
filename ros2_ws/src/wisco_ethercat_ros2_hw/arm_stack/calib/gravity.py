@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..control.motion import Trace, move_to, stream
+from ..control.motion import Trace, hold_and_average, move_to, stream
 from .common import DEG, StageContext, StageResult, random_poses, safe_home
 
 RESIDUAL_FRACTION = 0.05
@@ -33,10 +33,14 @@ PRIOR_WEIGHT = 1e-3
 def measure_pose(ctx, q, clamp, sweep=SWEEP, speed=SPEED):
     """Measured joint torque at q, averaged over an up and a down pass."""
     client = ctx.client
+    available = float(np.min(np.minimum(q - ctx.model.lower, ctx.model.upper - q)))
+    sweep = min(sweep, max(0.0, available) * 0.9)
+    if sweep < 0.01 * DEG:
+        raise RuntimeError('Gravity measurement pose has insufficient clearance for its sweep.')
     passes = []
     for sgn in (+1, -1):
         start = q - sgn * sweep
-        move_to(client, start, max_speed=0.4, settle=0.3, torque_clamp=clamp)
+        move_to(client, start, max_speed=min(0.4, ctx.motion_speed), settle=0.3, torque_clamp=clamp)
         n = max(2, int(2 * sweep / speed / client.cmd_dt))
         s = np.linspace(0, 1, n)[:, None]
         qs = start[None, :] + sgn * 2 * sweep * s
@@ -72,6 +76,22 @@ def residuals(model, Q, T):
     return np.array([tau - model.gravity(q) for q, tau in zip(Q, T)])
 
 
+def measure_static_pose(ctx, q, clamp):
+    """Average settled holding torque after approaching from both directions."""
+    clearance = np.minimum(q - ctx.model.lower, ctx.model.upper - q)
+    approach = np.minimum(0.25 * DEG, 0.5 * clearance)
+    reads = []
+    for direction in (-1, 1):
+        move_to(ctx.client, q + direction * approach, max_speed=ctx.motion_speed,
+                gravity_ff=False, torque_clamp=clamp)
+        move_to(ctx.client, q, max_speed=ctx.motion_speed, settle=1.0,
+                gravity_ff=False, torque_clamp=clamp)
+        reads.append(hold_and_average(ctx.client, 0.5, q, gravity_ff=False, torque_clamp=clamp))
+        if np.max(np.abs(reads[-1]['q'] - q)) > 1 * DEG:
+            raise RuntimeError('A joint failed to reach its gravity measurement pose within 1 degree.')
+    return np.mean([r['tau'] for r in reads], axis=0), np.mean([r['q'] for r in reads], axis=0)
+
+
 def fit_static_parameters(model, Q, T, scale):
     """Regularized static mass/first-moment fit with positive mass bounds."""
     from scipy.optimize import lsq_linear
@@ -95,7 +115,8 @@ def fit_static_parameters(model, Q, T, scale):
     return fit.x[:model.n], fit.x[model.n:], singular, vt[:rank]
 
 
-def run(ctx: StageContext, n_fit: int = None, n_test: int = 10, fit_masses: bool = False) -> StageResult:
+def run(ctx: StageContext, n_fit: int = None, n_test: int = 10, fit_masses: bool = False,
+        static: bool = False) -> StageResult:
     client, arm = ctx.client, ctx.arm
     model = ctx.model.copy()
     n_fit = n_fit or (min(16, 4 + 4 * model.n) if ctx.quick else 32)   # 3 params per link
@@ -105,14 +126,19 @@ def run(ctx: StageContext, n_fit: int = None, n_test: int = 10, fit_masses: bool
     peak = np.array([j.peak_torque_nm for j in arm.joints])
     poses = random_poses(model, n_fit + n_test, ctx.rng, margin=12 * DEG, spread=0.8)
     data = []
-    for q in poses:
+    for pose_index, q in enumerate(poses):
+        if not ctx.sim:
+            print('Gravity measurement %d/%d' % (pose_index + 1, len(poses)), flush=True)
         clamp = np.minimum(peak, np.abs(model.gravity(q)) * 1.5 + 0.25 * peak)
-        tau, q_meas = measure_pose(ctx, q, clamp)
+        measure = measure_static_pose if static else measure_pose
+        tau, q_meas = measure(ctx, q, clamp)
         data.append((q_meas, tau))
-    move_to(client, home, max_speed=0.4)
+    move_to(client, home, max_speed=min(0.4, ctx.motion_speed))
     fit, test = data[:n_fit], data[n_fit:]
     Qf, Tf = [d[0] for d in fit], [d[1] for d in fit]
     Qt, Tt = [d[0] for d in test], [d[1] for d in test]
+    if static and np.any(np.ptp(Qf, axis=0) < 0.1 * (model.upper - model.lower)):
+        raise RuntimeError('Insufficient measured joint movement for gravity identification.')
 
     masses = model.masses()
     prior = model.first_moments()
@@ -163,6 +189,8 @@ def run(ctx: StageContext, n_fit: int = None, n_test: int = 10, fit_masses: bool
     return StageResult('gravity', passed,
                        {'residual_frac': frac.tolist(), 'residual_nm': worst.tolist(),
                         'before_nm': before.tolist(), 'rank': rank, 'cond': cond,
+                        'measured_poses_rad': [q.tolist() for q, _ in data],
+                        'holding_torques_nm': [tau.tolist() for _, tau in data],
                         'fit_poses': [q.tolist() for q in Qf], 'test_poses': [q.tolist() for q in Qt]},
                        {'link_inertials': inertials,
                         'gravity_validation': {'passed': passed, 'fit_masses': fit_masses,

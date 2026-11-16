@@ -13,16 +13,18 @@ from __future__ import annotations
 
 import copy
 import datetime as _dt
-import glob
 import hashlib
 import os
 import re
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import yaml
+
+from wisco_ethercat_ros2_hw.calibration_files import calibration_versions
 
 PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -182,9 +184,8 @@ def load_arm(path: str = 'arm01',
 
         gains = row.get('gains') or {}
         rated = float(pick('rated_current_a', model.get('rated_current_a', 10.0)))
-        # The RT clamps may be raised from the bring-up limits toward the datasheet
-        # ratings after Phase 1, never past them.
-        for key, cap_key in (('max_torque_nm', 'rated_torque_nm'),
+        torque_ceiling = 'peak_effort_nm' if row.get('use_peak_torque_limit') is True else 'rated_torque_nm'
+        for key, cap_key in (('max_torque_nm', torque_ceiling),
                              ('max_vel_rad_s', 'no_load_velocity_rad_s')):
             value, cap = row.get(key), model.get(cap_key)
             if value is not None and cap is not None and float(value) > float(cap):
@@ -219,7 +220,7 @@ def load_arm(path: str = 'arm01',
 CALIB_FIELDS = (
     'zero_offsets_rad', 'soft_limits_rad', 'kt_output_nm_per_a', 'link_inertials', 'friction',
     'latency_ms', 'joint_stiffness_nm_per_rad', 'kinematic_overlay', 'pace', 'validation',
-    'commissioning', 'gravity_validation',
+    'commissioning', 'gravity_validation', 'coordinate_frame', 'local_gravity',
 )
 
 
@@ -250,8 +251,6 @@ def empty_calibration(arm: ArmConfig) -> Dict[str, Any]:
 class CalibrationStore:
     """`<robot>/calibration/<arm>/<date>_v<N>.yaml` beside the arm's joint config, append-only."""
 
-    PATTERN = re.compile(r'_v(\d+)\.yaml$')
-
     def __init__(self, arm: ArmConfig, root: Optional[str] = None, serial: Optional[str] = None):
         """serial: one actuator on the bench rig; its versions go to <arm>/<serial>/
         and carry `actuator_serial`, since Kt and friction vary unit to unit."""
@@ -263,8 +262,7 @@ class CalibrationStore:
             self.dir = os.path.join(self.dir, re.sub(r'[^A-Za-z0-9_.-]', '_', str(serial)))
 
     def versions(self) -> List[str]:
-        files = glob.glob(os.path.join(self.dir, '*_v*.yaml'))
-        return sorted(files, key=lambda p: int(self.PATTERN.search(p).group(1)))
+        return calibration_versions(self.dir)
 
     def latest_path(self) -> Optional[str]:
         v = self.versions()
@@ -281,7 +279,11 @@ class CalibrationStore:
         if unknown:
             raise ValueError('not calibration fields: %s' % sorted(unknown))
         for key, value in updates.items():
-            if isinstance(value, dict) and isinstance(base.get(key), dict):
+            # Provenance and fitted models describe one measurement. Merging them
+            # would carry old motion permissions into a fresh resting reference.
+            if key in ('commissioning', 'local_gravity', 'gravity_validation'):
+                base[key] = value
+            elif isinstance(value, dict) and isinstance(base.get(key), dict):
                 merged = dict(base[key])
                 merged.update(value)
                 base[key] = merged
@@ -297,9 +299,21 @@ class CalibrationStore:
             base['actuator_model'] = self.arm.joints[0].model if self.arm.n == 1 else None
         os.makedirs(self.dir, exist_ok=True)
         path = os.path.join(self.dir, '%s_v%d.yaml' % (base['date'], base['version']))
-        with open(path, 'w') as f:
-            f.write('# Written by `arm %s`. Never edit by hand; rerun the stage.\n' % stage)
-            yaml.safe_dump(_plain(base), f, sort_keys=False)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', dir=self.dir, prefix='.calib_',
+                                             suffix='.tmp', delete=False) as f:
+                temporary = f.name
+                f.write('# Written by `arm %s`. Never edit by hand; rerun the stage.\n' % stage)
+                yaml.safe_dump(_plain(base), f, sort_keys=False)
+                f.flush()
+                os.fsync(f.fileno())
+            # Publish the complete version atomically and reject a concurrent
+            # writer claiming the same version. Existing versions stay intact.
+            os.link(temporary, path)
+        finally:
+            if temporary is not None:
+                os.unlink(temporary)
         return path
 
 

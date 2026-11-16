@@ -182,12 +182,19 @@ def test_legacy_pdos_match_fixed_firmware_layout(tmp_path, mode):
     assert modern['tpdo'][0]['channels'][-1]['index'] == 0x2ffe
 
 
-def test_arm01_mixed_firmware_interfaces(tmp_path):
+def test_arm01_updated_firmware_interfaces(tmp_path):
     xacro = pytest.importorskip('xacro')
     description = os.path.join(ARM01, 'urdf', 'arm01.ros2_control.xacro')
     plain = xacro.process_file(description).toxml()
     hw = HardwareConfig(MODELS, os.path.join(ARM01, 'config', 'arm01.yaml'), plain,
                         template_file=TEMPLATE)
+    assert hw.arm_controller_parameters()['torque_offset_enabled'] == [True] * 7
+    for joint in hw.joints:
+        cfg = hw.slave_config(joint)
+        assert cfg['assign_activate'] == 0x0300
+        assert [pdo['index'] for pdo in cfg['rpdo']] == [0x1600, 0x1603]
+        assert cfg['rpdo'][0]['channels'][-1]['index'] == 0x2ffd
+        assert cfg['tpdo'][0]['channels'][-1]['index'] == 0x2ffe
     for mock in (False, True):
         manifest = hw.write(str(tmp_path / str(mock)), use_mock_hardware=mock)
         urdf = ET.fromstring(xacro.process_file(
@@ -196,8 +203,7 @@ def test_arm01_mixed_firmware_interfaces(tmp_path):
         assert len(joints) == 7
         for joint in joints:
             names = [c.get('name') for c in joint.findall('command_interface')]
-            legacy = joint.get('name') in ('shoulder_roll', 'shoulder_yaw')
-            assert ('torque_offset' in names) == (not legacy)
+            assert 'torque_offset' in names
             assert {'position', 'effort', 'mode_of_operation', 'max_torque'} <= set(names)
 
 
@@ -215,6 +221,34 @@ def test_commissioned_scales_are_applied_to_hardware(tmp_path):
     assert params['gravity_enabled'] is False
 
 
+def test_launch_discovers_new_source_calibration_without_rebuild(tmp_path):
+    import importlib.util
+    pytest.importorskip('launch_ros')   # plain 'launch' also matches this package's launch/ folder
+    pytest.importorskip('ament_index_python')
+    spec = importlib.util.spec_from_file_location('arm01_launch', os.path.join(ROOT, 'launch', 'arm01.launch.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    # Source tree robots/arm01/{config,calibration}; the installed share links its config back to it.
+    source = tmp_path / 'source' / 'arm01'
+    installed = tmp_path / 'installed'
+    (source / 'config').mkdir(parents=True)
+    (source / 'config' / 'arm01.yaml').write_text('arm: arm01\n')
+    (installed / 'config').mkdir(parents=True)
+    (installed / 'config' / 'arm01.yaml').symlink_to(source / 'config' / 'arm01.yaml')
+    assert module.latest_calibration(str(installed)) == ''
+    calibration = source / 'calibration' / 'arm01' / '2026-11-15_v1.yaml'
+    calibration.parent.mkdir(parents=True)
+    calibration.write_text('version: 1\n')
+    # A validation report or per-serial rig summary can share the version suffix.
+    for sidecar in ('2026-11-15_v42_validate_report.yaml', 'rig_2026-11-15_v42.yaml'):
+        (calibration.parent / sidecar).write_text('passed: true\n')
+    newer = calibration.with_name('2026-11-15_v10.yaml')
+    newer.write_text('version: 10\n')
+    assert module.latest_calibration(str(installed)) == str(newer)
+    from arm_stack.config import CalibrationStore, load_arm
+    assert CalibrationStore(load_arm(), str(source / 'calibration')).versions() == [str(calibration), str(newer)]
+
+
 def test_arm_controller_gets_weighed_link_masses(tmp_path):
     # the Python ArmModel applies link_masses_kg; the C++ gravity model must see them too
     hw = make(tmp_path, [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}])
@@ -224,6 +258,58 @@ def test_arm_controller_gets_weighed_link_masses(tmp_path):
     for table in ({'link_masses_kg': {'l1': None}}, {}, None):
         params = hw.arm_controller_parameters(table)
         assert 'link_mass_names' not in params and 'link_mass_values' not in params
+
+
+def test_relative_reference_only_allows_holding_and_never_cad_gravity(tmp_path):
+    joints = [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}]
+    cal = {'coordinate_frame': 'relative', 'zero_offsets_rad': {'a': 2.7},
+           'link_inertials': {'l1': {'mass_kg': 1}}, 'gravity_validation': {'passed': True}}
+    hw = make(tmp_path, joints, control_mode='arm', calibration=cal)
+    params = hw.arm_controller_parameters()
+    assert params['hold_only'] is True
+    assert params['gravity_enabled'] is False  # even if inertials accidentally remain
+    assert params['hold_on_startup'] and params['hold_on_timeout']
+    with pytest.raises(ConfigError, match='position holding only'):
+        make(tmp_path, joints, control_mode='velocity', calibration=cal)
+
+
+def test_relative_launch_prepares_hold_only_without_measured_limits(tmp_path, monkeypatch):
+    import hashlib
+    import importlib.util
+    from pathlib import Path
+    pytest.importorskip('launch_ros')   # needs ROS; plain 'launch' matches this package's launch/ folder
+    pytest.importorskip('xacro')
+    from launch import LaunchContext
+    spec = importlib.util.spec_from_file_location('bench_launch', os.path.join(ROOT, 'launch', 'test_bench.launch.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    joints = Path(ARM01) / 'config' / 'arm01.yaml'
+    names = [j['name'] for j in yaml.safe_load(joints.read_text())['joints']]
+    calibration = write(tmp_path, 'reference.yaml', {
+        'version': 1, 'coordinate_frame': 'relative',
+        'joint_config_hash': hashlib.sha256(joints.read_bytes()).hexdigest()[:16],
+        'zero_offsets_rad': {n: 1.7 for n in names},
+        'soft_limits_rad': {n: [None, None] for n in names},
+    })
+    generated = tmp_path / 'generated'
+    generated.mkdir()
+    monkeypatch.setattr(module, 'get_package_share_directory', lambda _: ROOT)
+    monkeypatch.setattr(module.tempfile, 'mkdtemp', lambda **kwargs: str(generated))
+    # Construct the launch actions only. No process or hardware is started.
+    monkeypatch.setattr(module, 'Node', lambda **kwargs: kwargs)
+    monkeypatch.setenv('ROS_LOG_DIR', str(tmp_path / 'ros_logs'))
+    context = LaunchContext()
+    context.launch_configurations.update({
+        'description': os.path.join(ARM01, 'urdf', 'arm01.ros2_control.xacro'), 'joints_file': str(joints),
+        'models_file': MODELS, 'calibration_file': calibration, 'control_mode': '',
+        'use_mock_hardware': 'false', 'enable_motion': 'true', 'demo': 'false',
+        'update_rate': '100', 'joint_state_rate': '50', 'command_timeout': '0.05',
+    })
+    actions = module._setup(context)
+    assert any(isinstance(a, dict) and a['executable'] == 'ros2_control_node' for a in actions)
+    params = yaml.safe_load((generated / 'controllers.yaml').read_text())['arm_controller']['ros__parameters']
+    assert params['hold_only'] is True
+    assert params['gravity_enabled'] is False
 
 
 def test_continuous_joint_limits_are_finite_in_parameters(tmp_path):
@@ -307,3 +393,25 @@ def test_write_and_xacro_expansion(tmp_path):
             assert mparams['slave_config'].endswith('drive_02_left_shoulder_yaw.yaml')
         rest = [j.get('name') for j in systems['MockSystem'].findall('joint')]
         assert len(rest) == 27 and 'left_elbow' not in rest
+
+
+def test_relative_local_gravity_parameters_and_bad_motion_bounds(tmp_path):
+    joints = [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}]
+    cal = {'coordinate_frame': 'relative', 'commissioning': {'relative_motion': True},
+           'soft_limits_rad': {'a': [-0.01, 0.01]},
+           'local_gravity': {'kind': 'local_affine', 'validated': True, 'center_rad': [0.0],
+                             'bias_nm': [0.2], 'jacobian_nm_per_rad': [[2.0]],
+                             'lower_rad': [-0.01], 'upper_rad': [0.01]}}
+    hw = make(tmp_path, joints, control_mode='arm', calibration=cal)
+    params = hw.arm_controller_parameters()
+    assert not params['hold_only'] and params['position_only']
+    assert not params['gravity_enabled']
+    assert params['local_jacobian'] == [2.0]
+    cal['local_gravity']['validated'] = False
+    with pytest.raises(ConfigError, match='independent validation'):
+        make(tmp_path, joints, control_mode='arm', calibration=cal).arm_controller_parameters()
+    cal['soft_limits_rad']['a'] = [-math.radians(10), math.radians(10)]
+    make(tmp_path, joints, control_mode='arm', calibration=cal)
+    cal['soft_limits_rad']['a'] = [-math.radians(10.01), math.radians(10)]
+    with pytest.raises(ConfigError, match='no wider than 20'):
+        make(tmp_path, joints, control_mode='arm', calibration=cal)

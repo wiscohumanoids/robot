@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark the IK solvers in arm_stack.model.ik and write robots/arm01/docs/ik_report.md.
+"""Benchmark the IK solvers in arm_stack.model.ik and write build/analysis/ik_report.md.
 
 1. Random in-limit configurations -> FK targets, solved from
    (i) the nominal seed (mid-range posture) and
@@ -283,8 +283,8 @@ def main(argv=None):
     ap.add_argument('--mask-n', type=int, default=500)
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--quick', action='store_true')
-    ap.add_argument('--out', default=os.path.join(os.path.normpath(os.path.join(ROOT, '..', '..', '..', 'robots', 'arm01')), 'docs', 'ik_report.md'))
-    ap.add_argument('--json', default=os.path.join(os.path.normpath(os.path.join(ROOT, '..', '..', '..', 'robots', 'arm01')), 'docs', 'ik_benchmark.json'))
+    ap.add_argument('--out', default='build/analysis/ik_report.md')
+    ap.add_argument('--json', default='build/analysis/ik_benchmark.json')
     a = ap.parse_args(argv)
     if a.quick:
         a.n, a.mask_n = 300, 100

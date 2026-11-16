@@ -4,6 +4,6 @@ project(arm01_description)
 
 find_package(ament_cmake REQUIRED)
 
-install(DIRECTORY urdf meshes config calibration DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY urdf meshes config calibration cad DESTINATION share/${PROJECT_NAME})
 
 ament_package()

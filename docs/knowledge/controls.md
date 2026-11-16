@@ -223,9 +223,9 @@ When the humanoid has to do real loco-manipulation, with arm and legs coordinati
 | Concept above | Wisco V1 |
 |---|---|
 | Leg controller (plain PD) | runs **inside the MyActuator driver** (EtherCAT mode 5, "PVT/MIT"): every cycle the computer sends the target position plus kp and kd, and the driver computes τ = kp (q_des − q) + kd (q̇_des − q̇) + τ_ff. The gains are the ones the walking policy was trained with (`robots/wisco_v1/model/robot_numbers.yaml`, `control.gains`), so sim and robot run the same law. Same for the waist and head |
-| Arm controller (impedance + gravity) | `ArmController` in `ros2_ws/src/wisco_ethercat_ros2_hw/`, running at 1 kHz on the RK3588: Pinocchio gravity compensation plus PD, sent as a position target with a gravity torque offset (CSP + 0x60B2) or as torque (CST). Built and tested on the arm01 test arm |
+| Arm controller (impedance + gravity) | `ArmController` in `ros2_ws/src/wisco_ethercat_ros2_hw/`, running at the EtherCAT cycle on the RK3588 (100 Hz by default, 1 kHz once timing is verified): Pinocchio gravity compensation plus PD, sent as a position target with a gravity torque offset (CSP + 0x60B2) or as torque (CST). Built and tested on the arm01 test arm |
 | In simulation | MuJoCo position actuators apply the same PD at the physics step (5 ms); held arm joints get the sim stand-in gains from the same numbers file |
-| Rates | walking policy 50 Hz; PD in the driver at the EtherCAT cycle (1 kHz planned) |
+| Rates | walking policy 50 Hz; PD in the driver at its own loop rate; EtherCAT cycle 100 Hz today, 1 kHz planned |
 | Whole-body controller | none: the walking policy keeps balance while the arms move (the arms-free recipe trains it with random arm motion and hand payloads) |
 
 Why the gains matter so much: a policy is trained against one PD law; if the driver's gains or units differ, the robot
