@@ -39,9 +39,9 @@ The run is managed by user service `robotarm-act-ik-low-lr-20260923.service`.
 Its launch record contains the full command, environment, source checkpoint hash,
 code hashes, and baseline selection metrics.
 
-- [Launch record](../outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/launch.json)
-- [Training log](../outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/training.log)
-- [Effective settings](../outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/training_settings.json)
+- Launch record (`outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/launch.json`, local run output, not in the repo)
+- Training log (`outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/training.log`, local run output, not in the repo)
+- Effective settings (`outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/training_settings.json`, local run output, not in the repo)
 
 Selection rollouts are a small, reused development set. Improvement in their
 results would warrant a separate held-out scene evaluation before claiming

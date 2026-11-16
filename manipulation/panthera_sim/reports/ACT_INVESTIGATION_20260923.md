@@ -21,7 +21,7 @@ A separate, instrumented comparison uses the same first 16 seeds, fresh environm
 | Execute 3 actions, then replan | 0/16 | 0/16 |
 | Temporal ensemble, coefficient 0.01 | 8/16 | 0/16 |
 
-The execution comparison is strong evidence that frequent replanning aggravates failure. It does not establish that a one-second queue solves grasping. A saved [normal-rollout failure video](../outputs/act/investigation_20260923/failed_pickup_seed20261201.mp4) shows the 100k model failing to pick up a block.
+The execution comparison is strong evidence that frequent replanning aggravates failure. It does not establish that a one-second queue solves grasping. A saved normal-rollout failure video (`outputs/act/investigation_20260923/failed_pickup_seed20261201.mp4`, local run output, not in the repo) shows the 100k model failing to pick up a block.
 
 ## 1. Prediction error is large relative to the movement being controlled
 
@@ -43,7 +43,7 @@ On held-out frames with appreciable demonstrated joint motion, 31% of first pred
 
 The loss trains absolute joint targets and averages normalized L1 over seven coordinates and the entire chunk. It contains no explicit grasp-contact objective or Cartesian precision term. Repeatedly deploying its first few actions can therefore repeatedly apply an inaccurate local target. This mechanism is consistent with the short-queue failure observed above; the results do not prove that a particular alternative representation will fix it.
 
-![ACT target error by prediction horizon](../outputs/act/investigation_20260923/target_error_evidence.png)
+*(image `outputs/act/investigation_20260923/target_error_evidence.png`, local run output, not in the repo)*
 
 ## 2. More training mostly improves familiar trajectories
 
@@ -92,7 +92,7 @@ Extending the same imitation run or starting RL from it is not yet supported as 
 
 ## Artifacts and reproduction
 
-[Machine-readable summary](../outputs/act/investigation_20260923/summary.json) includes environment versions, checkpoint hashes, final deployment rates, mode counts and offline evidence. [Diagnostic tool](../tools/investigate_act.py) provides data audit/replay, offline physical-error measurements and instrumented rollout comparisons. Camera and plotting probes are saved alongside the output files.
+Machine-readable summary (`outputs/act/investigation_20260923/summary.json`, local run output, not in the repo) includes environment versions, checkpoint hashes, final deployment rates, mode counts and offline evidence. [Diagnostic tool](../tools/investigate_act.py) provides data audit/replay, offline physical-error measurements and instrumented rollout comparisons. Camera and plotting probes are saved alongside the output files.
 
 Run from `/home/zeb/Desktop/RobotArmLearning`:
 

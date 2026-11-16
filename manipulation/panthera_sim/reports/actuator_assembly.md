@@ -60,11 +60,11 @@ per-frame IK position residual below 0.001 mm. These are two smoke tests, not
 a statistical reliability estimate. An additional ten-second hold on an earlier
 successful development trial also preserved all pin and gear criteria.
 
-- [Final controller, seed 0](../outputs/actuator/pins_verified_0/result.json)
-- [Final controller, seed 1](../outputs/actuator/pins_verified_1/result.json)
-- [Recorded-state verification](../outputs/actuator/pins_verified_0/final_verification.json)
-- [Pin-insertion replay](../outputs/actuator/pins_verified_0/pin_insertion.mp4)
-- [Assembled pins image](../outputs/actuator/pins_verified_0/assembled_pins.png)
+- Final controller, seed 0 (`outputs/actuator/pins_verified_0/result.json`, local run output, not in the repo)
+- Final controller, seed 1 (`outputs/actuator/pins_verified_1/result.json`, local run output, not in the repo)
+- Recorded-state verification (`outputs/actuator/pins_verified_0/final_verification.json`, local run output, not in the repo)
+- Pin-insertion replay (`outputs/actuator/pins_verified_0/pin_insertion.mp4`, local run output, not in the repo)
+- Assembled pins image (`outputs/actuator/pins_verified_0/assembled_pins.png`, local run output, not in the repo)
 
 Validation: **28 tests pass** (17 assembly/IK tests and 11 existing gripper/control
 tests). New checks cover optional-scene reset compatibility, CAD pin identity,
@@ -126,13 +126,13 @@ OPENBLAS_NUM_THREADS=1 .venv-assembly/bin/python tools/try_actuator_assembly.py 
 .venv-assembly/bin/python tools/replay_actuator.py outputs/actuator/assembly
 ```
 
-- [Complete assembly replay](../outputs/actuator/ik_layout_0/assembly.mp4)
-- [Final assembly image](../outputs/actuator/ik_layout_0/assembled.png)
-- [Seed 0 result](../outputs/actuator/ik_layout_0/result.json) and
-  [independent final-state verification](../outputs/actuator/ik_layout_0/final_verification.json)
-- [Seed 1 result](../outputs/actuator/ik_full_1/result.json)
-- [Seed 2 result](../outputs/actuator/ik_full_2/result.json)
-- [Updated CAD and grasp audit](../outputs/actuator/ik_audit/audit.json)
+- Complete assembly replay (`outputs/actuator/ik_layout_0/assembly.mp4`, local run output, not in the repo)
+- Final assembly image (`outputs/actuator/ik_layout_0/assembled.png`, local run output, not in the repo)
+- Seed 0 result (`outputs/actuator/ik_layout_0/result.json`, local run output, not in the repo) and
+  independent final-state verification (`outputs/actuator/ik_layout_0/final_verification.json`, local run output, not in the repo)
+- Seed 1 result (`outputs/actuator/ik_full_1/result.json`, local run output, not in the repo)
+- Seed 2 result (`outputs/actuator/ik_full_2/result.json`, local run output, not in the repo)
+- Updated CAD and grasp audit (`outputs/actuator/ik_audit/audit.json`, local run output, not in the repo)
 
 Validation: 11 assembly tests and 11 existing gripper/control tests pass.
 The new regressions verify returned IK residuals without live-state mutation
@@ -251,10 +251,10 @@ OPENBLAS_NUM_THREADS=1 .venv-assembly/bin/python tools/replay_actuator.py \
 
 Artifacts:
 
-- [Contact-only attempt video](../outputs/actuator/assembly_attempt.mp4)
-- [Final audit JSON](../outputs/actuator/final_audit/audit.json)
-- [Revised physical trial, seed 0](../outputs/actuator/corrected_grasp_0/result.json)
-- [Revised physical trial, seed 1](../outputs/actuator/corrected_grasp_1/result.json)
+- Contact-only attempt video (`outputs/actuator/assembly_attempt.mp4`, local run output, not in the repo)
+- Final audit JSON (`outputs/actuator/final_audit/audit.json`, local run output, not in the repo)
+- Revised physical trial, seed 0 (`outputs/actuator/corrected_grasp_0/result.json`, local run output, not in the repo)
+- Revised physical trial, seed 1 (`outputs/actuator/corrected_grasp_1/result.json`, local run output, not in the repo)
 
 Validation: five focused tests cover deterministic bounded resets, correct CAD
 dimensions, nominal assembled clearance, blocked vertical versus clear radial

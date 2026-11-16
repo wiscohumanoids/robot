@@ -38,12 +38,12 @@ Saved and live images at the initial state align visually. Mean RGB differences 
 ## Artifacts
 
 - Reusable diagnostic: [tools/overfit_act.py](../tools/overfit_act.py)
-- Standard-run results: [result.json](../outputs/act/ik_overfit_20260923/result.json)
-- Continuation results: [result.json](../outputs/act/ik_overfit_20260923_fp32/result.json)
-- Combined final summary: [summary.json](../outputs/act/ik_overfit_20260923_fp32/summary.json)
-- Successful in-process video: [rollout_005000.mp4](../outputs/act/ik_overfit_20260923_fp32/rollout_005000.mp4)
-- Reload failure: [rollout.mp4](../outputs/act/ik_overfit_20260923_fp32/reload_1/rollout.mp4)
-- Second reload failure: [rollout.mp4](../outputs/act/ik_overfit_20260923_fp32/reload_2/rollout.mp4)
+- Standard-run results: `outputs/act/ik_overfit_20260923/result.json` (local run output, not in the repo)
+- Continuation results: `outputs/act/ik_overfit_20260923_fp32/result.json` (local run output, not in the repo)
+- Combined final summary: `outputs/act/ik_overfit_20260923_fp32/summary.json` (local run output, not in the repo)
+- Successful in-process video: `outputs/act/ik_overfit_20260923_fp32/rollout_005000.mp4` (local run output, not in the repo)
+- Reload failure: `outputs/act/ik_overfit_20260923_fp32/reload_1/rollout.mp4` (local run output, not in the repo)
+- Second reload failure: `outputs/act/ik_overfit_20260923_fp32/reload_2/rollout.mp4` (local run output, not in the repo)
 - Final checkpoint: `outputs/act/ik_overfit_20260923_fp32/checkpoint`.
 
 The 18 existing ACT tests pass. The new harness was exercised through training, recorded-action replay, complete offline evaluation and fresh-process checkpoint evaluation. Existing full-dataset training and its checkpoints were not modified.

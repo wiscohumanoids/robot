@@ -6,7 +6,7 @@ The strongest controlled fitting result is a learning-rate comparison: from iden
 
 This diagnoses the one-demo sanity test. It does not establish every cause of failure in the separate 1,000-demo policy.
 
-![Controlled evidence](../outputs/act/ik_root_cause/evidence.png)
+*(image `outputs/act/ik_root_cause/evidence.png`, local run output, not in the repo)*
 
 ## 1. Optimization was preventing a sufficiently precise fit
 
@@ -20,13 +20,13 @@ All full-demo probes start from the same 5,000-update, dropout-free checkpoint f
 
 The high-rate model failed in-process but succeeded in both reloads. Therefore, high LR does not make task completion impossible; the rigorously isolated result is its substantially poorer fit. Three attempts are insufficient to certify reliability or a statistically meaningful success-rate difference. The VAE run used only half as many updates; its task result is not a matched objective comparison. At 250 and 500 updates, its fitting error closely matches the corresponding low-rate zero-latent run. Removing the VAE is not required to obtain that precision improvement.
 
-The first experiment retained dropout 0.1 and LR 1e-5 for 3,000 updates, then **I raised the continuation LR to 3e-5**. That was an overfit-debugging choice, not the LR of the user's separate full-dataset run. The controlled result shows this continuation rate was too coarse for fine fitting at these weights. It does not prove that the original LR 1e-5 is always wrong. The production trainer currently uses constant AdamW learning rates without a decay schedule: [train_act.py](../train_act.py:358).
+The first experiment retained dropout 0.1 and LR 1e-5 for 3,000 updates, then **I raised the continuation LR to 3e-5**. That was an overfit-debugging choice, not the LR of the user's separate full-dataset run. The controlled result shows this continuation rate was too coarse for fine fitting at these weights. It does not prove that the original LR 1e-5 is always wrong. The production trainer currently uses constant AdamW learning rates without a decay schedule: [train_act.py](../train_act.py#L358).
 
 A fixed batch of 12 distinct frames also rules out a generally broken optimizer/gradient path. With the original VAE objective, mean target error fell from 6.37 to 1.66 mm in 100 updates and 1.28 mm in 500. Zero-latent training also fits this batch, reaching chunk L1 0.00677 in 500 updates. These probes continue existing weights; they are not claims about randomly initialized fixed-batch convergence.
 
 ## 2. The IK controller uses hidden timing state
 
-The generator chooses a duration even for zero-distance moves, interpolates by loop index, and appends nine settling ticks to every move. Holds use the same timed move function. See [collect_scripted.py](../tools/collect_scripted.py:79).
+The generator chooses a duration even for zero-distance moves, interpolates by loop index, and appends nine settling ticks to every move. Holds use the same timed move function. See [collect_scripted.py](../tools/collect_scripted.py#L79).
 
 ACT receives one pair of images, six measured joint angles and the commanded gripper opening. It receives neither the generator's stage/elapsed-time state nor observation history.
 
@@ -74,11 +74,11 @@ No production dataset, simulation defaults, or full-dataset training checkpoint 
 
 ## Artifacts and reproduction
 
-- [Machine-readable summary](../outputs/act/ik_root_cause/summary.json)
-- [Working low-rate rollout](../outputs/act/ik_root_cause/full_low_lr/zero/rollout.mp4)
-- [Fresh low-rate reload](../outputs/act/ik_root_cause/low_lr_reload_1/rollout.mp4)
-- [Low-rate checkpoint](../outputs/act/ik_root_cause/full_low_lr/zero/checkpoint/config.json)
-- [Five-demo audit](../outputs/act/ik_root_cause/observability_5_demos.json)
+- Machine-readable summary (`outputs/act/ik_root_cause/summary.json`, local run output, not in the repo)
+- Working low-rate rollout (`outputs/act/ik_root_cause/full_low_lr/zero/rollout.mp4`, local run output, not in the repo)
+- Fresh low-rate reload (`outputs/act/ik_root_cause/low_lr_reload_1/rollout.mp4`, local run output, not in the repo)
+- Low-rate checkpoint (`outputs/act/ik_root_cause/full_low_lr/zero/checkpoint/config.json`, local run output, not in the repo)
+- Five-demo audit (`outputs/act/ik_root_cause/observability_5_demos.json`, local run output, not in the repo)
 - [Optimizer/conditioning probes](../tools/diagnose_act_overfit.py)
 - [Observation audit](../tools/audit_act_observability.py)
 - [Renderer/physics probe](../tools/probe_act_determinism.py)

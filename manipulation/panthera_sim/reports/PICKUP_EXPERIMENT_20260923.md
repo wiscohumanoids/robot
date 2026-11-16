@@ -25,10 +25,10 @@ No new expert corrective demonstrations are fabricated. Evaluation saves physica
 
 ## Progress and results
 
-- [Run status](../outputs/act/pickup_ablation_20260923/run_status.json)
-- [Absolute training log](../outputs/act/pickup_ablation_20260923/absolute/train.log)
-- [Saved protocol and source hashes](../outputs/act/pickup_ablation_20260923/protocol.json)
-- [Launch record](../outputs/act/pickup_ablation_20260923/launch.json)
+- Run status (`outputs/act/pickup_ablation_20260923/run_status.json`, local run output, not in the repo)
+- Absolute training log (`outputs/act/pickup_ablation_20260923/absolute/train.log`, local run output, not in the repo)
+- Saved protocol and source hashes (`outputs/act/pickup_ablation_20260923/protocol.json`, local run output, not in the repo)
+- Launch record (`outputs/act/pickup_ablation_20260923/launch.json`, local run output, not in the repo)
 
 On completion, `comparison.json` in the run directory contains each selected model's final-test rates, its physical validation errors, and paired scene outcomes. Checkpoints are stored under each representation's `best_rollout/`. Final-test scenes are not used to pick another checkpoint. Compare physical errors and sustained pickup rates across representations; their normalized training losses use different action scales and are not directly comparable.
 
