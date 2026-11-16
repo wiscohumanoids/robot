@@ -1,86 +1,119 @@
-# Interface contract — v1 (Phase 1 frozen, Phase 3 draft)
+# Interface contract
 
-Status: **Phase 1 topics, TF edges and `/sim/reset` are frozen (2026-11-08).** Changing them needs a decision record in `docs/decisions/`. Later-phase entries are still drafts and freeze at the end of their phase.
+Every topic, TF edge, action and service between layers of the stack, and which node owns it.
 
-All nodes use sim time (`use_sim_time: true`). `/clock` comes from hsim_sim.
+**Source of truth:** `ros2_ws/src/hsim_bringup/config/interface_contract.yaml`. The tables below are generated
+from it by `python3 tools/gen_docs.py` (never edit them by hand; `tests/test_docs.py` fails if they are stale).
+The YAML's topics and TF edges are checked against a running stack by
+`ros2 run hsim_bringup contract_check --phase N`; `tests/test_contract.py` checks the YAML against the code
+without ROS.
 
-Machine-readable copy: `ros2_ws/src/hsim_bringup/config/interface_contract.yaml`, checked live by `contract_check`. Owners there are **ROS node names** (`sim`, `locomotion`, `twist_mux`, `state_estimation`, `localization`, `teleop`). A stub and the real node it becomes use the same name.
+## Rules
+
+- **One publisher per topic and one owner per TF edge.** Owners are ROS **node names**, so a stub and the real
+  node that replaces it share a name and the contract does not change.
+- Each topic has a declared message type and, where it matters, a rate. `required: no` means the topic is only
+  checked when something is publishing it (teleop, Nav2 or the stereo camera may not be running).
+- Nodes talk only through these interfaces, never by importing each other's code.
+- All nodes use sim time in simulation (`use_sim_time: true`); `/clock` comes from `sim`.
+- **Phase 1 topics, TF edges and `/sim/reset` are frozen (2026-11-08).** Changing a frozen entry needs a decision
+  record in `docs/decisions/`. Later-phase entries freeze at the end of their phase.
+- `/sim/ground_truth/*` is **privileged**: only graders (`tools/eval/`) and explicitly labeled stubs may read it,
+  never the robot stack (decision 0007).
 
 ## Topics
 
-| Topic | Type | Rate | Owner (only publisher) | Phase | Notes |
+<!-- BEGIN GENERATED:topics -->
+| Topic | Type | Owner (only publisher) | Rate | Phase | Required |
 |---|---|---|---|---|---|
-| /clock | rosgraph_msgs/Clock | physics rate | hsim_sim | 1 | |
-| /joint_states | sensor_msgs/JointState | 200 Hz | hsim_sim | 1 | all 29 G1 joints, names in manifest order |
-| /imu | sensor_msgs/Imu | 200 Hz | hsim_sim | 1 | pelvis IMU, frame `imu_link` |
-| /sim/ground_truth/odom | nav_msgs/Odometry | 200 Hz | hsim_sim | 1 | debug + temporary stand-in for the estimator. Never a TF publisher |
-| /sim/viewer/image_raw | sensor_msgs/Image | ~10 Hz | hsim_sim | 1 | follow camera for Foxglove; optional |
-| /cmd_vel_teleop | geometry_msgs/TwistStamped | on keypress | hsim_teleop (keyboard) | 1 | |
-| /cmd_vel_nav | geometry_msgs/TwistStamped | 20 Hz | Nav2 velocity_smoother | 3 | Nav2 on Jazzy publishes stamped twists by default |
-| /cmd_vel_approach | geometry_msgs/TwistStamped | 20 Hz while stepping up | hsim_behavior | 3 | navigate_to's final step to arm's reach, and the step back |
-| /cmd_vel | geometry_msgs/TwistStamped | 50 Hz | twist_mux | 1 | teleop > approach > nav |
-| /locomotion/joint_targets | sensor_msgs/JointState | 50 Hz | hsim_locomotion | 1 | `position` = targets; names make ordering explicit |
-| /locomotion/status | diagnostic_msgs/DiagnosticArray | 1 Hz | hsim_locomotion | 1 | policy id, inference time, fell-over flag |
-| /odometry/filtered | nav_msgs/Odometry | 200 Hz | hsim_state_estimation | 1 | stub passes ground truth through until the IEKF (Phase 3) |
-| /map | nav_msgs/OccupancyGrid | latched | nav2 map_server | 2 | from the environment build (`assets/envs/<env>/build/map.yaml`); only with `env:=` |
-| /camera/head/color/image_raw | sensor_msgs/Image | 15 Hz | hsim_sim | 4 | |
-| /camera/head/depth/image_raw | sensor_msgs/Image | 15 Hz | hsim_sim | 4 | |
-| /camera/head/color/camera_info | sensor_msgs/CameraInfo | 15 Hz | hsim_sim | 4 | |
-| /planner/command | std_msgs/String | event | UI / CLI | 3 | natural-language input |
-| /planner/plan | hsim_interfaces/SkillPlan (TBD) | event | hsim_planner | 3 | |
-| /perception/objects | vision_msgs/Detection3DArray | ~2 Hz | hsim_perception | 4 | class text + 6-DOF pose |
-| /arm/joint_targets | sensor_msgs/JointState | 20 Hz (manipulation) | hsim_manipulation (until hsim_arm_control exists); read by the locomotion node for held (arm) joints | 5 | arm + gripper joints only |
-| /stack_monitor/status | diagnostic_msgs/DiagnosticArray | 1 Hz | each node (own namespace in `name`) | 6 | aggregated by hsim_monitor |
+| `/clock` | `rosgraph_msgs/msg/Clock` | `sim` | 200 Hz | 1 | yes |
+| `/cmd_vel` | `geometry_msgs/msg/TwistStamped` | `twist_mux` | - | 1 | yes |
+| `/cmd_vel_teleop` | `geometry_msgs/msg/TwistStamped` | `teleop` | - | 1 | no |
+| `/imu` | `sensor_msgs/msg/Imu` | `sim` | 200 Hz | 1 | yes |
+| `/joint_states` | `sensor_msgs/msg/JointState` | `sim` | 200 Hz | 1 | yes |
+| `/locomotion/joint_targets` | `sensor_msgs/msg/JointState` | `locomotion` | 50 Hz | 1 | yes |
+| `/locomotion/status` | `diagnostic_msgs/msg/DiagnosticArray` | `locomotion` | 1 Hz | 1 | yes |
+| `/odometry/filtered` | `nav_msgs/msg/Odometry` | `state_estimation` | 50 Hz | 1 | yes |
+| `/sim/ground_truth/odom` | `nav_msgs/msg/Odometry` | `sim` | 200 Hz | 1 | yes |
+| `/sim/viewer/image_raw` | `sensor_msgs/msg/Image` | `sim` | - | 1 | no |
+| `/map` | `nav_msgs/msg/OccupancyGrid` | `map_server`, `localization` | - | 2 | yes |
+| `/battery` | `sensor_msgs/msg/BatteryState` | `sim` | 1 Hz | 3 | yes |
+| `/camera/head/color/image_raw` | `sensor_msgs/msg/Image` | `stereo_camera` | - | 3 | no |
+| `/camera/head/depth/image_raw` | `sensor_msgs/msg/Image` | `stereo_camera` | - | 3 | no |
+| `/camera/head/points` | `sensor_msgs/msg/PointCloud2` | `depth_to_cloud` | - | 3 | no |
+| `/cmd_vel_approach` | `geometry_msgs/msg/TwistStamped` | `behavior` | - | 3 | no |
+| `/cmd_vel_nav` | `geometry_msgs/msg/TwistStamped` | `velocity_smoother` | - | 3 | no |
+| `/leg_odometry` | `nav_msgs/msg/Odometry` | `leg_odometry` | 50 Hz | 3 | no |
+| `/perception/detections` | `vision_msgs/msg/Detection3DArray` | `perception` | 5 Hz | 3 | yes |
+| `/planner/command` | `std_msgs/msg/String` | `ask`, `teleop` | - | 3 | no |
+| `/planner/reply` | `std_msgs/msg/String` | `planner` | - | 3 | yes |
+| `/planner/status` | `std_msgs/msg/String` | `planner` | - | 3 | yes |
+| `/robot/say` | `std_msgs/msg/String` | `behavior` | - | 3 | yes |
+| `/safety/estop` | `std_msgs/msg/Bool` | `safety` | 10 Hz | 3 | yes |
+| `/safety/estop_request` | `std_msgs/msg/Bool` | `operator` | - | 3 | no |
+| `/safety/status` | `diagnostic_msgs/msg/DiagnosticArray` | `safety` | 2 Hz | 3 | yes |
+| `/scan` | `sensor_msgs/msg/LaserScan` | `sim`, `depth_to_scan` | - | 3 | yes |
+| `/sim/ground_truth/state` | `std_msgs/msg/Float64MultiArray` | `sim` | 20 Hz | 3 | yes |
+| `/world/objects` | `vision_msgs/msg/Detection3DArray` | `world_model` | 2 Hz | 3 | yes |
+| `/world/summary` | `std_msgs/msg/String` | `world_model` | 2 Hz | 3 | yes |
+| `/perception/status` | `std_msgs/msg/String` | `perception` | - | 4 | no |
+<!-- END GENERATED:topics -->
+
+Shared topics (many publishers by ROS convention, not single-owner; wildcards allowed):
+
+<!-- BEGIN GENERATED:shared -->
+`/diagnostics`, `/bond`, `/*/transition_event`, `/cmd_vel_nav_raw`, `/local_costmap/*`, `/global_costmap/*`, `/plan`, `/plan_smoothed`, `/received_global_plan`, `/transformed_global_plan`, `/lookahead_point`, `/lookahead_arc`, `/lookahead_collision_arc`, `/particle_cloud`, `/amcl_pose`, `/speed_limit`, `/cost_cloud`, `/behavior_tree_log`, `/*/_action/*`, `/pose`, `/map_metadata`, `/map_updates`, `/localization/*`, `/footprint`, `/tracked_pose`, `/goal_pose`, `/unsmoothed_plan`, `/camera/head/*/camera_info`, `/rtabmap/*`, `/info`, `/mapData`, `/mapGraph`, `/cloud_map`, `/cloud_obstacles`, `/cloud_ground`, `/grid_prob_map`, `/octomap_*`, `/global_path*`, `/local_path*`, `/landmarks`, `/labels`, `/mapPath`, `/goal_reached`, `/elevation_map`
+<!-- END GENERATED:shared -->
+
+## TF tree
+
+<!-- BEGIN GENERATED:tf -->
+| Edge | Owner | Kind | Phase |
+|---|---|---|---|
+| `map` → `odom` | `localization` | static or live | 1 |
+| `odom` → `base_footprint` | `state_estimation` | dynamic | 1 |
+| `base_footprint` → `base_link` | `leg_odometry` | dynamic | 3 |
+| `base_link` → `torso_link` | `leg_odometry` | dynamic | 3 |
+| `base_footprint` → `lidar_link` | `lidar_mount` | static | 3 |
+| `base_link` → `imu_link` | `imu_mount` | static | 3 |
+| `torso_link` → `head_camera` | `camera_mount` | static | 3 |
+| `head_camera` → `head_camera_optical` | `camera_optical_mount` | static | 3 |
+<!-- END GENERATED:tf -->
+
+`base_link → all other robot links` comes from `robot_state_publisher` (from `/joint_states`). `base_link` is the
+pelvis on every robot; frame names are the same for every robot profile (`ros2_ws/src/hsim_bringup/config/robots/`).
 
 ## Actions
 
-| Action | Type | Server | Phase |
-|---|---|---|---|
-| /navigate_to_pose | nav2_msgs/action/NavigateToPose | Nav2 bt_navigator | 3 |
-| /skills/find_object | hsim_interfaces/action/FindObject (TBD) | hsim_perception | 4 |
-| /skills/manipulate | hsim_interfaces/action/Manipulate (instruction -> VLA loop at 20 Hz; replaces the planned Pick) | hsim_manipulation | 5 |
+<!-- BEGIN GENERATED:actions -->
+| Name | Type | Server | Clients | Phase |
+|---|---|---|---|---|
+| `/behavior/execute_plan` | `hsim_interfaces/action/ExecutePlan` | `behavior` | `planner`, `tools/eval/run_plan.py` | 3 |
+| `/navigate_to_pose` | `nav2_msgs/action/NavigateToPose` | `bt_navigator` | `behavior` | 3 |
+| `/spin` | `nav2_msgs/action/Spin` | `behavior_server` | `behavior` | 3 |
+| `/skills/manipulate` | `hsim_interfaces/action/Manipulate` | `manipulation` | `behavior` | 5 |
+<!-- END GENERATED:actions -->
 
-## TF edges
+## Services
 
-| Edge | Owner | Phase |
-|---|---|---|
-| map → odom | hsim_localization (static identity until Phase 3) | 1 |
-| odom → base_link | hsim_state_estimation (stub fed by ground truth until Phase 3) | 1 |
-| base_link → all robot links | robot_state_publisher (from /joint_states) | 1 |
-| base_link → camera frames | robot_state_publisher (fixed joints in URDF) | 4 |
+<!-- BEGIN GENERATED:services -->
+| Name | Type | Server | Clients | Phase |
+|---|---|---|---|---|
+| `/sim/reset` | `std_srvs/srv/Trigger` | `sim` | `teleop` | 1 |
+| `/sim/set_body_pose` | `hsim_interfaces/srv/SetBodyPose` | `sim` | `tools/eval graders` | 3 |
+<!-- END GENERATED:services -->
 
 ## Joint ownership (one writer per joint)
 
-| Joints | Writer in Phases 1–4 | Writer in Phase 5 |
+The simulator (and later the hardware backend) takes joint targets from exactly one topic,
+`/locomotion/joint_targets`, published by `locomotion` at 50 Hz for **every** joint of the robot.
+
+| Joints | Who decides the target | How it reaches the robot |
 |---|---|---|
-| legs + waist | hsim_locomotion | hsim_locomotion |
-| arms (+ hands) | hsim_locomotion (policy holds them) | hsim_arm_control |
+| Joints the locomotion policy drives (manifest `role: policy`; legs + waist/torso in the current policies) | the policy | `locomotion` publishes them |
+| Held joints (manifest `role: held`; arms, hands, head) | `/arm/joint_targets` (from `manipulation` or teleop), else the manifest default pose | `locomotion` merges them by joint name and republishes |
 
-hsim_sim merges both target topics by joint name. A joint that gets targets from two topics is an error. Phase 5 needs a locomotion policy that doesn't control the arms; see `docs/decisions/0002`.
-
-## Phase 3 additions (draft)
-
-The machine-readable copy (`ros2_ws/src/hsim_bringup/config/interface_contract.yaml`) is the source of truth;
-`contract_check` enforces it. Summary:
-
-| Topic / action | Type | Owner |
-|---|---|---|
-| /scan | LaserScan | `sim` (lidar, 10 Hz) or `depth_to_scan` (stereo) |
-| /battery | BatteryState | sim |
-| /leg_odometry | Odometry | leg_odometry |
-| /camera/head/{color,depth}/image_raw, /camera/head/points | Image, PointCloud2 | stereo_camera, depth_to_cloud (stereo only) |
-| /perception/detections | Detection3DArray (camera frame) | perception (stub, or server client with `perception:=server`) |
-| /perception/status | String (JSON: mode, latency, fallback) | perception (server client) |
-| /world/objects, /world/summary | Detection3DArray (map), String (JSON; per object `views`, plus `tentative` count; objects committed after `confirm_views` sightings, 2 in perception:=server mode) | world_model |
-| /safety/estop, /safety/status | Bool, DiagnosticArray | safety |
-| /safety/estop_request | Bool (latched) | operator |
-| /planner/command | String | ask |
-| /planner/reply, /planner/status | String | planner |
-| /robot/say | String | behavior |
-| /behavior/execute_plan | hsim_interfaces/ExecutePlan (action) | behavior |
-| /navigate_to_pose, /spin | Nav2 actions | Nav2 |
-| /sim/set_body_pose | hsim_interfaces/SetBodyPose (TEST-ONLY) | sim |
-| /sim/ground_truth/{odom,state} | PRIVILEGED: graders and labeled stubs only (decision 0007) | sim |
-
-TF: `map → odom` (localization) → `base_footprint` (state_estimation) → `base_link` → `torso_link` (leg_odometry) →
-`head_camera` (camera_mount) → `head_camera_optical`; `base_footprint → lidar_link`; `base_link → imu_link`.
+So a joint has one writer at a time: the policy for policy joints, the latest `/arm/joint_targets` for held ones.
+`locomotion` ignores names on `/arm/joint_targets` that are not held joints (warned once). Policies that drive every
+joint (manifest v1, e.g. `g1_velocity_flat_v1`) have no held joints and cannot be combined with manipulation; see
+`docs/decisions/0002-two-locomotion-policies.md`.

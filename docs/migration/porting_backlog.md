@@ -14,10 +14,10 @@ Read a retired file with `git show <tag>:<path>`, e.g. `git show archive/task-pl
 |---|---|---|---|
 | `ros2_ws/src/lowlevel_control/` | `legacy-scaffold-v0:src/lowlevel_control` | `COLCON_IGNORE` | Build on Jazzy. Replace `humanoid_interfaces` msgs (copies in `legacy_msgs/`) with `hsim_interfaces` equivalents. Becomes the torque (CST) path for the arms and the PD reference for the ros2_control sim backend. |
 | `ros2_ws/src/mujoco_ros2_control/` | `legacy-scaffold-v0:src/mujoco_ros2_control` (vendored, MIT) | `COLCON_IGNORE` | Build on Jazzy, or switch to the upstream ros-controls MuJoCo plugin if it covers our needs. Must support position + kp + kd command interfaces (driver MIT mode) as well as effort. |
-| `tools/gen_docs.py` | scaffold | not adapted | Point at `ros2_ws/src/hsim_bringup/config/interface_contract.yaml`. |
-| `tests/test_contract.py`, `test_docs.py`, `test_repo_consistency.py`, `conftest.py` | scaffold | not adapted | Point at the hsim contract and `ros2_ws/src/`. |
-| `.github/workflows/ci.yml` | scaffold | not adapted | Rebuild around the hsim container (`infra/docker`) and the tests above. |
 | `docs/hardware/research_notes_ethercat_rt.md` | scaffold `RESEARCH_NOTES.md` | moved as-is | Cross-check against the EtherCAT hardware package and the driver mode decision (MIT mode 5 legs / CST arms). |
+
+Done (2026-11-15): `tools/gen_docs.py`, `tests/`, `conftest.py` and `.github/workflows/ci.yml` were rewritten for the
+hsim contract and layout (the scaffold versions checked the retired 23-joint G1 stub stack).
 
 ## Retired, with pieces still to port
 

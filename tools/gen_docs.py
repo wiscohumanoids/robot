@@ -1,31 +1,24 @@
 #!/usr/bin/env python3
-"""Regenerates the tables in INTERFACE_CONTRACT.md and STATUS.md from
-src/humanoid_interfaces/config/interface_contract.yaml.
+"""Regenerates the tables in docs/interface_contract.md from the machine-readable contract,
+ros2_ws/src/hsim_bringup/config/interface_contract.yaml (the file `contract_check` enforces live).
 
     python3 tools/gen_docs.py            # rewrite the generated blocks in place
-    python3 tools/gen_docs.py --check    # exit 1 if any block is out of date (CI)
+    python3 tools/gen_docs.py --check    # exit 1 if any block is out of date (CI, tests/test_docs.py)
 
-Only text between `<!-- BEGIN GENERATED:name -->` and `<!-- END GENERATED:name -->`
-is touched; everything else in those files is hand-written. Never edit a
-generated block by hand: edit the YAML and re-run this script.
-Needs only PyYAML.
+Only text between `<!-- BEGIN GENERATED:<name> -->` and `<!-- END GENERATED:<name> -->` is touched;
+everything else in the file is hand-written. Never edit a generated block by hand: edit the YAML and
+re-run this script. Needs only PyYAML.
 """
 import argparse
-import os
 import re
 import sys
+from pathlib import Path
 
 import yaml
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONTRACT = os.path.join(ROOT, 'src', 'humanoid_interfaces', 'config', 'interface_contract.yaml')
-STATUS_LABEL = {'real': 'REAL', 'stub': 'STUB', 'scaffold': 'SCAFFOLD',
-                'external': 'EXTERNAL', 'missing': 'MISSING'}
-
-
-def load():
-    with open(CONTRACT) as f:
-        return yaml.safe_load(f)
+ROOT = Path(__file__).resolve().parents[1]
+CONTRACT = ROOT / 'ros2_ws' / 'src' / 'hsim_bringup' / 'config' / 'interface_contract.yaml'
+TARGETS = [ROOT / 'docs' / 'interface_contract.md']
 
 
 def md_table(header, rows):
@@ -34,135 +27,66 @@ def md_table(header, rows):
     return '\n'.join(out)
 
 
-def switch(node):
-    arg = node.get('launch_arg')
-    if not arg:
-        return '-'
-    if node.get('launch_values'):
-        return f"`{arg}:={node['launch_values']}`"
-    if node['status'] in ('stub', 'scaffold'):
-        return f'`{arg}:=stub|external`'
-    return f'`{arg}:=true|false`'
-
-
-def block_summary(c):
-    counts = {}
-    for n in c['nodes']:
-        counts[n['status']] = counts.get(n['status'], 0) + 1
-    return md_table(['Status', 'Nodes', 'Meaning'], [
-        ('**REAL**', counts.get('real', 0), 'Complete for its purpose today.'),
-        ('**STUB**', counts.get('stub', 0), 'Correct interface, fake internals; the internals are what a team builds.'),
-        ('**SCAFFOLD**', counts.get('scaffold', 0), 'Correct structure/interface, hardware I/O stubbed.'),
-        ('**EXTERNAL**', counts.get('external', 0), 'Third-party ROS node used as-is (configure only).'),
-        ('**MISSING**', counts.get('missing', 0), 'Nothing exists yet; the contract reserves the interface.'),
-    ])
-
-
-def block_nodes(c):
-    parts = []
-    for layer in c['layers']:
-        nodes = [n for n in c['nodes'] if n['layer'] == layer['id']]
-        if not nodes:
-            continue
-        rows = []
-        for n in nodes:
-            rows.append((
-                f"`{n['id']}`", f"**{STATUS_LABEL[n['status']]}**",
-                f"`{n['package']}`" if n.get('package') else '-',
-                n['summary'], n.get('replaces') or '-', n['area'], switch(n)))
-        parts.append(f"#### {layer['title']}\n\n" + md_table(
-            ['Node', 'Status', 'Package', 'What it does today', 'Real thing that replaces it', 'Area', 'Launch switch'],
-            rows))
-    return '\n\n'.join(parts)
-
-
-def block_areas(c):
-    areas = {}
-    for n in c['nodes']:
-        areas.setdefault(n['area'], []).append(n)
-    rows = []
-    for area in sorted(areas):
-        ns = areas[area]
-        rows.append((f'**{area}**',
-                     ', '.join(f"`{n['id']}` ({STATUS_LABEL[n['status']].lower()})" for n in ns)))
-    return md_table(['Area', 'Nodes it owns (status)'], rows)
-
-
-def rate_text(t):
-    if t['check'] == 'rate':
-        text = f"{t['rate_hz']} Hz"
-    elif t['check'] == 'latched':
-        text = 'latched'
-    else:
-        text = 'event'
-    return text + (' (sim only)' if t.get('sim_only') else '')
+def _owners(o):
+    return ', '.join(f'`{x}`' for x in (o if isinstance(o, list) else [o]))
 
 
 def block_topics(c):
-    rows = [(f"`{t['name']}`", f"`{t['type']}`", f"`{t['owner']}`",
-             ', '.join(f'`{x}`' for x in t['consumers']) or '-', rate_text(t))
-            for t in c['topics']]
-    return md_table(['Topic', 'Type', 'Owner (sole publisher)', 'Consumers', 'Rate'], rows)
-
-
-def block_actions(c):
-    rows = [(f"`{a['name']}`", f"`{a['type']}`", f"`{a['server']}`",
-             ', '.join(f'`{x}`' for x in a['clients'])) for a in c['actions']]
-    return md_table(['Action', 'Type', 'Server', 'Clients'], rows)
+    rows = []
+    for name, s in sorted(c['topics'].items(), key=lambda kv: (kv[1]['phase'], kv[0])):
+        rate = '-' if s.get('rate_hz') is None else f"{s['rate_hz']:g} Hz"
+        rows.append((f'`{name}`', f"`{s['type']}`", _owners(s['owner']), rate, s['phase'],
+                     'no' if s.get('required') is False else 'yes'))
+    return md_table(['Topic', 'Type', 'Owner (only publisher)', 'Rate', 'Phase', 'Required'], rows)
 
 
 def block_tf(c):
-    rows = [(f"`{e['parent']}` -> `{e['child']}`", f"`{e['owner']}`",
-             'static' if e.get('static') else f"{e['rate_hz']} Hz", e.get('note', '')) for e in c['tf']]
-    return md_table(['TF edge', 'Owner (sole publisher)', 'Rate', 'Note'], rows)
+    rows = [(f"`{e['parent']}` → `{e['child']}`", f"`{e['owner']}`",
+             {True: 'static', False: 'dynamic', None: 'static or live'}[e['static']], e['phase'])
+            for e in c['tf_edges']]
+    return md_table(['Edge', 'Owner', 'Kind', 'Phase'], rows)
 
 
-def block_frames(c):
-    return md_table(['Frame', 'Meaning'], [(f'`{k}`', v) for k, v in c['frames'].items()])
+def _calls(c, key):
+    rows = [(f'`{n}`', f"`{s['type']}`", f"`{s['server']}`", ', '.join(f'`{x}`' for x in s['clients']), s['phase'])
+            for n, s in sorted(c.get(key, {}).items(), key=lambda kv: (kv[1]['phase'], kv[0]))]
+    return md_table(['Name', 'Type', 'Server', 'Clients', 'Phase'], rows)
 
 
-BLOCKS = {
-    'summary': block_summary, 'nodes': block_nodes, 'areas': block_areas,
-    'topics': block_topics, 'actions': block_actions, 'tf': block_tf, 'frames': block_frames,
-}
-TARGETS = {
-    'INTERFACE_CONTRACT.md': ['frames', 'topics', 'actions', 'tf'],
-    'STATUS.md': ['summary', 'nodes', 'areas'],
-}
+def block_shared(c):
+    return ', '.join(f'`{t}`' for t in c.get('shared_topics', []))
 
 
-def render(text, names, contract, path):
-    for name in names:
-        pattern = re.compile(
-            rf'(<!-- BEGIN GENERATED:{name} -->\n).*?(<!-- END GENERATED:{name} -->)', re.S)
-        if not pattern.search(text):
-            raise SystemExit(f'{path}: missing GENERATED:{name} markers')
-        body = BLOCKS[name](contract)
-        text = pattern.sub(lambda m: m.group(1) + body + '\n' + m.group(2), text)
-    return text
+BLOCKS = {'topics': block_topics, 'tf': block_tf, 'actions': lambda c: _calls(c, 'actions'),
+          'services': lambda c: _calls(c, 'services'), 'shared': block_shared}
+
+
+def render(text, contract):
+    def repl(m):
+        name = m.group(1)
+        if name not in BLOCKS:
+            raise SystemExit(f'unknown generated block: {name}')
+        return f'<!-- BEGIN GENERATED:{name} -->\n{BLOCKS[name](contract)}\n<!-- END GENERATED:{name} -->'
+    return re.sub(r'<!-- BEGIN GENERATED:(\w+) -->.*?<!-- END GENERATED:\1 -->', repl, text, flags=re.S)
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('--check', action='store_true')
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--check', action='store_true', help='exit 1 if a generated block is stale')
     args = ap.parse_args()
-    contract = load()
+    contract = yaml.safe_load(CONTRACT.read_text())
     stale = []
-    for filename, names in TARGETS.items():
-        path = os.path.join(ROOT, filename)
-        with open(path) as f:
-            old = f.read()
-        new = render(old, names, contract, filename)
+    for path in TARGETS:
+        old = path.read_text()
+        new = render(old, contract)
         if new != old:
-            stale.append(filename)
+            stale.append(path.relative_to(ROOT))
             if not args.check:
-                with open(path, 'w') as f:
-                    f.write(new)
+                path.write_text(new)
     if args.check and stale:
-        print('out of date (run `python3 tools/gen_docs.py`): ' + ', '.join(stale))
+        print('out of date (run python3 tools/gen_docs.py):', *stale)
         return 1
-    if stale:
-        print('updated: ' + ', '.join(stale))
+    print('updated:' if stale else 'up to date', *stale)
     return 0
 
 
