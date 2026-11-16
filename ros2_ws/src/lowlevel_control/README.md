@@ -1,6 +1,14 @@
 # lowlevel_control
 
-**Status:** Real.
+> **In this repo: ported, not built (`COLCON_IGNORE`).** This package comes from the pre-unification scaffold
+> (tag `legacy-scaffold-v0`, ROS 2 Humble). The description below is its original one: the files it mentions
+> (`bringup/config/controllers.yaml`, `wbc_stub`, `g1_description`, `INTEGRATION_POINTS.md`) are in that tag, not in
+> this tree, `RESEARCH_NOTES.md` is now `docs/hardware/research_notes_ethercat_rt.md`, and the
+> `humanoid_interfaces` messages it uses are copied in `legacy_msgs/`. Planned role here: the torque (CST) path for
+> the Wisco V1 arms and the PD reference for the ros2_control simulation backend. What it takes to get there:
+> `docs/migration/porting_backlog.md`.
+
+**Status (in the scaffold):** Real.
 **Frequency:** whatever `controller_manager`'s `update_rate` says,
 `bringup/config/controllers.yaml` sets it to **1000 Hz** in this repo.
 **Type:** a real `controller_interface::ControllerInterface` plugin

@@ -164,3 +164,10 @@ Step-by-step outline of training and running an ACT imitation policy. The narrat
    Repeat ACT inference at 10Hz during grasp execution
    IK handles navigation, ACT handles contact and grasp
 ```
+
+## In our stack
+
+The outline's numbers (ALOHA arm, 200 episodes, 100-step chunks at 50 Hz) are an illustrative example. Our ACT runs
+use the Panthera arm in simulation and on the bench; their datasets, chunk sizes and results are in
+`manipulation/panthera_sim/README.md` and `manipulation/panthera_sim/reports/`.
+

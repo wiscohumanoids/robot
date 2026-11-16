@@ -114,3 +114,17 @@ A few other frontier threads worth knowing the words for: memory (standard VLAs 
 So here's the whole thing in one view. IK: pure geometry, generalizes to any object position, but can't do dexterous contact — needs encoders always, a camera for the target, an IMU only if the base floats. ACT: imitation learning with a CVAE, learns dexterity from demos, predicts action chunks to fight compounding error, but averages across demonstrations because it zeros the style latent at inference — so it breaks on genuinely multimodal tasks. Diffusion: imitation learning that denoises from random noise, samples from the full distribution instead of averaging, handles multimodality, but costs ~10× inference compute. Both ACT and diffusion still can't generalize past their demos, which is why the practical system is the hybrid — FoundationPose plus IK to get there, learned policy for the grasp. VLAs: a pretrained vision-language model connected to an action head (tokenized actions or a flow-matching expert), fine-tuned on robot data, which finally brings generalization to novel objects and instructions. And the frontier: VLAs plus RL-from-experience, which lets the robot exceed its demonstrations and recover from mistakes — using the exact advantage machinery from the locomotion rant.
 
 Each rung adds what the one below it lacked. And the top of the ladder reaches back down to where you started with walking. That's manipulation, start to finish.
+
+## In our stack (2026-11)
+
+| Rung | Where it is in this repo |
+|---|---|
+| IK | scripted IK experts and datasets for the Panthera arm (`manipulation/panthera_sim/`), bimanual IK for the actuator-assembly task, G1 + Dex1 IK expert (`training/manipulation/sim/ik.py`); Pinocchio IK for Quest teleop on the real arms (`manipulation/panthera_teleop/`) |
+| ACT | trained on scripted and teleoperated Panthera demonstrations, plus an RL fine-tuning experiment (three-block stacking), `manipulation/panthera_sim/` |
+| Diffusion policy | not used yet |
+| VLAs | GR00T N1.6 fine-tuned for the humanoid in sim (G1 + Dex1, 52 % closed-loop, `training/manipulation/`), served by `services/vla_server/` and run by the ROS skill `/skills/manipulate`; pi0.5 and VLA-Adapter fine-tunes on the Panthera arm, with remote pi0.5 inference on the real arms |
+| RL from experience | ACT RL fine-tuning (`panthera_sim`), EXPO-FT experiments on pi0.5 (`panthera_teleop/docs/expo-ft.md`), human-in-the-loop correction data (`panthera_teleop/docs/human-in-the-loop.md`) |
+| On Wisco V1 | arm control (gravity compensation + impedance, torque mode) is the next piece: its own package, planned |
+
+Overview of every manipulation pipeline: `manipulation/README.md`.
+

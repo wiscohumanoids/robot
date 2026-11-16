@@ -142,3 +142,10 @@ Step-by-step outline of training and running a PPO walking policy. The narrative
 5. Forward q_target[25] → WBC
    Repeat at 50Hz
 ```
+
+## Sizes in our stack
+
+The outline uses a 25-joint example (`q[25]`). For Wisco V1's arms-free policy: the observation has 85 values (29
+joint positions and velocities, 15 last actions, 3 + 3 + 3 body terms, 3 command), the action has 15. See
+[locomotion_rl.md](locomotion_rl.md), "In our stack".
+

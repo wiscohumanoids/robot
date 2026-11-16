@@ -2,7 +2,9 @@
 
 ## Machines
 
-> **Current status (2026-11-08):** the CPU VM was terminated. Phase 0 runs entirely on the GPU VM; Phase 1 can run on the GPU VM too until a CPU VM is relaunched.
+> **Current status (2026-11-15):** the CPU VM is terminated; the ROS stack runs in Docker on the Mac and training runs on
+> the GPU VM. The robot's own computers (Jetson Thor, RK3588) are covered in `hardware/README.md`. The GPU VM keeps its
+> checkout in `~/humanoid-sim-stack` (the folder name predates the unification; `tools/sync_to_vm.sh` syncs this repo there).
 
 | | CPU VM | GPU VM | Laptop |
 |---|---|---|---|

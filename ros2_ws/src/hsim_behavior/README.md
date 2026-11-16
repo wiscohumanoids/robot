@@ -10,7 +10,7 @@ Node `behavior`, action `/behavior/execute_plan` (`hsim_interfaces/ExecutePlan`)
 | `search_for(target, hints)` | look around here, then at each hinted place, until the target is seen |
 | `look_around` | full turn (Nav2 spin) |
 | `say(text)` | `/robot/say` |
-| `pick` / `place` | fail with "not installed (Phase 5)" |
+| `pick(X)` / `place(Y)` | one `/skills/manipulate` goal (`hsim_manipulation`, VLA); `pick` followed by `place` becomes a single pick-and-place goal |
 
 ### How navigate_to reaches a target
 1. **Pick a side** it can stand at. It tries all four sides of the target's box (for a small object on
@@ -21,9 +21,9 @@ Node `behavior`, action `/behavior/execute_plan` (`hsim_interfaces/ExecutePlan`)
 2. **Walk** there with Nav2, to a staging spot 0.65 m from the surface. Nav2 keeps its 0.3 m body
    radius off obstacles, so it can't bring the robot any closer itself.
 3. **Step up** with its own closed-loop controller: square up, walk straight in at 0.3 m/s until the
-   body center is 0.30 m from the surface (measured by the lidar when it sees it, else by the pose
-   estimate), then square up to the surface the lidar sees (a line fit, so the pose estimate's heading
-   error doesn't matter). G1's arms reach ~0.3 m into a surface from there. Commands go on
+   body center is 0.30 m from the surface (measured by the scan when it sees it: lidar on the G1, the
+   depth-derived scan on Wisco; else by the pose estimate), then square up to the surface the scan sees (a line fit, so the pose estimate's heading
+   error doesn't matter). The arms reach ~0.3 m into a surface from there (profile `reach_standoff`). Commands go on
    `/cmd_vel_approach`, a twist_mux input above Nav2 and below teleop; the e-stop lock still blocks it.
 
 ### Making room (`StepBack`, inserted before every motion skill; no-op when there is room)
@@ -34,8 +34,8 @@ humanoid drifts ~0.15–0.25 m while turning in place. So before a motion skill 
 3. before a turn in place (look_around, find_object, search_for): if anything is within 0.6 m, walks
    with Nav2 to the nearest open floor with 0.6 m all round, on its own map.
 
-Graded on true geometry by `tools/eval/reach_plan.sh` / `reach_check.py` (autotest: table, red block,
-kitchen fridge and sink: 0.25–0.43 m from the surface, square-on within ~12 deg).
+Graded on true geometry by `tools/eval/reach_plan.sh` / `reach_check.py` (autotest checks `reach_table`, `reach_block`,
+`kitchen_fridge`, `slam_fridge`, `kitchen_sink`). Current results per robot: `STATUS.md`.
 
 Failures return a plain-words reason, which the planner uses to replan. Try without the LLM:
 `python3 /hsim/tools/eval/run_plan.py "navigate_to:table" "find_object:red block"`.

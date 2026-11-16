@@ -72,7 +72,7 @@ All commands run on the GPU VM, from `training/locomotion/` unless noted.
 - [x] Velocity policy walks forward, backward, sideways, and turns without falling (sideways/turning need commands above a learned deadband, see decision 0004).
 - [ ] Tracking policy: deferred, kept on the side (decision 0002).
 - [x] ONNX loads in onnxruntime on CPU with the manifest's I/O sizes (0.01 ms per step).
-- [x] Training cost recorded: 1 h 27 min, ~185k steps/s, 2.4 GB GPU memory (`models/locomotion/g1_velocity_flat_v1/README.md`).
+- [x] Training cost recorded: 1 h 27 min, ~185k steps/s, 2.4 GB GPU memory (`models/locomotion/g1_velocity_all_joints/README.md`).
 - [x] Beyond plan: the policy runs in plain MuJoCo on the Mac (`tools/play.sh`) and inside the ROS stack (`sim_stack.launch.py`), matching mjlab's own evaluation.
 
 ## Known risks

@@ -1,3 +1,6 @@
+> **In this repo:** the arm simulation and training pipeline of the manipulation stack, run from this folder
+> (`manipulation/panthera_sim/`). Where it fits: [`../README.md`](../README.md).
+
 # RobotArmLearning
 
 Keyboard teleoperation and demonstration recording for a simulated HighTorque
@@ -643,7 +646,7 @@ for physical trials, limitations, and replay instructions.
 ## Bimanual place-then-push IK
 
 The [bimanual controller](tools/bimanual_actuator_ik.py) follows the method in
-the kept `Desktop/Panthera-Teleop` sessions: the right arm holds the carrier
+the kept real-arm teleop sessions (recorded with `../panthera_teleop/`; the recordings are not in the repo): the right arm holds the carrier
 with a 45° wrist lean, while the left arm partially inserts a gear, pushes it
 into place, adds the pin, and presses it down. The separate scene has two
 physical arms and exactly three cameras: overhead, left wrist, and right wrist.

@@ -150,7 +150,7 @@ Now flip to deployment. A few things change.
 
 Where does the velocity command come from? From higher up the stack. In teleoperation, straight from a joystick or keyboard. In autonomous mode, from Nav2, which the behavior tree invokes. Either way it arrives as [vx, vy, vyaw] in the robot's body frame — vx is forward relative to where the robot faces, vy is sideways, vyaw is turn rate. The body-frame detail matters: "go north" in world frame has to be rotated into "go forward-left" in body frame depending on which way the robot currently faces, and forgetting that rotation makes the robot walk sideways.
 
-Building the observation from the state estimator. In sim, MuJoCo hands you perfect state. On the real robot you don't have perfect state — you have noisy sensors: IMU, joint encoders. The state estimator's job is to fuse those noisy readings into a clean estimate of the actual state (base orientation, velocities, joint positions). That's the IEKF — it runs filters to clean up and fuse the sensor data. Then you build the exact same observation vector the policy trained on, but now from estimated state instead of ground-truth. The state estimator is its own real subsystem — not free from ROS, someone implements or configures it — but for understanding the locomotion policy you can mostly black-box it, as long as you hold onto the one critical rule: the observation at deployment must exactly match the format and meaning of the observation at training, or the policy sees garbage.
+Building the observation from the state estimator. In sim, MuJoCo hands you perfect state. On the real robot you don't have perfect state — you have noisy sensors: IMU, joint encoders. The state estimator's job is to fuse those noisy readings into a clean estimate of the actual state (base orientation, velocities, joint positions). That's the state estimator (an IEKF in many stacks; leg odometry + an EKF in ours) — it runs filters to clean up and fuse the sensor data. Then you build the exact same observation vector the policy trained on, but now from estimated state instead of ground-truth. The state estimator is its own real subsystem — not free from ROS, someone implements or configures it — but for understanding the locomotion policy you can mostly black-box it, as long as you hold onto the one critical rule: the observation at deployment must exactly match the format and meaning of the observation at training, or the policy sees garbage.
 
 The asymmetric critic thing. During training, the critic is allowed to see "privileged" information the real robot can't sense — true contact forces, true friction, true masses. The actor only ever sees the deployable observation. Why let the critic cheat? Because it's discarded after training, so it's fine — and a better-informed critic gives better value estimates, better advantages, better training for the actor. And the actor never becomes dependent on the privileged info because it never sees it. So it's not that the actor's observation is "masked" — it's that the critic gets extra info. At inference the critic is gone entirely, so none of it matters; you just run the actor on its normal observation.
 
@@ -236,7 +236,7 @@ You pick these but the defaults from any legged locomotion repo are fine. Bigger
 Number of iterations to run (~2000+), checkpoint frequency, W&B logging config, whether you're on CPU or GPU. Practical, not conceptual.
 
 ## How you actually do it, start to finish
-1. Clone a working repo (unitree_rl_gym or your berkeley_humanoid).
+1. Clone a working repo (we started from mjlab's own G1 velocity task; `training/locomotion/wisco_v1/` is that task with Wisco V1 swapped in).
    Do NOT start from scratch. Ever.
 
 2. Get their existing example training running unchanged first.
@@ -260,3 +260,21 @@ Number of iterations to run (~2000+), checkpoint frequency, W&B logging config, 
 9. Export the trained policy to ONNX for deployment.
 
 The whole game is: framework owns PPO, you own the environment and the reward. Ninety percent of your time is reward shaping and debugging why the robot does something dumb. The PPO math you learned is what lets you diagnose those problems (is my advantage leaking across episodes, is my value function garbage), but you never write it.
+
+## In our stack (2026-11)
+
+| Concept above | Wisco V1 in this repo |
+|---|---|
+| Robot model | `robots/wisco_v1/`: URDF/MJCF generated from CAD + MyActuator datasheets; `model/wisco_v1_train.xml` is what mjlab trains on |
+| Framework | mjlab 1.6.0 (MuJoCo-Warp on the GPU) + RSL-RL PPO; 4,096 parallel robots, 24 steps per rollout, actor 512-256-128 ELU |
+| Recipe | "arms-free": the policy drives 15 joints (legs 12 + waist 3) and holds the 14 arm joints (and the head), so manipulation can use the arms later |
+| Observation (85 values) | body linear and angular velocity, projected gravity, positions and velocities of all 29 modelled joints, last action (15), velocity command (3) |
+| Action | 15 joint position targets: `default_pos + action_scale * action`, tracked by PD with the gains in `robots/wisco_v1/model/robot_numbers.yaml` |
+| Actuator realism | DC motor torque-speed limits, 0–10 ms command delay, per-motor ankle torque through the rod linkage (with an overload penalty) |
+| Domain randomization | link masses ×0.85–1.20, friction, kp/kd ±10 %, pushes, arm motion and hand payload |
+| Training run | J3 series on the GPU VM (`training/locomotion/wisco_v1/WORK_LOG.md`); deployed: J3h model_4650 |
+| Export → deploy | ONNX + `manifest.yaml` (`models/locomotion/wisco_v1_velocity_arms_free/`), run by the `locomotion` node at 50 Hz; checked sim-to-sim in plain MuJoCo first |
+
+What is still estimated on the robot side (masses, delay, driver gains, friction) and how it gets measured:
+`robots/wisco_v1/HARDWARE_ISSUES.md`.
+

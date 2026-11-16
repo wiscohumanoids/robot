@@ -1,3 +1,9 @@
+> **In this repo:** this package lives in the main colcon workspace, `ros2_ws/src/wisco_ethercat_ros2_hw/` (the
+> layout below shows its original standalone `wisco_ws`). It builds with the rest of the workspace, but running the
+> test bench also needs `ethercat_driver_ros2` and the IgH EtherCAT master, which the simulation container
+> (`infra/docker/`) does not install. How it fits the stack (compute split, drive modes, what is next):
+> `docs/architecture.md` §3.1 and `hardware/README.md`.
+
 ## WiscoHumanoids Hardware Interface
 
 Demo: https://drive.google.com/file/d/1zwNxs48vFlNf9jD_jDFN_XyyGplYSpis/view?usp=sharing

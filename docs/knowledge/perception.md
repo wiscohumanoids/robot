@@ -58,7 +58,7 @@ odom → base_link    ← state estimation / odometry owns this edge
 base_link → camera  ← static, from mounting
 ```
 
-Here's the elegant division of labor, and it directly answers your question. State estimation (the fast IEKF, odometry) publishes odom → base_link at high rate — this is smooth, fast, locally accurate, but drifts over time. SLAM publishes map → odom — this is the drift correction, updated more slowly and jumping when loop closures happen. The robot's position in the map is the composition of both: the fast smooth local motion plus the slow global correction.
+Here's the elegant division of labor, and it directly answers your question. State estimation (a fast filter over IMU and odometry: an IEKF, or in our stack leg odometry + an EKF; our edge is odom → base_footprint, the floor point under the pelvis) publishes odom → base_link at high rate — this is smooth, fast, locally accurate, but drifts over time. SLAM publishes map → odom — this is the drift correction, updated more slowly and jumping when loop closures happen. The robot's position in the map is the composition of both: the fast smooth local motion plus the slow global correction.
 
 Why split it this way? Because you want both properties. The fast odom → base_link gives you smooth, high-rate motion that never jumps (critical for control — you don't want your balance controller seeing the robot teleport). The slow map → odom gives you global consistency and corrects drift (critical for navigation — you want to actually reach the table). When a loop closure fires and SLAM realizes there's been two meters of drift, it corrects map → odom — the global position snaps, but the smooth local motion in odom frame is undisturbed. Control keeps running smoothly off odom; navigation benefits from the corrected map. This is a genuinely beautiful piece of design and it's the standard ROS convention (REP 105 if you want the spec).
 
@@ -100,3 +100,18 @@ Does it fit the parallel-development structure? Perfectly — arguably better th
 ## The whole perception picture in one breath
 
 SLAM solves the chicken-and-egg of needing a map to localize and needing to localize to map, by tracking sparse ORB feature points across frames and jointly solving for camera trajectory and 3D map. ORB-SLAM3 runs three threads — fast tracking at framerate, slower local mapping with bundle adjustment per keyframe, and event-driven loop closing. Drift accumulates frame to frame without bound, and loop closure fixes it by recognizing revisited places via bag-of-words matching and redistributing the error through pose graph optimization, snapping the map back into consistency. Objects get placed in the room by composing SLAM's camera-in-map pose with a detector's object-in-camera pose, building a semantic map the planner can reason about. In ROS, SLAM owns the map → odom TF edge (slow drift correction) while state estimation owns odom → base_link (fast smooth local motion), giving you both smoothness for control and global consistency for navigation without the two writers conflicting. A perception team uses ORB-SLAM3, FoundationPose, and detectors as libraries — building calibration, ROS integration, the semantic layer, and tuning rather than the algorithms themselves — and can develop the whole thing in isolation against a real camera or a recorded bag, visualizing it live in RViz, then drop their node into the scaffold in place of the stub with zero disruption downstream. It's one of the most independently-developable and library-heavy layers in the entire stack.
+
+## In our stack (2026-11)
+
+| Concept above | What Wisco V1 uses (this repo) |
+|---|---|
+| Camera | ZED X stereo RGB-D on the head (no lidar on Wisco; the G1 reference robot has one). In sim: `stereo_camera` with a stereo depth-error model |
+| SLAM (`map → odom`) | RTAB-Map visual SLAM by default (`mapping:=rtabmap`); slam_toolbox (`mapping:=slam`) and AMCL on a known map (`mapping:=map`, tests) are the alternatives. Node `localization`, `ros2_ws/src/hsim_navigation/` |
+| State estimation (`odom → base_footprint`) | leg odometry (stance-foot kinematics) + `robot_localization` EKF at 50 Hz, `ros2_ws/src/hsim_state_estimation/` |
+| Object detection | open-vocabulary: Grounding DINO + SAM 2.1 on the GPU server, depth back-projected to 3D boxes (`services/perception_server/`, client node `perception` → `/perception/detections`, camera frame). FoundationPose-style 6-DOF poses are not used yet |
+| Placing objects in the room | `world_model`: detections → map frame with the robot's own pose, tracked and merged over views → `/world/objects`, `/world/summary` (what the planner reads) |
+| Stubbing for parallel work | `perception:=stub`: line-of-sight detections from the simulator (privileged positions, honest visibility), same topic and node name |
+
+Measured in sim: 3D error 1–4 cm median, 0.4–0.8 s per frame; wrong labels are the weak spot
+(`docs/runs/2026-11-10_worklog_E.md`). Topics and frames: `docs/interface_contract.md`.
+

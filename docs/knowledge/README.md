@@ -12,24 +12,17 @@ start to finish. The interactive version of the same material is the academy in 
 | [locomotion_rl_pipeline.md](locomotion_rl_pipeline.md) | Step-by-step outline of PPO training and inference |
 | [manipulation.md](manipulation.md) | The manipulation ladder: IK, ACT, diffusion policy, VLAs, RL fine-tuning |
 | [manipulation_act_pipeline.md](manipulation_act_pipeline.md) | Step-by-step outline of ACT training and inference |
+| [controls.md](controls.md) | From position targets to torques: PD for the legs, impedance control for the arms, Pinocchio and CRISP, where a whole-body controller fits |
 | [stack_flow.md](stack_flow.md) | One line per layer: what you configure once vs what runs continuously |
 
 ## Status
 
-**These are the 2026-09 texts, converted to markdown unchanged (2026-11-15).** They explain the concepts well, but
-several specifics predate the current stack and are being updated. Until that update lands, where this folder and
-the code disagree, the code and `docs/architecture.md` win. Known differences:
+The explanations are written to stay true in general; every document ends with an **"In our stack"** section that
+maps the concepts onto Wisco V1 and this repo (updated 2026-11-15). Where a general example in the text differs from
+our robot (a 25-joint example, ORB-SLAM3, an IEKF, FoundationPose, ACT on an ALOHA arm), the "In our stack" section
+and `docs/architecture.md` describe what we actually run. `stack_flow.md` is the one-line-per-layer version of the
+same picture.
 
-| The text says | The stack now |
-|---|---|
-| 25 joints | Wisco V2 model: 31 joints (the current walking policy drives 15: legs + torso; G1: 29) |
-| Every joint gets a torque command through 0x6071 (CST) | Planned: legs, waist, head in MyActuator mode 5 (position + kp + kd, PD in the driver); arms in CST torque from the arm controller |
-| ORB-SLAM3 | RTAB-Map (default), slam_toolbox, or AMCL on a known map; ZED X stereo camera, no lidar on Wisco |
-| IEKF at 1 kHz / 500 Hz | Leg odometry + `robot_localization` EKF at 50 Hz (an IEKF remains a possible upgrade) |
-| FoundationPose for object poses | Grounding DINO + SAM 2.1 server, depth back-projection to 3D |
-| A generic LLM planner | Claude planner + BehaviorTree.CPP skills |
-| ACT as the manipulation policy | GR00T N1.6 fine-tune in sim; ACT and pi0.5 pipelines for the Panthera arm (`manipulation/`) |
-| MuJoCo + Stable-Baselines3 / rsl_rl examples | mjlab (MuJoCo-Warp) + RSL-RL PPO, exported to ONNX + `manifest.yaml` |
-
-Missing so far: a controls document (the academy's controls chapter, `../academy/src/ch_ctl.js`, has the content),
-the hardware specifics (MyActuator objects, drive modes, calibration) and sim-to-real.
+Still to write: the hardware specifics as their own document (MyActuator objects and drive modes, calibration,
+bring-up; for now `hardware/README.md` and `robots/wisco_v1/`), and sim-to-real (actuator modelling, delay, system
+identification, lessons from other humanoid projects).

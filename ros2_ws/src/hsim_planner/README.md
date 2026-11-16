@@ -8,4 +8,4 @@ Needs `ANTHROPIC_API_KEY` in the repo's `.env` (copy `.env.example`), then recre
 (`tools/ros.sh down && tools/ros.sh up`).
 
 Talk to it: `tools/ask.sh "pick up the red block"` (Mac) or `ros2 run hsim_planner ask "..."` (container).
-Tests without the API: `pytest src/hsim_planner/test`, `tools/eval/fake_claude_flow.py` (scripted Claude).
+Tests without the API: `python -m pytest ros2_ws/src/hsim_planner/test` (repo root), `tools/eval/fake_claude_flow.py` (scripted Claude).

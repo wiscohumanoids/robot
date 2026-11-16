@@ -1,5 +1,9 @@
 # Stack flow: what each layer does at setup time and at run time
 
+> These are the status lines of an earlier interactive explorer, kept verbatim. The numbers are illustrative (a
+> 25-joint robot, ORB-SLAM3, an IEKF at 1 kHz, ACT); what Wisco V1 actually runs is in each document's "In our stack"
+> section and in `docs/architecture.md`.
+
 One-line descriptions of every layer, split into what you configure once ("Training (Setup)") and what runs
 continuously ("Inference Time"). The narrative versions are [end_to_end.md](end_to_end.md),
 [perception.md](perception.md), [locomotion_rl.md](locomotion_rl.md) and [manipulation.md](manipulation.md).

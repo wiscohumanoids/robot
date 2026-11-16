@@ -1,16 +1,19 @@
+> **In this repo:** the real-arm pipeline of the manipulation stack, run from this folder
+> (`manipulation/panthera_teleop/`); its scripts find everything relative to it. Where it fits, and how it relates to
+> the arm simulation (`../panthera_sim/`) and the humanoid's manipulation skill: [`../README.md`](../README.md).
+
 # Panthera gravity assist and recording
 
 ## Getting started
 
-On an already configured machine, run `./start.sh` from the repository root. A fresh clone also needs the manufacturer's [Panthera-HT SDK](https://github.com/HighTorque-Robotics/Panthera-HT_SDK) and a Python environment: the local `work/` folder is excluded from Git.
+On an already configured machine, run `./start.sh` from this folder (`manipulation/panthera_teleop/`). A fresh checkout also needs the manufacturer's [Panthera-HT SDK](https://github.com/HighTorque-Robotics/Panthera-HT_SDK) and a Python environment: the local `work/` folder is excluded from Git.
 
 ### 1. Install the software
 
 The commands below use Linux x86_64, Python 3.10, Git, and [uv](https://docs.astral.sh/uv/getting-started/installation/). The vendor's prebuilt motor wheel targets Linux x86_64 and was built on Ubuntu 22. For other platforms or binary compatibility issues, follow the [SDK's source-build instructions](https://github.com/HighTorque-Robotics/Panthera-HT_SDK/blob/4a267c148cffa56b369222110bcd0b925809e365/panthera_python/README.md).
 
 ```bash
-git clone https://github.com/zebulontaylor/Panthera-Teleop.git
-cd Panthera-Teleop
+cd manipulation/panthera_teleop          # from the repo root
 mkdir -p work
 git clone https://github.com/HighTorque-Robotics/Panthera-HT_SDK.git work/Panthera-HT_SDK
 git -C work/Panthera-HT_SDK checkout 4a267c148cffa56b369222110bcd0b925809e365

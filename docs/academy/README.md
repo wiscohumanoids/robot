@@ -4,8 +4,9 @@ Interactive study notes for the whole stack. No dependencies and no server: open
 
 Built from the knowledge base in [`../knowledge/`](../knowledge/): [end_to_end.md](../knowledge/end_to_end.md),
 [perception.md](../knowledge/perception.md), [locomotion_rl.md](../knowledge/locomotion_rl.md) and
-[manipulation.md](../knowledge/manipulation.md). The controls chapter (`src/ch_ctl.js`) has no knowledge-base
-document yet; its text lives only in that file.
+[manipulation.md](../knowledge/manipulation.md); the controls chapter (`src/ch_ctl.js`) is the source of
+[controls.md](../knowledge/controls.md). The academy teaches the general concepts; for what Wisco V1 runs, read the
+"In our stack" section at the end of each knowledge-base document.
 
 ## Chapters, in stack order
 1. The map: how the layers fit together (`ch_map.js`)
