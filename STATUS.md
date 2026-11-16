@@ -35,35 +35,47 @@ the pre-unification folder, two on this repo; the results are equivalent), no fa
 | Check | Wisco V1 | G1 |
 |---|---|---|
 | `nav_known_map` (AMCL, 4 m goal) | 3/3 | 3/3 |
-| `nav_slam` (SLAM from scratch) | **0/3** | 2/3 |
+| `nav_slam` (SLAM from scratch) | 2/2 (since the SLAM-check fix below) | 3/4 |
 | `dropped_box` (obstacle not on the map) | 3/3 | 3/3 |
 | `bt_plan` (behavior tree plan) | 3/3 | 2/3 |
 | `viewer_idle` (viewer open + teleop takeover) | 3/3 | 3/3 |
 | `planner_flow` (scripted Claude) | 3/3 | 2/3 |
 | `reach_table` | 3/3 | 1/3 |
 | `reach_block` | 3/3 | 1/3 |
-| `kitchen_fridge` (known map) | **0/3** | **0/3** |
-| `slam_fridge` | **0/3** | 2/3 |
+| `kitchen_fridge` (known map) | 0/3 (strict grader, see below) | 0/3 (strict grader) |
+| `slam_fridge` | 4/4 (since the SLAM-check fix below) | 2/4 |
 | `kitchen_sink` | 2/3 (2/9 with six more runs) | 1/3 |
 
 ## Known issues
 
-1. **Wisco V1, `nav_slam`** (SLAM from scratch in the test room, goal 4 m ahead): Nav2 gives up (status 6) and the robot
-   ends 4.6 m from the goal, heading about 160° off. Same in every run, before and after the unification. Not yet
-   investigated; the G1 (lidar + camera) passes the same check.
-2. **Wisco V1, `slam_fridge`**: "couldn't reach the fridge (navigation failed or the way is blocked)" with SLAM in the
-   kitchen. Same family as 1.
-3. **`kitchen_fridge`, both robots** (known map): arrives 0.43–0.60 m from the fridge, square-on, but not centered on
-   its front; the grader requires centered.
-4. **Reach checks vary run to run**: the G1 often stops short of the table ("couldn't step close enough", 0.4–0.9 m);
-   Wisco V1 often ends too close to the sink (0.10–0.12 m, below the 0.15 m minimum) or off-center. The graders were
-   tightened on 2026-11-11.
-5. **Wisco V1 needs an environment in simulation.** It has no lidar; its stereo camera renders the built world, so
+**Fixed 2026-11-16: the SLAM checks were configured for a lidar robot.** `nav_slam` and `slam_fridge` failed for Wisco V1
+in every run, before and after the unification, but neither was a SLAM or navigation problem:
+- They ran slam_toolbox (`mapping:=slam`), a 2D laser SLAM written for the G1's lidar. Wisco has no lidar, only a scan
+  derived from its stereo depth. Wisco's SLAM is RTAB-Map (the stack's default), which passes.
+- `nav_slam` sent a goal 4 m away straight after startup. In SLAM mode Nav2 does not plan into unexplored space (a
+  deliberate setting, `training/locomotion/wisco_v1/WORK_LOG.md`), and Wisco's forward-only camera had not seen the goal
+  area yet, so Nav2 refused to plan and the robot never moved. The G1's all-round lidar sees it at once.
+
+`tools/autonomy_test.sh` now follows the robot's sensors: stereo robots use RTAB-Map and look around before the goal,
+as in the real flow ("look_around, navigate_to: ..."); lidar robots (G1) run the checks unchanged. Result: Wisco
+`nav_slam` 2/2, `slam_fridge` 4/4.
+
+Open items:
+
+1. **Reach precision against the strict grader (pre-existing, tracked as a precision goal).** The robot reaches the
+   table, block, fridge and sink in every run, without falls, but the strict grader (furniture 0.15–0.40 m from the
+   surface, fridge 0.3–0.6 m, square within 10°, centered on the front) is sometimes missed by a few centimetres or by
+   centering: the G1 stops short of the table (0.4–0.9 m) or can't turn because it is too close (29 cm); Wisco ends too
+   close to the sink (0.10–0.12 m); both robots arrive at the fridge square-on but not centered. These grades failed
+   the same way in the original repo (work log 2026-11-11: "Wisco 0/4 but near misses", "strict grade 2/5"; and runs
+   of the untouched pre-unification folder on 2026-11-15). The limits stay as they are; improving the final approach
+   in `hsim_behavior` (`NavigateTo`, `StepBack`) to meet them is the goal.
+2. **Wisco V1 needs an environment in simulation.** It has no lidar; its stereo camera renders the built world, so
    `tools/ros.sh test sim` without `env:=` fails for Wisco ("sensors:=stereo needs an env"). Use
    `tools/ros.sh test sim test/table_room`, or `robot:=g1` for the bare world.
-6. **Manipulation in the full sim** needs the G1 with Dex1 grippers and the training ego camera in `hsim_sim`, and an
+3. **Manipulation in the full sim** needs the G1 with Dex1 grippers and the training ego camera in `hsim_sim`, and an
    arms-free walking policy, before `/skills/manipulate` can run end to end (`hsim_manipulation/README.md`).
-7. **The deployed Wisco policy was trained up to 1.0 m/s forward**; a 1.5 m/s step command from standing makes it fall
+4. **The deployed Wisco policy was trained up to 1.0 m/s forward**; a 1.5 m/s step command from standing makes it fall
    (ramped, it holds).
 
 Hardware findings for the mechanical and electrical team (masses, ankle motor sizing, calibration, IMU axes, drive
@@ -85,6 +97,6 @@ In order; each item names where the work goes.
 5. **Wisco V1 arm control** (its own package) and IK for the Wisco arms.
 6. **Sim-to-real infrastructure**: actuator model (torque limits, delay, armature, friction as config), system
    identification of the motors, lessons from other open humanoid projects, documented in `docs/knowledge/`.
-7. **Autonomy fixes**: the Wisco SLAM failures (issues 1–2), reach consistency (3–4).
+7. **Reach precision** (open item 1): final approach in `hsim_behavior` meeting the strict grader.
 8. **Planner and behavior-tree ports** from the planner/BT/Nav2 branch (intent queue, queue editing, retry backoff,
    Nav2 test maps, stress tests): `docs/migration/porting_backlog.md`.
