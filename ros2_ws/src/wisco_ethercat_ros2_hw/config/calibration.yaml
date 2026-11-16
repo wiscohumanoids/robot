@@ -1,0 +1,11 @@
+# Per-robot calibration, written by calibration procedures, not by hand.
+#
+# zero_offsets_rad: the direction-corrected encoder reading (rad) when the
+# joint sits at its URDF zero. Joint angle = direction * encoder - zero_offset.
+# The drives have no home-offset object, so the offset is applied here.
+#
+# Joints without an entry are treated as uncalibrated: the launch file warns,
+# and their URDF position limits are only meaningful once they are zeroed.
+
+version: 0
+zero_offsets_rad: {}

@@ -1,55 +1,1019 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wisco_test_bench">
-  <link name="base_link">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="full_assmb">
+
+  <mujoco>
+    <compiler strippath="false" discardvisual="false" />
+  </mujoco>
+
+  <!-- Hardware manifest and ros2_control macros: urdf/ros2_control_macros.xacro.
+       The launch file generates the manifest from config/joints.yaml. -->
+  <xacro:include filename="ros2_control_macros.xacro"/>
+
+  <!-- ==================== JOINT NAMING ==================== -->
+  <xacro:property name="actuated_joint_names" value="${['left_shoulder_pitch', 'left_shoulder_roll', 'left_shoulder_yaw', 'left_elbow', 'left_forearm_yaw', 'left_wrist_pitch', 'left_wrist_roll', 'right_shoulder_pitch', 'right_shoulder_roll', 'right_shoulder_yaw', 'right_elbow', 'right_forearm_yaw', 'right_wrist_pitch', 'right_wrist_roll', 'left_hip_pitch', 'left_hip_roll', 'left_hip_yaw', 'left_knee', 'left_ankle_pitch', 'left_ankle_roll', 'right_hip_pitch', 'right_hip_roll', 'right_hip_yaw', 'right_knee', 'right_ankle_pitch', 'right_ankle_roll', 'torso_yaw', 'torso_roll', 'torso_pitch', 'head_yaw', 'head_pitch']}"/>
+
+  <!-- ==================== MATERIALS ==================== -->
+  <material name="cad_aluminum"><color rgba="0.68 0.70 0.73 1.0"/></material>
+  <material name="shell_dark"><color rgba="0.45 0.48 0.52 1.0"/></material>
+  <material name="arm_dark"><color rgba="0.22 0.24 0.27 1.0"/></material>
+  <material name="accent_red"><color rgba="0.72 0.12 0.25 1.0"/></material>
+
+  <!-- Macro that colors active EtherCAT joints red and mock joints dark gray -->
+  <xacro:macro name="actuator_visual_hub" params="parent_link radius length rpy joint_idx">
+    <link name="${parent_link}_hub">
+      <visual>
+        <origin xyz="0 0 0" rpy="${rpy}"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="${'accent_red' if actuated_joint_names[int(joint_idx) - 1] in hw_names else 'arm_dark'}"/>
+      </visual>
+    </link>
+    <joint name="${parent_link}_hub_fixed" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${parent_link}_hub"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- ==================== LINK: pelvis ==================== -->
+  <link name="pelvis">
+    <inertial>
+      <origin xyz="0.00135144019 -0.000867692327 -0.0218788488" rpy="0 0 0"/>
+      <mass value="3.3441746"/>
+      <inertia ixx="0.0099193949" ixy="9.93110242e-05" ixz="1.02298577e-05" iyy="0.00708947808" iyz="-2.20920691e-05" izz="0.00877560221"/>
+    </inertial>
     <visual>
-<origin xyz="0.01 0 0" rpy="0 0 0"/>
-      <geometry><cylinder radius="0.05" length="0.11"/></geometry>
-      <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
-    </visual>
-  </link>
-  
-  <link name="test_mass">
-    <visual>
-      <!-- Main cylinder body -->
-      <origin xyz="0.01 0 0.01" rpy="0 0 0"/>
-      <geometry><cylinder radius="0.05" length="0.11"/></geometry>
-      <material name="red"><color rgba="1 0.2 0.2 1"/></material>
+      <origin xyz="0.002 0 -0.01" rpy="0 0 0"/>
+      <geometry><box size="0.11 0.14 0.08"/></geometry>
+      <material name="shell_dark"/>
     </visual>
     <visual>
-      <!-- Asymmetric pointer box sticking out radially to show rotation -->
-      <origin xyz="0.05 0 0.07" rpy="0 0 0"/>
-      <geometry><box size="0.04 0.02 0.02"/></geometry>
-      <material name="red"><color rgba="1 1 1 1"/></material>
+      <origin xyz="0.004 -0.002 0.045" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.045" length="0.055"/></geometry>
+      <material name="shell_dark"/>
     </visual>
+    <collision>
+      <origin xyz="0.002 0 -0.01" rpy="0 0 0"/>
+      <geometry><box size="0.11 0.14 0.08"/></geometry>
+    </collision>
   </link>
 
-  <joint name="test_motor_joint" type="continuous">
-    <parent link="base_link"/>
-    <child link="test_mass"/>
-    <axis xyz="0 0 1"/>
-    <calibration rising = "0.0"/>
+  <!-- ==================== LINK: torso_yaw_link (Joint 26) ==================== -->
+  <link name="torso_yaw_link">
+    <inertial>
+      <origin xyz="0.0071610769 -0.000311877016 0.0253486518" rpy="0 0 0"/>
+      <mass value="1.29787155"/>
+      <inertia ixx="0.00271774684" ixy="4.63173551e-06" ixz="-0.000191215983" iyy="0.00294832905" iyz="1.43051997e-05" izz="0.00224623993"/>
+    </inertial>
+    <visual>
+  <origin xyz="-0.0105 0.0204 0.0775" rpy="0 0 0"/>
+  <geometry><cylinder radius="0.048" length="0.162"/></geometry>
+  <material name="arm_dark"/>
+</visual>
+<collision>
+  <origin xyz="-0.0105 0.0204 0.0775" rpy="0 0 0"/>
+  <geometry><cylinder radius="0.048" length="0.162"/></geometry>
+</collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="torso_yaw_link" radius="0.052" length="0.045" rpy="0 0 0" joint_idx="26"/>
+
+  <!-- ==================== LINK: torso_roll_link (Joint 27) ==================== -->
+  <link name="torso_roll_link">
+    <inertial>
+      <origin xyz="0.0050792044 -0.0249943939 0.0829546342" rpy="0 0 0"/>
+      <mass value="2.1766299"/>
+      <inertia ixx="0.0251292467" ixy="-0.000341218777" ixz="0.00207190506" iyy="0.0216832801" iyz="-0.00119301017" izz="0.0115066298"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 -0.043 0.02" rpy="0 0 0"/>
+      <geometry><box size="0.10 0.12 0.09"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 -0.043 0.02" rpy="0 0 0"/>
+      <geometry><box size="0.10 0.12 0.09"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="torso_roll_link" radius="0.046" length="0.055" rpy="0 1.5708 0" joint_idx="27"/>
+
+  <!-- ==================== LINK: torso (Joint 28) ==================== -->
+  <link name="torso">
+    <inertial>
+      <origin xyz="0.00775933931 0.0230773074 0.106121937" rpy="0 0 0"/>
+      <mass value="10.1109044"/>
+      <inertia ixx="0.1160102" ixy="0.00145015298" ixz="0.00925740736" iyy="0.103810313" iyz="-0.00578745232" izz="0.0528225367"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.010 0.0439 0.125" rpy="0 0 0"/>
+      <geometry><box size="0.14 0.19 0.24"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.014 0.0439 0.215" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.065" length="0.20"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.0145 0.0430 0.255" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.035" length="0.06"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.010 0.0439 0.125" rpy="0 0 0"/>
+      <geometry><box size="0.14 0.19 0.24"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="torso" radius="0.046" length="0.055" rpy="1.5708 0 0" joint_idx="28"/>
+
+  <link name="torso_trim_link">
+    <visual>
+      <origin xyz="0.082 0.0439 0.165" rpy="0 0 0"/>
+      <geometry><box size="0.012 0.17 0.10"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.082 0.0439 0.065" rpy="0 0 0"/>
+      <geometry><box size="0.012 0.15 0.08"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+  </link>
+  <joint name="torso_trim_fixed" type="fixed">
+    <parent link="torso"/>
+    <child link="torso_trim_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
-  <ros2_control name="EthercatTestBench" type="system">
-    <hardware>
-      <plugin>ethercat_driver/EthercatDriver</plugin>
-      <param name="master_id">0</param>
-      <param name="control_frequency">100</param>
-    </hardware>
+  <!-- ==================== LINK: head_yaw_link (Joint 29) ==================== -->
+  <link name="head_yaw_link">
+    <inertial>
+      <origin xyz="-0.0212986181 -0.00220808899 -0.0019701607" rpy="0 0 0"/>
+      <mass value="0.427035118"/>
+      <inertia ixx="0.00143527713" ixy="2.24802452e-05" ixz="2.45759879e-05" iyy="0.000460095823" iyz="-1.50235836e-05" izz="0.00151713452"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.001 0.002 0.0306" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.032" length="0.062"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.001 0.002 0.0306" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.032" length="0.062"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="head_yaw_link" radius="0.036" length="0.03" rpy="0 0 0" joint_idx="29"/>
 
-<joint name="test_motor_joint">
-  <state_interface name="position"/>
-  <state_interface name="velocity"/>
-  <state_interface name="effort"/>
-  <command_interface name="effort"/>
-  <command_interface name="reset_fault"/>
+  <!-- ==================== LINK: head (Joint 30) ==================== -->
+  <link name="head">
+    <inertial>
+      <origin xyz="-0.00028095196 -0.00886941447 0.00973844358" rpy="0 0 0"/>
+      <mass value="1.3791038"/>
+      <inertia ixx="0.00689181604" ixy="8.02539198e-05" ixz="-0.000108831458" iyy="0.00855292846" iyz="1.00060424e-05" izz="0.00982967077"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.01 0 0.045" rpy="0 0 0"/>
+      <geometry><box size="0.12 0.16 0.10"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.01 0.08 0.045" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.05" length="0.12"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.01 -0.08 0.045" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.05" length="0.12"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.01 0 0.045" rpy="0 0 0"/>
+      <geometry><box size="0.12 0.16 0.10"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="head" radius="0.036" length="0.03" rpy="0 0 0" joint_idx="30"/>
 
-  <ec_module name="rmd_test_motor">
-    <plugin>ethercat_generic_plugins/EcCiA402Drive</plugin>
-    <param name="alias">0</param>
-    <param name="position">0</param>
-    <param name="slave_config">$(find wisco_ethercat_ros2_hw)/config/rmd_x4_10.yaml</param>
-  </ec_module>
-</joint>
- </ros2_control>
+  <link name="head_visor_link">
+    <visual>
+      <origin xyz="0.071 0 0.045" rpy="0 0 0"/>
+      <geometry><box size="0.006 0.15 0.068"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+  </link>
+  <joint name="head_visor_fixed" type="fixed">
+    <parent link="head"/>
+    <child link="head_visor_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="head_eyes_link">
+    <visual>
+      <origin xyz="0.075 0.045 0.045" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.015" length="0.008"/></geometry>
+      <material name="accent_red"/>
+    </visual>
+    <visual>
+      <origin xyz="0.075 -0.045 0.045" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.015" length="0.008"/></geometry>
+      <material name="accent_red"/>
+    </visual>
+  </link>
+  <joint name="head_eyes_fixed" type="fixed">
+    <parent link="head"/>
+    <child link="head_eyes_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================== LEFT ARM LINKS ==================== -->
+
+  <!-- LINK: left_shoulder_pitch_link (Joint 1) -->
+  <link name="left_shoulder_pitch_link">
+    <inertial>
+      <origin xyz="8.11329397e-06 0.0134690594 0.00170145189" rpy="0 0 0"/>
+      <mass value="0.919708281"/>
+      <inertia ixx="0.00100827347" ixy="2.98577709e-09" ixz="2.40442334e-10" iyy="0.000921610803" iyz="-3.07703853e-05" izz="0.00102891925"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0021 0.0544 -0.0053" rpy="1.667 0 -0.039"/>
+      <geometry><cylinder radius="0.044" length="0.110"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0021 0.0544 -0.0053" rpy="1.667 0 -0.039"/>
+      <geometry><cylinder radius="0.044" length="0.110"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_shoulder_pitch_link" radius="0.048" length="0.055" rpy="1.5708 0 0" joint_idx="1"/>
+
+  <!-- LINK: left_shoulder_roll_link (Joint 2) -->
+  <link name="left_shoulder_roll_link">
+    <inertial>
+      <origin xyz="-0.00475183471 -0.0100580619 -0.00881261853" rpy="0 0 0"/>
+      <mass value="0.770586821"/>
+      <inertia ixx="0.00121128237" ixy="8.63525933e-07" ixz="1.03437435e-05" iyy="0.00117995434" iyz="3.0758398e-05" izz="0.00119374891"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0076 0.0001 -0.0521" rpy="0 0.145 0"/>
+      <geometry><cylinder radius="0.042" length="0.106"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0076 0.0001 -0.0521" rpy="0 0.145 0"/>
+      <geometry><cylinder radius="0.042" length="0.106"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_shoulder_roll_link" radius="0.048" length="0.055" rpy="0 1.5708 0" joint_idx="2"/>
+
+  <!-- LINK: left_shoulder_yaw_link (Joint 3) -->
+  <link name="left_shoulder_yaw_link">
+    <inertial>
+      <origin xyz="0.0192767007 -0.000125972824 -0.0397098337" rpy="0 0 0"/>
+      <mass value="0.621805024"/>
+      <inertia ixx="0.00189796511" ixy="-1.6383484e-09" ixz="9.05344671e-05" iyy="0.00212971261" iyz="5.26342737e-10" izz="0.00066640456"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0192 0.0132 -0.0528" rpy="0.229 -0.348 0"/>
+      <geometry><cylinder radius="0.038" length="0.115"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0192 0.0132 -0.0528" rpy="0.229 -0.348 0"/>
+      <geometry><cylinder radius="0.038" length="0.115"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_shoulder_yaw_link" radius="0.043" length="0.045" rpy="0 0 0" joint_idx="3"/>
+
+  <!-- LINK: left_elbow_link (Joint 4) -->
+  <link name="left_elbow_link">
+    <inertial>
+      <origin xyz="-0.0019140819 -0.013235326 0.00586464447" rpy="0 0 0"/>
+      <mass value="0.38394339"/>
+      <inertia ixx="0.000243875" ixy="7.90016812e-06" ixz="5.43861518e-06" iyy="0.000245523455" iyz="-9.37205015e-06" izz="0.00018647038"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0083 -0.0244 -0.0007" rpy="-1.545 0 -0.327"/>
+      <geometry><cylinder radius="0.035" length="0.052"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0083 -0.0244 -0.0007" rpy="-1.545 0 -0.327"/>
+      <geometry><cylinder radius="0.035" length="0.052"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_elbow_link" radius="0.040" length="0.048" rpy="1.5708 0 0" joint_idx="4"/>
+
+  <!-- LINK: left_forearm_yaw_link (Joint 5) -->
+  <link name="left_forearm_yaw_link">
+    <inertial>
+      <origin xyz="0.0105012778 0.00626218661 0.0029804655" rpy="0 0 0"/>
+      <mass value="0.382858204"/>
+      <inertia ixx="0.00024903944" ixy="2.1025687e-05" ixz="-9.30338073e-06" iyy="0.000238190065" iyz="3.28515867e-05" izz="0.000183474199"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0106 0.0116 -0.0283" rpy="0.366 0.359 0"/>
+      <geometry><cylinder radius="0.033" length="0.065"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0106 0.0116 -0.0283" rpy="0.366 0.359 0"/>
+      <geometry><cylinder radius="0.033" length="0.065"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_forearm_yaw_link" radius="0.038" length="0.04" rpy="0 0 0" joint_idx="5"/>
+
+  <!-- LINK: left_wrist_pitch_link (Joint 6) -->
+  <link name="left_wrist_pitch_link">
+    <inertial>
+      <origin xyz="0.0172458511 -0.00102733159 0.0143828916" rpy="0 0 0"/>
+      <mass value="0.449194847"/>
+      <inertia ixx="0.000766599168" ixy="-5.44066698e-06" ixz="-9.11994983e-06" iyy="0.000755487168" iyz="1.82121453e-06" izz="0.000432809613"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.001 -0.0006 -0.051" rpy="0 0 0"/>
+      <geometry><box size="0.052 0.056 0.102"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.001 -0.0006 -0.051" rpy="0 0 0"/>
+      <geometry><box size="0.052 0.056 0.102"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_wrist_pitch_link" radius="0.035" length="0.042" rpy="1.5708 0 0" joint_idx="6"/>
+
+  <!-- LINK: left_hand (Joint 7) -->
+  <link name="left_hand">
+    <inertial>
+      <origin xyz="0.00923745106 -0.00198239353 -0.154037792" rpy="0 0 0"/>
+      <mass value="3.07534549"/>
+      <inertia ixx="0.0351853133" ixy="2.70988185e-05" ixz="6.76734287e-05" iyy="0.0385974388" iyz="-0.00106665981" izz="0.00904590013"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.005 -0.001 -0.065" rpy="0 0 0"/>
+      <geometry><box size="0.045 0.075 0.12"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.005 -0.001 -0.065" rpy="0 0 0"/>
+      <geometry><box size="0.045 0.075 0.12"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_hand" radius="0.032" length="0.038" rpy="0 1.5708 0" joint_idx="7"/>
+
+  <!-- ==================== LEFT LEG LINKS ==================== -->
+
+  <!-- LINK: left_hip_pitch_link (Joint 13) -->
+  <link name="left_hip_pitch_link">
+    <inertial>
+      <origin xyz="1.4590771e-05 0.00723431008 0.0047576917" rpy="0 0 0"/>
+      <mass value="1.59510734"/>
+      <inertia ixx="0.00246484437" ixy="-5.38113812e-07" ixz="1.22770442e-06" iyy="0.00269065385" iyz="-3.03941244e-05" izz="0.00217901314"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0008 0.0520 -0.0085" rpy="1.734 0 0"/>
+      <geometry><cylinder radius="0.052" length="0.105"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0008 0.0520 -0.0085" rpy="1.734 0 0"/>
+      <geometry><cylinder radius="0.052" length="0.105"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_hip_pitch_link" radius="0.056" length="0.058" rpy="1.5708 0 0" joint_idx="13"/>
+
+  <!-- LINK: left_hip_roll_link (Joint 14) -->
+  <link name="left_hip_roll_link">
+    <inertial>
+      <origin xyz="0.00539467897 -0.00571167928 -0.0245072206" rpy="0 0 0"/>
+      <mass value="1.57903578"/>
+      <inertia ixx="0.00490499007" ixy="-3.30508062e-05" ixz="0.000696100589" iyy="0.00476647228" iyz="9.75911376e-05" izz="0.00291471444"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0034 0.0018 -0.0529" rpy="0 0.064 0"/>
+      <geometry><cylinder radius="0.050" length="0.106"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0034 0.0018 -0.0529" rpy="0 0.064 0"/>
+      <geometry><cylinder radius="0.050" length="0.106"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_hip_roll_link" radius="0.056" length="0.058" rpy="0 1.5708 0" joint_idx="14"/>
+
+  <!-- LINK: left_hip_yaw_link (Joint 15) -->
+  <link name="left_hip_yaw_link">
+    <inertial>
+      <origin xyz="-0.00931490414 -0.000404987435 0.0199591117" rpy="0 0 0"/>
+      <mass value="1.68516217"/>
+      <inertia ixx="0.00508116064" ixy="-1.05977184e-05" ixz="0.000901262554" iyy="0.00548147432" iyz="3.20033825e-05" izz="0.00233027208"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0133 0.0016 -0.0965" rpy="0 0.137 0"/>
+      <geometry><box size="0.088 0.082 0.195"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0133 0.0016 -0.0965" rpy="0 0.137 0"/>
+      <geometry><box size="0.088 0.082 0.195"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_hip_yaw_link" radius="0.050" length="0.050" rpy="0 0 0" joint_idx="15"/>
+
+  <!-- LINK: left_knee_link (Joint 16) -->
+  <link name="left_knee_link">
+    <inertial>
+      <origin xyz="0.00337077484 0.00140821301 0.0403923841" rpy="0 0 0"/>
+      <mass value="1.42310553"/>
+      <inertia ixx="0.00707164711" ixy="-3.14309604e-06" ixz="-2.82878795e-06" iyy="0.00712125762" iyz="2.62964092e-05" izz="0.00233915893"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0042 0.0018 -0.0502" rpy="0 -0.083 0"/>
+      <geometry><box size="0.072 0.072 0.102"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0042 0.0018 -0.0502" rpy="0 -0.083 0"/>
+      <geometry><box size="0.072 0.072 0.102"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_knee_link" radius="0.052" length="0.082" rpy="1.5708 0 0" joint_idx="16"/>
+
+  <!-- LINK: left_ankle_pitch_link (Joint 17) -->
+  <link name="left_ankle_pitch_link">
+    <inertial>
+      <origin xyz="0.00678134486 -0.00438370713 0.0101578228" rpy="0 0 0"/>
+      <mass value="0.539081888"/>
+      <inertia ixx="0.000632963635" ixy="5.03842374e-05" ixz="5.63012332e-05" iyy="0.000617434105" iyz="-2.83840102e-05" izz="0.000640971385"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0011 0.0008 -0.0285" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.034" length="0.058"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0011 0.0008 -0.0285" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.034" length="0.058"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_ankle_pitch_link" radius="0.038" length="0.065" rpy="1.5708 0 0" joint_idx="17"/>
+
+  <!-- LINK: left_ankle_roll_link (Joint 18) -->
+  <link name="left_ankle_roll_link">
+    <inertial>
+      <origin xyz="0.0406188106 -0.000595538579 -0.0902876715" rpy="0 0 0"/>
+      <mass value="2.33019653"/>
+      <inertia ixx="0.0225859622" ixy="-0.000100634999" ixz="0.00381668221" iyy="0.0273813493" iyz="0.000355281798" izz="0.00831012806"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.01 0 -0.045" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.030" length="0.08"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.035 0 -0.090" rpy="0 0 0"/>
+      <geometry><box size="0.19 0.10 0.032"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.035 0 -0.090" rpy="0 0 0"/>
+      <geometry><box size="0.19 0.10 0.032"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="left_ankle_roll_link" radius="0.036" length="0.055" rpy="0 1.5708 0" joint_idx="18"/>
+
+  <!-- ==================== RIGHT ARM LINKS ==================== -->
+
+  <!-- LINK: right_shoulder_pitch_link (Joint 8) -->
+  <link name="right_shoulder_pitch_link">
+    <inertial>
+      <origin xyz="8.12362068e-06 -0.0134690666 0.00170144772" rpy="0 0 0"/>
+      <mass value="0.919708281"/>
+      <inertia ixx="0.00100827362" ixy="-2.57300659e-09" ixz="1.75164943e-10" iyy="0.000921610825" iyz="3.07702399e-05" izz="0.00102891957"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0021 -0.0544 -0.0053" rpy="-1.667 0 0.039"/>
+      <geometry><cylinder radius="0.044" length="0.110"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0021 -0.0544 -0.0053" rpy="-1.667 0 0.039"/>
+      <geometry><cylinder radius="0.044" length="0.110"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_shoulder_pitch_link" radius="0.048" length="0.055" rpy="1.5708 0 0" joint_idx="8"/>
+
+  <!-- LINK: right_shoulder_roll_link (Joint 9) -->
+  <link name="right_shoulder_roll_link">
+    <inertial>
+      <origin xyz="-0.00475186969 0.0100581566 -0.00881256839" rpy="0 0 0"/>
+      <mass value="0.770586821"/>
+      <inertia ixx="0.00121128699" ixy="-8.63095798e-07" ixz="1.03433146e-05" iyy="0.00117996048" iyz="-3.07579759e-05" izz="0.00119375755"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0076 -0.0001 -0.0521" rpy="0 0.145 0"/>
+      <geometry><cylinder radius="0.042" length="0.106"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0076 -0.0001 -0.0521" rpy="0 0.145 0"/>
+      <geometry><cylinder radius="0.042" length="0.106"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_shoulder_roll_link" radius="0.048" length="0.055" rpy="0 1.5708 0" joint_idx="9"/>
+
+  <!-- LINK: right_shoulder_yaw_link (Joint 10) -->
+  <link name="right_shoulder_yaw_link">
+    <inertial>
+      <origin xyz="0.0193177305 0.000196081409 -0.0397287266" rpy="0 0 0"/>
+      <mass value="0.622637368"/>
+      <inertia ixx="0.00189910538" ixy="-8.49587391e-07" ixz="9.06860299e-05" iyy="0.00212992424" iyz="3.97172281e-07" izz="0.000668089481"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0198 -0.0060 -0.0515" rpy="-0.108 -0.367 0"/>
+      <geometry><cylinder radius="0.038" length="0.111"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0198 -0.0060 -0.0515" rpy="-0.108 -0.367 0"/>
+      <geometry><cylinder radius="0.038" length="0.111"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_shoulder_yaw_link" radius="0.043" length="0.045" rpy="0 0 0" joint_idx="10"/>
+
+  <!-- LINK: right_elbow_link (Joint 11) -->
+  <link name="right_elbow_link">
+    <inertial>
+      <origin xyz="-0.0020387835 0.0103777322 0.00349728488" rpy="0 0 0"/>
+      <mass value="0.398484058"/>
+      <inertia ixx="0.000348832439" ixy="-4.36850743e-06" ixz="1.07644777e-05" iyy="0.000247064709" iyz="2.15956115e-05" izz="0.000276869834"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0176 0.0110 -0.0130" rpy="0.432 0.934 0"/>
+      <geometry><cylinder radius="0.035" length="0.049"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0176 0.0110 -0.0130" rpy="0.432 0.934 0"/>
+      <geometry><cylinder radius="0.035" length="0.049"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_elbow_link" radius="0.040" length="0.048" rpy="1.5708 0 0" joint_idx="11"/>
+
+  <!-- LINK: right_forearm_yaw_link (Joint 12) -->
+  <link name="right_forearm_yaw_link">
+    <inertial>
+      <origin xyz="0.0135344625 -0.00974630844 -0.0144317347" rpy="0 0 0"/>
+      <mass value="0.428079687"/>
+      <inertia ixx="0.000636600094" ixy="2.96855178e-06" ixz="-7.33223716e-06" iyy="0.000629461823" iyz="-4.04232605e-08" izz="0.000420355755"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0023 -0.0047 -0.0481" rpy="-0.098 0.048 0"/>
+      <geometry><cylinder radius="0.033" length="0.097"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0023 -0.0047 -0.0481" rpy="-0.098 0.048 0"/>
+      <geometry><cylinder radius="0.033" length="0.097"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_forearm_yaw_link" radius="0.038" length="0.04" rpy="0 0 0" joint_idx="12"/>
+
+  <!-- LINK: right_wrist_pitch_link (Joint 24) -->
+  <link name="right_wrist_pitch_link">
+    <inertial>
+      <origin xyz="0.0097906957 -0.00578405802 -0.00180019416" rpy="0 0 0"/>
+      <mass value="0.396147169"/>
+      <inertia ixx="0.000370711235" ixy="6.73159956e-06" ixz="6.47722082e-06" iyy="0.000327605832" iyz="-1.19337322e-05" izz="0.000358810288"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0044 -0.0004 -0.0328" rpy="0 0 0"/>
+      <geometry><box size="0.052 0.056 0.066"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0044 -0.0004 -0.0328" rpy="0 0 0"/>
+      <geometry><box size="0.052 0.056 0.066"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_wrist_pitch_link" radius="0.035" length="0.042" rpy="1.5708 0 0" joint_idx="24"/>
+
+  <!-- LINK: right_hand (Joint 25) -->
+  <link name="right_hand">
+    <inertial>
+      <origin xyz="0.00346453404 0.00247591415 -0.130102173" rpy="0 0 0"/>
+      <mass value="3.03521412"/>
+      <inertia ixx="0.0344466268" ixy="-2.62975299e-05" ixz="-3.0254911e-05" iyy="0.0378056041" iyz="0.00101351491" izz="0.00894915313"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.003 0.002 -0.065" rpy="0 0 0"/>
+      <geometry><box size="0.045 0.075 0.12"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.003 0.002 -0.065" rpy="0 0 0"/>
+      <geometry><box size="0.045 0.075 0.12"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_hand" radius="0.032" length="0.038" rpy="0 1.5708 0" joint_idx="25"/>
+
+  <!-- ==================== RIGHT LEG LINKS ==================== -->
+
+  <!-- LINK: right_hip_pitch_link (Joint 19) -->
+  <link name="right_hip_pitch_link">
+    <inertial>
+      <origin xyz="-0.00266643975 -0.00730600317 0.00479095937" rpy="0 0 0"/>
+      <mass value="1.61783635"/>
+      <inertia ixx="0.00246757294" ixy="-1.33287675e-06" ixz="5.81158249e-05" iyy="0.0028539271" iyz="1.75419424e-05" izz="0.00233630086"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0001 -0.0514 -0.0114" rpy="-1.789 0 0"/>
+      <geometry><cylinder radius="0.052" length="0.105"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0001 -0.0514 -0.0114" rpy="-1.789 0 0"/>
+      <geometry><cylinder radius="0.052" length="0.105"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_hip_pitch_link" radius="0.056" length="0.058" rpy="1.5708 0 0" joint_idx="19"/>
+
+  <!-- LINK: right_hip_roll_link (Joint 20) -->
+  <link name="right_hip_roll_link">
+    <inertial>
+      <origin xyz="0.00565788667 0.00492290455 -0.0250676351" rpy="0 0 0"/>
+      <mass value="1.57903578"/>
+      <inertia ixx="0.00495382005" ixy="5.43768789e-05" ixz="0.000710998633" iyy="0.00483700084" iyz="-0.000120482958" izz="0.00290654174"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0036 -0.0031 -0.0528" rpy="-0.059 0.069 0"/>
+      <geometry><cylinder radius="0.050" length="0.106"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0036 -0.0031 -0.0528" rpy="-0.059 0.069 0"/>
+      <geometry><cylinder radius="0.050" length="0.106"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_hip_roll_link" radius="0.056" length="0.058" rpy="0 1.5708 0" joint_idx="20"/>
+
+  <!-- LINK: right_hip_yaw_link (Joint 21) -->
+  <link name="right_hip_yaw_link">
+    <inertial>
+      <origin xyz="-0.00934532521 0.000938222795 0.0201506247" rpy="0 0 0"/>
+      <mass value="1.68516217"/>
+      <inertia ixx="0.0051688889" ixy="2.34542775e-05" ixz="0.000905000869" iyy="0.00554586253" iyz="-7.10406937e-05" izz="0.00235201406"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0136 -0.0046 -0.0965" rpy="0 0.140 0"/>
+      <geometry><box size="0.088 0.082 0.195"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0136 -0.0046 -0.0965" rpy="0 0.140 0"/>
+      <geometry><box size="0.088 0.082 0.195"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_hip_yaw_link" radius="0.050" length="0.050" rpy="0 0 0" joint_idx="21"/>
+
+  <!-- LINK: right_knee_link (Joint 22) -->
+  <link name="right_knee_link">
+    <inertial>
+      <origin xyz="0.00361711235 0.00296643991 0.040766288" rpy="0 0 0"/>
+      <mass value="2.50187198"/>
+      <inertia ixx="0.0126007033" ixy="6.3672664e-07" ixz="-1.19952615e-05" iyy="0.0126446159" iyz="6.51368758e-06" izz="0.0042100581"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0041 -0.0005 -0.0502" rpy="0 -0.081 0"/>
+      <geometry><box size="0.072 0.072 0.102"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.0041 -0.0005 -0.0502" rpy="0 -0.081 0"/>
+      <geometry><box size="0.072 0.072 0.102"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_knee_link" radius="0.052" length="0.082" rpy="1.5708 0 0" joint_idx="22"/>
+
+  <!-- LINK: right_ankle_pitch_link (Joint 23) -->
+  <link name="right_ankle_pitch_link">
+    <inertial>
+      <origin xyz="0.0044308082 0.00114504685 0.0114820846" rpy="0 0 0"/>
+      <mass value="0.533267633"/>
+      <inertia ixx="0.00060692387" ixy="2.71302511e-06" ixz="5.12661757e-05" iyy="0.000590078491" iyz="-8.05453421e-06" izz="0.000582162076"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0012 -0.0014 -0.0284" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.034" length="0.058"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0012 -0.0014 -0.0284" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.034" length="0.058"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_ankle_pitch_link" radius="0.038" length="0.065" rpy="1.5708 0 0" joint_idx="23"/>
+
+  <!-- LINK: right_ankle_roll_link (Joint 31) -->
+  <link name="right_ankle_roll_link">
+    <inertial>
+      <origin xyz="0.00253691743 -0.0055715058 -0.125936832" rpy="0 0 0"/>
+      <mass value="2.33872821"/>
+      <inertia ixx="0.033693357" ixy="5.58074076e-07" ixz="0.000134703214" iyy="0.0359377202" iyz="-0.00153512561" izz="0.00633709522"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.01 0 -0.045" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.030" length="0.08"/></geometry>
+      <material name="arm_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.035 0 -0.090" rpy="0 0 0"/>
+      <geometry><box size="0.19 0.10 0.032"/></geometry>
+      <material name="shell_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0.035 0 -0.090" rpy="0 0 0"/>
+      <geometry><box size="0.19 0.10 0.032"/></geometry>
+    </collision>
+  </link>
+  <xacro:actuator_visual_hub parent_link="right_ankle_roll_link" radius="0.036" length="0.055" rpy="0 1.5708 0" joint_idx="31"/>
+
+  <!-- ==================== JOINTS (kinematic definitions) ==================== -->
+  <joint name="torso_yaw" type="revolute">
+    <parent link="pelvis"/>
+    <child link="torso_yaw_link"/>
+    <origin xyz="0.00636555507 -0.00321322445 0.0679696882" rpy="0 0 0"/>
+    <axis xyz="0.04623328 -0.0280996722 0.998535374"/>
+    <limit lower="-2.61799388" upper="2.61799388" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="torso_roll" type="revolute">
+    <parent link="torso_yaw_link"/>
+    <child link="torso_roll_link"/>
+    <origin xyz="-0.0209575119 0.0408893559 0.155092898" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.523598776" upper="0.523598776" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="torso_pitch" type="revolute">
+    <parent link="torso_roll_link"/>
+    <child link="torso"/>
+    <origin xyz="-0.000295023952 -0.085949761 0.00035057267" rpy="0 0 0"/>
+    <axis xyz="-0.0620812167 -0.715242271 0.696113795"/>
+    <limit lower="-0.523598776" upper="0.523598776" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="head_yaw" type="revolute">
+    <parent link="torso"/>
+    <child link="head_yaw_link"/>
+    <origin xyz="0.014575924 0.0429766259 0.278413476" rpy="0 0 0"/>
+    <axis xyz="-0.0370071702 3.9649444e-05 0.999314999"/>
+    <limit lower="-1.74532925" upper="1.74532925" effort="10" velocity="33.1961624"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="head_pitch" type="revolute">
+    <parent link="head_yaw_link"/>
+    <child link="head"/>
+    <origin xyz="-0.00198355571 0.00398669749 0.0612980195" rpy="0 0 0"/>
+    <axis xyz="-0.0553849983 -0.998463047 -0.00201126829"/>
+    <limit lower="-0.436332313" upper="0.261799388" effort="10" velocity="33.1961624"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_shoulder_pitch" type="revolute">
+    <parent link="torso"/>
+    <child link="left_shoulder_pitch_link"/>
+    <origin xyz="0.0139331928 0.126401994 0.20558559" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.35619449" upper="3.14159265" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_shoulder_roll" type="revolute">
+    <parent link="left_shoulder_pitch_link"/>
+    <child link="left_shoulder_roll_link"/>
+    <origin xyz="0.00429292317 0.108883521 -0.0105454686" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.436332313" upper="2.96705973" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_shoulder_yaw" type="revolute">
+    <parent link="left_shoulder_roll_link"/>
+    <child link="left_shoulder_yaw_link"/>
+    <origin xyz="-0.0151713136 0.000134426803 -0.104213021" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-2.61799388" upper="2.61799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_elbow" type="revolute">
+    <parent link="left_shoulder_yaw_link"/>
+    <child link="left_elbow_link"/>
+    <origin xyz="0.0383865125 0.026452651 -0.105696609" rpy="0 0 0"/>
+    <axis xyz="-1.06190355e-06 -1 2.52964135e-06"/>
+    <limit lower="0" upper="2.61799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_forearm_yaw" type="revolute">
+    <parent link="left_elbow_link"/>
+    <child link="left_forearm_yaw_link"/>
+    <origin xyz="-0.0165338608 -0.0487989964 -0.00131505099" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-2.61799388" upper="2.61799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_wrist_pitch" type="revolute">
+    <parent link="left_forearm_yaw_link"/>
+    <child link="left_wrist_pitch_link"/>
+    <origin xyz="-0.0212732868 0.0231118161 -0.0565740298" rpy="0 0 0"/>
+    <axis xyz="0.771603712 -0.527424038 0.355600332"/>
+    <limit lower="-0.610865238" upper="0.610865238" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_wrist_roll" type="revolute">
+    <parent link="left_wrist_pitch_link"/>
+    <child link="left_hand"/>
+    <origin xyz="0.00200525917 -0.00126990681 -0.102134053" rpy="0 0 0"/>
+    <axis xyz="0.553058563 -0.802373185 0.224328994"/>
+    <limit lower="-1.57079633" upper="1.57079633" effort="10" velocity="33.1961624"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_hip_pitch" type="revolute">
+    <parent link="pelvis"/>
+    <child link="left_hip_pitch_link"/>
+    <origin xyz="0.00276796619 0.0385791844 -0.0287110628" rpy="0 0 0"/>
+    <axis xyz="-0.00690845697 -0.999406368 -0.0337518187"/>
+    <limit lower="-2.7925268" upper="2.7925268" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_hip_roll" type="revolute">
+    <parent link="left_hip_pitch_link"/>
+    <child link="left_hip_roll_link"/>
+    <origin xyz="0.00154613403 0.103900396 -0.0170966816" rpy="0 0 0"/>
+    <axis xyz="0.998991781 -0.00190474533 -0.0448530223"/>
+    <limit lower="-0.610865238" upper="2.7925268" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_hip_yaw" type="revolute">
+    <parent link="left_hip_roll_link"/>
+    <child link="left_hip_yaw_link"/>
+    <origin xyz="-0.00681927811 0.00367694871 -0.105817772" rpy="0 0 0"/>
+    <axis xyz="-0.0419469094 0.127467984 -0.990955281"/>
+    <limit lower="-2.75762022" upper="2.75762022" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_knee" type="revolute">
+    <parent link="left_hip_yaw_link"/>
+    <child link="left_knee_link"/>
+    <origin xyz="-0.0266400691 0.00320066073 -0.193046838" rpy="0 0 0"/>
+    <axis xyz="-0.0130737122 -0.999633712 -0.0236964034"/>
+    <limit lower="-0.0872664626" upper="2.7925268" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_ankle_pitch" type="revolute">
+    <parent link="left_knee_link"/>
+    <child link="left_ankle_pitch_link"/>
+    <origin xyz="0.00837472016 0.0036605513 -0.100324083" rpy="0 0 0"/>
+    <axis xyz="-0.0091873471 -0.997178714 -0.0744996946"/>
+    <limit lower="-0.610865238" upper="0.785398163" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="left_ankle_roll" type="revolute">
+    <parent link="left_ankle_pitch_link"/>
+    <child link="left_ankle_roll_link"/>
+    <origin xyz="-0.00225798316 0.00156019891 -0.0569338853" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.261799388" upper="0.261799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_shoulder_pitch" type="revolute">
+    <parent link="torso"/>
+    <child link="right_shoulder_pitch_link"/>
+    <origin xyz="0.0139325887 -0.0386145074 0.205585592" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.35619449" upper="3.14159265" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_shoulder_roll" type="revolute">
+    <parent link="right_shoulder_pitch_link"/>
+    <child link="right_shoulder_roll_link"/>
+    <origin xyz="0.00429213873 -0.108883546 -0.010545467" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="-0.436332313" upper="2.96705973" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_shoulder_yaw" type="revolute">
+    <parent link="right_shoulder_roll_link"/>
+    <child link="right_shoulder_yaw_link"/>
+    <origin xyz="-0.0151713128 -0.000134325087 -0.104213021" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.61799388" upper="2.61799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_elbow" type="revolute">
+    <parent link="right_shoulder_yaw_link"/>
+    <child link="right_elbow_link"/>
+    <origin xyz="0.0396245408 -0.0119715142 -0.103008434" rpy="0 0 0"/>
+    <axis xyz="0.417908105 -0.432053594 0.799176143"/>
+    <limit lower="0" upper="2.61799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_forearm_yaw" type="revolute">
+    <parent link="right_elbow_link"/>
+    <child link="right_forearm_yaw_link"/>
+    <origin xyz="-0.0352065744 0.0220382163 -0.026035285" rpy="0 0 0"/>
+    <axis xyz="0.0976383746 -0.832160937 0.545870793"/>
+    <limit lower="-2.61799388" upper="2.61799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_wrist_pitch" type="revolute">
+    <parent link="right_forearm_yaw_link"/>
+    <child link="right_wrist_pitch_link"/>
+    <origin xyz="-0.00459369115 -0.00944520127 -0.0962608459" rpy="0 0 0"/>
+    <axis xyz="-0.627312927 -0.725743757 0.282443782"/>
+    <limit lower="-0.610865238" upper="0.610865238" effort="10" velocity="33.1961624"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_wrist_roll" type="revolute">
+    <parent link="right_wrist_pitch_link"/>
+    <child link="right_hand"/>
+    <origin xyz="0.00876420205 -0.000770205584 -0.0655739244" rpy="0 0 0"/>
+    <axis xyz="-0.729326255 0.339348345 -0.594075681"/>
+    <limit lower="-1.57079633" upper="1.57079633" effort="10" velocity="33.1961624"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_hip_pitch" type="revolute">
+    <parent link="pelvis"/>
+    <child link="right_hip_pitch_link"/>
+    <origin xyz="0.00226525836 -0.0396779273 -0.0307407008" rpy="0 0 0"/>
+    <axis xyz="-0.00638315097 -0.999769356 -0.0205058622"/>
+    <limit lower="-2.7925268" upper="2.7925268" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_hip_roll" type="revolute">
+    <parent link="right_hip_pitch_link"/>
+    <child link="right_hip_roll_link"/>
+    <origin xyz="-0.000129256966 -0.102745227 -0.0227638732" rpy="0 0 0"/>
+    <axis xyz="-0.999053075 -0.000490711726 0.0435053133"/>
+    <limit lower="-0.610865238" upper="2.7925268" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_hip_yaw" type="revolute">
+    <parent link="right_hip_roll_link"/>
+    <child link="right_hip_yaw_link"/>
+    <origin xyz="-0.00727619815 -0.0062858368 -0.105587027" rpy="0 0 0"/>
+    <axis xyz="0.0458812146 -0.0529750322 0.997541257"/>
+    <limit lower="-2.75762022" upper="2.75762022" effort="60" velocity="18.4306769"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_knee" type="revolute">
+    <parent link="right_hip_yaw_link"/>
+    <child link="right_knee_link"/>
+    <origin xyz="-0.0272516497 -0.00913348819 -0.192939898" rpy="0 0 0"/>
+    <axis xyz="-0.0100680059 -0.998667135 0.0506220222"/>
+    <limit lower="-0.0872664626" upper="2.7925268" effort="120" velocity="16.5457213"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_ankle_pitch" type="revolute">
+    <parent link="right_knee_link"/>
+    <child link="right_ankle_pitch_link"/>
+    <origin xyz="0.00813553069 -0.00107314462 -0.100373185" rpy="0 0 0"/>
+    <axis xyz="-0.0060574677 -0.999981653 -2.73535645e-05"/>
+    <limit lower="-0.610865238" upper="0.785398163" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <joint name="right_ankle_roll" type="revolute">
+    <parent link="right_ankle_pitch_link"/>
+    <child link="right_ankle_roll_link"/>
+    <origin xyz="-0.00236475135 -0.00270354818 -0.0568867188" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="-0.261799388" upper="0.261799388" effort="34" velocity="11.6238928"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <!-- ==================== ROS2_CONTROL ==================== -->
+  <xacro:ros2_control_systems state_only_names="${[n for n in actuated_joint_names if n not in hw_names]}"/>
+
 </robot>

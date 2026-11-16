@@ -1,75 +1,109 @@
 #!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
-from sensor_msgs.msg import JointState
+"""Effort-mode example: pulse one joint to break stiction, then let it coast.
+
+Sends a full command array (one value per controller joint, zeros for the
+others), reads the pulsed joint's state by name, and clamps the pulse to the
+controller's max_command for that joint.
+
+  ros2 run wisco_ethercat_ros2_hw example_torque_command_ros_node.py --ros-args -p joint:=left_elbow
+"""
+
 import time
 
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from std_msgs.msg import Float64MultiArray
+
+from wisco_ethercat_ros2_hw.ros_tools import get_controller_limits
+
+
 class StictionBreakerNode(Node):
+
     def __init__(self):
         super().__init__('example_torque_command_ros_node')
-        self.publisher_ = self.create_publisher(Float64MultiArray, '/effort_controller/commands', 10)
-        self.subscription = self.create_subscription(JointState, '/joint_states', self.joint_state_callback, 10)
-        
-        self.current_position = 0.0
-        self.current_velocity = 0.0
-        self.target_torque = 0.0
-        
-        self.state = "PULSE" # PULSE or COAST
-        self.state_start_time = time.time()
-        
-        # Tuned for 10:1 reducer stiction: needs higher output torque briefly
-        self.pulse_torque = 1.35    # N·m output torque to break stiction cleanly
-        self.pulse_duration = 0.25 # 150ms sharp kick
-        self.coast_duration = 1.3  # 2 seconds coasting/paused
-        
-        self.timer = self.create_timer(0.01, self.control_loop) # 100 Hz
-        self.get_logger().info("Stiction Breaker Torque Node Initialized.")
+        self.declare_parameter('controller', 'effort_controller')
+        self.declare_parameter('joint', '')  # empty: the controller's first joint
+        self.declare_parameter('pulse_torque', 1.35)  # Nm, before clamping
+        self.declare_parameter('pulse_duration', 0.25)  # s
+        self.declare_parameter('coast_duration', 1.3)  # s
+
+        p = lambda name: self.get_parameter(name).value  # noqa: E731
+        controller = p('controller')
+        limits = get_controller_limits(self, controller)
+        if limits['interface_name'] != 'effort':
+            raise RuntimeError('%s commands %s, not effort' % (controller, limits['interface_name']))
+        self.joints = limits['joints']
+        self.joint = p('joint') or self.joints[0]
+        if self.joint not in self.joints:
+            raise RuntimeError('%s does not control %s (it controls %s)'
+                               % (controller, self.joint, ', '.join(self.joints)))
+        self.index = self.joints.index(self.joint)
+        limit = limits['max_command'][self.index]
+        self.pulse_torque = max(-limit, min(limit, float(p('pulse_torque'))))
+        if self.pulse_torque != float(p('pulse_torque')):
+            self.get_logger().warn('pulse_torque clamped to %.2f Nm (max_command)' % self.pulse_torque)
+        self.pulse_duration = float(p('pulse_duration'))
+        self.coast_duration = float(p('coast_duration'))
+
+        self.position = float('nan')
+        self.velocity = float('nan')
+        self.state = 'PULSE'
+        self.state_start = time.monotonic()
+        self.last_log = 0.0
+
+        self.pub = self.create_publisher(Float64MultiArray, '/%s/commands' % controller, 10)
+        self.create_subscription(JointState, '/joint_states', self.joint_state_callback, 10)
+        self.create_timer(0.01, self.control_loop)
+        self.get_logger().info('pulsing %s with %.2f Nm' % (self.joint, self.pulse_torque))
 
     def joint_state_callback(self, msg):
-        if len(msg.position) > 0:
-            self.current_position = msg.position[0]
-        if len(msg.velocity) > 0:
-            self.current_velocity = msg.velocity[0]
+        if self.joint in msg.name:
+            i = msg.name.index(self.joint)
+            if i < len(msg.position):
+                self.position = msg.position[i]
+            if i < len(msg.velocity):
+                self.velocity = msg.velocity[i]
 
     def control_loop(self):
-        now = time.time()
-        elapsed = now - self.state_start_time
+        now = time.monotonic()
+        if now - self.state_start >= (self.pulse_duration if self.state == 'PULSE'
+                                      else self.coast_duration):
+            self.state = 'COAST' if self.state == 'PULSE' else 'PULSE'
+            self.state_start = now
+        torque = self.pulse_torque if self.state == 'PULSE' else 0.0
+        cmd = [0.0] * len(self.joints)
+        cmd[self.index] = torque
+        self.pub.publish(Float64MultiArray(data=cmd))
+        if now - self.last_log >= 0.1:
+            self.last_log = now
+            self.get_logger().info('[%s] torque %.2f Nm | pos %.3f | vel %.4f' % (
+                self.state, torque, self.position, self.velocity))
 
-        if self.state == "PULSE":
-            self.target_torque = self.pulse_torque
-            if int(now * 20) % 2 == 0:
-                self.get_logger().info(f"[PULSE] Torque: {self.target_torque} N·m | Pos: {self.current_position:.2f}")
+    def stop(self):
+        for _ in range(3):
+            self.pub.publish(Float64MultiArray(data=[0.0] * len(self.joints)))
 
-            if elapsed >= self.pulse_duration:
-                self.state = "COAST"
-                self.state_start_time = now
-
-        elif self.state == "COAST":
-            self.target_torque = 0.0
-            if int(now * 10) % 2 == 0:
-                self.get_logger().info(f"[COAST] Torque: 0.0 | Pos: {self.current_position:.2f} | Vel: {self.current_velocity:.4f}")
-
-            if elapsed >= self.coast_duration:
-                self.state = "PULSE"
-                self.state_start_time = now
-
-        msg = Float64MultiArray()
-        msg.data = [self.target_torque]
-        self.publisher_.publish(msg)
 
 def main(args=None):
     rclpy.init(args=args)
-    node = StictionBreakerNode()
+    node = None
     try:
+        node = StictionBreakerNode()
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        pub = node.create_publisher(Float64MultiArray, '/effort_controller/commands', 10)
-        pub.publish(Float64MultiArray(data=[0.0]))
-        node.destroy_node()
-        rclpy.shutdown()
+        if node is not None:
+            try:
+                node.stop()
+            except Exception:  # noqa: BLE001 - context may already be shut down
+                pass
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
