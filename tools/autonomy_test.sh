@@ -5,7 +5,7 @@ set -uo pipefail
 set +u; source /opt/ros/jazzy/setup.bash; source /hsim/ros2_ws/install/setup.bash; set -u
 E=/hsim/tools/eval; FAILS=0
 ONLY="${1:-}"   # optional: run only the checks whose name contains this
-ROBOT="${ROBOT:-g1}"   # robot profile (ROBOT=wisco: stereo camera, build_wisco/ envs)
+ROBOT="${ROBOT:-wisco}"   # robot profile: wisco (stereo camera, build_wisco/ envs) | g1 | g1_arms_free
 SENSORS="${SENSORS:-}" # override the profile's sensors (e.g. SENSORS=stereo for the G1)
 PERCEPTION="${PERCEPTION:-stub}"   # graded checks default to the stub (repeatable); PERCEPTION=server for the real one
 export HSIM_BUILD_DIR=$(python3 -c "import yaml; print(yaml.safe_load(open('/hsim/ros2_ws/src/hsim_bringup/config/robots/$ROBOT.yaml'))['env_build_dir'])")

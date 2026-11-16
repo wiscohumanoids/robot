@@ -37,7 +37,7 @@ id_ed25519*
 *.7z
 *.rar
 # Generated duplicate of current_draw/REPORT.md (REPORT.md is the source)
-wiscohumanoids/hardware/current_draw/REPORT.html
+robots/wisco_v1/reports/current_draw/REPORT.html
 
 # ============================================================================
 # Python environments and caches

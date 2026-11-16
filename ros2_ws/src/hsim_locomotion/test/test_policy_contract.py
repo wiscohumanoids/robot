@@ -9,7 +9,7 @@ import yaml
 from hsim_locomotion.policy_contract import HeldTargets, load_contract
 
 ROOT = Path(__file__).resolve().parents[4]
-V1 = ROOT / "models/locomotion/g1_velocity_flat_v1"
+V1 = ROOT / "models/locomotion/g1_velocity_all_joints"
 LAYOUT = ['base_lin_vel', 'base_ang_vel', 'projected_gravity', 'joint_pos', 'joint_vel', 'actions', 'command']
 
 
@@ -28,7 +28,7 @@ def write_v2(tmp_path, n_policy=3, n_held=2):
     return tmp_path
 
 
-@pytest.mark.skipif(not (V1 / "manifest.yaml").exists(), reason="v1 policy folder not present")
+@pytest.mark.skipif(not (V1 / "manifest.yaml").exists(), reason="all-joints policy folder not present")
 def test_v1_manifest_unchanged_behaviour():
     c = load_contract(V1)
     assert c.version == 1 and len(c.obs_joint_names) == 29 and c.act_joint_names == c.obs_joint_names

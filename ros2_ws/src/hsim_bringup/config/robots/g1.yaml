@@ -5,7 +5,7 @@
 name: g1
 world: /hsim/assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml   # bare training world (no env)
 env_build_dir: build                 # assets/envs/<env>/<this>/  (tools/env_build.py --robot g1)
-policy: /hsim/models/locomotion/g1_velocity_flat_v1
+policy: /hsim/models/locomotion/g1_velocity_all_joints
 default_sensors: lidar               # lidar | stereo
 bodies:
   root: pelvis                       # MuJoCo body = ROS base_link

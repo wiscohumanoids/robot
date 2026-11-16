@@ -3,7 +3,7 @@
 # Launches a stack, checks it against the interface contract, then drives it.
 #   STACK=stub (default) -> stub_stack.launch.py      STACK=sim -> sim_stack.launch.py (MuJoCo + policy)
 #   ENV=test/table_room  -> load that environment and also check /map (contract phase 2)
-#   ROBOT=wisco          -> robot profile (default g1); Wisco uses its stereo camera and build_wisco/ envs
+#   ROBOT=g1             -> robot profile (default wisco: stereo camera, build_wisco/ envs; also g1, g1_arms_free)
 set -uo pipefail
 STACK="${STACK:-stub}"
 LOG=/tmp/${STACK}_stack.log

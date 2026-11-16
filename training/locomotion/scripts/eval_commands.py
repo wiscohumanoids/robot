@@ -5,13 +5,13 @@ Same table on both sides tells you whether a behavior comes from the policy itse
 (both sides agree) or from the CPU deployment (they differ).
 
     uv run python scripts/eval_commands.py logs/rsl_rl/g1_velocity/<run>/model_9999.pt
-    # v2 (legs+waist) policy, small-command deadband test (decision 0004), arms held at default:
-    uv run python scripts/eval_commands.py <run>/model_N.pt --task Hsim-G1-Velocity-Flat-v2 \
+    # arms-free (legs+waist) policy, small-command deadband test (decision 0004), arms held at default:
+    uv run python scripts/eval_commands.py <run>/model_N.pt --task Hsim-G1-Velocity-Flat-ArmsFree \
         --script deadband --arms default --json deadband_v2.json
 
---script deadband: small commands the v1 policy ignored. A segment "responds" when the measured
+--script deadband: small commands the all-joints policy ignored. A segment "responds" when the measured
 velocity reaches >= 50 % of the command on every commanded axis (second half of the segment).
---arms (v2 tasks only): default = arms held at the default pose; random = the training arm motion.
+--arms (arms-free tasks only): default = arms held at the default pose; random = the training arm motion.
 """
 
 import argparse

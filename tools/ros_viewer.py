@@ -72,7 +72,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--env", help="environment, e.g. test/table_room (must match the sim's env:=)")
     ap.add_argument("--scene", type=Path, default=None, help="world without --env (default: the robot's training world)")
-    ap.add_argument("--robot", default="g1", help="g1 | wisco: must match the stack's robot:= (robot profile)")
+    ap.add_argument("--robot", default="wisco", help="wisco | g1 | g1_arms_free: must match the stack's robot:= (robot profile)")
     ap.add_argument("--state-port", type=int, default=9870)
     ap.add_argument("--perception-port", type=int, default=9872)
     ap.add_argument("--cmd-host", default="127.0.0.1")

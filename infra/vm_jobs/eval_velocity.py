@@ -5,8 +5,8 @@ Wisco: play mode holds curriculum level 1), pushes off, and fixed command segmen
 mean achieved body velocity over the second half (all robots), how many robots fell, and whether the
 command was followed (>= 50 % of commanded value, same sign). Prints a table; --json writes it.
 
-  python infra/vm_jobs/eval_velocity.py CKPT --task Hsim-G1-Velocity-Flat-v2 --import-path training/locomotion --import-module hsim_tasks
-  python infra/vm_jobs/eval_velocity.py CKPT --task Wisco-V2-Velocity-Flat --import-path wiscohumanoids/training/mjlab_task --import-module wisco_mjlab
+  python infra/vm_jobs/eval_velocity.py CKPT --task Hsim-G1-Velocity-Flat-ArmsFree --import-path training/locomotion --import-module hsim_tasks
+  python infra/vm_jobs/eval_velocity.py CKPT --task Wisco-V1-Velocity-Flat --import-path training/locomotion/wisco_v1 --import-module wisco_mjlab
 """
 import argparse
 import importlib
@@ -79,7 +79,7 @@ def main():
         if hasattr(tw, k):
             setattr(tw, k, 0.0)
     tw.resampling_time_range = (1e9, 1e9)
-    if "arm_motion" in cfg.events:                       # G1 v2 (play cfg has no curriculum)
+    if "arm_motion" in cfg.events:                       # G1 arms-free (play cfg has no curriculum)
         if args.arms == "random":                        # full difficulty, same as Wisco play level 1:
             cfg.events["arm_motion"].params["range_frac"] = 1.0          # 100 % of the safe arm offsets
             if "hand_payload" in cfg.events:

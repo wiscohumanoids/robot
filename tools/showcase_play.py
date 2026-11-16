@@ -8,9 +8,9 @@ artifact that gets deployed), not from a training checkpoint.
   python tools/showcase_play.py --task Mjlab-Tracking-Flat-Unitree-G1 --policy run.onnx \
       --motion-file ~/hsim_data/motions/g1/dance1_subject2.npz --seconds 30 --video dance.mp4
   # tracking (Wisco)
-  python tools/showcase_play.py --task Wisco-V2-Tracking-Flat --policy run.onnx --motion-file wisco_dance.npz --viewer
+  python tools/showcase_play.py --task Wisco-V1-Tracking-Flat --policy run.onnx --motion-file wisco_dance.npz --viewer
   # velocity: fixed command vx,vy,wz
-  python tools/showcase_play.py --task Wisco-V2-Velocity-Flat --policy run.onnx --cmd 0.5,0,0 --seconds 20 --video walk.mp4
+  python tools/showcase_play.py --task Wisco-V1-Velocity-Flat --policy run.onnx --cmd 0.5,0,0 --seconds 20 --video walk.mp4
 Run with the mjlab env: VM `cd training/locomotion && uv run python ../../tools/showcase_play.py ...`,
 Mac `.venv-mjlab/bin/python tools/showcase_play.py ...` (CPU; add CUDA_VISIBLE_DEVICES= if no GPU).
 """
@@ -30,13 +30,13 @@ REPO = Path(__file__).resolve().parents[1]
 def register_tasks():
   """mjlab's own tasks + ours (each optional, so this works whatever is present)."""
   import mjlab.tasks  # noqa: F401
-  for path, mod in ((REPO / "wiscohumanoids" / "training" / "mjlab_task", "wisco_mjlab"),
-                    (REPO / "wiscohumanoids" / "training" / "tracking", "wisco_tracking"),
+  for path, mod in ((REPO / "training" / "locomotion" / "wisco_v1", "wisco_mjlab"),
+                    (REPO / "training" / "tracking" / "wisco_v1", "wisco_tracking"),
                     (REPO / "training" / "locomotion", "hsim_tasks")):
     if path.exists():
       sys.path.insert(0, str(path))
       if mod == "wisco_tracking":
-        sys.path.insert(0, str(REPO / "wiscohumanoids" / "training" / "mjlab_task"))
+        sys.path.insert(0, str(REPO / "training" / "locomotion" / "wisco_v1"))
       try:
         __import__(mod)
       except Exception as e:  # a half-built task package shouldn't stop the others

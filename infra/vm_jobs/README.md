@@ -17,12 +17,12 @@ tmux session `hsim-job-<id>` so it survives ssh disconnects. Everything a job pr
 ## Commands (from the Mac)
 ```
 tools/vm_jobs.sh list                       # jobs, enabled?, kind, GPU estimate, dependencies
-tools/vm_jobs.sh launch J1_g1_vel_v2        # one or more jobs
+tools/vm_jobs.sh launch J1_g1_vel_arms_free        # one or more jobs
 tools/vm_jobs.sh launch-all                 # every enabled job + the GPU logger (~/hsim_runs/gpu.csv, every 60 s)
 tools/vm_jobs.sh status                     # table: iter, reward, ep length, steps/s, ETA, GPU GB per job + GPU/CPU/RAM/disk
-tools/vm_jobs.sh logs J3_wisco_vel_v2 -f    # follow a job's stdout (-n N for the last N lines)
+tools/vm_jobs.sh logs J3_wisco_v1_vel -f    # follow a job's stdout (-n N for the last N lines)
 tools/vm_jobs.sh stop J2b_g1_track_jumps1   # Ctrl-C to the job's process group, then terminate after 45 s
-tools/vm_jobs.sh resume J1_g1_vel_v2        # rl jobs: adds --agent.resume True --agent.load-run <newest run dir>
+tools/vm_jobs.sh resume J1_g1_vel_arms_free        # rl jobs: adds --agent.resume True --agent.load-run <newest run dir>
 ssh hsim-gpu 'cd ~/humanoid-sim-stack && MUJOCO_GL=egl training/locomotion/.venv/bin/python infra/vm_jobs/morning_report.py'
 tools/vm_pull_results.sh                    # -> runs/2026-11-10/ (use --list to see what would come)
 ```
@@ -42,7 +42,7 @@ tools/vm_pull_results.sh                    # -> runs/2026-11-10/ (use --list to
   GPU process's parent chain up to the job's process.
 - **Morning report**: per RL job, curves from stdout.log (falls back to TensorBoard events), the newest ONNX mjlab
   exported next to its checkpoints (mjlab's velocity and tracking runners export ONNX at every save), a 500-step video,
-  and `report.eval` (with `{checkpoint}`) if set. Tested on a copy of the 2026-11-08 G1 v1 run: 53 s per job incl. video + eval.
+  and `report.eval` (with `{checkpoint}`) if set. Tested on a copy of the 2026-11-08 G1 all-joints run: 53 s per job incl. video + eval.
 - **Pull**: the VM lists `*.onnx *.json *.yaml *.md *.html *.png *.mp4 *.csv *.txt` + the newest `model_*.pt` per run dir,
   skipping `data/ datasets/ raw/ wandb/ vm_backup/`, stdout logs and TensorBoard events; the Mac checks free space
   (keeps 5 GB spare) and streams the files over ssh with tar (macOS ships openrsync, which lacks needed rsync features).

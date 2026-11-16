@@ -10,7 +10,7 @@ checks the model runs on CPU with onnxruntime, and writes:
         env.yaml, agent.yaml   (mjlab's full training config, for reference)
 
 Usage:
-    uv run python scripts/export_manifest.py <run-dir> --policy-id g1_velocity_flat_v1
+    uv run python scripts/export_manifest.py <run-dir> --policy-id g1_velocity_all_joints
 
 Manifest versions:
   1  the policy drives every joint in `joints` (all have action_scale).

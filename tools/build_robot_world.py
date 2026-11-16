@@ -3,7 +3,7 @@ for the G1 (mjlab `export-scene` output + the training physics options), so env_
 can load it.
 
   .venv-mjlab/bin/python tools/build_robot_world.py wisco
-  -> assets/robots/wisco/mjlab_1.6.0/{scene.xml, wisco_velocity_flat.xml, assets/*.stl}
+  -> assets/robots/wisco_v1/mjlab_1.6.0/{scene.xml, wisco_velocity_flat.xml, assets/*.stl}
 
 Why this isn't just export-scene for Wisco: the G1's mjlab actuators are MuJoCo position actuators, so the
 exported XML already holds the PD loop. Wisco's (DcMotorActuator, AnkleLinkageActuator) compute the PD torque in
@@ -26,12 +26,12 @@ import mujoco
 ROOT = Path(__file__).resolve().parents[1]
 ROBOTS = {
   "wisco": {
-    "task": "Wisco-V2-Velocity-Flat",
-    "import_path": ROOT / "wiscohumanoids" / "training" / "mjlab_task",
+    "task": "Wisco-V1-Velocity-Flat",
+    "import_path": ROOT / "training" / "locomotion" / "wisco_v1",
     "import_module": "wisco_mjlab",
-    "params_path": ROOT / "wiscohumanoids" / "training" / "model",
-    "mesh_dir": ROOT / "wiscohumanoids" / "robot" / "meshes",
-    "out": ROOT / "assets" / "robots" / "wisco" / "mjlab_1.6.0",
+    "params_path": ROOT / "robots" / "wisco_v1" / "model",
+    "mesh_dir": ROOT / "robots" / "wisco_v1" / "meshes",
+    "out": ROOT / "assets" / "robots" / "wisco_v1" / "mjlab_1.6.0",
     "world_name": "wisco_velocity_flat",
   },
 }

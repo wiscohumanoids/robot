@@ -1,5 +1,5 @@
 # Nav2 for the walking G1. Base: nav2_bringup's Jazzy defaults, adapted.
-# Key constraint: the v1 walking policy ignores small commands (decision 0004), so the
+# Key constraint: the all-joints walking policy ignores small commands (decision 0004), so the
 # controller never asks for < 0.3 m/s while moving and turns in place at >= 0.8 rad/s.
 
 bt_navigator:

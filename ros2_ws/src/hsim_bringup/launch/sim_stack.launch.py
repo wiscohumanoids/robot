@@ -38,8 +38,8 @@ ENVS = '/hsim/assets/envs'
 
 
 def profile(context):
-    """config/robots/<robot>.yaml (robot:=g1 default). Sensor mounts there match the sim's sensor models."""
-    name = LaunchConfiguration('robot').perform(context).strip() or 'g1'
+    """config/robots/<robot>.yaml (robot:=wisco default). Sensor mounts there match the sim's sensor models."""
+    name = LaunchConfiguration('robot').perform(context).strip() or 'wisco'
     path = os.path.join(get_package_share_directory('hsim_bringup'), 'config', 'robots', f'{name}.yaml')
     if not os.path.exists(path):
         raise RuntimeError(f'no robot profile {path} (robots: g1, wisco)')
@@ -196,7 +196,7 @@ def generate_launch_description():
         SetLaunchConfiguration('sigterm_timeout', '2'),
         SetLaunchConfiguration('sigkill_timeout', '2'),
         DeclareLaunchArgument('env', default_value='', description='environment, e.g. test/table_room'),
-        DeclareLaunchArgument('robot', default_value='g1', description='robot profile: g1 | wisco (config/robots/)'),
+        DeclareLaunchArgument('robot', default_value='wisco', description='robot profile: wisco | g1 | g1_arms_free (config/robots/)'),
         DeclareLaunchArgument('policy', default_value='', description="policy folder (default: the robot profile's)"),
         DeclareLaunchArgument('estimator', default_value='ekf', description='ekf (realistic) | truth (debug)'),
         DeclareLaunchArgument('localization', default_value='initial', description='initial | none'),

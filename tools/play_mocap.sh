@@ -16,7 +16,7 @@ if [[ -z "$NAME" || ! -d "$MODELS/$NAME" ]]; then
 fi
 shift
 case "$NAME" in
-  wisco_*) TASK="Wisco-V2-Tracking-Flat" ;;
+  wisco_*) TASK="Wisco-V1-Tracking-Flat" ;;
   g1_*)    TASK="Mjlab-Tracking-Flat-Unitree-G1" ;;
   *) echo "don't know the robot for $NAME (expected g1_* or wisco_*)"; exit 1 ;;
 esac

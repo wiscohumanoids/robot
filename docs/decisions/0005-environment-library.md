@@ -13,7 +13,7 @@
    - `test/*`: hand-built rooms from simple shapes (walls, table, blocks). First, to unblock Phase 3.
    - `robocasa/*`: RoboCasa kitchens (MuJoCo-native, labeled fixtures and objects; code MIT, assets CC BY 4.0).
    - Extensions, later: phone scan (`scan/*`) and generated-from-a-sentence rooms.
-3. Floors stay flat: the v1 walking policy was trained on flat ground only.
+3. Floors stay flat: the all-joints walking policy was trained on flat ground only.
 
 **Consequences:** `scan_pipeline/` becomes an optional future source. The phone-scan demo is no longer on the critical path.
 

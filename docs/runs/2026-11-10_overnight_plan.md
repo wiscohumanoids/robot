@@ -6,9 +6,9 @@ Agreements this is built on: see the conversation summary in each helper's conte
 ## Jobs
 | ID | Job | Owner | Runs on VM |
 |---|---|---|---|
-| J1 | G1 velocity v2 (legs+waist, v2 recipe) | B | GPU, overnight |
+| J1 | G1 velocity arms-free (legs+waist, arms-free recipe) | B | GPU, overnight |
 | J2 | G1 tracking: LAFAN1 dance1, jumps1, fallAndGetUp1 (one policy per clip) | C | GPU, overnight |
-| J3 | Wisco velocity v2 (legs+waist, v2 recipe, RP1-style gains, MIT-mode model) | A | GPU, overnight |
+| J3 | Wisco V1 velocity arms-free (legs+waist, RP1-style gains, MIT-mode model) | A | GPU, overnight |
 | J4 | Wisco tracking: LAFAN1 dance1 retargeted to Wisco | C | GPU, overnight |
 | S1 | Perception server: Grounding DINO + SAM 2 + ZED X depth -> 3D | E | GPU service |
 | M1 | Manipulation v1 (cups): scripted demos -> MimicGen -> GR00T N1.7 fine-tune -> VLA server | F1 + F2 | CPU then GPU |
@@ -17,9 +17,9 @@ Agreements this is built on: see the conversation summary in each helper's conte
 ## Folder ownership (only edit your own folders; ask the coordinator for anything else)
 | Helper | Owns |
 |---|---|
-| A: Wisco model + velocity | `wiscohumanoids/` (except `wiscohumanoids/training/tracking/`) |
-| B: G1 velocity v2 + deploy | `training/locomotion/hsim_tasks/` (new), `training/locomotion/scripts/` (new files only), `ros2_ws/src/hsim_locomotion*` / the locomotion deploy node, `tools/sim2sim_play.py`, `training/locomotion/scripts/export_manifest.py` |
-| C: tracking | `training/tracking/` (new), `wiscohumanoids/training/tracking/` (new), `tools/showcase_play.py` (new) |
+| A: Wisco model + velocity | `wiscohumanoids/` (except `training/tracking/wisco_v1/`) |
+| B: G1 velocity arms-free + deploy | `training/locomotion/hsim_tasks/` (new), `training/locomotion/scripts/` (new files only), `ros2_ws/src/hsim_locomotion*` / the locomotion deploy node, `tools/sim2sim_play.py`, `training/locomotion/scripts/export_manifest.py` |
+| C: tracking | `training/tracking/` (new), `training/tracking/wisco_v1/` (new), `tools/showcase_play.py` (new) |
 | D: VM infra | `infra/vm_jobs/` (new), `tools/vm_*.sh` (new), `infra/aws/gpu_vm/` |
 | E: perception | `services/perception_server/`, the ROS perception package(s) in `ros2_ws/src/` (hsim_perception), its config/launch entries |
 | F1: manipulation sim + data | `training/manipulation/sim/`, `training/manipulation/datagen/`, `assets/robots/g1_dex1/` (new) |
@@ -48,7 +48,7 @@ Rules:
 5. `uv` on the VM is `~/.local/bin/uv` (not on PATH for ssh commands). HF token is already installed on the VM (`~/.cache/huggingface/token`, account SpiderWolf6); never print or copy it.
 6. Downloads go to `~/hsim_data/`; envs to `~/hsim_envs/`.
 
-## v2 locomotion recipe (J1 and J3 use the same list)
+## arms-free locomotion recipe (J1 and J3 use the same list)
 1. Actions: legs + waist only (G1: 12 legs + 3 waist = 15; Wisco: 12 legs + torso_yaw/roll/pitch = 15). Arms are NOT actions;
    observations still include all joints (arm joint pos/vel are known on the robot).
 2. Arms in sim: position-held (stand-in for the ROS controls stack) with targets resampled every 1-3 s: 30 % of resamples hold
@@ -65,8 +65,8 @@ Rules:
 ## Interfaces between workstreams
 - A -> C: keep `wisco_mjlab.robot_cfg.get_wisco_robot_cfg()`, `ACTION_SCALE`, `PARAMS` and `model/robot_params.py:joint_params()` working (names stable).
 - Each training job provides one launch script that runs from `~/humanoid-sim-stack/training/locomotion` with its `.venv`
-  and takes `--log-root` (D's launcher passes `~/hsim_runs/<job_id>`): A: `wiscohumanoids/training/vm/train_velocity.sh`,
-  B: `training/locomotion/scripts/train_g1_velocity_v2.sh`, C: `training/tracking/train_g1_tracking.sh <clip>`, `wiscohumanoids/training/tracking/train_wisco_tracking.sh <clip>`.
+  and takes `--log-root` (D's launcher passes `~/hsim_runs/<job_id>`): A: `training/locomotion/wisco_v1/vm/train_velocity.sh`,
+  B: `training/locomotion/scripts/train_g1_velocity_arms_free.sh`, C: `training/tracking/train_g1_tracking.sh <clip>`, `training/tracking/wisco_v1/train_wisco_tracking.sh <clip>`.
 - F1 -> F2 raw episode format (F1 writes, F2 converts to LeRobot v2 for GR00T): one `episode_XXXXXX.npz` + `.json` per episode in
   `~/hsim_data/manip/<version>/raw/`. npz keys (T steps at 20 Hz): `ego_rgb` (T,H,W,3 uint8, head camera), optional
   `wrist_left_rgb`/`wrist_right_rgb`; `q_left_arm` (T,7), `q_right_arm` (T,7), `q_waist` (T,3), `grip_left` (T,), `grip_right` (T,)
@@ -77,4 +77,4 @@ Rules:
 ## Reporting (every helper, in its final message)
 Files created/changed; how it was tested (commands + results); problems hit and fixes (with why); anything that deviates from the
 agreements; open questions; exact command(s) for the coordinator to run on the VM. Add a short entry to the relevant log
-(wiscohumanoids/training/WORK_LOG.md for A and C's Wisco part; docs/runs/2026-11-10_worklog_<helper>.md for others).
+(training/locomotion/wisco_v1/WORK_LOG.md for A and C's Wisco part; docs/runs/2026-11-10_worklog_<helper>.md for others).

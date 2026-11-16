@@ -1,8 +1,8 @@
-"""Custom MDP terms for the v2 locomotion recipe (docs/runs/2026-11-10_overnight_plan.md).
+"""Custom MDP terms for the arms-free locomotion recipe (docs/runs/2026-11-10_overnight_plan.md).
 
 - TurnInPlaceVelocityCommandCfg: mjlab's UniformVelocityCommand plus a fraction of pure-yaw
   commands (zero linear velocity, |yaw| in a range), so turning in place gets practiced
-  (decision 0004: v1 undershot / ignored small turns).
+  (decision 0004: the all-joints policy undershot / ignored small turns).
 - random_arm_targets: the arms are not policy actions. This event term stands in for the
   ROS controls stack: it writes arm joint position targets every env step, moving smoothly
   to a new random goal every 1-3 s (30 % of goals = the default pose, 70 % = uniform within

@@ -8,7 +8,7 @@ shuffling, stumbling" look like in numbers:
   slide   foot sliding while on the ground (cm/s)    shuffling without lifting
   drift   pelvis horizontal speed (cm/s) while told to stand
 
-    .venv/bin/python tools/eval/steadiness.py models/locomotion/g1_velocity_v2 [more policy folders...]
+    .venv/bin/python tools/eval/steadiness.py models/locomotion/g1_velocity_arms_free [more policy folders...]
 """
 import sys
 from pathlib import Path

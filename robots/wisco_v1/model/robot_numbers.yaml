@@ -1,0 +1,424 @@
+_about: 'All numbers for the Wisco V1 sim in one file. Every value has a source. ''datasheet'' = MyActuator official parameter sheet (images in
+  motor_datasheets/). ''derived'' = computed from datasheet values. ''estimate'' = not measured yet (bench tests / PACE / weighing will replace
+  it). ''decision'' = a choice we made. To change a number: edit it here (value + source), then run sync_robot_folder.py and build_training_model.py,
+  rerun phase_a, retrain.'
+motors:
+  X4-10:
+    full_name: 'RMD-X4-P12.5-10 (C: CAN, E: EtherCAT)'
+    datasheet_file: motor_datasheets/RMD-X4-P12.5-10_params_260831.jpg
+    source_url: https://www.myactuator.com/x4-10details
+    gear_ratio:
+      value: 12.5
+      source: datasheet
+    rated_voltage_v:
+      value: 24
+      source: datasheet
+    rated_torque_nm:
+      value: 4.0
+      source: datasheet
+    peak_torque_nm:
+      value: 10.0
+      source: datasheet
+    stall_torque_nm:
+      value: null
+      source: not listed
+    rated_speed_rpm:
+      value: 238
+      source: datasheet
+    no_load_speed_rpm:
+      value: 317
+      source: datasheet
+    no_load_current_a:
+      value: 1.0
+      source: datasheet
+    torque_constant_nm_per_a:
+      value: 0.8
+      source: datasheet (module, output side)
+    backdrive_torque_nm:
+      value: 0.8
+      source: datasheet
+    backlash_arcmin:
+      value: 15
+      source: datasheet (<=)
+    rotor_inertia_kgcm2:
+      value: 0.25
+      source: datasheet ('Moment of Inertia', kg.cm2)
+    mass_kg:
+      value: 0.33
+      source: datasheet
+    viscous_damping_nms:
+      value: 0.0
+      upper_bound: 0.0
+      source: 'derived: (V*I_noload/w_noload - backdrive)/w_noload <= 0; datasheet leaves no room for viscous loss'
+    status_note: Non-L variant listed as discontinued on myactuator.com; X4-10-L is current. Confirm installed variant (H6).
+  X4-36:
+    full_name: 'RMD-X4-P36-36 (C: CAN, E: EtherCAT)'
+    datasheet_file: motor_datasheets/RMD-X4-P36-36_params_260901.jpg
+    source_url: https://www.myactuator.com/x4-36details
+    gear_ratio:
+      value: 36
+      source: datasheet
+    rated_voltage_v:
+      value: 24
+      source: datasheet
+    rated_torque_nm:
+      value: 10.5
+      source: datasheet
+    peak_torque_nm:
+      value: 34.0
+      source: datasheet
+    stall_torque_nm:
+      value: 34.5
+      source: datasheet stall table (3 s, +50 C)
+    rated_speed_rpm:
+      value: 83
+      source: datasheet
+    no_load_speed_rpm:
+      value: 111
+      source: datasheet
+    no_load_current_a:
+      value: 0.9
+      source: datasheet (input)
+    torque_constant_nm_per_a:
+      value: 1.9
+      source: datasheet (module, output side)
+    backdrive_torque_nm:
+      value: 1.14
+      source: datasheet
+    backlash_arcmin:
+      value: 15
+      source: datasheet (<=)
+    rotor_inertia_kgcm2:
+      value: 0.3
+      source: datasheet ('Moment of Inertia', kg.cm2)
+    mass_kg:
+      value: 0.36
+      source: datasheet
+    viscous_damping_nms:
+      value: 0.031
+      upper_bound: 0.062
+      source: 'derived: half of upper bound (V*I_noload/w_noload - backdrive)/w_noload'
+    status_note: Non-L variant listed as discontinued; X4-36-L is current. Confirm installed variant (H6).
+  X6-60:
+    full_name: 'RMD-X6-P20-60 (C: CAN, E: EtherCAT)'
+    datasheet_file: motor_datasheets/RMD-X6-P20-60_params_260901.jpg
+    source_url: https://www.myactuator.com/x6-60details
+    gear_ratio:
+      value: 19.612
+      source: datasheet
+    rated_voltage_v:
+      value: 48
+      source: datasheet
+    rated_torque_nm:
+      value: 20.0
+      source: datasheet
+    peak_torque_nm:
+      value: 60.0
+      source: datasheet
+    stall_torque_nm:
+      value: null
+      source: not listed (stall table goes to >= 50 N*m)
+    rated_speed_rpm:
+      value: 153
+      source: datasheet
+    no_load_speed_rpm:
+      value: 176
+      source: datasheet
+    no_load_current_a:
+      value: 0.9
+      source: datasheet (input)
+    torque_constant_nm_per_a:
+      value: 2.1
+      source: datasheet (module, output side)
+    backdrive_torque_nm:
+      value: 1.6
+      source: datasheet
+    backlash_arcmin:
+      value: 15
+      source: datasheet (<=)
+    rotor_inertia_kgcm2:
+      value: 0.66
+      source: datasheet ('Moment of Inertia', kg.cm2)
+    mass_kg:
+      value: 0.82
+      source: datasheet
+    viscous_damping_nms:
+      value: 0.02
+      upper_bound: 0.04
+      source: 'derived: half of upper bound (V*I_noload/w_noload - backdrive)/w_noload'
+  X8-150:
+    full_name: RMD-X8-P20-150-E (EtherCAT / CAN)
+    datasheet_file: motor_datasheets/RMD-X8-P20-150-E_params_260818.jpg
+    source_url: https://www.myactuator.com/x8-150-details
+    gear_ratio:
+      value: 19.612
+      source: datasheet
+    rated_voltage_v:
+      value: 48
+      source: datasheet
+    rated_torque_nm:
+      value: 43.0
+      source: datasheet
+    peak_torque_nm:
+      value: 120.0
+      source: datasheet
+    stall_torque_nm:
+      value: 150.0
+      source: datasheet
+    rated_speed_rpm:
+      value: 127
+      source: datasheet
+    no_load_speed_rpm:
+      value: 158
+      source: datasheet
+    no_load_current_a:
+      value: 1.6
+      source: datasheet (input)
+    torque_constant_nm_per_a:
+      value: 2.97
+      source: datasheet (module, per A rms)
+    backdrive_torque_nm:
+      value: 0.34
+      source: datasheet
+    backlash_arcmin:
+      value: 15
+      source: datasheet
+    rotor_inertia_kgcm2:
+      value: 1.2
+      range:
+      - 0.8
+      - 2.0
+      source: 'estimate. Datasheet prints ''Moment of Inertia 0.001023 kg.m2'' (=10.23 kg.cm2), physically impossible for this actuator''s rotor
+        (a solid cylinder of the whole 1.33 kg actuator at 96 mm diameter is only 15.3 kg.cm2); most likely a 10x typo for 1.023 kg.cm2. Other
+        X8-family listings: X8 0.805, X8 Pro 1.45, X8-120 1.5 kg.cm2 (distributor pages, 2026-11-10 search). Nominal 1.2 sits between the typo-corrected
+        1.02 and 1.5; training randomizes 0.8-2.0. Confirm with MyActuator (H6).'
+    mass_kg:
+      value: 1.33
+      source: datasheet
+    viscous_damping_nms:
+      value: 0.13
+      upper_bound: 0.26
+      source: 'derived: half of upper bound (V*I_noload/w_noload - backdrive)/w_noload'
+    status_note: Characteristic curve on the X8-150 page is labelled 'X8-P20-120' (a different motor), so it is not used. Listed under 'V4.1 Special
+      Series For Robot'.
+joint_to_motor:
+  _note: 'Single motors: joint = motor. Linkage joints (ankles: 2x X4-36, waist roll/pitch: 2x X6-60) are mapped through the linkage Jacobian
+    J (motor angle per joint angle) at the zero pose: armature and viscous damping add as sum(J^2 * motor value), Coulomb friction and torque
+    as sum(|J| * motor value), speed as motor speed / max |J|.'
+  X8-150:
+  - left_hip_pitch
+  - left_hip_roll
+  - left_knee
+  - right_hip_pitch
+  - right_hip_roll
+  - right_knee
+  - torso_yaw
+  X6-60:
+  - left_hip_yaw
+  - right_hip_yaw
+  - left_shoulder_pitch
+  - left_shoulder_roll
+  - right_shoulder_pitch
+  - right_shoulder_roll
+  X4-36:
+  - left_shoulder_yaw
+  - left_elbow
+  - left_forearm_yaw
+  - right_shoulder_yaw
+  - right_elbow
+  - right_forearm_yaw
+  X4-10:
+  - head_yaw
+  - head_pitch
+  - left_wrist_pitch
+  - left_wrist_roll
+  - right_wrist_pitch
+  - right_wrist_roll
+  linkage_2x_X4-36:
+  - left_ankle_pitch
+  - left_ankle_roll
+  - right_ankle_pitch
+  - right_ankle_roll
+  linkage_2x_X6-60:
+  - torso_roll
+  - torso_pitch
+delay:
+  command_delay_ms:
+    range:
+    - 0
+    - 10
+    source: 'estimate from published measurements: PACE (ETH) identified 7.5 ms on ANYmal/Tytan; Menlo measured 0-9 ms staleness across their
+      CAN read order. Replace with the measured value from bench tests / bus timing.'
+bus:
+  type:
+    value: EtherCAT
+    source: team (2026-11-10)
+  cycle_hz:
+    value: null
+    source: not decided/measured (HARDWARE_ISSUES H11)
+  supply_voltage_v:
+    value: null
+    source: 'unknown per motor group: X4 rated 24 V, X6/X8 rated 48 V (HARDWARE_ISSUES H13)'
+masses:
+  _about: Measured or better link masses (HARDWARE_ISSUES H1). Each entry replaces that link's mass and scales its inertia by the same factor;
+    'com' (m, link frame) optional. Empty until there is real data.
+  _example:
+    left_knee_link:
+      mass_kg: 2.25
+      com:
+      - 0.0
+      - 0.0
+      - -0.12
+      source: weighed 2026-12-01, scale +/-5 g
+  overrides: {}
+control:
+  modes:
+    legs_waist_head: 'MyActuator EtherCAT mode 5 (PVT/MIT): position target + kp/kd per cycle, PD on the driver'
+    arms: 'MyActuator EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)'
+    source: decision 2026-11-10 (HARDWARE_ISSUES H11, robot/CHANGES.md)
+  gains_source: 'decision 2026-11-10: RP1-style kp (hips/knee 120, hip yaw 50, ankles 35 joint space, waist 100; arms in sim ~RP1 arm values as
+    a stand-in for the controls stack). kd = 2*zeta*sqrt(kp*I_eff) with zeta = 0.5, I_eff = joint inertia at the home pose with the base fixed
+    (armature + limb). Critical damping (zeta 1) on swing-limb inertia gives hips kd 21-24, 3x RP1''s 7.5, and would use most of the motor torque
+    at walking speeds; zeta 0.5 lands near RP1''s kd (rp1_kd for comparison). Keys apply to left_ and right_ joints.'
+  gains:
+    hip_pitch:
+      kp: 120
+      kd: 11.34
+      I_eff_home: 1.0722
+      rp1_kd: 7.5
+    hip_roll:
+      kp: 120
+      kd: 10.6
+      I_eff_home: 0.9372
+      rp1_kd: 7.5
+    knee:
+      kp: 120
+      kd: 4.97
+      I_eff_home: 0.206
+      rp1_kd: 7.5
+    hip_yaw:
+      kp: 50
+      kd: 1.95
+      I_eff_home: 0.0761
+      rp1_kd: 2.5
+    ankle_pitch:
+      kp: 35
+      kd: 2.14
+      I_eff_home: 0.1305
+      rp1_kd: 1.5
+    ankle_roll:
+      kp: 35
+      kd: 0.88
+      I_eff_home: 0.022
+      rp1_kd: 1.5
+    torso_yaw:
+      kp: 100
+      kd: 7.52
+      I_eff_home: 0.5657
+      rp1_kd: 7.5
+    torso_roll:
+      kp: 100
+      kd: 11.89
+      I_eff_home: 1.4131
+      rp1_kd: 7.5
+    torso_pitch:
+      kp: 100
+      kd: 10.06
+      I_eff_home: 1.0117
+      rp1_kd: 7.5
+    shoulder_pitch:
+      kp: 40
+      kd: 3.7
+      I_eff_home: 0.3416
+      rp1_kd: 2.5
+    shoulder_roll:
+      kp: 40
+      kd: 3.42
+      I_eff_home: 0.293
+      rp1_kd: 0.75
+    shoulder_yaw:
+      kp: 40
+      kd: 1.53
+      I_eff_home: 0.0586
+      rp1_kd: 0.75
+    elbow:
+      kp: 30
+      kd: 1.73
+      I_eff_home: 0.1003
+      rp1_kd: 0.75
+    forearm_yaw:
+      kp: 20
+      kd: 0.9
+      I_eff_home: 0.0401
+      rp1_kd: 0.75
+    wrist_pitch:
+      kp: 20
+      kd: 0.58
+      I_eff_home: 0.0167
+      rp1_kd: 0.75
+    wrist_roll:
+      kp: 20
+      kd: 0.39
+      I_eff_home: 0.0077
+      rp1_kd: 0.75
+  head_gains:
+    kp: 20
+    kd: 0.5
+    source: 'decision: head welded in training; values for the robot only'
+  action_scale_rule: 0.25 * joint peak torque / kp (mjlab G1 recipe)
+  locomotion_action_joints:
+  - left_hip_pitch
+  - left_hip_roll
+  - left_hip_yaw
+  - left_knee
+  - left_ankle_pitch
+  - left_ankle_roll
+  - right_hip_pitch
+  - right_hip_roll
+  - right_hip_yaw
+  - right_knee
+  - right_ankle_pitch
+  - right_ankle_roll
+  - torso_yaw
+  - torso_roll
+  - torso_pitch
+  default_pose:
+    left_hip_pitch: 0.3
+    left_knee: 0.6
+    left_ankle_pitch: 0.3
+    right_hip_pitch: 0.3
+    right_knee: 0.6
+    right_ankle_pitch: 0.3
+    left_shoulder_roll: 0.2
+    right_shoulder_roll: 0.2
+    left_elbow: 0.5
+    right_elbow: 0.5
+    source: 'decision: knees-bent like the G1 recipe''s KNEES_BENT pose; arms clear the hips (H5)'
+sensors:
+  imu:
+    board: EVAL_HI05 (34 x 24 x 3 mm) on the 'IMU Mount', back of pelvis, chip facing backward
+    parent_link: pelvis
+    pos_m:
+    - -0.051791
+    - -0.000257852
+    - 0.0345015
+    rpy:
+    - -1.5707963267948966
+    - 0.0
+    - -1.5707963267948966
+    quat_wxyz:
+    - 0.5
+    - -0.5
+    - 0.5
+    - -0.5
+    axes: board x -> robot right (-y), y -> down (-z), z -> forward (+x)
+    source: Legs V2 CAD (team, 2026-11-10); still check printed board axes (H7)
+  head_camera:
+    model: ZED X
+    parent_link: head
+    pos_m:
+    - 0.0847853
+    - -4.88679e-06
+    - 0.0152735
+    tilt_rad: 0.0
+    source: position from CAD head_camera frame; model confirmed by team; tilt not confirmed (H8), assumed level

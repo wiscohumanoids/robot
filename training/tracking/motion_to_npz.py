@@ -40,8 +40,8 @@ def robot_setup(robot: str):
     from mjlab.tasks.tracking.config.g1.env_cfgs import unitree_g1_flat_tracking_env_cfg
     return unitree_g1_flat_tracking_env_cfg().scene, G1_JOINTS
   if robot == "wisco":
-    sys.path.insert(0, str(REPO / "wiscohumanoids" / "training" / "tracking"))
-    sys.path.insert(0, str(REPO / "wiscohumanoids" / "training" / "mjlab_task"))
+    sys.path.insert(0, str(REPO / "training" / "tracking" / "wisco_v1"))
+    sys.path.insert(0, str(REPO / "training" / "locomotion" / "wisco_v1"))
     from wisco_tracking.env_cfg import wisco_flat_tracking_env_cfg, WISCO_CSV_JOINTS
     return wisco_flat_tracking_env_cfg().scene, list(WISCO_CSV_JOINTS)
   raise ValueError(robot)

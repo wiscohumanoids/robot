@@ -30,7 +30,7 @@ def stack(context):
     env = LaunchConfiguration('env').perform(context)
     bringup = get_package_share_directory('hsim_bringup')
     nav = get_package_share_directory('hsim_navigation')
-    robot = LaunchConfiguration('robot').perform(context).strip() or 'g1'
+    robot = LaunchConfiguration('robot').perform(context).strip() or 'wisco'
     prof = yaml.safe_load(open(os.path.join(bringup, 'config', 'robots', f'{robot}.yaml')))
     bdir = prof['env_build_dir']
     sensors = LaunchConfiguration('sensors').perform(context).strip() or prof['default_sensors']
@@ -87,7 +87,7 @@ def generate_launch_description():
         DeclareLaunchArgument('mapping', default_value='rtabmap',
                               description='rtabmap (default: RTAB-Map SLAM from scratch, camera + lidar/depth) | slam '
                                           '(slam_toolbox, lidar) | map (AMCL on the prebuilt map: tests/debug only)'),
-        DeclareLaunchArgument('robot', default_value='g1', description='robot profile: g1 | wisco (hsim_bringup/config/robots/)'),
+        DeclareLaunchArgument('robot', default_value='wisco', description='robot profile: wisco | g1 | g1_arms_free (hsim_bringup/config/robots/)'),
         DeclareLaunchArgument('sensors', default_value='',
                               description="lidar (G1-style) | stereo (ZED X-style); default: the robot profile's"),
         DeclareLaunchArgument('policy', default_value='', description="policy folder (default: the robot profile's)"),

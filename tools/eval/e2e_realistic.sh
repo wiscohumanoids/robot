@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage (in the container): ROBOT=wisco|g1|g1_v2 [SENSORS=lidar|stereo] [ENV=robocasa/kitchen_l1_s1] bash /hsim/tools/eval/e2e_realistic.sh
+# Usage (in the container): ROBOT=wisco|g1|g1_arms_free [SENSORS=lidar|stereo] [ENV=robocasa/kitchen_l1_s1] bash /hsim/tools/eval/e2e_realistic.sh
 # Needs the perception tunnel on the Mac: ssh -f -N -L 8100:localhost:8100 hsim-gpu
 # end-to-end: SLAM (rtabmap) + real perception (VM) + BT + locomotion, no prebuilt map, no privileged perception
 set +u

@@ -6,7 +6,7 @@ LOG=~/hsim_runs/_diag/eval_history.log; mkdir -p ~/hsim_runs/_diag
 E=../../infra/vm_jobs/eval_velocity.py
 declare -A done_ck
 while true; do
-  for spec in "J1j_g1_vel_v2|Hsim-G1-Velocity-Flat-v2|.|hsim_tasks" \
+  for spec in "J1j_g1_vel_arms_free|Hsim-G1-Velocity-Flat-ArmsFree|.|hsim_tasks" \
               ; do
     IFS='|' read -r job task ipath imod <<<"$spec"
     ck=$(find ~/hsim_runs/$job -name "model_*.pt" -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | cut -d" " -f2-)   # newest by time (resume dirs also hold the copied start checkpoint)

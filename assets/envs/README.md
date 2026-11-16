@@ -34,7 +34,7 @@ the task's objects. Our training physics always win over RoboCasa's settings. Th
 RoboCasa put its robot, turned to face the open room, moved out to ≥ 0.5 m clearance if needed.
 A built kitchen `world.mjb` is ~450 MB (RoboCasa's textures are high resolution).
 
-Rules: floors are flat (the v1 walking policy only knows flat ground); the room's floor is the
+Rules: floors are flat (the all-joints walking policy only knows flat ground); the room's floor is the
 training world's plane at z = 0; body names get the prefix `room/`.
 
 | Env | Source | Status |

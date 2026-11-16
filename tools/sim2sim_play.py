@@ -4,7 +4,7 @@ Loads the training world (assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml) and
 policy folder (models/locomotion/<id>/ with policy.onnx + manifest.yaml), then:
   - every physics step (5 ms): MuJoCo steps; its position actuators are the PD loop
   - every 4 steps (50 Hz): build the observation exactly like mjlab (99 values for the
-    29-joint v1 policy, 85 for a legs+waist v2 policy), run the ONNX policy,
+    all-joints (29-joint) policy, 85 for a legs+waist (arms-free) policy), run the ONNX policy,
     set targets = default_pos + action_scale * action for the policy's joints
   - manifest v2 (legs+waist policy): the held joints (arms) get their default pose, or
     with --arms random a scripted random arm motion like the one used in training
@@ -12,7 +12,7 @@ policy folder (models/locomotion/<id>/ with policy.onnx + manifest.yaml), then:
   (ros2_ws/src/hsim_locomotion/hsim_locomotion/policy_contract.py).
 
 Viewer (macOS needs mjpython; tools/play.sh handles it):
-    tools/play.sh [--policy models/locomotion/g1_velocity_flat_v1]
+    tools/play.sh [--policy models/locomotion/g1_velocity_all_joints]
   Keys:  Up/Down = forward/back speed   Left/Right = turn   , . = sidestep
          / = stop (zero command)        R = reset robot
 
@@ -41,7 +41,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "ros2_ws/src/hsim_locomotion"))
 from hsim_locomotion.policy_contract import Contract, load_contract  # noqa: E402
 DEFAULT_SCENE = ROOT / "assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml"
-DEFAULT_POLICY = ROOT / "models/locomotion/g1_velocity_flat_v1"
+DEFAULT_POLICY = ROOT / "models/locomotion/g1_velocity_all_joints"
 PREFIX = "robot/"            # mjlab's exported scene prefixes every robot name
 FALLEN_HEIGHT = 0.45         # pelvis below this = fell
 CMD_LIMITS = np.array([[-1.0, 1.5], [-0.5, 0.5], [-0.7, 0.7]])  # vx, vy, wz (within training ranges)
@@ -59,7 +59,7 @@ SCRIPT = [
     (2.0, (0.0, 0.0, 0.0), "stand"),
 ]
 
-# Small commands the v1 policy ignored (decision 0004). "responds" = measured >= 50 % of command.
+# Small commands the all-joints policy ignored (decision 0004). "responds" = measured >= 50 % of command.
 DEADBAND_SCRIPT = [
     (2.0, (0.0, 0.0, 0.0), "stand"),
     (4.0, (0.0, 0.0, 0.3), "turn 0.3"),
@@ -296,7 +296,7 @@ def main():
     ap.add_argument("--headless", action="store_true", help="run the scripted test instead of the viewer")
     ap.add_argument("--script", choices=sorted(SCRIPTS), default="standard", help="headless command script")
     ap.add_argument("--arms", choices=["default", "random"], default="default",
-                    help="v2 (legs+waist) policies: held arm joints at default pose, or training-style random motion")
+                    help="arms-free (legs+waist) policies: held arm joints at default pose, or training-style random motion")
     args = ap.parse_args()
 
     policy = Policy.load(args.policy)

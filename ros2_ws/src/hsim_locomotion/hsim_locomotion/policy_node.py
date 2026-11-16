@@ -1,8 +1,8 @@
 """Locomotion policy node (node name: `locomotion`). Replaces locomotion_stub.
 
 Runs an mjlab-trained ONNX policy on CPU at the manifest's rate (50 Hz, sim time).
-Builds the same observation the policy saw in training (99 values for the 29-joint v1
-policy, 85 for a legs+waist v2 policy), from ROS inputs:
+Builds the same observation the policy saw in training (99 values for the all-joints (29-joint)
+policy, 85 for a legs+waist (arms-free) policy), from ROS inputs:
 
   base_lin_vel       /odometry/filtered twist.linear (body frame; the state estimator's job)
   base_ang_vel       /imu angular_velocity
@@ -46,7 +46,7 @@ def quat_rotate_inverse(x, y, z, w, v):
 class PolicyNode(Node):
     def __init__(self):
         super().__init__('locomotion')
-        self.declare_parameter('policy_dir', '/hsim/models/locomotion/g1_velocity_flat_v1')
+        self.declare_parameter('policy_dir', '/hsim/models/locomotion/g1_velocity_all_joints')
         self.declare_parameter('command_timeout', 0.5)
         folder = Path(self.get_parameter('policy_dir').value)
         self.cmd_timeout = self.get_parameter('command_timeout').value

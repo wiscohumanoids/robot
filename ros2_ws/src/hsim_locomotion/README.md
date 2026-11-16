@@ -5,7 +5,7 @@
 | `policy_node` | **REAL** | ONNX policy from `models/locomotion/<id>/` (param `policy_dir`), 50 Hz on sim time, CPU |
 | `locomotion_stub` | stub | holds the default pose |
 
-Observation (same as training): body velocity from /odometry/filtered, gyro and gravity direction from /imu, joint positions/velocities of every manifest joint from /joint_states (matched by name), last action, and the /cmd_vel command (zeroed after 0.5 s without one). 99 values for the 29-joint v1 policy, 85 for a legs+waist v2 policy.
+Observation (same as training): body velocity from /odometry/filtered, gyro and gravity direction from /imu, joint positions/velocities of every manifest joint from /joint_states (matched by name), last action, and the /cmd_vel command (zeroed after 0.5 s without one). 99 values for the all-joints (29-joint) policy, 85 for a legs+waist (arms-free) policy.
 Publishes /locomotion/joint_targets and /locomotion/status (`mode=policy`, policy id, inference time, tilted flag, driven joints, held-joints source).
 
 ## Manifest versions (models/locomotion/<id>/manifest.yaml, written by training/locomotion/scripts/export_manifest.py)

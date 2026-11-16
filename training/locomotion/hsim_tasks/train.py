@@ -1,5 +1,5 @@
 """Train an hsim task with mjlab's own trainer (same flags as `uv run train ...`).
-  python hsim_tasks/train.py Hsim-G1-Velocity-Flat-v2 --env.scene.num-envs 4096 --log-root <dir>"""
+  python hsim_tasks/train.py Hsim-G1-Velocity-Flat-ArmsFree --env.scene.num-envs 4096 --log-root <dir>"""
 import sys
 from pathlib import Path
 

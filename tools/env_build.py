@@ -250,7 +250,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("env_dir", type=Path)
     ap.add_argument("--no-render", action="store_true")
-    ap.add_argument("--robot", default="g1", help="robot profile (ros2_ws/src/hsim_bringup/config/robots/<robot>.yaml): "
+    ap.add_argument("--robot", default="wisco", help="robot profile (ros2_ws/src/hsim_bringup/config/robots/<robot>.yaml): "
                     "its training world replaces env.yaml's robot_world, output goes to the profile's env_build_dir "
                     "(g1: build/, wisco: build_wisco/)")
     args = ap.parse_args()
