@@ -57,6 +57,7 @@ without ROS.
 | `/world/objects` | `vision_msgs/msg/Detection3DArray` | `world_model` | 2 Hz | 3 | yes |
 | `/world/summary` | `std_msgs/msg/String` | `world_model` | 2 Hz | 3 | yes |
 | `/perception/status` | `std_msgs/msg/String` | `perception` | - | 4 | no |
+| `/arm/joint_targets` | `sensor_msgs/msg/JointState` | `manipulation` | - | 5 | no |
 <!-- END GENERATED:topics -->
 
 Shared topics (many publishers by ROS convention, not single-owner; wildcards allowed):
@@ -80,8 +81,10 @@ Shared topics (many publishers by ROS convention, not single-owner; wildcards al
 | `head_camera` → `head_camera_optical` | `camera_optical_mount` | static | 3 |
 <!-- END GENERATED:tf -->
 
-`base_link → all other robot links` comes from `robot_state_publisher` (from `/joint_states`). `base_link` is the
-pelvis on every robot; frame names are the same for every robot profile (`ros2_ws/src/hsim_bringup/config/robots/`).
+Only the frames above are published today: the sensor mounts are static transforms placed from the robot profile's
+`mounts` (`sim_stack.launch.py`). A `robot_state_publisher` for all robot links (from the URDF and `/joint_states`) is
+planned (`ros2_ws/src/hsim_description/`). `base_link` is the pelvis on every robot; frame names are the same for every
+robot profile (`ros2_ws/src/hsim_bringup/config/robots/`).
 
 ## Actions
 
@@ -111,9 +114,9 @@ The simulator (and later the hardware backend) takes joint targets from exactly 
 | Joints | Who decides the target | How it reaches the robot |
 |---|---|---|
 | Joints the locomotion policy drives (manifest `role: policy`; legs + waist/torso in the current policies) | the policy | `locomotion` publishes them |
-| Held joints (manifest `role: held`; arms, hands, head) | `/arm/joint_targets` (from `manipulation` or teleop), else the manifest default pose | `locomotion` merges them by joint name and republishes |
+| Held joints (manifest `role: held`; arms, hands, head) | `/arm/joint_targets` (from `manipulation`), else the manifest default pose | `locomotion` merges them by joint name and republishes |
 
 So a joint has one writer at a time: the policy for policy joints, the latest `/arm/joint_targets` for held ones.
 `locomotion` ignores names on `/arm/joint_targets` that are not held joints (warned once). Policies that drive every
-joint (manifest v1, e.g. `g1_velocity_flat_v1`) have no held joints and cannot be combined with manipulation; see
+joint (manifest v1, e.g. `g1_velocity_all_joints`) have no held joints and cannot be combined with manipulation; see
 `docs/decisions/0002-two-locomotion-policies.md`.

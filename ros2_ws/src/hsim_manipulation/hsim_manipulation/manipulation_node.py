@@ -9,7 +9,7 @@ instruction it runs the VLA policy (services/vla_server, GR00T, reached over an 
 until the success check passes (if goal.object and goal.target are set and perception sees both),
 the time limit, or a cancel. Legs/waist stay with hsim_locomotion; this node only writes arm + gripper joints.
 
-Inputs : /camera/head/color/image_raw (sensor_msgs/Image, rgb8 or bgr8), /joint_states, /perception/objects
+Inputs : /camera/head/color/image_raw (sensor_msgs/Image, rgb8 or bgr8), /joint_states, /world/objects
 Output : /arm/joint_targets (sensor_msgs/JointState, positions = targets)
 Gripper: policy uses 0 = closed .. 1 = open; mapped to the Dex1-1 finger joint range (gripper_closed..gripper_open).
 """
@@ -42,7 +42,7 @@ class ManipulationNode(Node):
         p('image_topic', '/camera/head/color/image_raw')
         p('joint_states_topic', '/joint_states')
         p('targets_topic', '/arm/joint_targets')
-        p('objects_topic', '/perception/objects')
+        p('objects_topic', '/world/objects')
         p('control_hz', 20.0)
         p('max_duration_s', 40.0)
         p('image_width', 320)                       # training images (F1 ego camera) are 320x240

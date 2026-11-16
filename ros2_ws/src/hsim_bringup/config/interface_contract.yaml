@@ -37,6 +37,8 @@ topics:
   /planner/command:          {type: std_msgs/msg/String,              owner: [ask, teleop],    rate_hz: null, phase: 3, required: false}   # tools/ask.sh or typed in the viewer
   /planner/reply:            {type: std_msgs/msg/String,              owner: planner,          rate_hz: null, phase: 3}
   /planner/status:           {type: std_msgs/msg/String,              owner: planner,          rate_hz: null, phase: 3}
+  # Phase 5: manipulation. Targets for the held (arm/hand) joints; locomotion merges them into /locomotion/joint_targets
+  /arm/joint_targets:        {type: sensor_msgs/msg/JointState,       owner: manipulation,     rate_hz: null, phase: 5, required: false}
   # PRIVILEGED (evaluation only): graders, tests, and explicitly-labeled stubs may read it, the robot stack may not
   /sim/ground_truth/state:   {type: std_msgs/msg/Float64MultiArray,   owner: sim,              rate_hz: 20,   phase: 3}
 # Many nodes may publish these by ROS convention; not single-owner. Wildcards allowed.

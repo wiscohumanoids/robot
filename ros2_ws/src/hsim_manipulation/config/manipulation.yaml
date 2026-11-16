@@ -5,7 +5,7 @@ manipulation:
     image_topic: /camera/head/color/image_raw      # must show the same view as training (F1 ego camera: G1 D435 mount)
     joint_states_topic: /joint_states
     targets_topic: /arm/joint_targets
-    objects_topic: /perception/objects
+    objects_topic: /world/objects
     control_hz: 20.0
     max_duration_s: 40.0
     image_width: 320
