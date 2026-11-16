@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Job runner for the GPU VM: one tmux session per job, logs + state under ~/hsim_runs/<job>/.
 
-Usage (on the VM; from the Mac use tools/vm_jobs.sh, which ssh's here):
+Usage (on the VM; from the laptop use tools/vm.sh jobs <command>, which runs this over ssh):
   vmjobs.py [--jobs FILE] list
   vmjobs.py [--jobs FILE] launch <job> [<job> ...]
   vmjobs.py [--jobs FILE] launch-all            # every enabled job + the GPU logger
@@ -39,7 +39,7 @@ def load(jobs_file):
     cfg = yaml.safe_load(Path(jobs_file).read_text())
     d = cfg.get("defaults", {})
     base = {k: os.path.expanduser(str(d.get(k, v))) for k, v in
-            (("repo", "~/humanoid-sim-stack"), ("runs", "~/hsim_runs"), ("data", "~/hsim_data"), ("envs", "~/hsim_envs"))}
+            (("repo", "~/robot"), ("runs", "~/hsim_runs"), ("data", "~/hsim_data"), ("envs", "~/hsim_envs"))}
     return cfg, base
 
 

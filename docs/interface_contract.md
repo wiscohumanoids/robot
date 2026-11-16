@@ -16,10 +16,12 @@ without ROS.
   checked when something is publishing it (teleop, Nav2 or the stereo camera may not be running).
 - Nodes talk only through these interfaces, never by importing each other's code.
 - All nodes use sim time in simulation (`use_sim_time: true`); `/clock` comes from `sim`.
-- **Phase 1 topics, TF edges and `/sim/reset` are frozen (2026-11-08).** Changing a frozen entry needs a decision
-  record in `docs/decisions/`. Later-phase entries freeze at the end of their phase.
+- The phase-1 entries (the robot core: clock, joint states, IMU, velocity commands, locomotion, odometry,
+  the `map → odom → base_footprint` edges and `/sim/reset`) are
+  **frozen**: every layer depends on them, so changing one means updating every consumer in the same change and saying
+  why in the pull request. The phase column also selects what `contract_check --phase N` checks.
 - `/sim/ground_truth/*` is **privileged**: only graders (`tools/eval/`) and explicitly labeled stubs may read it,
-  never the robot stack (decision 0007).
+  never the robot stack, so what works in simulation only uses what real sensors give.
 
 ## Topics
 
@@ -118,5 +120,5 @@ The simulator (and later the hardware backend) takes joint targets from exactly 
 
 So a joint has one writer at a time: the policy for policy joints, the latest `/arm/joint_targets` for held ones.
 `locomotion` ignores names on `/arm/joint_targets` that are not held joints (warned once). Policies that drive every
-joint (manifest v1, e.g. `g1_velocity_all_joints`) have no held joints and cannot be combined with manipulation; see
-`docs/decisions/0002-two-locomotion-policies.md`.
+joint (manifest v1, e.g. `g1_velocity_all_joints`) have no held joints and cannot be combined with manipulation; the
+arms-free policies (manifest v2) are the ones that can.

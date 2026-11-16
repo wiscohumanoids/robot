@@ -1,8 +1,8 @@
 """Bring up arm01, the 7-DOF test arm, on EtherCAT or mock hardware.
 
 Same steps as test_bench.launch.py (it is included with arm01 defaults):
-description urdf/arm01/arm01.ros2_control.xacro, joint table
-config/arms/arm01.yaml (control_mode: arm, so the ArmController runs Mode P /
+description robots/arm01/urdf/arm01.ros2_control.xacro, joint table
+robots/arm01/config/arm01.yaml (control_mode: arm, so the ArmController runs Mode P /
 Mode T at 1 kHz), and the newest calibration version for arm01 if one exists.
 
   ros2 launch wisco_ethercat_ros2_hw arm01.launch.py
@@ -21,22 +21,28 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 PACKAGE = 'wisco_ethercat_ros2_hw'
+DESCRIPTION = 'arm01_description'   # robots/arm01: URDF, meshes, joint configs, calibration store
 
 
-def latest_calibration(share):
-    config_dir = os.path.dirname(os.path.dirname(os.path.realpath(
-        os.path.join(share, 'config', 'arms', 'arm01.yaml'))))
-    files = glob.glob(os.path.join(config_dir, 'calib', 'arm01', '*_v*.yaml'))
+def latest_calibration(description_share):
+    """Newest calibration version for arm01, or '' when none exists yet.
+
+    The joint config is resolved through realpath so a symlink install finds the calibration store
+    in the source tree (robots/arm01/calibration/), where the calibration stages write it."""
+    robot_dir = os.path.dirname(os.path.dirname(os.path.realpath(
+        os.path.join(description_share, 'config', 'arm01.yaml'))))
+    files = glob.glob(os.path.join(robot_dir, 'calibration', 'arm01', '*_v*.yaml'))
     files.sort(key=lambda p: int(re.search(r'_v(\d+)\.yaml$', p).group(1)))
     return files[-1] if files else ''
 
 
 def generate_launch_description():
     share = get_package_share_directory(PACKAGE)
+    description_share = get_package_share_directory(DESCRIPTION)
     passthrough = {
-        'description': 'urdf/arm01/arm01.ros2_control.xacro',
-        'joints_file': os.path.join(share, 'config', 'arms', 'arm01.yaml'),
-        'calibration_file': latest_calibration(share),
+        'description': os.path.join(description_share, 'urdf', 'arm01.ros2_control.xacro'),
+        'joints_file': os.path.join(description_share, 'config', 'arm01.yaml'),
+        'calibration_file': latest_calibration(description_share),
         'control_mode': '',
         'update_rate': '1000',
         'joint_state_rate': '250',

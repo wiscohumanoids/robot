@@ -1,11 +1,7 @@
 manifest_version: 2
 policy_id: g1_velocity_arms_free
-created: '2026-11-11T13:13:46+00:00'
 source:
-  run_dir: /private/tmp/claude-501/-Users-soham-Desktop-OneDrive-Download-robotics-humanoid-sim-stack/9b7b0bfd-73bf-4ba7-b1c9-5657ce3d267e/scratchpad/cand_v
-  onnx_file: g1_velocity_arms_free_J1v_model_11900.onnx
   onnx_sha256: b8f712905af9dc89f76b6ef7aa88092f5958637e44058a320da3aef1f4096e78
-  wandb_run_path: g1_velocity_arms_free_J1v_model_11900
 timing:
   sim_dt: 0.005
   decimation: 4

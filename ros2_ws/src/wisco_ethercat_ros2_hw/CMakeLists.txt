@@ -46,11 +46,6 @@ install(TARGETS wisco_ethercat_ros2_hw_controllers wisco_ethercat_ros2_hw_arm_co
   RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
-# --- example_ros_node: minimal ROS API that awaits torque commands ---
-add_executable(example_ros_node src/example_ros_node.cpp)
-target_compile_features(example_ros_node PRIVATE cxx_std_17)
-ament_target_dependencies(example_ros_node rclcpp std_msgs)
-install(TARGETS example_ros_node DESTINATION lib/${PROJECT_NAME})
 
 # --- Python: config generation used by the launch file and scripts ---
 ament_python_install_package(${PROJECT_NAME})
@@ -64,11 +59,6 @@ install(
 install(DIRECTORY arm_stack DESTINATION share/${PROJECT_NAME}
   PATTERN "__pycache__" EXCLUDE)
 install(PROGRAMS scripts/arm DESTINATION lib/${PROJECT_NAME})
-install(
-  PROGRAMS scripts/example_torque_command_ros_node.py
-  DESTINATION lib/${PROJECT_NAME}
-  RENAME example_torque_command_ros_node
-)
 install(
   PROGRAMS
     scripts/multiple_act_command.py

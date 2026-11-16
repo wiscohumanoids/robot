@@ -37,7 +37,7 @@ if ROOT not in sys.path:
 from arm_stack.config import load_arm  # noqa: E402
 from arm_stack.model.robot import ArmModel  # noqa: E402
 
-URDF = 'urdf/arm01/arm01.urdf'
+URDF = '../../../robots/arm01/urdf/arm01.urdf'   # relative to this package's source root
 FRAMES = ('tool0', 'flange')
 SEED = 20261114
 N_POSES = 25
@@ -80,7 +80,7 @@ def pose(M):
 
 
 def make(seed: int = SEED, n_poses: int = N_POSES):
-    arm = load_arm('config/arms/arm01.yaml')
+    arm = load_arm('arm01')
     urdf = os.path.join(ROOT, URDF)
     nominal = ArmModel(urdf, arm.names)
     rng = np.random.default_rng(seed)

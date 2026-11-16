@@ -8,7 +8,7 @@ For every rl job in jobs.yaml that has a checkpoint:
 Other jobs: state + last log lines.
 
 Run on the VM with the mjlab venv (needs matplotlib, mjlab):
-  cd ~/humanoid-sim-stack && MUJOCO_GL=egl training/locomotion/.venv/bin/python infra/vm_jobs/morning_report.py
+  cd ~/robot && MUJOCO_GL=egl training/locomotion/.venv/bin/python infra/vm_jobs/morning_report.py
       [--jobs infra/vm_jobs/jobs.yaml] [--only J1,J3] [--no-video] [--steps 500]
 """
 import argparse

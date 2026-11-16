@@ -1,8 +1,8 @@
 """Forward kinematics of arm01: URDF/Pinocchio against the CAD export, and
 self-consistency of the FK, Jacobian and kinematic overlay.
 
-The reference is tools/cad/arm01_capture.json, written by
-tools/cad/import_full_assembly.py from the CAD team's `full_assembly_urdf`
+The reference is robots/arm01/cad/arm01_capture.json, written by
+robots/arm01/cad/import_full_assembly.py from the CAD team's `full_assembly_urdf`
 export: its capture pose (all nine joints, the passive wrist ones at the
 export's exact four-bar solution), every link's captured CAD placement in
 this repo's base frame, the four-bar pins, and the operating ranges.
@@ -23,8 +23,9 @@ from arm_stack.config import load_arm
 from arm_stack.model.robot import ArmModel
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-URDF = os.path.join(ROOT, 'urdf', 'arm01', 'arm01.urdf')
-with open(os.path.join(ROOT, 'tools', 'cad', 'arm01_capture.json')) as _f:
+ARM01 = os.path.normpath(os.path.join(ROOT, '..', '..', '..', 'robots', 'arm01'))
+URDF = os.path.join(ARM01, 'urdf', 'arm01.urdf')
+with open(os.path.join(ARM01, 'cad', 'arm01_capture.json')) as _f:
     CAP = json.load(_f)
 CAPTURE = CAP['capture_q_rad']
 
@@ -64,7 +65,7 @@ def full():
 
 @pytest.fixture(scope='module')
 def arm():
-    return load_arm('config/arms/arm01.yaml')
+    return load_arm('arm01')
 
 
 @pytest.fixture()
@@ -257,7 +258,7 @@ def test_mimic_tree_keeps_the_loop_nearly_closed(full):
 # --------------------------------------------------------------------------- flange and tool0
 def _importer():
     spec = importlib.util.spec_from_file_location(
-        'import_full_assembly', os.path.join(ROOT, 'tools', 'cad', 'import_full_assembly.py'))
+        'import_full_assembly', os.path.join(ARM01, 'cad', 'import_full_assembly.py'))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -275,7 +276,7 @@ def test_flange_on_the_j7_axis_and_tool0_on_the_peg(model):
     assert abs(tool0.rotation[2, 2]) < math.sin(math.radians(1.0))
     assert float(tool0.rotation[:, 2] @ tool0.translation) > 0.15
     # an independent re-fit of the peg's end face on the shipped mesh lands on tool0
-    tip, axis, radius = _importer().peg_tip(os.path.join(ROOT, 'urdf', 'arm01', 'meshes', 'link7.stl'))
+    tip, axis, radius = _importer().peg_tip(os.path.join(ARM01, 'meshes', 'link7.stl'))
     assert radius == pytest.approx(0.010, abs=0.0005)
     assert np.linalg.norm(tip - tool0.translation) < 0.5e-3
     assert angle(axis, tool0.rotation[:, 2]) < math.radians(0.5)

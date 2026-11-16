@@ -1,4 +1,4 @@
-"""Phases 1 and 2 on the single-joint lever rig (config/arms/bench01.yaml) in sim.
+"""Phases 1 and 2 on the single-joint lever rig (robots/arm01/config/bench01.yaml) in sim.
 
 Phase 1: one sim actuator with known errors (zero offset, Kt, lever COM,
 friction and stiction, delay, backlash, hard stops past the URDF limits) goes

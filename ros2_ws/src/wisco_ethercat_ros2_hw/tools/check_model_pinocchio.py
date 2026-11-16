@@ -19,7 +19,7 @@ Checks:
                 config's weighed masses where given, inertia tensors physical
   efforts       URDF effort / velocity limits = actuator model peak / max
 
-  python3 tools/check_model_pinocchio.py [--arm config/arms/arm01.yaml] [--strict]
+  python3 tools/check_model_pinocchio.py [--arm arm01] [--strict]
 
 Exits 1 on any FAIL (warnings, such as unweighed placeholder masses, do not).
 """
@@ -37,10 +37,10 @@ import numpy as np
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 
-# Operating ROM, degrees: the CAD export's (tools/cad/arm01_capture.json, written by
-# tools/cad/import_full_assembly.py): J1 -90..+180, J2 0..+190, J3 +-90, J4 0..+130,
+# Operating ROM, degrees: the CAD export's (robots/arm01/cad/arm01_capture.json, written by
+# robots/arm01/cad/import_full_assembly.py): J1 -90..+180, J2 0..+190, J3 +-90, J4 0..+130,
 # J5 +-90, J6 +-35, J7 +-90.
-with open(os.path.join(REPO, 'tools', 'cad', 'arm01_capture.json')) as _f:
+with open(os.path.join(os.path.normpath(os.path.join(REPO, '..', '..', '..', 'robots', 'arm01')), 'cad', 'arm01_capture.json')) as _f:
     ROM_DEG = {k: tuple(v) for k, v in json.load(_f)['operating_limits_deg'].items()}
 LIMIT_TOL_DEG = 0.01
 AXIS_NORM_TOL = 1e-4
@@ -149,7 +149,7 @@ def main():
     from arm_stack.config import load_arm, load_yaml, resolve
 
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument('--arm', default='config/arms/arm01.yaml')
+    p.add_argument('--arm', default='arm01')
     p.add_argument('--models', default='config/actuator_models.yaml')
     p.add_argument('--strict', action='store_true', help='also exit 1 on warnings')
     args = p.parse_args()

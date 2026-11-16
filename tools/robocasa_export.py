@@ -7,8 +7,8 @@ folder except ~/hsim_third_party (that folder's robocasa/ checkout shadows the p
 
 How: RoboCasa only builds kitchens inside a task with a robot, so this builds a real task
 scene with its default robot, then removes the robot and writes:
-  room.xml   the kitchen (fixtures + task objects at their placed poses); absolute asset
-             paths into the RoboCasa checkout, so build on this Mac
+  room.xml   the kitchen (fixtures + task objects at their placed poses); asset paths point into the
+             RoboCasa checkout through the $HSIM_THIRD_PARTY token, which env_build.py expands
   env.yaml   our environment definition: spawn, map bounds, named objects
 Then build it like any environment:
     .venv/bin/python tools/env_build.py assets/envs/robocasa/<name>
@@ -20,11 +20,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import numpy as np
-import robocasa  # noqa: F401  (registers the kitchen tasks)
+import robocasa  # registers the kitchen tasks; also locates the asset checkout
 import robosuite
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+THIRD_PARTY_TOKEN = "$HSIM_THIRD_PARTY"     # expanded by tools/env_build.py
 
 # What an object detector would call each RoboCasa fixture class (None = structure, not an object)
 FIXTURE_LABELS = {
@@ -123,7 +124,10 @@ def main():
             g.set("contype", "0")
             g.set("conaffinity", "0")
 
-    (out / "room.xml").write_text(ET.tostring(root, encoding="unicode"))
+    # Asset paths are absolute into the local checkout; store them machine-independent.
+    third_party = str(Path(robocasa.__file__).resolve().parents[2])
+    xml = ET.tostring(root, encoding="unicode").replace(third_party, THIRD_PARTY_TOKEN)
+    (out / "room.xml").write_text(xml)
 
     # Fixtures: name them by their RoboCasa key, sized/placed later by env_build
     for fname, fx in env.fixtures.items():

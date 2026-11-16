@@ -4,7 +4,7 @@ Runs the play config (fixed curriculum level: WISCO_PLAY_LEVEL / WISCO_PLAY_LEVE
 arms random, payload on) with the policy for 1000 steps and reports per-motor X4-36 torque statistics.
 Motor torques are the ankle actuator's own clamped values (exact, every physics step's last value), so after
 fix 4 nothing can exceed the 34 N*m peak; the interesting numbers are time above RATED (10.5) and the RMS.
-Run from ~/humanoid-sim-stack/training/locomotion:
+Run from ~/robot/training/locomotion:
   MUJOCO_GL=egl .venv/bin/python ../../training/locomotion/wisco_v1/vm/ankle_torque_check.py <checkpoint.pt> [num_envs]
 """
 import sys

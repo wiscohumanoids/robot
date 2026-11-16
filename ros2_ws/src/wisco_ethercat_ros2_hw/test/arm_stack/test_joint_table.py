@@ -8,7 +8,8 @@ import yaml
 from arm_stack.config import load_arm
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ARM01 = os.path.join(ROOT, 'config', 'arms', 'arm01.yaml')
+ARM01_DIR = os.path.normpath(os.path.join(ROOT, '..', '..', '..', 'robots', 'arm01'))
+ARM01 = os.path.join(ARM01_DIR, 'config', 'arm01.yaml')
 MODELS = os.path.join(ROOT, 'config', 'actuator_models.yaml')
 
 
@@ -46,7 +47,7 @@ def test_model_scales_follow_kt_and_rated_current(name):
 def test_clamp_above_datasheet_is_refused(tmp_path):
     with open(ARM01) as f:
         raw = yaml.safe_load(f)
-    raw['urdf'] = os.path.join(ROOT, 'urdf', 'arm01', 'arm01.urdf')
+    raw['urdf'] = os.path.join(ARM01_DIR, 'urdf', 'arm01.urdf')
     raw['joints'][0]['max_vel_rad_s'] = 30.0     # x6_60 no-load speed is 18.4 rad/s
     path = tmp_path / 'arm.yaml'
     path.write_text(yaml.safe_dump(raw))

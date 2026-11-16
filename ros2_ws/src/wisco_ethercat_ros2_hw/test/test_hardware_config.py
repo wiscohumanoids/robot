@@ -18,6 +18,7 @@ CONFIG = os.path.join(ROOT, 'config')
 MODELS = os.path.join(CONFIG, 'actuator_models.yaml')
 TEMPLATE = os.path.join(CONFIG, 'drive_pdo_template.yaml')
 XACRO = os.path.join(ROOT, 'urdf', 'test_bench.urdf.xacro')
+ARM01 = os.path.normpath(os.path.join(ROOT, '..', '..', '..', 'robots', 'arm01'))   # arm01_description
 
 URDF = """<robot name="r">
   <link name="base"/><link name="l1"/><link name="l2"/><link name="l3"/><link name="l4"/>
@@ -183,9 +184,9 @@ def test_legacy_pdos_match_fixed_firmware_layout(tmp_path, mode):
 
 def test_arm01_mixed_firmware_interfaces(tmp_path):
     xacro = pytest.importorskip('xacro')
-    description = os.path.join(ROOT, 'urdf', 'arm01', 'arm01.ros2_control.xacro')
+    description = os.path.join(ARM01, 'urdf', 'arm01.ros2_control.xacro')
     plain = xacro.process_file(description).toxml()
-    hw = HardwareConfig(MODELS, os.path.join(CONFIG, 'arms', 'arm01.yaml'), plain,
+    hw = HardwareConfig(MODELS, os.path.join(ARM01, 'config', 'arm01.yaml'), plain,
                         template_file=TEMPLATE)
     for mock in (False, True):
         manifest = hw.write(str(tmp_path / str(mock)), use_mock_hardware=mock)

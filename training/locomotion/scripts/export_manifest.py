@@ -24,7 +24,6 @@ Manifest versions:
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import hashlib
 import shutil
 import sys
@@ -209,13 +208,8 @@ def main() -> int:
     manifest = {
         "manifest_version": MANIFEST_VERSION_SUBSET if subset else MANIFEST_VERSION,
         "policy_id": args.policy_id,
-        "created": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-        "source": {
-            "run_dir": str(run_dir),
-            "onnx_file": onnx_path.name,
-            "onnx_sha256": hashlib.sha256(onnx_path.read_bytes()).hexdigest(),
-            "wandb_run_path": meta.get("run_path"),
-        },
+        # Checksum of policy.onnx, so a manifest and a policy file can be checked to belong together.
+        "source": {"onnx_sha256": hashlib.sha256(onnx_path.read_bytes()).hexdigest()},
         "timing": {
             "sim_dt": sim_dt,
             "decimation": decimation,

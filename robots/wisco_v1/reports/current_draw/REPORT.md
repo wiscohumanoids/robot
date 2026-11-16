@@ -41,7 +41,7 @@ Energy at 0.5 m/s: **164 Wh/km** (cost of transport 1.48); at 1.0 m/s: **124 Wh/
 - **right_ankle_motor_2 (X4-36): torque above the motor's peak rating**: 34.2 N*m vs 34 N*m peak (walk_1.00).
 - right_ankle_motor_2 (X4-36): RMS current 8.3 A = 136 % of rated (walk_1.00): watch heating in long runs.
 
-The ankle limits are the known weak point (HARDWARE_ISSUES H3): training clamps each ankle motor to 34 N*m through the linkage, but this plain-MuJoCo model only limits the joint, so it shows how hard the policy would like to push the ankles. On the robot those motors will saturate; currents there are capped near the X4-36 peak phase current (21.5 A).
+The ankle limits are the known weak point (hardware_observations.md, 'Ankle torque'): training clamps each ankle motor to 34 N*m through the linkage, but this plain-MuJoCo model only limits the joint, so it shows how hard the policy would like to push the ankles. On the robot those motors will saturate; currents there are capped near the X4-36 peak phase current (21.5 A).
 
 **Sizing numbers with margin** (at 48 V, motors only; add electronics):
 

@@ -20,6 +20,7 @@
   <depend>pinocchio</depend>
   <depend>yaml-cpp</depend>
 
+  <exec_depend>arm01_description</exec_depend>
   <exec_depend>controller_manager</exec_depend>
   <exec_depend>ethercat_driver</exec_depend>
   <exec_depend>ethercat_generic_plugins</exec_depend>

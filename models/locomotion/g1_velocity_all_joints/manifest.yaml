@@ -1,11 +1,7 @@
 manifest_version: 1
 policy_id: g1_velocity_all_joints
-created: '2026-11-08T07:28:42+00:00'
 source:
-  run_dir: /home/ubuntu/humanoid-sim-stack/training/locomotion/logs/rsl_rl/g1_velocity/2026-11-08_05-06-48
-  onnx_file: 2026-11-08_05-06-48.onnx
   onnx_sha256: 2a7b9059370ce2939c4d72cc57d37ad992df4981c60d739c7701faf07e0c0a14
-  wandb_run_path: 2026-11-08_05-06-48
 timing:
   sim_dt: 0.005
   decimation: 4

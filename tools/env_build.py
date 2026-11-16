@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import struct
 import zlib
 from pathlib import Path
@@ -28,13 +29,29 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 ROOM_PREFIX = "room/"
+THIRD_PARTY_TOKEN = "$HSIM_THIRD_PARTY"      # written by tools/robocasa_export.py in place of the asset checkout path
 KEY = "init_state"
 FREE, OCCUPIED = 254, 0          # PGM values Nav2 reads as free / occupied (negate: 0)
 
 
+def load_room(path: Path) -> mujoco.MjSpec:
+    """Load a room file, expanding $HSIM_THIRD_PARTY to the local RoboCasa/robosuite checkout.
+
+    The checkout location comes from the HSIM_THIRD_PARTY environment variable (default ~/hsim_third_party).
+    """
+    text = path.read_text()
+    if THIRD_PARTY_TOKEN not in text:
+        return mujoco.MjSpec.from_file(str(path))
+    third_party = Path(os.environ.get("HSIM_THIRD_PARTY", "~/hsim_third_party")).expanduser()
+    if not third_party.is_dir():
+        raise FileNotFoundError(f"{path} needs the RoboCasa asset checkout; not found at {third_party} "
+                                "(set HSIM_THIRD_PARTY)")
+    return mujoco.MjSpec.from_string(text.replace(THIRD_PARTY_TOKEN, str(third_party)))
+
+
 def compose(env: dict, env_dir: Path) -> mujoco.MjModel:
     spec = mujoco.MjSpec.from_file(str(ROOT / env["robot_world"]))
-    room = mujoco.MjSpec.from_file(str(env_dir / env["room"]))
+    room = load_room(env_dir / env["room"])
 
     # Remember the G1 standing keyframe, then drop it: its qpos only covers the robot.
     key = spec.keys[0]

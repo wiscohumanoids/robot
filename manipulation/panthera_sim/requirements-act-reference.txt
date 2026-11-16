@@ -1,3 +1,0 @@
-# Additional training/data dependencies; use the existing LeRobot 0.4.4 environment.
-h5py==3.16.0
-gdown==6.4.0

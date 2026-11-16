@@ -1,11 +1,7 @@
 manifest_version: 2
 policy_id: wisco_v1_velocity_arms_free
-created: '2026-11-10T21:49:14+00:00'
 source:
-  run_dir: /private/tmp/claude-501/-Users-soham-Desktop-OneDrive-Download-robotics-humanoid-sim-stack/9b7b0bfd-73bf-4ba7-b1c9-5657ce3d267e/scratchpad/wisco_run
-  onnx_file: wisco_v1_velocity_arms_free_J3h_model_4650.onnx
   onnx_sha256: fbb98ab50772e85d0ac84d635ac891229a882431add121fdd34daeffb1f8023c
-  wandb_run_path: wisco_v1_velocity_arms_free_J3h_model_4650
 timing:
   sim_dt: 0.005
   decimation: 4

@@ -19,13 +19,13 @@
   arm export lerobot OUT SESSION.mcap [...]
 
 Each stage prints its report and, if it passed, writes a new calibration
-version (config/calib/<arm>/<date>_v<N>.yaml; --sim writes to a separate sim
+version (robots/<robot>/calibration/<arm>/<date>_v<N>.yaml; --sim writes to a separate sim
 store so sim runs never mix with the arm's files). --force writes a failing
 stage too, for debugging. Every run is recorded to one MCAP session in
 --log-dir with the calibration version in its meta.
 
 Hardware runs need arm01.launch.py up first; --sim needs nothing but
-Pinocchio and numpy. --arm takes a path or a name under config/arms/
+Pinocchio and numpy. --arm takes a path or a joint config name under robots/*/config/
 (e.g. --arm bench01, the single-joint lever rig). Stages that need more
 joints than the arm has (pivot, mocap, validate on the 1-joint rig) report
 SKIP.
@@ -314,10 +314,10 @@ def main(argv=None) -> int:
     p.add_argument('--quick', action='store_true', help='fewer poses and cycles (smoke runs)')
     p.add_argument('--fit-masses', action='store_true', help='gravity: fit masses and centers of mass together')
     p.add_argument('--soak-s', type=float, default=None, help='bringup: seconds to check position holding')
-    p.add_argument('--arm', default='config/arms/arm01.yaml', help='joint config path or name (bench01)')
+    p.add_argument('--arm', default='arm01', help='joint config name in robots/*/config/ (arm01, bench01) or a path')
     p.add_argument('--serial', default=None, help='bench: serial of the actuator on the rig')
     p.add_argument('--model', default=None, help='bench: actuator model on the rig (x4_10, x4_36, x6_60)')
-    p.add_argument('--calib-root', default=None, help='calibration store root (default config/calib)')
+    p.add_argument('--calib-root', default=None, help='calibration store root (default: the arm\'s robots/<robot>/calibration/)')
     p.add_argument('--log-dir', default=None, help='MCAP session directory (default ~/arm_logs)')
     p.add_argument('--no-log', action='store_true')
     p.add_argument('--seed', type=int, default=0, help='sim error seed and pose sampling')

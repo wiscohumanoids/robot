@@ -34,9 +34,10 @@ import xml.etree.ElementTree as ET
 from typing import Dict, Optional, Sequence
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PACKAGE = 'wisco_ethercat_ros2_hw'
-URDF_PATH = os.path.join(REPO, 'urdf', 'arm01', 'arm01.urdf')
-ARM_CONFIG = os.path.join(REPO, 'config', 'arms', 'arm01.yaml')
+ARM01_DIR = os.path.normpath(os.path.join(REPO, '..', '..', '..', 'robots', 'arm01'))   # robots/arm01, the arm01_description package
+PACKAGE = 'arm01_description'
+URDF_PATH = os.path.join(ARM01_DIR, 'urdf', 'arm01.urdf')
+ARM_CONFIG = os.path.join(ARM01_DIR, 'config', 'arm01.yaml')
 # generated, not checked in (/build/ is ignored): tools/isaac/import_urdf.py writes it
 USD_DIR = os.path.join(REPO, 'build', 'isaac', 'arm01')
 USD_PATH = os.path.join(USD_DIR, 'arm01.usd')
@@ -47,7 +48,7 @@ DRIVEN_JOINTS = ('shoulder_pitch', 'shoulder_roll', 'shoulder_yaw', 'elbow', 'fo
 MIMIC_JOINTS = ('wrist_crank_joint', 'wrist_rod_joint')   # follow wrist_pitch; merged into link5
 
 
-def prepare_urdf_for_isaac(src: str = URDF_PATH, dst: str = PREPARED_URDF, repo: str = REPO) -> str:
+def prepare_urdf_for_isaac(src: str = URDF_PATH, dst: str = PREPARED_URDF, repo: str = ARM01_DIR) -> str:
     """Write the URDF the Isaac importer converts: mimic joints fixed, mesh paths absolute.
 
     Returns dst. The source URDF is not modified.

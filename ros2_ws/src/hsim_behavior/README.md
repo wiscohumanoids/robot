@@ -35,7 +35,7 @@ humanoid drifts ~0.15–0.25 m while turning in place. So before a motion skill 
    with Nav2 to the nearest open floor with 0.6 m all round, on its own map.
 
 Graded on true geometry by `tools/eval/reach_plan.sh` / `reach_check.py` (autotest checks `reach_table`, `reach_block`,
-`kitchen_fridge`, `slam_fridge`, `kitchen_sink`). Current results per robot: `STATUS.md`.
+`kitchen_fridge`, `slam_fridge`, `kitchen_sink`; run one with `tools/ros.sh autotest <name> [robot]`).
 
 Failures return a plain-words reason, which the planner uses to replan. Try without the LLM:
 `python3 /hsim/tools/eval/run_plan.py "navigate_to:table" "find_object:red block"`.

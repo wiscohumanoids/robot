@@ -1,10 +1,12 @@
-"""Joint config and versioned calibration files (spec: "Repo layout and configs").
+"""Joint configs and versioned calibration files for the arms the calibration toolkit drives.
 
-Joint config: one YAML per arm, checked in (config/arms/<arm>.yaml).
-Calibration file: one per arm per calibration run, never edited by hand,
-config/calib/<arm>/<date>_v<N>.yaml. Each stage writes a new version that
-copies every field it did not measure, so one version number names one set of
-values.
+Joint config: one YAML per arm, kept in that arm's robot description package
+(`robots/<robot>/config/<arm>.yaml` in the repo, e.g. `robots/arm01/config/arm01.yaml`). Its `urdf:`
+path is relative to the YAML file. Calibration file: one per arm per calibration run, never edited
+by hand, in `robots/<robot>/calibration/<arm>/<date>_v<N>.yaml`. Each stage writes a new version
+that copies every field it did not measure, so one version number names one set of values.
+
+Bus-level files (actuator model table, drive PDO template) stay in this package's `config/`.
 """
 
 from __future__ import annotations
@@ -40,8 +42,23 @@ SHARE = _share_root()
 
 
 def resolve(path: str) -> str:
-    """Absolute path; relative paths are relative to the package root."""
+    """Absolute path; relative paths are relative to this package's root (source or installed)."""
     return path if os.path.isabs(path) else os.path.join(SHARE, path)
+
+
+def _description_dirs() -> List[str]:
+    """Robot description directories that may hold arm configs: `robots/*/` in the repo when
+    running from the source tree, else the share directory of every installed `*_description`."""
+    repo_robots = os.path.normpath(os.path.join(PACKAGE_ROOT, '..', '..', '..', 'robots'))
+    if os.path.isdir(repo_robots):
+        return sorted(os.path.join(repo_robots, d) for d in os.listdir(repo_robots)
+                      if os.path.isdir(os.path.join(repo_robots, d, 'config')))
+    try:
+        from ament_index_python.packages import get_package_share_directory, get_packages_with_prefixes
+        return sorted(get_package_share_directory(name) for name in get_packages_with_prefixes()
+                      if name.endswith('_description'))
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def load_yaml(path: str) -> Dict[str, Any]:
@@ -121,18 +138,24 @@ class ArmConfig:
 
 
 def arm_path(name_or_path: str) -> str:
-    """`bench01` -> config/arms/bench01.yaml; paths pass through."""
+    """Absolute path of an arm's joint config: a name (`arm01`, `bench01`) is looked up in the
+    robot description packages; a path passes through unchanged."""
     if os.sep in name_or_path or '/' in name_or_path or name_or_path.endswith(('.yaml', '.yml')):
-        return name_or_path
-    return os.path.join('config', 'arms', name_or_path + '.yaml')
+        return os.path.abspath(name_or_path)
+    for root in _description_dirs():
+        candidate = os.path.join(root, 'config', name_or_path + '.yaml')
+        if os.path.isfile(candidate):
+            return candidate
+    raise ValueError('no joint config named %r in any robot description (robots/*/config/)'
+                     % name_or_path)
 
 
-def load_arm(path: str = 'config/arms/arm01.yaml',
+def load_arm(path: str = 'arm01',
              models_path: str = 'config/actuator_models.yaml',
              model: Optional[str] = None, serial: Optional[str] = None) -> ArmConfig:
     """model / serial override every joint row's `model` / `serial` (bench rig: one
     joint, whichever actuator is mounted today)."""
-    path = resolve(arm_path(path))
+    path = arm_path(path)
     raw = load_yaml(path)
     models = load_yaml(resolve(models_path)).get('models', {})
     if model is not None or serial is not None:
@@ -186,7 +209,7 @@ def load_arm(path: str = 'config/arms/arm01.yaml',
             serial=None if row.get('serial') is None else str(row['serial']),
         ))
     return ArmConfig(
-        arm=raw['arm'], path=path, urdf=resolve(raw.get('urdf', 'urdf/arm01/arm01.urdf')),
+        arm=raw['arm'], path=path, urdf=os.path.normpath(os.path.join(os.path.dirname(path), raw['urdf'])),
         control_mode=raw.get('control_mode', 'arm'),
         cycle_us=int((raw.get('bus') or {}).get('cycle_us', 1000)),
         joints=joints, link_masses_kg=dict(raw.get('link_masses_kg') or {}), raw=raw)
@@ -225,7 +248,7 @@ def empty_calibration(arm: ArmConfig) -> Dict[str, Any]:
 
 
 class CalibrationStore:
-    """config/calib/<arm>/<date>_v<N>.yaml, append-only."""
+    """`<robot>/calibration/<arm>/<date>_v<N>.yaml` beside the arm's joint config, append-only."""
 
     PATTERN = re.compile(r'_v(\d+)\.yaml$')
 
@@ -234,7 +257,8 @@ class CalibrationStore:
         and carry `actuator_serial`, since Kt and friction vary unit to unit."""
         self.arm = arm
         self.serial = serial
-        self.dir = os.path.join(root or resolve('config/calib'), arm.arm)
+        default_root = os.path.join(os.path.dirname(os.path.dirname(arm.path)), 'calibration')
+        self.dir = os.path.join(root or default_root, arm.arm)
         if serial:
             self.dir = os.path.join(self.dir, re.sub(r'[^A-Za-z0-9_.-]', '_', str(serial)))
 

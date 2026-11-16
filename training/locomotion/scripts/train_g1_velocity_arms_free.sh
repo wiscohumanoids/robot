@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # J1: G1 velocity arms-free (legs+waist policy, scripted arms, arms-free recipe; docs/runs/2026-11-10_overnight_plan.md).
-# Runs from ~/humanoid-sim-stack/training/locomotion with its uv .venv (mjlab 1.6.0, GPU).
+# Runs from ~/robot/training/locomotion with its uv .venv (mjlab 1.6.0, GPU).
 # Usage: scripts/train_g1_velocity_arms_free.sh --log-root ~/hsim_runs/J1_g1_velocity_arms_free [extra mjlab train flags...]
 #   NUM_ENVS (default 4096) and ITERS (default 20000) can be set in the environment.
 #   Resume: add  --agent.resume True --agent.load-run <run dir name>

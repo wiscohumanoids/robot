@@ -55,7 +55,7 @@ What this layer does is joint-level torque control, and it’s the ancestor of a
 τ = Kp·(q_target − q) + Kd·(0 − q̇)
 ```
 
-That’s all of it. There’s no gravity compensation, no Coriolis term and no dynamics library. The 0 in the damping term is the desired velocity, since the policy only asks for positions. The team’s lowlevel_control package already computes the general form τ = τ_ff + Kp(q_d − q) + Kd(q̇_d − q̇). For locomotion you set τ_ff = 0 and leave the desired velocity at 0, and you have the standard locomotion PD law.
+That’s all of it. There’s no gravity compensation, no Coriolis term and no dynamics library. The 0 in the damping term is the desired velocity, since the policy only asks for positions. A drive's MIT-style mode computes the general form τ = τ_ff + Kp(q_d − q) + Kd(q̇_d − q̇). For locomotion you set τ_ff = 0 and leave the desired velocity at 0, and you have the standard locomotion PD law.
 
 ### Why this is enough
 
@@ -89,7 +89,7 @@ The controller itself is nearly finished in the scaffold. The remaining work is 
 
 **Review cards**
 
-- What’s the leg control law? — **τ = Kp·(q_target - q) + Kd·(0 - q̇)**. No gravity compensation, no Coriolis, no dynamics library. In lowlevel_control it’s the general form with τ_ff = 0.
+- What’s the leg control law? — **τ = Kp·(q_target - q) + Kd·(0 - q̇)**. No gravity compensation, no Coriolis, no dynamics library. In a drive's MIT-style mode it's the general form with τ_ff = 0.
 - Why is a plain PD enough for the legs? — The policy was trained in a simulator with gravity, inertia and contact, so it already outputs targets that account for them. The compensation is in the weights. The legs are also in contact with the ground through the gait.
 - What are the two rates for the legs? — Policy: 50-100 Hz, a new target every 10-20 ms. PD loop: 1000-2000 Hz, 10 to 40 times faster.
 - Why must deployed gains match training gains? — The policy learned to command positions assuming a specific joint response. Different gains mean different behavior.
@@ -218,15 +218,15 @@ When the humanoid has to do real loco-manipulation, with arm and legs coordinati
 - Why doesn’t the first version need a WBC? — It locomotes and then manipulates, never both at once, and never reaches while balancing. So nothing has to be traded off in one solve. Arm impedance control plus leg PD is enough.
 - Where does a WBC go when the robot needs one? — In the same slot, between the policies and ros2_control, replacing both joint-level controllers. Nothing above or below changes.
 
-## In our stack (2026-11)
+## In our stack
 
 | Concept above | Wisco V1 |
 |---|---|
 | Leg controller (plain PD) | runs **inside the MyActuator driver** (EtherCAT mode 5, "PVT/MIT"): every cycle the computer sends the target position plus kp and kd, and the driver computes τ = kp (q_des − q) + kd (q̇_des − q̇) + τ_ff. The gains are the ones the walking policy was trained with (`robots/wisco_v1/model/robot_numbers.yaml`, `control.gains`), so sim and robot run the same law. Same for the waist and head |
-| Arm controller (impedance + gravity/Coriolis) | on the RK3588, Pinocchio dynamics, torque sent in CST mode (EtherCAT mode 10). Its own package, planned |
+| Arm controller (impedance + gravity) | `ArmController` in `ros2_ws/src/wisco_ethercat_ros2_hw/`, running at 1 kHz on the RK3588: Pinocchio gravity compensation plus PD, sent as a position target with a gravity torque offset (CSP + 0x60B2) or as torque (CST). Built and tested on the arm01 test arm |
 | In simulation | MuJoCo position actuators apply the same PD at the physics step (5 ms); held arm joints get the sim stand-in gains from the same numbers file |
 | Rates | walking policy 50 Hz; PD in the driver at the EtherCAT cycle (1 kHz planned) |
 | Whole-body controller | none: the walking policy keeps balance while the arms move (the arms-free recipe trains it with random arm motion and hand payloads) |
 
 Why the gains matter so much: a policy is trained against one PD law; if the driver's gains or units differ, the robot
-behaves differently from the simulation (`robots/wisco_v1/HARDWARE_ISSUES.md` H11).
+behaves differently from the simulation (`robots/wisco_v1/hardware_observations.md`, "Drive mode, gains and delay").

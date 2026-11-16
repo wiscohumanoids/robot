@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert urdf/arm01/arm01.urdf to USD with Isaac Lab's UrdfConverter.
+"""Convert robots/arm01/urdf/arm01.urdf to USD with Isaac Lab's UrdfConverter.
 
 Run with the Isaac Lab Python (Isaac Sim 5.x + Isaac Lab 2.x):
 

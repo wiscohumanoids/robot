@@ -32,7 +32,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROBOT_DIR = HERE.parent                              # robots/wisco_v1 (the robot model, read-only)
 SOURCE_XML = ROBOT_DIR / "robot.xml"
-SOURCE_REPORT = ROBOT_DIR / "original_from_team" / "model_report.json"   # CAD ranges (robots/wisco_v1/model_report.json is generated)
+REPORT = ROBOT_DIR / "model_report.json"   # joint ranges are the CAD export's; only ankle pitch lower is changed (ankle_pitch_lower())
 TRAIN_XML = HERE / "wisco_v1_train.xml"               # written by build_training_model.py
 LINKAGE_OUT = HERE / "ankle_linkage.json"             # written by linkage_tools.py
 NUMBERS = HERE / "robot_numbers.yaml"
@@ -40,6 +40,7 @@ NUMBERS = HERE / "robot_numbers.yaml"
 # Held still in training: removed from the training model (welded), as agreed.
 FIXED_JOINTS = ("head_yaw", "head_pitch")
 
+# Ankle pitch lower limit from the range-of-motion sheet; the linkage analysis scans up from here
 SOURCE_ANKLE_PITCH_LOWER = -0.610865238
 
 
@@ -63,7 +64,7 @@ RPM = 2 * math.pi / 60
 
 
 def load_report():
-    return json.loads(SOURCE_REPORT.read_text())["joints"]
+    return json.loads(REPORT.read_text())["joints"]
 
 
 def load_linkage_info():

@@ -12,7 +12,7 @@ from arm_stack.model import ik
 from arm_stack.model.robot import ArmModel
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-URDF = os.path.join(ROOT, 'urdf', 'arm01', 'arm01.urdf')
+URDF = os.path.join(os.path.normpath(os.path.join(ROOT, '..', '..', '..', 'robots', 'arm01')), 'urdf', 'arm01.urdf')
 NAMES = ['shoulder_pitch', 'shoulder_roll', 'shoulder_yaw', 'elbow', 'forearm_yaw',
          'wrist_pitch', 'wrist_yaw']
 DEG = math.pi / 180

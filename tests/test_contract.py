@@ -21,9 +21,9 @@ CONTRACT_PATH = SRC / 'hsim_bringup' / 'config' / 'interface_contract.yaml'
 CONTRACT = yaml.safe_load(CONTRACT_PATH.read_text())
 INTERFACES = SRC / 'hsim_interfaces'
 
-# Packages whose publishers are outside the stack contract: the EtherCAT test bench (talks to
-# ros2_control's own controllers) and legacy packages kept for porting (COLCON_IGNORE'd).
-OUTSIDE_CONTRACT = ('wisco_ethercat_ros2_hw', 'lowlevel_control', 'mujoco_ros2_control')
+# Packages whose publishers are outside the stack contract: the ros2_control hardware side (its controllers
+# talk to ros2_control's own topics) and the robot description packages.
+OUTSIDE_CONTRACT = ('wisco_ethercat_ros2_hw', 'mujoco_ros2_control', 'arm01_description')
 
 # Contract owners that are people / CLIs rather than nodes started by our launch files.
 NON_NODE_OWNERS = {'operator'}

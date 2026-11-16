@@ -115,16 +115,16 @@ So here's the whole thing in one view. IK: pure geometry, generalizes to any obj
 
 Each rung adds what the one below it lacked. And the top of the ladder reaches back down to where you started with walking. That's manipulation, start to finish.
 
-## In our stack (2026-11)
+## In our stack
 
 | Rung | Where it is in this repo |
 |---|---|
-| IK | scripted IK experts and datasets for the Panthera arm (`manipulation/panthera_sim/`), bimanual IK for the actuator-assembly task, G1 + Dex1 IK expert (`training/manipulation/sim/ik.py`); Pinocchio IK for Quest teleop on the real arms (`manipulation/panthera_teleop/`) |
+| IK | scripted IK experts and datasets for the Panthera arm (`manipulation/panthera_sim/`), G1 + Dex1 IK expert (`training/manipulation/sim/ik.py`); Pinocchio IK for Quest teleop on the real arms (`manipulation/panthera_teleop/`) |
 | ACT | trained on scripted and teleoperated Panthera demonstrations, plus an RL fine-tuning experiment (three-block stacking), `manipulation/panthera_sim/` |
 | Diffusion policy | not used yet |
 | VLAs | GR00T N1.6 fine-tuned for the humanoid in sim (G1 + Dex1, 52 % closed-loop, `training/manipulation/`), served by `services/vla_server/` and run by the ROS skill `/skills/manipulate`; pi0.5 and VLA-Adapter fine-tunes on the Panthera arm, with remote pi0.5 inference on the real arms |
 | RL from experience | ACT RL fine-tuning (`panthera_sim`), EXPO-FT experiments on pi0.5 (`panthera_teleop/docs/expo-ft.md`), human-in-the-loop correction data (`panthera_teleop/docs/human-in-the-loop.md`) |
-| On Wisco V1 | arm control (gravity compensation + impedance, torque mode) is the next piece: its own package, planned |
+| On Wisco V1 | the arm controller (gravity compensation + PD, `ArmController`) runs on the arm01 test arm; `arm export lerobot` turns its recordings into LeRobot datasets |
 
 Overview of every manipulation pipeline: `manipulation/README.md`.
 

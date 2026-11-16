@@ -1,8 +1,8 @@
 # training/tracking (GPU VM)
 
 Motion tracking (BeyondMimic-style, mjlab's tracking task): one policy reproduces one LAFAN1 human motion clip, whole
-body. Runs in the `training/locomotion/` uv environment. Not used by the ROS stack yet (decision 0002); the walking
-policy is what drives `/cmd_vel`.
+body. Runs in the `training/locomotion/` uv environment. Not used by the ROS stack yet: the walking policy is what
+drives `/cmd_vel`, and a tracking policy plays one fixed motion rather than following commands.
 
 | Path | What |
 |---|---|
@@ -11,4 +11,4 @@ policy is what drives `/cmd_vel`.
 | [`wisco_v1/`](wisco_v1/README.md) | Wisco V1: own LAFAN1 retargeter, the `Wisco-V1-Tracking-Flat` task, launchers |
 
 Trained runs and motion files stay on the VM (`~/hsim_runs/`, `~/hsim_data/motions/`). Play one back with
-`tools/showcase_play.py`.
+`tools/play_mjlab.py`.

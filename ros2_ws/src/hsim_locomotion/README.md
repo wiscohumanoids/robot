@@ -1,4 +1,4 @@
-# hsim_locomotion (Phase 1) — node `locomotion`
+# hsim_locomotion — node `locomotion`
 
 | Executable | Status | What |
 |---|---|---|

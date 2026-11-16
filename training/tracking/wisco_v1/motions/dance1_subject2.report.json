@@ -1,5 +1,5 @@
 {
- "bvh": "/private/tmp/claude-501/-Users-soham-Desktop-OneDrive-Download-robotics-humanoid-sim-stack/9b7b0bfd-73bf-4ba7-b1c9-5657ce3d267e/scratchpad/C_dl/lafan1_bvh/dance1_subject2.bvh",
+ "bvh": "dance1_subject2.bvh",
  "frames_range": null,
  "joints": [
   "left_hip_pitch",

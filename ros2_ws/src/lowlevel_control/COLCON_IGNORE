@@ -1,3 +1,0 @@
-Ported from the pre-unification scaffold (tag legacy-scaffold-v0), ROS 2 Humble era.
-Not yet built on Jazzy / adapted to the hsim interface contract. Remove this file once it builds.
-See docs/migration/porting_backlog.md.

@@ -10,14 +10,16 @@ the ROS node `locomotion` loads the folder its robot profile names (`ros2_ws/src
       agent.yaml      PPO config from the training run
       README.md       training notes (where written): wall-clock, steps/s, evaluation
 
-| Policy | Robot profile | Recipe | Drives | Run |
+| Policy | Robot profile | Recipe | Drives | Notes |
 |---|---|---|---|---|
-| `wisco_v1_velocity_arms_free` | `wisco` (default) | arms-free (manifest v2) | 15: legs + waist; arms and head held | J3h model_4650 (2026-11-10), trained up to 1.0 m/s forward |
-| `g1_velocity_all_joints` | `g1` | all-joints (manifest v1) | all 29 | 2026-11-08, model_9999 (see its README) |
-| `g1_velocity_arms_free` | `g1_arms_free` | arms-free (manifest v2) | 15: legs + waist; arms held | J1v model_11900 (2026-11-11, anti-rocking fine-tune) |
-| `g1_velocity_arms_free_alt_J1w14899` | (none; swap in with `policy:=`) | arms-free | 15 | J1w model_14899: less rocking and drift, quicker steps and more foot slide |
+| `wisco_v1_velocity_arms_free` | `wisco` (default) | arms-free (manifest v2) | 15: legs + waist; arms and head held | trained up to 1.0 m/s forward |
+| `g1_velocity_all_joints` | `g1` | all-joints (manifest v1) | all 29 | mjlab's stock G1 task; see its README |
+| `g1_velocity_arms_free` | `g1_arms_free` | arms-free (manifest v2) | 15: legs + waist; arms held | fine-tuned against rocking |
+| `g1_velocity_arms_free_alt` | (none; swap in with `policy:=`) | arms-free | 15 | a sibling run: less rocking and drift, quicker steps, more foot slide |
 
 Recipes: **all-joints** = the policy controls every joint (cannot be combined with manipulation); **arms-free** =
-legs + waist/torso only, the other joints follow `/arm/joint_targets` or hold the default pose (decision 0002).
-Superseded G1 checkpoints (J1j, J1n, J1r) are in the pre-unification backup repository, not here. Run and file names
-recorded before the V1 rename: `docs/migration/renames.md`.
+legs + waist/torso only; the other joints follow `/arm/joint_targets` or hold the default pose, so the arms stay free
+for manipulation while the robot walks.
+
+Swap a policy without changing the profile: `ros2 launch hsim_bringup sim_stack.launch.py policy:=/hsim/models/locomotion/<policy-id>`. Add one:
+`tools/vm.sh pull-policy <run-dir> <policy-id>` (export on the GPU machine and copy here), then point a robot profile at it.

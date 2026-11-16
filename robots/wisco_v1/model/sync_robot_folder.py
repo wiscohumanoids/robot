@@ -1,25 +1,23 @@
-"""Regenerate the team-facing robot files in robots/wisco_v1/ from the original CAD export plus
-our measured / datasheet numbers, so the folder always matches what training uses.
+"""Update the Wisco V1 robot description in place from the numbers file, so the URDF, the MuJoCo scene and the
+joint report always carry the values training uses.
 
-Inputs (never edited):
-  robots/wisco_v1/original_from_team/robot.urdf, robot.xml, model_report.json (as received from the team)
-  robots/wisco_v1/model/robot_numbers.yaml, ankle_linkage.json (via robot_params.py)
-Outputs (overwritten, do not hand-edit):
-  robots/wisco_v1/robot.urdf, robots/wisco_v1/robot.xml, robots/wisco_v1/model_report.json
+Source and output are the same files (robots/wisco_v1/robot.urdf, robot.xml, model_report.json): geometry, links,
+inertias and joint axes come from the CAD export and are never changed here; everything numeric that has a better
+source is rewritten from robots/wisco_v1/model/robot_numbers.yaml (via robot_params.py). Running it twice gives the
+same files.
 
-What changes vs the CAD export:
-  - every revolute joint: effort (peak torque at the joint), velocity (no-load speed at the joint),
-    friction (datasheet backdrive torque), damping (datasheet-bounded viscous) from MyActuator datasheets;
-    ankle/waist values are linkage equivalents at the zero pose
-  - MJCF joints: armature (reflected rotor inertia) too; motor ctrlrange = peak torque
-  - ankle pitch lower limit -> reachable limit with margin (HARDWARE_ISSUES H2)
-  - IMU frame orientation from the Legs V2 CAD (EVAL_HI05 board; HARDWARE_ISSUES H7)
-  - ZED X camera: optical frame added (ROS REP-103 convention)
-  - URDF: <transmission> per joint (gear ratio, motor, control mode)
-  - MJCF: "home" keyframe = the knees-bent pose the walking policies start from
-  - link masses from robot_numbers.yaml masses.overrides (none yet)
-  - IMU pose and camera tilt from robot_numbers.yaml sensors; per-joint kp/kd recorded in model_report.json
-Run:  python sync_robot_folder.py      (then build_training_model.py, phase_a checks)
+What it sets:
+  - every revolute joint: effort (peak torque at the joint), velocity (no-load speed at the joint), friction
+    (datasheet backdrive torque) and damping (datasheet-bounded viscous loss); ankle and waist values are the
+    two-motor linkage equivalents at the zero pose
+  - MJCF joints: armature (rotor inertia reflected through the gearbox); motor ctrlrange = peak torque
+  - ankle pitch lower limit: the reachable limit from the linkage analysis, with margin
+  - IMU frame pose and orientation, head-camera tilt, and a ROS optical frame for the camera
+  - URDF: one <transmission> per joint (gear ratio, motor model, planned driver control mode)
+  - MJCF: the "home" keyframe, the knees-bent pose the walking policies start from
+  - link masses from robot_numbers.yaml masses.overrides (inertia scaled with the mass)
+
+Run from this folder:  python sync_robot_folder.py   (then build_training_model.py and the checks in ../checks/)
 """
 import json
 import math
@@ -29,26 +27,26 @@ import xml.etree.ElementTree as ET
 import robot_params as P
 
 sys.dont_write_bytecode = True
-SRC = P.ROBOT_DIR / "original_from_team"
-SRC_URDF, SRC_XML, SRC_REPORT = SRC / "robot.urdf", SRC / "robot.xml", SRC / "model_report.json"
+URDF_PATH, XML_PATH, REPORT_PATH = P.ROBOT_DIR / "robot.urdf", P.ROBOT_DIR / "robot.xml", P.ROBOT_DIR / "model_report.json"
 
-# IMU (EVAL_HI05 board on the "IMU Mount", back of pelvis) and camera: robot_numbers.yaml sensors
+# IMU (EVAL_HI05 board on the IMU mount at the back of the pelvis) and head camera poses, from robot_numbers.yaml
 _S = P.sensors()
 IMU_POS = tuple(_S["imu"]["pos_m"])
 IMU_RPY = tuple(_S["imu"]["rpy"])
 IMU_QUAT_WXYZ = tuple(_S["imu"]["quat_wxyz"])
 CAMERA_TILT = float(_S["head_camera"].get("tilt_rad") or 0.0)
-# ROS optical frame convention: z forward, x right, y down
+# ROS optical frame convention (REP 103): z forward, x right, y down
 OPTICAL_RPY = (-math.pi / 2, 0.0, -math.pi / 2)
 
-# Planned motor-driver control mode per joint group (decided 2026-11-10, HARDWARE_ISSUES H11)
+# Planned motor-driver control mode per joint group, recorded in the transmissions and the report
 LEG_WAIST_MODE = "EtherCAT mode 5 (PVT/MIT impedance): position target + kp/kd per cycle, PD on the driver"
-ARM_MODE = "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)"
+ARM_MODE = "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)"
 HEAD_MODE = "EtherCAT mode 5 (PVT/MIT impedance)"
 
 
 def joint_values():
-    """name -> dict(effort, velocity, friction, damping, armature, lower, motor, mode) for all 31 joints."""
+    """Per-joint values for all 31 joints: name -> dict(effort, rated, velocity, friction, damping, armature,
+    lower, upper, motor, mode, kp, kd). The two head joints are welded in training and use the head gains."""
     params = P.joint_params()
     head = P.motor("X4-10")
     hg = P.load_numbers()["control"]["head_gains"]
@@ -66,11 +64,22 @@ def joint_values():
 
 
 def fmt(x):
+    """Numbers as written into the model files: 6 significant digits."""
     return f"{x:.6g}"
 
 
+def _scale_mass(inertial_mass_get, inertial_mass_set, inertia_values, set_inertia, override):
+    """Apply one mass override: set the mass and scale the inertia by the same ratio (idempotent: the ratio is
+    1 once the mass already matches)."""
+    f = override["mass_kg"] / float(inertial_mass_get())
+    inertial_mass_set(fmt(override["mass_kg"]))
+    set_inertia([fmt(float(x) * f) for x in inertia_values])
+
+
 def sync_urdf(J):
-    tree = ET.parse(SRC_URDF)
+    """Rewrite joint limits/dynamics, sensor frames, mass overrides and transmissions in robot.urdf.
+    Returns the number of joints updated."""
+    tree = ET.parse(URDF_PATH)   # comments are dropped on parse and re-added below, so reruns don't stack them
     root = tree.getroot()
     specs = P.load_motor_specs()["models"]
     for j in root.findall("joint"):
@@ -92,61 +101,68 @@ def sync_urdf(J):
             j.find("origin").set("xyz", " ".join(fmt(a) for a in IMU_POS))
         elif name == "head_camera_fixed" and CAMERA_TILT:
             j.find("origin").set("rpy", f"0 {CAMERA_TILT:.10f} 0")
-    # IMU / camera notes, camera optical frame
+
+    # Camera optical frame: created once, after the head camera joint
     head_cam_joint = root.find("joint[@name='head_camera_fixed']")
     idx = list(root).index(head_cam_joint) + 1
-    root.insert(idx, ET.Comment(" ZED X stereo camera (HARDWARE_ISSUES H8). Mount tilt not yet confirmed: assumed level. "
-                                "head_camera: x forward, y left, z up. head_camera_optical: ROS optical convention (z forward, x right, y down). "))
-    opt_link = ET.Element("link", name="head_camera_optical")
-    opt_joint = ET.Element("joint", name="head_camera_optical_fixed", type="fixed")
-    ET.SubElement(opt_joint, "parent", link="head_camera")
-    ET.SubElement(opt_joint, "child", link="head_camera_optical")
-    ET.SubElement(opt_joint, "origin", xyz="0 0 0", rpy=" ".join(f"{a:.10f}" for a in OPTICAL_RPY))
-    root.insert(idx + 1, opt_link)
-    root.insert(idx + 2, opt_joint)
+    if root.find("link[@name='head_camera_optical']") is None:
+        opt_link = ET.Element("link", name="head_camera_optical")
+        opt_joint = ET.Element("joint", name="head_camera_optical_fixed", type="fixed")
+        ET.SubElement(opt_joint, "parent", link="head_camera")
+        ET.SubElement(opt_joint, "child", link="head_camera_optical")
+        ET.SubElement(opt_joint, "origin", xyz="0 0 0", rpy=" ".join(f"{a:.10f}" for a in OPTICAL_RPY))
+        root.insert(idx, opt_link)
+        root.insert(idx + 1, opt_joint)
+    root.insert(idx, ET.Comment(" ZED X stereo camera; mount tilt from robot_numbers.yaml sensors (assumed level until "
+                                "measured). head_camera: x forward, y left, z up. head_camera_optical: ROS optical "
+                                "convention (z forward, x right, y down). "))
     imu_joint = root.find("joint[@name='imu_link_fixed']")
     root.insert(list(root).index(imu_joint), ET.Comment(
-        " IMU: EVAL_HI05 board on the 'IMU Mount', back of the pelvis, chip facing backward (Legs V2 CAD). "
-        "Frame axes = board axes: x -> robot right, y -> down, z -> forward. Still to check: the board's printed axes match the CAD part. "))
-    # masses
+        " IMU: EVAL_HI05 board on the IMU mount, back of the pelvis, chip facing backward. Frame axes = board axes: "
+        "x -> robot right, y -> down, z -> forward. "))
+
     for link, o in P.load_mass_overrides().items():
         inert = root.find(f"link[@name='{link}']/inertial")
-        m = inert.find("mass"); f = o["mass_kg"] / float(m.get("value"))
-        m.set("value", fmt(o["mass_kg"]))
-        I = inert.find("inertia")
-        for k in ("ixx", "ixy", "ixz", "iyy", "iyz", "izz"):
-            I.set(k, fmt(float(I.get(k)) * f))
+        m, inertia = inert.find("mass"), inert.find("inertia")
+        keys = ("ixx", "ixy", "ixz", "iyy", "iyz", "izz")
+        _scale_mass(lambda: m.get("value"), lambda s: m.set("value", s), [inertia.get(k) for k in keys],
+                    lambda vals: [inertia.set(k, s) for k, s in zip(keys, vals)], o)
         if "com" in o:
             inert.find("origin").set("xyz", " ".join(fmt(x) for x in o["com"]))
-    # transmissions
+
+    # Transmissions are regenerated from scratch at the end of the file
+    for t in root.findall("transmission"):
+        root.remove(t)
     order = [j.get("name") for j in root.findall("joint") if j.get("name") in J]
-    root.append(ET.Comment(" Transmissions: one MyActuator RMD-X motor per joint, except the ankles (2x X4-36) and waist roll/pitch "
-                           "(2x X6-60), which are rod linkages: their joint effort/velocity above are linkage equivalents at the zero pose; "
-                           "per-motor conversion: robots/wisco_v1/model/ankle_motor.py (ankles), robots/wisco_v1/linkage.py (both). "))
+    root.append(ET.Comment(" Transmissions: one MyActuator RMD-X motor per joint, except the ankles (2x X4-36) and waist "
+                           "roll/pitch (2x X6-60), which are rod linkages: their joint effort/velocity above are linkage "
+                           "equivalents at the zero pose; per-motor conversion: robots/wisco_v1/model/ankle_motor.py "
+                           "(ankles), robots/wisco_v1/linkage.py (both). "))
     for name in order:
         v = J[name]
         base = v["motor"].replace("2x", "")
         t = ET.SubElement(root, "transmission", name=f"{name}_transmission")
         ET.SubElement(t, "type").text = "transmission_interface/SimpleTransmission"
         jt = ET.SubElement(t, "joint", name=name)
-        iface = "hardware_interface/EffortJointInterface"
-        ET.SubElement(jt, "hardwareInterface").text = iface
+        ET.SubElement(jt, "hardwareInterface").text = "hardware_interface/EffortJointInterface"
         act = ET.SubElement(t, "actuator", name=f"{name}_motor")
         ET.SubElement(act, "mechanicalReduction").text = str(specs[base]["gear_ratio"]["value"])
         t.append(ET.Comment(f" MyActuator RMD-{v['motor']} | control: {v['mode']} "))
+
     root.insert(0, ET.Comment(
-        " Wisco humanoid V1. Geometry, links, inertias: CAD export (Legs V2 Full Assembly.step + FullAssmb.step), "
-        "kept unchanged in robots/wisco_v1/original_from_team/robot.urdf. Joint limits/dynamics, IMU orientation, camera optical frame "
-        "and transmissions: generated by robots/wisco_v1/model/sync_robot_folder.py from MyActuator datasheets "
-        "(robots/wisco_v1/model/robot_numbers.yaml) and our measurements. Do not hand-edit: change the sources and rerun. "
-        "Units: m, kg, rad, N*m, rad/s. See robots/wisco_v1/CHANGES.md. "))
+        " Wisco V1. Geometry, links and inertias from the CAD export; joint limits and dynamics, sensor frames and "
+        "transmissions written by robots/wisco_v1/model/sync_robot_folder.py from robots/wisco_v1/model/robot_numbers.yaml "
+        "(MyActuator datasheets and measurements). Change the numbers file and rerun; don't hand-edit. "
+        "Units: m, kg, rad, N*m, rad/s. "))
     ET.indent(tree, space="  ")
-    tree.write(P.ROBOT_DIR / "robot.urdf", encoding="utf-8", xml_declaration=True)
+    tree.write(URDF_PATH, encoding="utf-8", xml_declaration=True)
     return len(order)
 
 
 def sync_mjcf(J, home_pelvis_z):
-    tree = ET.parse(SRC_XML)
+    """Rewrite joint dynamics, the IMU site, motor ranges, mass overrides and the home keyframe in robot.xml.
+    Returns the number of joints updated."""
+    tree = ET.parse(XML_PATH)
     root = tree.getroot()
     n = 0
     for j in root.iter("joint"):
@@ -170,40 +186,46 @@ def sync_mjcf(J, home_pelvis_z):
     for b in root.iter("body"):
         o = P.load_mass_overrides().get(b.get("name"))
         if o:
-            inert = b.find("inertial"); f = o["mass_kg"] / float(inert.get("mass"))
-            inert.set("mass", fmt(o["mass_kg"]))
-            inert.set("fullinertia", " ".join(fmt(float(x) * f) for x in inert.get("fullinertia").split()))
+            inert = b.find("inertial")
+            _scale_mass(lambda: inert.get("mass"), lambda s: inert.set("mass", s), inert.get("fullinertia").split(),
+                        lambda vals: inert.set("fullinertia", " ".join(vals)), o)
             if "com" in o:
                 inert.set("pos", " ".join(fmt(x) for x in o["com"]))
-    # home keyframe: knees-bent pose used by the walking policies
+
+    # Home keyframe: the knees-bent pose the walking policies start from (replaced on every run)
     kf = root.find("keyframe")
+    for key in kf.findall("key[@name='home']"):
+        kf.remove(key)
     joint_order = [j.get("name") for j in root.iter("joint") if j.get("name") in J]
     qpos = [0.0, 0.0, home_pelvis_z, 1.0, 0.0, 0.0, 0.0] + [P.DEFAULT_POSE.get(nm, 0.0) for nm in joint_order]
-    home = ET.SubElement(kf, "key", name="home", qpos=" ".join(fmt(x) for x in qpos))
+    ET.SubElement(kf, "key", name="home", qpos=" ".join(fmt(x) for x in qpos))
     root.insert(0, ET.Comment(
-        " Wisco humanoid V1 MuJoCo scene. Generated by robots/wisco_v1/model/sync_robot_folder.py from "
-        "robots/wisco_v1/original_from_team/robot.xml + MyActuator datasheets. Do not hand-edit. Keyframes: zero, stand, "
-        "home (knees-bent walking start pose). The 'imu' site has the real board orientation (sensors read in board axes). "))
+        " Wisco V1 MuJoCo scene. Joint dynamics, IMU site, motor ranges and the home keyframe written by "
+        "robots/wisco_v1/model/sync_robot_folder.py from robots/wisco_v1/model/robot_numbers.yaml; don't hand-edit. "
+        "Keyframes: zero, stand, home (knees-bent walking start pose). The 'imu' site has the real board orientation "
+        "(sensors read in board axes). "))
     ET.indent(tree, space="  ")
-    tree.write(P.ROBOT_DIR / "robot.xml", encoding="utf-8", xml_declaration=False)
+    tree.write(XML_PATH, encoding="utf-8", xml_declaration=False)
     return n
 
 
 def sync_report(J):
-    rep = json.loads(SRC_REPORT.read_text())
+    """Rewrite the per-joint values in model_report.json (limits, dynamics, gains, control mode)."""
+    rep = json.loads(REPORT_PATH.read_text())
     for name, v in J.items():
         r = rep["joints"][name]
         r.update(effort=v["effort"], rated=v["rated"], vel=v["velocity"], fric=v["friction"],
                  damp=v["damping"], arm=v["armature"], control_mode=v["mode"], kp=v["kp"], kd=v["kd"])
         if v["lower"] is not None:
             r["lower"] = v["lower"]
-    rep["_updated"] = ("Joint effort/rated/vel/fric/damp/arm from MyActuator datasheets (robots/wisco_v1/model/robot_numbers.yaml), kp/kd from its control section, "
-                       "ankle pitch lower limit from the linkage reach analysis, control_mode per joint group. "
-                       "Generated by robots/wisco_v1/model/sync_robot_folder.py; original in original_from_team/.")
-    (P.ROBOT_DIR / "model_report.json").write_text(json.dumps(rep, indent=1) + "\n")
+    rep["_updated"] = ("Joint effort/rated/vel/fric/damp/arm from MyActuator datasheets (robots/wisco_v1/model/robot_numbers.yaml), "
+                       "kp/kd from its control section, ankle pitch lower limit from the linkage reach analysis, control_mode "
+                       "per joint group. Written by robots/wisco_v1/model/sync_robot_folder.py.")
+    REPORT_PATH.write_text(json.dumps(rep, indent=1) + "\n")
 
 
 def main():
+    """Update all three description files and print a one-line summary of each."""
     J = joint_values()
     info = json.loads((P.HERE / "train_model_info.json").read_text())
     n_u = sync_urdf(J)

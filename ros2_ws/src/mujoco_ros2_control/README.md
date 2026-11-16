@@ -24,9 +24,8 @@ vendored unmodified.
 
 - **Builds on Jazzy:** untested. If the upstream ros-controls MuJoCo plugin covers our needs, prefer it over this copy.
 - **MIT-style command:** the legs, waist and head are planned to run MyActuator mode 5 (position target + kp + kd
-  per cycle, PD computed in the driver; see `robots/wisco_v1/CHANGES.md`). This plugin has no
+  per cycle, PD computed in the drive; see `robots/wisco_v1/README.md`, "Drive modes and gains"). This plugin has no
   position + kp + kd interface; one has to be added so sim and hardware run the same control law.
 - **PD rate:** the walking policies are trained with PD applied at the physics step (5 ms). Here a PID runs at the
   controller update rate; the two must match, or the difference must be measured, before trusting sim results.
 
-See `docs/migration/porting_backlog.md`.

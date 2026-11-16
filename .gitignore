@@ -38,6 +38,10 @@ id_ed25519*
 *.rar
 # Generated duplicate of current_draw/REPORT.md (REPORT.md is the source)
 robots/wisco_v1/reports/current_draw/REPORT.html
+robots/wisco_v1/reports/current_draw/*.csv
+robots/wisco_v1/checks/results/
+training/locomotion/wisco_v1/vm/check_env_result.json
+ros2_ws/src/wisco_ethercat_ros2_hw/build/
 
 # ============================================================================
 # Python environments and caches

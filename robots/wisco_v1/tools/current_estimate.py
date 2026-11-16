@@ -470,7 +470,7 @@ def write_report(results, summaries, val, files, args, out):
                          f"of rated ({wr[0]}): watch heating in long runs.")
     w("**Motors near or past their datasheet limits** (worst case over the completed tests):\n")
     w("\n".join(flags) if flags else "- none")
-    w("\nThe ankle limits are the known weak point (HARDWARE_ISSUES H3): training clamps each ankle motor to 34 N*m "
+    w("\nThe ankle limits are the known weak point (hardware_observations.md, 'Ankle torque'): training clamps each ankle motor to 34 N*m "
       "through the linkage, but this plain-MuJoCo model only limits the joint, so it shows how hard the policy would "
       "like to push the ankles. On the robot those motors will saturate; currents there are capped near the X4-36 "
       "peak phase current (21.5 A).\n")
