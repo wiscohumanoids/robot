@@ -1,0 +1,23 @@
+# Robot profile: Wisco Humanoid V1 (wiscohumanoids/). See g1.yaml for the format.
+# Values measured from assets/robots/wisco_v1/mjlab_1.6.0/wisco_velocity_flat.xml (tools/build_robot_world.py) at the
+# standing pose, and robots/wisco_v1/model/robot_numbers.yaml (sensors).
+name: wisco
+world: /hsim/assets/robots/wisco_v1/mjlab_1.6.0/wisco_velocity_flat.xml
+env_build_dir: build_wisco           # tools/env_build.py <env> --robot wisco
+policy: /hsim/models/locomotion/wisco_v1_velocity_arms_free   # J3h model_4650: legs + torso, arms/head held (manifest v2)
+default_sensors: stereo              # no lidar on Wisco: ZED X depth -> point cloud -> /scan (front only)
+bodies:
+  root: pelvis
+  torso: torso
+fall_height: 0.40                    # standing pelvis height 0.69 m (G1 0.76 m)
+sole_offset: 0.0                     # Wisco's foot sites sit on the sole
+mounts:
+  imu: [-0.0518, -0.0003, 0.0345]    # imu_policy site (pelvis-aligned), in base_link
+  lidar: [0.0, 0.0, 1.0]             # unused (no lidar); kept so the frame exists if sensors:=lidar is forced
+  lidar_on_torso: [0.0, 0.0, 0.40]
+  camera: [0.0929, 0.0, 0.4344, 0.4363] # head_camera site (ZED X) in torso, 1.30 m above the floor, pitched 25 deg down
+                                     # (sim test 2026-11-11, same as the G1). Real tilt not confirmed by the team
+                                     # (HARDWARE_ISSUES H8; robot_numbers.yaml assumes 0). Level camera: loses a counter
+                                     # inside ~0.6 m and a table inside ~0.8 m, so the final approach is blind.
+footprint_radius: 0.30               # same as the G1 (torso ~0.3 m wide, arms in)
+reach_standoff: 0.30                 # arm reach comparable to the G1's; revisit with the manipulation work

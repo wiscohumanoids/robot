@@ -1,0 +1,76 @@
+{
+  "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_015500",
+  "tests_passed": 30,
+  "live_predictions": [
+    {
+      "sequence": 900020,
+      "latency_s": 0.39125582599990594,
+      "all_50_in_limits": true,
+      "limit_corrections": [
+        {
+          "action": 50,
+          "index": 6,
+          "raw_target_rad": -0.01706862263381481,
+          "command_target_rad": 0.0
+        }
+      ],
+      "gripper_min_rad": [
+        0.0,
+        1.0367302894592285
+      ]
+    },
+    {
+      "sequence": 900021,
+      "latency_s": 0.2814439929989021,
+      "all_50_in_limits": true,
+      "limit_corrections": [
+        {
+          "action": 46,
+          "index": 6,
+          "raw_target_rad": -0.005226748529821634,
+          "command_target_rad": 0.0
+        },
+        {
+          "action": 50,
+          "index": 6,
+          "raw_target_rad": -0.011779706925153732,
+          "command_target_rad": 0.0
+        }
+      ],
+      "gripper_min_rad": [
+        0.0,
+        1.0383453369140625
+      ]
+    },
+    {
+      "sequence": 900022,
+      "latency_s": 0.3039788400001271,
+      "all_50_in_limits": true,
+      "limit_corrections": [
+        {
+          "action": 50,
+          "index": 6,
+          "raw_target_rad": -0.006693742703646421,
+          "command_target_rad": 0.0
+        }
+      ],
+      "gripper_min_rad": [
+        0.0,
+        1.0378339290618896
+      ]
+    }
+  ],
+  "arms_connected": true,
+  "robot_mode": "holding",
+  "held_targets_unchanged": true,
+  "steps_unchanged": true,
+  "local_controller_restarted": false,
+  "existing_dashboard_preview": {
+    "existing_dashboard_preview_accepted": true,
+    "mode": "holding",
+    "error": null,
+    "connected": true,
+    "held_targets_unchanged": true,
+    "steps_unchanged": true
+  }
+}

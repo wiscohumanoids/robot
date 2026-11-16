@@ -1,0 +1,4 @@
+robot:
+  name: Panthera-HT
+  param_file: /home/zeb/Desktop/Panthera-Teleop/work/probe-ttyACM0.yaml
+  robot_name: Panthera-HT

@@ -1,0 +1,203 @@
+{
+  "tests_passed": 30,
+  "simulation_events": [
+    {
+      "request": {
+        "episode_id": "20260930T014208-a11d33d5",
+        "label": "kept"
+      },
+      "hold_for_ready": true,
+      "measured_position_rad": {
+        "left": [
+          0.0,
+          0.25,
+          0.25,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "right": [
+          0.0,
+          0.25,
+          0.25,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "diagnostics": {
+        "max_joint_error_rad": {
+          "left": 0.0,
+          "right": 0.0
+        },
+        "reported_max_speed_rad_s": {
+          "left": 0.0,
+          "right": 0.0
+        },
+        "encoder_motion_window_rad": {
+          "left": 2.731516124399036e-09,
+          "right": 2.731516124399036e-09
+        },
+        "arrival_window_observed_seconds": 0.25086961399938446,
+        "planned_duration_seconds": 0.8768654095911537
+      },
+      "target_position_rad": {
+        "left": [
+          0,
+          0.25,
+          0.25,
+          0,
+          0,
+          0
+        ],
+        "right": [
+          0,
+          0.25,
+          0.25,
+          0,
+          0,
+          0
+        ]
+      },
+      "unix_ns": 1790732537644313724
+    },
+    {
+      "event": "reset_gripper_open",
+      "side": "left",
+      "request": {
+        "episode_id": "20260930T014208-a11d33d5",
+        "label": "kept"
+      },
+      "measured_position_rad": 1.9840000000000124,
+      "target_position_rad": 2.0,
+      "unix_ns": 1790732539045932984
+    },
+    {
+      "event": "reset_gripper_open",
+      "side": "right",
+      "request": {
+        "episode_id": "20260930T014208-a11d33d5",
+        "label": "kept"
+      },
+      "measured_position_rad": 1.9840000000000124,
+      "target_position_rad": 2.0,
+      "unix_ns": 1790732539046147606
+    },
+    {
+      "event": "handle_pull_release",
+      "side": "left",
+      "request": {
+        "episode_id": "20260930T014208-a11d33d5",
+        "label": "kept"
+      },
+      "diagnostics": {
+        "torque_baseline_nm": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "torque_change_nm": [
+          0.9,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "unix_ns": 1790732539299247452
+    },
+    {
+      "event": "handle_pull_release",
+      "side": "right",
+      "request": {
+        "episode_id": "20260930T014208-a11d33d5",
+        "label": "kept"
+      },
+      "diagnostics": {
+        "torque_baseline_nm": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "torque_change_nm": [
+          0.9,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "unix_ns": 1790732540800609997
+    }
+  ],
+  "live_controller_active": true,
+  "live_cameras": {
+    "wrist_port2": true,
+    "wrist_port3": true,
+    "overhead": true
+  },
+  "neutral_return": {
+    "enabled": true,
+    "position_rad": {
+      "left": [
+        0,
+        0.25,
+        0.25,
+        0,
+        0,
+        0
+      ],
+      "right": [
+        0,
+        0.25,
+        0.25,
+        0,
+        0,
+        0
+      ]
+    },
+    "release_delay_seconds": 2.0,
+    "max_joint_speed_rad_s": 0.6,
+    "minimum_duration_seconds": 0.6,
+    "max_joint_acceleration_rad_s2": 2.0,
+    "gripper_open": {
+      "speed_rad_s": 0.8,
+      "torque_limit_nm": 0.5,
+      "arrival_tolerance_rad": 0.02,
+      "timeout_seconds": 5.0
+    },
+    "arrival_window_seconds": 0.25,
+    "arrival_stability_rad": 0.004,
+    "torque_limits_nm": [
+      5,
+      8,
+      8,
+      3,
+      2,
+      2
+    ],
+    "tracking_limit_rad": 0.06,
+    "arrival_tolerance_rad": 0.015,
+    "settle_timeout_seconds": 4.0,
+    "hold_tracking_limit_rad": 0.06,
+    "baseline_seconds": 0.5,
+    "pull_confirm_seconds": 0.15,
+    "pull_torque_threshold_nm": [
+      0.6,
+      1.2,
+      1.2,
+      0.6,
+      0.25,
+      0.25
+    ]
+  },
+  "live_gripper_reset_verified": false
+}

@@ -1,0 +1,9 @@
+# Runtime for the actuator scene and experiments.
+mujoco==3.14.0
+numpy>=2,<3
+opencv-python>=4.12
+trimesh==5.1.0
+# Only needed when rebuilding collision meshes from the Onshape OBJ.
+shapely>=2.1,<3
+rtree>=1.4,<2
+pytest>=8

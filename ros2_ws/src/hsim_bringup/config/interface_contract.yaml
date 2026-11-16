@@ -1,0 +1,73 @@
+# Machine-readable interface contract. Human-readable version: docs/interface_contract.md.
+# Checked live by `ros2 run hsim_bringup contract_check --phase N`.
+#
+# owner     = the ROS node name of the only allowed publisher (stubs and real nodes share names)
+# rate_hz   = expected publish rate; null = event/input driven, not rate-checked
+# required  = false: only checked if something is publishing it (e.g. teleop, Nav2 not running)
+version: 1   # Phase 1 entries frozen 2026-11-08
+topics:
+  /clock:                    {type: rosgraph_msgs/msg/Clock,          owner: sim,              rate_hz: 200,  phase: 1}
+  /joint_states:             {type: sensor_msgs/msg/JointState,       owner: sim,              rate_hz: 200,  phase: 1}
+  /imu:                      {type: sensor_msgs/msg/Imu,              owner: sim,              rate_hz: 200,  phase: 1}
+  /sim/ground_truth/odom:    {type: nav_msgs/msg/Odometry,            owner: sim,              rate_hz: 200,  phase: 1}   # PRIVILEGED
+  /sim/viewer/image_raw:     {type: sensor_msgs/msg/Image,            owner: sim,              rate_hz: null, phase: 1, required: false}
+  /cmd_vel_teleop:           {type: geometry_msgs/msg/TwistStamped,   owner: teleop,           rate_hz: null, phase: 1, required: false}
+  /cmd_vel_nav:              {type: geometry_msgs/msg/TwistStamped,   owner: velocity_smoother, rate_hz: null, phase: 3, required: false}
+  /cmd_vel_approach:         {type: geometry_msgs/msg/TwistStamped,   owner: behavior,         rate_hz: null, phase: 3, required: false}   # final step to arm's reach
+  /cmd_vel:                  {type: geometry_msgs/msg/TwistStamped,   owner: twist_mux,        rate_hz: null, phase: 1}
+  /locomotion/joint_targets: {type: sensor_msgs/msg/JointState,       owner: locomotion,       rate_hz: 50,   phase: 1}
+  /locomotion/status:        {type: diagnostic_msgs/msg/DiagnosticArray, owner: locomotion,    rate_hz: 1,    phase: 1}
+  /odometry/filtered:        {type: nav_msgs/msg/Odometry,            owner: state_estimation, rate_hz: 50,   phase: 1}
+  /leg_odometry:             {type: nav_msgs/msg/Odometry,            owner: leg_odometry,     rate_hz: 50,   phase: 3, required: false}
+  /map:                      {type: nav_msgs/msg/OccupancyGrid,       owner: [map_server, localization], rate_hz: null, phase: 2}   # map_server (known map) or SLAM
+  # Phase 3: realistic sensors (all from the sim's sensor models)
+  /scan:                     {type: sensor_msgs/msg/LaserScan,        owner: [sim, depth_to_scan], rate_hz: null, phase: 3}   # lidar (10 Hz) or from stereo depth (5 Hz)
+  /camera/head/color/image_raw: {type: sensor_msgs/msg/Image,         owner: stereo_camera,    rate_hz: null, phase: 3, required: false}
+  /camera/head/depth/image_raw: {type: sensor_msgs/msg/Image,         owner: stereo_camera,    rate_hz: null, phase: 3, required: false}
+  /camera/head/points:       {type: sensor_msgs/msg/PointCloud2,      owner: depth_to_cloud,   rate_hz: null, phase: 3, required: false}
+  /battery:                  {type: sensor_msgs/msg/BatteryState,     owner: sim,              rate_hz: 1,    phase: 3}
+  /perception/detections:    {type: vision_msgs/msg/Detection3DArray, owner: perception,       rate_hz: 5,    phase: 3}
+  /perception/status:        {type: std_msgs/msg/String,              owner: perception,       rate_hz: null, phase: 4, required: false}   # JSON: mode stub|server, latency, fallback
+  /world/objects:            {type: vision_msgs/msg/Detection3DArray, owner: world_model,      rate_hz: 2,    phase: 3}
+  /world/summary:            {type: std_msgs/msg/String,              owner: world_model,      rate_hz: 2,    phase: 3}
+  /safety/estop:             {type: std_msgs/msg/Bool,                owner: safety,           rate_hz: 10,   phase: 3}
+  /safety/status:            {type: diagnostic_msgs/msg/DiagnosticArray, owner: safety,        rate_hz: 2,    phase: 3}
+  /safety/estop_request:     {type: std_msgs/msg/Bool,                owner: operator,         rate_hz: null, phase: 3, required: false}
+  /robot/say:                {type: std_msgs/msg/String,              owner: behavior,         rate_hz: null, phase: 3}
+  /planner/command:          {type: std_msgs/msg/String,              owner: [ask, teleop],    rate_hz: null, phase: 3, required: false}   # tools/ask.sh or typed in the viewer
+  /planner/reply:            {type: std_msgs/msg/String,              owner: planner,          rate_hz: null, phase: 3}
+  /planner/status:           {type: std_msgs/msg/String,              owner: planner,          rate_hz: null, phase: 3}
+  # Phase 5: manipulation. Targets for the held (arm/hand) joints; locomotion merges them into /locomotion/joint_targets
+  /arm/joint_targets:        {type: sensor_msgs/msg/JointState,       owner: manipulation,     rate_hz: null, phase: 5, required: false}
+  # PRIVILEGED (evaluation only): graders, tests, and explicitly-labeled stubs may read it, the robot stack may not
+  /sim/ground_truth/state:   {type: std_msgs/msg/Float64MultiArray,   owner: sim,              rate_hz: 20,   phase: 3}
+# Many nodes may publish these by ROS convention; not single-owner. Wildcards allowed.
+# /bond and */transition_event are Nav2 lifecycle bookkeeping.
+shared_topics: [/diagnostics, /bond, '/*/transition_event',
+                # Nav2 / AMCL / slam_toolbox internals (planner-to-controller plumbing, debug output)
+                /cmd_vel_nav_raw, '/local_costmap/*', '/global_costmap/*', /plan, /plan_smoothed,
+                /received_global_plan, /transformed_global_plan, /lookahead_point, /lookahead_arc,
+                /lookahead_collision_arc, /particle_cloud, /amcl_pose, /speed_limit, /cost_cloud,
+                /behavior_tree_log, '/*/_action/*', /pose, /map_metadata, /map_updates,
+                '/localization/*', /footprint, /tracked_pose, /goal_pose, /unsmoothed_plan,
+                '/camera/head/*/camera_info', '/rtabmap/*', /info, /mapData, /mapGraph, /cloud_map, /cloud_obstacles,
+                /cloud_ground, /grid_prob_map, '/octomap_*', '/global_path*', '/local_path*', /landmarks, /labels, /mapPath, /goal_reached, /elevation_map]
+tf_edges:
+  - {parent: map,            child: odom,           owner: localization,     static: null,  phase: 1}   # fixed start pose, or live (AMCL/SLAM)
+  - {parent: odom,           child: base_footprint, owner: state_estimation, static: false, phase: 1}
+  - {parent: base_footprint, child: base_link,      owner: leg_odometry,     static: false, phase: 3}
+  - {parent: base_link,      child: torso_link,     owner: leg_odometry,     static: false, phase: 3}
+  - {parent: base_footprint, child: lidar_link,     owner: lidar_mount,      static: true,  phase: 3}
+  - {parent: base_link,      child: imu_link,       owner: imu_mount,        static: true,  phase: 3}
+  - {parent: torso_link,     child: head_camera,    owner: camera_mount,     static: true,  phase: 3}
+  - {parent: head_camera,    child: head_camera_optical, owner: camera_optical_mount, static: true, phase: 3}
+# Actions and services between layers (documented here so tools/gen_docs.py and tests/test_contract.py cover them;
+# contract_check does not check these live). server = ROS node name; clients = who calls it.
+actions:
+  /behavior/execute_plan: {type: hsim_interfaces/action/ExecutePlan, server: behavior, clients: [planner, tools/eval/run_plan.py], phase: 3}
+  /skills/manipulate:     {type: hsim_interfaces/action/Manipulate,  server: manipulation, clients: [behavior], phase: 5}
+  /navigate_to_pose:      {type: nav2_msgs/action/NavigateToPose,    server: bt_navigator, clients: [behavior], phase: 3}
+  /spin:                  {type: nav2_msgs/action/Spin,              server: behavior_server, clients: [behavior], phase: 3}
+services:
+  /sim/reset:             {type: std_srvs/srv/Trigger,               server: sim, clients: [teleop], phase: 1}
+  /sim/set_body_pose:     {type: hsim_interfaces/srv/SetBodyPose,    server: sim, clients: [tools/eval graders], phase: 3}   # TEST-ONLY

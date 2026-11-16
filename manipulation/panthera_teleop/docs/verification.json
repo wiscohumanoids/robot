@@ -1,0 +1,19 @@
+{
+  "hardware_free_tests_passed": 12,
+  "keyboard_shortcuts_verified": [
+    "K",
+    "R",
+    "D"
+  ],
+  "live_control_active": true,
+  "live_state_hz": 147.65,
+  "all_motor_faults_zero": true,
+  "camera_frames_written": {
+    "wrist_port2": 1297,
+    "wrist_port3": 1298,
+    "overhead": 1298
+  },
+  "current_episode": "20260930T011610-55eff9aa",
+  "recording_calibration": "uncalibrated",
+  "service": "panthera-gravity-assist.service"
+}

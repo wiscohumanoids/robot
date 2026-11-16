@@ -1,0 +1,38 @@
+# Python bytecode, test caches, and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments and local credentials
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Recorded episodes, processed datasets, and runtime files
+/data/
+/logs/
+*.log
+
+# Local SDK/Quest checkouts, Python environments, and Android tools
+/work/
+/archive/setup/platform-tools.zip
+
+# Editor and operating-system files
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

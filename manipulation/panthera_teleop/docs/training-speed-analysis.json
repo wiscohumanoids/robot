@@ -1,0 +1,1172 @@
+{
+  "dataset_root": "/home/zeb/Desktop/Panthera-Teleop/data/processed/panthera-gear-carrier-pin-real-20hz-227",
+  "dataset_repo": "FoxNerdSaysMoo/panthera-gear-carrier-pin-real-20hz",
+  "dataset_revision": "dc3facb17f9ff3136988038edacd2209ea4acc8c",
+  "episodes": 227,
+  "frames": 54770,
+  "fps": 20,
+  "units": "rad/s",
+  "method": {
+    "next_pose_required_speed": "(action - observation.state) * fps",
+    "consecutive_action_speed": "diff(action) * fps within each episode",
+    "reported_velocity": "observation.velocity from motor feedback",
+    "percentiles": "absolute values; joints and grippers separated",
+    "clipping": "independent one-timestep demand, not a closed-loop rollout"
+  },
+  "numeric_checks_passed": true,
+  "source_files_sha256": {
+    "meta/info.json": "39619f0ce1d37d1634a72208dcba57299a6e7f8bcf6c3cc6fb9b15fe48339c4d",
+    "processing/manifest.json": "fea303f80cb8116393197323388e5db605d53b71cc28abdcadcfb80a85c94542",
+    "publication.json": "35f01262b952d1b0ce64fc5fc2df364092a0929d65751155dcdae14d6ce4f4f9"
+  },
+  "next_pose_required_speed": {
+    "groups": {
+      "joints": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.4146909713745117,
+          "99": 1.1435389518737793,
+          "99.9": 1.910088062286377,
+          "100": 3.116460070014
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.15079647302627563,
+          "95": 1.3069027327001095,
+          "99": 1.9226551055908203,
+          "99.9": 2.3876105593144894,
+          "100": 3.116460070014
+        }
+      },
+      "grippers": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0,
+          "95": 1.8472552299499512,
+          "99": 3.9332741498947144,
+          "99.9": 5.937119764983783,
+          "100": 8.620529770851135
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.012564659118652344,
+          "95": 2.7520346641540527,
+          "99": 4.611857533454895,
+          "99.9": 6.3711497531831265,
+          "100": 8.620529770851135
+        }
+      }
+    },
+    "per_axis": {
+      "left.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.012565851211547852,
+          "95": 0.5529201030731201,
+          "99": 1.0430086120963096,
+          "99.9": 1.3948673009872437,
+          "100": 1.6713273525238037
+        },
+        "peak": {
+          "signed_speed_rad_s": -1.6713273525238037,
+          "episode_index": 153,
+          "source_id": "20261002T184032-78afb154",
+          "frame_index": 7
+        }
+      },
+      "left.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.05026578903198242,
+          "95": 1.0430097579956055,
+          "99": 1.8472576141357422,
+          "99.9": 2.3247785753011705,
+          "100": 2.877699136734009
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.877699136734009,
+          "episode_index": 139,
+          "source_id": "20261002T183029-fc30c282",
+          "frame_index": 5
+        }
+      },
+      "left.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.012565851211547852,
+          "95": 0.3141593933105469,
+          "99": 0.6283175945281982,
+          "99.9": 0.9173452854156494,
+          "100": 1.2943357229232788
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.2943357229232788,
+          "episode_index": 125,
+          "source_id": "20261002T182024-d8ab8052",
+          "frame_index": 15
+        }
+      },
+      "left.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.32672540843486786,
+          "99": 0.7162831094115972,
+          "99.9": 1.221840977519839,
+          "100": 2.2619467973709106
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.2619467973709106,
+          "episode_index": 136,
+          "source_id": "20261002T182721-9ae05016",
+          "frame_index": 2
+        }
+      },
+      "left.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.4775220463052392,
+          "99": 1.0555756092071533,
+          "99.9": 1.746725474447012,
+          "100": 2.4001774191856384
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.4001774191856384,
+          "episode_index": 200,
+          "source_id": "20261002T203048-a5b2f1f1",
+          "frame_index": 1
+        }
+      },
+      "left.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.4900878667831421,
+          "99": 0.9047786891460419,
+          "99.9": 1.4606017905474593,
+          "100": 2.5761058926582336
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.5761058926582336,
+          "episode_index": 119,
+          "source_id": "20261002T180916-f2d75e13",
+          "frame_index": 23
+        }
+      },
+      "left.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 2.6892030239105225,
+          "99": 4.574158376455307,
+          "99.9": 6.266761559397247,
+          "100": 8.620529770851135
+        },
+        "peak": {
+          "signed_speed_rad_s": -8.620529770851135,
+          "episode_index": 55,
+          "source_id": "20260930T212414-55694d46",
+          "frame_index": 188
+        }
+      },
+      "right.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.3644247353076935,
+          "99": 0.9550434350967407,
+          "99.9": 1.2943357917666436,
+          "100": 1.7592918872833252
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.7592918872833252,
+          "episode_index": 112,
+          "source_id": "20261002T180405-c7ea1278",
+          "frame_index": 8
+        }
+      },
+      "right.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.9299135208129883,
+          "99": 1.5959302306175231,
+          "99.9": 2.0106184482574463,
+          "100": 2.7394694089889526
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.7394694089889526,
+          "episode_index": 142,
+          "source_id": "20261002T183351-c596409f",
+          "frame_index": 3
+        }
+      },
+      "right.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.16336321830749512,
+          "99": 0.452389121055603,
+          "99.9": 0.7414156198501587,
+          "100": 1.3697350025177002
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.3697350025177002,
+          "episode_index": 106,
+          "source_id": "20261002T175839-33e3ab4c",
+          "frame_index": 5
+        }
+      },
+      "right.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.050265491008758545,
+          "99": 0.6408846378326416,
+          "99.9": 1.2943357917666436,
+          "100": 1.8598228693008423
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.8598228693008423,
+          "episode_index": 145,
+          "source_id": "20261002T183606-2745f918",
+          "frame_index": 1
+        }
+      },
+      "right.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.20106136798858643,
+          "99": 1.005309645459056,
+          "99.9": 1.9100883603096008,
+          "100": 3.1038933992385864
+        },
+        "peak": {
+          "signed_speed_rad_s": -3.1038933992385864,
+          "episode_index": 115,
+          "source_id": "20261002T180607-cc24fedf",
+          "frame_index": 8
+        }
+      },
+      "right.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.27646034955978394,
+          "99": 0.7916814088821411,
+          "99.9": 1.5360001946427813,
+          "100": 3.116460070014
+        },
+        "peak": {
+          "signed_speed_rad_s": 3.116460070014,
+          "episode_index": 55,
+          "source_id": "20260930T212414-55694d46",
+          "frame_index": 0
+        }
+      },
+      "right.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.49008607864379883,
+          "99": 1.734158992767334,
+          "99.9": 3.5939812660217285,
+          "100": 7.125133275985718
+        },
+        "peak": {
+          "signed_speed_rad_s": 7.125133275985718,
+          "episode_index": 207,
+          "source_id": "20260930T020817-d235eb20",
+          "frame_index": 1
+        }
+      }
+    }
+  },
+  "reported_velocity": {
+    "groups": {
+      "joints": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.49323007464408875,
+          "99": 1.1922345161437988,
+          "99.9": 1.8987173672915398,
+          "100": 2.824291944503784
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.14451326429843903,
+          "95": 1.3555972576141357,
+          "99": 1.9168585383892023,
+          "99.9": 2.321999802351009,
+          "100": 2.824291944503784
+        }
+      },
+      "grippers": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0031415927223861217,
+          "95": 1.9226547479629517,
+          "99": 4.003347373008729,
+          "99.9": 6.062427298545853,
+          "100": 8.804313659667969
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.007853982038795948,
+          "95": 2.8667032718658447,
+          "99": 4.672035284042355,
+          "99.9": 6.452349173069034,
+          "100": 8.804313659667969
+        }
+      }
+    },
+    "per_axis": {
+      "left.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.0062831854447722435,
+          "95": 0.6330309510231018,
+          "99": 1.1341149806976318,
+          "99.9": 1.5079644918441772,
+          "100": 1.773429036140442
+        },
+        "peak": {
+          "signed_speed_rad_s": -1.773429036140442,
+          "episode_index": 141,
+          "source_id": "20261002T183134-c357dfe9",
+          "frame_index": 7
+        }
+      },
+      "left.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.025132741779088974,
+          "95": 1.0618584156036377,
+          "99": 1.856681227684021,
+          "99.9": 2.271734435081493,
+          "100": 2.7331857681274414
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.7331857681274414,
+          "episode_index": 127,
+          "source_id": "20261002T182119-697d2e0e",
+          "frame_index": 20
+        }
+      },
+      "left.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.004712388850748539,
+          "95": 0.4021238684654236,
+          "99": 0.7293364250659906,
+          "99.9": 0.9628981947898865,
+          "100": 1.2786283493041992
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.2786283493041992,
+          "episode_index": 138,
+          "source_id": "20261002T182817-b8e699dd",
+          "frame_index": 10
+        }
+      },
+      "left.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.33457961678504944,
+          "99": 0.8078762733936273,
+          "99.9": 1.3088362082243077,
+          "100": 2.210110664367676
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.210110664367676,
+          "episode_index": 136,
+          "source_id": "20261002T182721-9ae05016",
+          "frame_index": 2
+        }
+      },
+      "left.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.004712388850748539,
+          "95": 0.591483396291726,
+          "99": 1.1283187711238825,
+          "99.9": 1.7757255761623605,
+          "100": 2.293362855911255
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.293362855911255,
+          "episode_index": 118,
+          "source_id": "20261002T180840-344a07fa",
+          "frame_index": 1
+        }
+      },
+      "left.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0031415927223861217,
+          "95": 0.5827654600143433,
+          "99": 0.9990264773368835,
+          "99.9": 1.5315264463424683,
+          "100": 2.1849777698516846
+        },
+        "peak": {
+          "signed_speed_rad_s": -2.1849777698516846,
+          "episode_index": 54,
+          "source_id": "20260930T212322-c4f17f38",
+          "frame_index": 1
+        }
+      },
+      "left.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0031415927223861217,
+          "95": 2.7921690821647576,
+          "99": 4.637964529991143,
+          "99.9": 6.40184485769284,
+          "100": 8.804313659667969
+        },
+        "peak": {
+          "signed_speed_rad_s": -8.804313659667969,
+          "episode_index": 49,
+          "source_id": "20260930T212004-4771168b",
+          "frame_index": 280
+        }
+      },
+      "right.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.33457961678504944,
+          "99": 1.0304423570632935,
+          "99.9": 1.3936592205762974,
+          "100": 1.7137389183044434
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.7137389183044434,
+          "episode_index": 156,
+          "source_id": "20261002T184128-31ad382d",
+          "frame_index": 6
+        }
+      },
+      "right.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.9581857919692993,
+          "99": 1.603783130645752,
+          "99.9": 1.9477875232696533,
+          "100": 2.3703317642211914
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.3703317642211914,
+          "episode_index": 139,
+          "source_id": "20261002T183029-fc30c282",
+          "frame_index": 5
+        }
+      },
+      "right.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.12566371262073517,
+          "99": 0.559690441489216,
+          "99.9": 0.8226150328517292,
+          "100": 1.4294246435165405
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.4294246435165405,
+          "episode_index": 109,
+          "source_id": "20261002T180049-967d16d9",
+          "frame_index": 3
+        }
+      },
+      "right.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.04398230090737343,
+          "99": 0.728849470615387,
+          "99.9": 1.4332920043468698,
+          "100": 1.908517599105835
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.908517599105835,
+          "episode_index": 145,
+          "source_id": "20261002T183606-2745f918",
+          "frame_index": 2
+        }
+      },
+      "right.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.17050994485615997,
+          "99": 1.0697122812271118,
+          "99.9": 1.9591458901167027,
+          "100": 2.824291944503784
+        },
+        "peak": {
+          "signed_speed_rad_s": -2.824291944503784,
+          "episode_index": 82,
+          "source_id": "20260930T214227-6c88ef7b",
+          "frame_index": 1
+        }
+      },
+      "right.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.2764601707458496,
+          "99": 0.8879868829250299,
+          "99.9": 1.6190088583231304,
+          "100": 2.624800682067871
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.624800682067871,
+          "episode_index": 43,
+          "source_id": "20260930T203749-8ad2ff5d",
+          "frame_index": 1
+        }
+      },
+      "right.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.48694688081741333,
+          "99": 1.817898340225216,
+          "99.9": 3.6493275113107324,
+          "100": 8.10059642791748
+        },
+        "peak": {
+          "signed_speed_rad_s": 8.10059642791748,
+          "episode_index": 207,
+          "source_id": "20260930T020817-d235eb20",
+          "frame_index": 2
+        }
+      }
+    }
+  },
+  "consecutive_action_speed": {
+    "groups": {
+      "joints": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.4146897792816162,
+          "99": 1.1184072494506836,
+          "99.9": 1.8975210189819336,
+          "100": 3.1038933992385864
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.15079647302627563,
+          "95": 1.2692068815231323,
+          "99": 1.910088062286377,
+          "99.9": 2.3750438353419305,
+          "100": 3.1038933992385864
+        }
+      },
+      "grippers": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0,
+          "95": 1.8472564779222012,
+          "99": 3.9332741498947144,
+          "99.9": 5.931327019631863,
+          "100": 8.620529770851135
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.012564659118652344,
+          "95": 2.752035528421402,
+          "99": 4.611857533454895,
+          "99.9": 6.364339188933448,
+          "100": 8.620529770851135
+        }
+      }
+    },
+    "per_axis": {
+      "left.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.012565851211547852,
+          "95": 0.5529202371835709,
+          "99": 1.0430088639259338,
+          "99.9": 1.3948673009872437,
+          "100": 1.6713273525238037
+        },
+        "peak": {
+          "signed_speed_rad_s": -1.6713273525238037,
+          "episode_index": 153,
+          "source_id": "20261002T184032-78afb154",
+          "frame_index": 6
+        }
+      },
+      "left.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.05026578903198242,
+          "95": 1.0430097579956055,
+          "99": 1.8598220229148865,
+          "99.9": 2.324778710603714,
+          "100": 2.877699136734009
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.877699136734009,
+          "episode_index": 139,
+          "source_id": "20261002T183029-fc30c282",
+          "frame_index": 4
+        }
+      },
+      "left.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.012565851211547852,
+          "95": 0.3141605257987976,
+          "99": 0.6283175945281982,
+          "99.9": 0.9173452854156494,
+          "100": 1.2943357229232788
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.2943357229232788,
+          "episode_index": 125,
+          "source_id": "20261002T182024-d8ab8052",
+          "frame_index": 14
+        }
+      },
+      "left.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.31290227174751595,
+          "99": 0.7037165760993958,
+          "99.9": 1.1812394857406616,
+          "100": 2.2619467973709106
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.2619467973709106,
+          "episode_index": 136,
+          "source_id": "20261002T182721-9ae05016",
+          "frame_index": 1
+        }
+      },
+      "left.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.4523897171020508,
+          "99": 1.005309522151947,
+          "99.9": 1.6336281131207944,
+          "100": 2.4001774191856384
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.4001774191856384,
+          "episode_index": 200,
+          "source_id": "20261002T203048-a5b2f1f1",
+          "frame_index": 0
+        }
+      },
+      "left.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.464956134557724,
+          "99": 0.8922123227734119,
+          "99.9": 1.4006226126850405,
+          "100": 2.5761058926582336
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.5761058926582336,
+          "episode_index": 119,
+          "source_id": "20261002T180916-f2d75e13",
+          "frame_index": 22
+        }
+      },
+      "left.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 2.689203456044197,
+          "99": 4.574158787727356,
+          "99.9": 6.275319140851724,
+          "100": 8.620529770851135
+        },
+        "peak": {
+          "signed_speed_rad_s": -8.620529770851135,
+          "episode_index": 55,
+          "source_id": "20260930T212414-55694d46",
+          "frame_index": 187
+        }
+      },
+      "right.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.3518584333360195,
+          "99": 0.9550437331199646,
+          "99.9": 1.2943358594179153,
+          "100": 1.7592918872833252
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.7592918872833252,
+          "episode_index": 112,
+          "source_id": "20261002T180405-c7ea1278",
+          "frame_index": 7
+        }
+      },
+      "right.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.9424775838851929,
+          "99": 1.6084933280944824,
+          "99.9": 2.0106184482574463,
+          "100": 2.7394694089889526
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.7394694089889526,
+          "episode_index": 142,
+          "source_id": "20261002T183351-c596409f",
+          "frame_index": 2
+        }
+      },
+      "right.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.16336321830749512,
+          "99": 0.452389121055603,
+          "99.9": 0.7414156198501587,
+          "100": 1.3697350025177002
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.3697350025177002,
+          "episode_index": 106,
+          "source_id": "20261002T175839-33e3ab4c",
+          "frame_index": 4
+        }
+      },
+      "right.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.037699341773986816,
+          "99": 0.5780529975891113,
+          "99.9": 1.2692034585773946,
+          "100": 1.8598228693008423
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.8598228693008423,
+          "episode_index": 145,
+          "source_id": "20261002T183606-2745f918",
+          "frame_index": 0
+        }
+      },
+      "right.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.16336321830749512,
+          "99": 0.929911732673645,
+          "99.9": 1.8849557638168335,
+          "100": 3.1038933992385864
+        },
+        "peak": {
+          "signed_speed_rad_s": -3.1038933992385864,
+          "episode_index": 115,
+          "source_id": "20261002T180607-cc24fedf",
+          "frame_index": 7
+        }
+      },
+      "right.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.25132834911346436,
+          "99": 0.7288495392538608,
+          "99.9": 1.3069027662277222,
+          "100": 2.387610524892807
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.387610524892807,
+          "episode_index": 58,
+          "source_id": "20260930T212522-53227424",
+          "frame_index": 0
+        }
+      },
+      "right.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.4775214195251465,
+          "99": 1.734158992767334,
+          "99.9": 3.5939812660217285,
+          "100": 7.125133275985718
+        },
+        "peak": {
+          "signed_speed_rad_s": 7.125133275985718,
+          "episode_index": 207,
+          "source_id": "20260930T020817-d235eb20",
+          "frame_index": 0
+        }
+      }
+    }
+  },
+  "cap_comparison": {
+    "0.3": {
+      "joints": {
+        "axis_sample_percent": 7.171200779015276,
+        "frame_percent": 29.61110096768304
+      },
+      "grippers": {
+        "axis_sample_percent": 15.33686324630272,
+        "frame_percent": 28.794960744933356
+      }
+    },
+    "0.5": {
+      "joints": {
+        "axis_sample_percent": 4.0867871705921734,
+        "frame_percent": 16.368449881321894
+      },
+      "grippers": {
+        "axis_sample_percent": 13.128537520540442,
+        "frame_percent": 25.00821617673909
+      }
+    },
+    "0.6": {
+      "joints": {
+        "axis_sample_percent": 3.1315805489623276,
+        "frame_percent": 12.541537337958736
+      },
+      "grippers": {
+        "axis_sample_percent": 12.180025561438743,
+        "frame_percent": 23.34672265838963
+      }
+    },
+    "0.8": {
+      "joints": {
+        "axis_sample_percent": 1.9953137362302964,
+        "frame_percent": 8.62698557604528
+      },
+      "grippers": {
+        "axis_sample_percent": 10.580609822895747,
+        "frame_percent": 20.46923498265474
+      }
+    },
+    "1.0": {
+      "joints": {
+        "axis_sample_percent": 1.326912543363155,
+        "frame_percent": 6.8997626437830935
+      },
+      "grippers": {
+        "axis_sample_percent": 9.216724484206683,
+        "frame_percent": 17.920394376483475
+      }
+    },
+    "1.5": {
+      "joints": {
+        "axis_sample_percent": 0.421307285010042,
+        "frame_percent": 3.563994887712251
+      },
+      "grippers": {
+        "axis_sample_percent": 6.392185503012598,
+        "frame_percent": 12.5744020449151
+      }
+    },
+    "2.0": {
+      "joints": {
+        "axis_sample_percent": 0.06436005112287749,
+        "frame_percent": 0.7102428336680664
+      },
+      "grippers": {
+        "axis_sample_percent": 4.412999817418295,
+        "frame_percent": 8.743837867445682
+      }
+    },
+    "3.0": {
+      "joints": {
+        "axis_sample_percent": 0.000304302842188546,
+        "frame_percent": 0.0036516341062625525
+      },
+      "grippers": {
+        "axis_sample_percent": 2.091473434361877,
+        "frame_percent": 4.1811210516706225
+      }
+    },
+    "3.2": {
+      "joints": {
+        "axis_sample_percent": 0.0,
+        "frame_percent": 0.0
+      },
+      "grippers": {
+        "axis_sample_percent": 1.8075588825999633,
+        "frame_percent": 3.6132919481467956
+      }
+    },
+    "4.0": {
+      "joints": {
+        "axis_sample_percent": 0.0,
+        "frame_percent": 0.0
+      },
+      "grippers": {
+        "axis_sample_percent": 0.9339054226766478,
+        "frame_percent": 1.8678108453532956
+      }
+    },
+    "5.0": {
+      "joints": {
+        "axis_sample_percent": 0.0,
+        "frame_percent": 0.0
+      },
+      "grippers": {
+        "axis_sample_percent": 0.32134380135110463,
+        "frame_percent": 0.6426876027022093
+      }
+    },
+    "6.0": {
+      "joints": {
+        "axis_sample_percent": 0.0,
+        "frame_percent": 0.0
+      },
+      "grippers": {
+        "axis_sample_percent": 0.09129085265656381,
+        "frame_percent": 0.18258170531312762
+      }
+    },
+    "9.0": {
+      "joints": {
+        "axis_sample_percent": 0.0,
+        "frame_percent": 0.0
+      },
+      "grippers": {
+        "axis_sample_percent": 0.0,
+        "frame_percent": 0.0
+      }
+    }
+  },
+  "target_jump_check": {
+    "limit_rad": 0.15,
+    "consecutive_action_transitions": 54543,
+    "max_consecutive_action_jump_rad": 0.43102648854255676,
+    "transitions_exceeding_limit": 2288,
+    "episodes_with_exceeding_transition": 224
+  },
+  "full_rate_reported_velocity": {
+    "groups": {
+      "joints": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.4885176718235016,
+          "99": 1.1906636953353882,
+          "99.9": 1.8928096294403076,
+          "100": 2.949955463409424
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.14451326429843903,
+          "95": 1.341460108757019,
+          "99": 1.9132299423217773,
+          "99.9": 2.3357741832733154,
+          "100": 2.949955463409424
+        }
+      },
+      "grippers": {
+        "axis_sample_percentiles_rad_s": {
+          "50": 0.0031415927223861217,
+          "95": 1.9289380311965942,
+          "99": 4.013903150558406,
+          "99.9": 6.030967379570129,
+          "100": 9.181304931640625
+        },
+        "frame_max_percentiles_rad_s": {
+          "50": 0.007853982038795948,
+          "95": 2.8745572566986084,
+          "99": 4.695110321044922,
+          "99.9": 6.431181334495642,
+          "100": 9.181304931640625
+        }
+      }
+    },
+    "per_axis": {
+      "left.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.0062831854447722435,
+          "95": 0.6283185482025146,
+          "99": 1.1278318166732788,
+          "99.9": 1.5083053599597003,
+          "100": 1.914800763130188
+        },
+        "peak": {
+          "signed_speed_rad_s": -1.914800763130188,
+          "episode_index": 45,
+          "source_id": "20260930T203927-f8caa372",
+          "source_sequence": 154921
+        }
+      },
+      "left.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.025132741779088974,
+          "95": 1.0524336099624634,
+          "99": 1.8456858396530151,
+          "99.9": 2.2776548862457275,
+          "100": 2.7331857681274414
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.7331857681274414,
+          "episode_index": 127,
+          "source_id": "20261002T182119-697d2e0e",
+          "source_sequence": 246289
+        }
+      },
+      "left.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.004712388850748539,
+          "95": 0.4005530774593353,
+          "99": 0.7194247245788574,
+          "99.9": 0.95975661277771,
+          "100": 1.2786283493041992
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.2786283493041992,
+          "episode_index": 138,
+          "source_id": "20261002T182817-b8e699dd",
+          "source_sequence": 307690
+        }
+      },
+      "left.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.3361504077911377,
+          "99": 0.7979645133018494,
+          "99.9": 1.283340573310852,
+          "100": 2.236814022064209
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.236814022064209,
+          "episode_index": 136,
+          "source_id": "20261002T182721-9ae05016",
+          "source_sequence": 299373
+        }
+      },
+      "left.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.004712388850748539,
+          "95": 0.5859070420265198,
+          "99": 1.1199778318405151,
+          "99.9": 1.773429036140442,
+          "100": 2.508561849594116
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.508561849594116,
+          "episode_index": 200,
+          "source_id": "20261002T203048-a5b2f1f1",
+          "source_sequence": 336397
+        }
+      },
+      "left.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0031415927223861217,
+          "95": 0.5811946392059326,
+          "99": 0.9882979893684132,
+          "99.9": 1.4988806476593997,
+          "100": 2.309070587158203
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.309070587158203,
+          "episode_index": 119,
+          "source_id": "20261002T180916-f2d75e13",
+          "source_sequence": 140262
+        }
+      },
+      "left.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0031415927223861217,
+          "95": 2.797588348388672,
+          "99": 4.668673982620214,
+          "99.9": 6.396623515129187,
+          "100": 9.181304931640625
+        },
+        "peak": {
+          "signed_speed_rad_s": -9.181304931640625,
+          "episode_index": 39,
+          "source_id": "20260930T203441-704c3897",
+          "source_sequence": 114040
+        }
+      },
+      "right.joint1": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.32672566175460815,
+          "99": 1.0414379835128784,
+          "99.9": 1.4030620347262408,
+          "100": 1.7907078266143799
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.7907078266143799,
+          "episode_index": 112,
+          "source_id": "20261002T180405-c7ea1278",
+          "source_sequence": 94489
+        }
+      },
+      "right.joint2": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.948760986328125,
+          "99": 1.603783130645752,
+          "99.9": 1.9496990929842974,
+          "100": 2.5258405208587646
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.5258405208587646,
+          "episode_index": 105,
+          "source_id": "20261002T175740-b500cdd6",
+          "source_sequence": 37862
+        }
+      },
+      "right.joint3": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.12566371262073517,
+          "99": 0.556061863899231,
+          "99.9": 0.8250089645982769,
+          "100": 1.4294246435165405
+        },
+        "peak": {
+          "signed_speed_rad_s": 1.4294246435165405,
+          "episode_index": 109,
+          "source_id": "20261002T180049-967d16d9",
+          "source_sequence": 65608
+        }
+      },
+      "right.joint4": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.04398230090737343,
+          "99": 0.7351326942443848,
+          "99.9": 1.3873540650607135,
+          "100": 2.0467476844787598
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.0467476844787598,
+          "episode_index": 49,
+          "source_id": "20260930T212004-4771168b",
+          "source_sequence": 511031
+        }
+      },
+      "right.joint5": {
+        "percentiles_rad_s": {
+          "50": 0.0,
+          "95": 0.16807520389556885,
+          "99": 1.0744246244430542,
+          "99.9": 1.9245664368868853,
+          "100": 2.949955463409424
+        },
+        "peak": {
+          "signed_speed_rad_s": -2.949955463409424,
+          "episode_index": 115,
+          "source_id": "20261002T180607-cc24fedf",
+          "source_sequence": 112348
+        }
+      },
+      "right.joint6": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.2780309319496155,
+          "99": 0.8890707492828369,
+          "99.9": 1.6006414890289307,
+          "100": 2.821150302886963
+        },
+        "peak": {
+          "signed_speed_rad_s": 2.821150302886963,
+          "episode_index": 57,
+          "source_id": "20260930T212459-dedc17b8",
+          "source_sequence": 554227
+        }
+      },
+      "right.gripper_rad": {
+        "percentiles_rad_s": {
+          "50": 0.0015707963611930609,
+          "95": 0.4995132386684418,
+          "99": 1.8176784420013172,
+          "99.9": 3.6712920219899203,
+          "100": 8.10059642791748
+        },
+        "peak": {
+          "signed_speed_rad_s": 8.10059642791748,
+          "episode_index": 207,
+          "source_id": "20260930T020817-d235eb20",
+          "source_sequence": 193806
+        }
+      }
+    },
+    "samples": 404784,
+    "method": "Motor velocity feedback across all trimmed full-rate source states",
+    "host_timestamp_pose_derivative_max_rad_s": {
+      "left.joint1": 4.282259078373394,
+      "left.joint2": 5.823875758929328,
+      "left.joint3": 2.4518695832642905,
+      "left.joint4": 5.310001500921688,
+      "left.joint5": 8.050646945472641,
+      "left.joint6": 4.367146374198311,
+      "left.gripper_rad": 18.81269948722664,
+      "right.joint1": 4.967421201194505,
+      "right.joint2": 6.594679021318139,
+      "right.joint3": 2.5999034325622445,
+      "right.joint4": 4.624840393678407,
+      "right.joint5": 6.680325746563911,
+      "right.joint6": 5.151312524590226,
+      "right.gripper_rad": 13.779007843356666
+    },
+    "pose_derivative_note": "Adjacent host receive times need not match individual motor update times. Encoder quantization and repeated readings make these derivatives noisy; use 20 Hz pose differences for comparison with policy timesteps."
+  }
+}

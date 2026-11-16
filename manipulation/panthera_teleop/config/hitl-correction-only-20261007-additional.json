@@ -1,0 +1,3116 @@
+{
+  "processing_version": 2,
+  "recording_timezone": "America/Chicago",
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Regular 20Hz data-clock grid with nearest measured states and aligned source images; next-pose targets remain within each accepted crop",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.055,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Host receive timestamps, not hardware exposure timestamps. Offline nearest-frame alignment may choose a frame slightly later than the grid tick; all actual offsets are retained.",
+  "trim_method": "Human-ownership gate, subagent whole-clip visual review and dense boundary review; exclude passive falls and irrelevant tail motions",
+  "trim_uncertainty_s": null,
+  "episodes": [
+    {
+      "id": "20261007T203748-e07dacb3-correction-000-crop-00",
+      "source_id": "20261007T203748-e07dacb3",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.60726914,
+      "end_s": 8.616297548,
+      "original_start_s": 4.60726914,
+      "original_end_s": 9.077800814,
+      "review_approved": true,
+      "reason": "Supported fine approach and jaw placement around the upright pin, with repeated small grasp and alignment retries.",
+      "correction_description": "Supported fine approach and jaw placement around the upright pin, with repeated small grasp and alignment retries.",
+      "removed_prefix_reason": "No prefix removed; support and the task-directed pin approach begin at takeover.",
+      "removed_suffix_reason": "After 8.62 s the hand begins to relax and the wrist/carrier lower together; by 8.82-8.97 s the pose has sagged with no pin transport or further correction.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-06/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.8,
+      "source_metadata_sha256": "f5539f97fdc474f2aad5fbd97856ab29406d64ce947923bcd393a5f7407b227b",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 77,
+          "data_time_s": 4.504761629,
+          "source_path": "images/wrist_port2/0000077.jpg",
+          "note": "Before retained correction: No prefix removed; support and the task-directed pin approach begin at takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 77,
+          "data_time_s": 4.504742698,
+          "source_path": "images/wrist_port3/0000077.jpg",
+          "note": "Before retained correction: No prefix removed; support and the task-directed pin approach begin at takeover."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 80,
+          "data_time_s": 4.724375088,
+          "source_path": "images/wrist_port2/0000080.jpg",
+          "note": "Inside correction start: Supported fine approach and jaw placement around the upright pin, with repeated small grasp and alignment retries."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 80,
+          "data_time_s": 4.68389907,
+          "source_path": "images/wrist_port3/0000080.jpg",
+          "note": "Inside correction start: Supported fine approach and jaw placement around the upright pin, with repeated small grasp and alignment retries."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 135,
+          "data_time_s": 8.502770521,
+          "source_path": "images/wrist_port2/0000135.jpg",
+          "note": "Last controlled endpoint: Supported fine approach and jaw placement around the upright pin, with repeated small grasp and alignment retries."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 138,
+          "data_time_s": 8.566275588,
+          "source_path": "images/wrist_port3/0000138.jpg",
+          "note": "Last controlled endpoint: Supported fine approach and jaw placement around the upright pin, with repeated small grasp and alignment retries."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 139,
+          "data_time_s": 8.704998246,
+          "source_path": "images/wrist_port2/0000139.jpg",
+          "note": "After retained endpoint: After 8.62 s the hand begins to relax and the wrist/carrier lower together; by 8.82-8.97 s the pose has sagged with no pin transport or further correction."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 140,
+          "data_time_s": 8.667763586,
+          "source_path": "images/wrist_port3/0000140.jpg",
+          "note": "After retained endpoint: After 8.62 s the hand begins to relax and the wrist/carrier lower together; by 8.82-8.97 s the pose has sagged with no pin transport or further correction."
+        }
+      ],
+      "expected_rows": 78,
+      "expected_max_camera_offset_s": 0.050325344
+    },
+    {
+      "id": "20261007T203940-2f3af5ac-correction-000-crop-00",
+      "source_id": "20261007T203940-2f3af5ac",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.604627,
+      "end_s": 9.430607,
+      "original_start_s": 4.604627,
+      "original_end_s": 9.978008923,
+      "review_approved": true,
+      "reason": "Supported pin approach, local jaw placement, repeated closing and reopening retries, and small controlled wrist reapproaches.",
+      "correction_description": "Supported pin approach, local jaw placement, repeated closing and reopening retries, and small controlled wrist reapproaches.",
+      "removed_prefix_reason": "No prefix removed; operator takes support as the approach begins.",
+      "removed_suffix_reason": "Support relaxes after the last local approach around 9.43 s; by 9.53-9.63 s the wrist and opposite carrier drop, followed by hand withdrawal and further sag.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-06/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.83,
+      "source_metadata_sha256": "180307101d45ed07d94b11a5df0f8001a62a3c33ce3f8f445b0dab2e884d9730",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 77,
+          "data_time_s": 4.472882767,
+          "source_path": "images/wrist_port2/0000077.jpg",
+          "note": "Before retained correction: No prefix removed; operator takes support as the approach begins."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 77,
+          "data_time_s": 4.501242859,
+          "source_path": "images/wrist_port3/0000077.jpg",
+          "note": "Before retained correction: No prefix removed; operator takes support as the approach begins."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 80,
+          "data_time_s": 4.734767749,
+          "source_path": "images/wrist_port2/0000080.jpg",
+          "note": "Inside correction start: Supported pin approach, local jaw placement, repeated closing and reopening retries, and small controlled wrist reapproaches."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 80,
+          "data_time_s": 4.704772656,
+          "source_path": "images/wrist_port3/0000080.jpg",
+          "note": "Inside correction start: Supported pin approach, local jaw placement, repeated closing and reopening retries, and small controlled wrist reapproaches."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 151,
+          "data_time_s": 9.319878119,
+          "source_path": "images/wrist_port2/0000151.jpg",
+          "note": "Last controlled endpoint: Supported pin approach, local jaw placement, repeated closing and reopening retries, and small controlled wrist reapproaches."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 146,
+          "data_time_s": 9.380264007,
+          "source_path": "images/wrist_port3/0000146.jpg",
+          "note": "Last controlled endpoint: Supported pin approach, local jaw placement, repeated closing and reopening retries, and small controlled wrist reapproaches."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 153,
+          "data_time_s": 9.52152325,
+          "source_path": "images/wrist_port2/0000153.jpg",
+          "note": "After retained endpoint: Support relaxes after the last local approach around 9.43 s; by 9.53-9.63 s the wrist and opposite carrier drop, followed by hand withdrawal and further sag."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 149,
+          "data_time_s": 9.531726098,
+          "source_path": "images/wrist_port3/0000149.jpg",
+          "note": "After retained endpoint: Support relaxes after the last local approach around 9.43 s; by 9.53-9.63 s the wrist and opposite carrier drop, followed by hand withdrawal and further sag."
+        }
+      ],
+      "expected_rows": 94,
+      "expected_max_camera_offset_s": 0.048855178
+    },
+    {
+      "id": "20261007T204013-06228bd3-correction-000-crop-00",
+      "source_id": "20261007T204013-06228bd3",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 5.272002389,
+      "end_s": 9.62232,
+      "original_start_s": 5.229086301,
+      "original_end_s": 10.806784536,
+      "review_approved": true,
+      "reason": "Supported approach and repeated fine jaw-placement/closing retries around the table pin.",
+      "correction_description": "Supported approach and repeated fine jaw-placement/closing retries around the table pin.",
+      "removed_prefix_reason": "Brief takeover transition before a full supported handle grip is visible; begin at the first clearly guided pin approach.",
+      "removed_suffix_reason": "At 9.72-9.82 s the fingers relax around the handle and wrist begins a sustained downward sweep; through 10.73 s jaws move substantially past the pin approach pose without a clear new correction. Remove that terminal loosened-support movement.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-05/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.82,
+      "source_metadata_sha256": "a718c70cd3425632227809d5e96fa2a648afe70e77546980dabacf29c21e88db",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 87,
+          "data_time_s": 5.148641232,
+          "source_path": "images/wrist_port2/0000087.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 87,
+          "data_time_s": 5.146365988,
+          "source_path": "images/wrist_port3/0000087.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 87,
+          "data_time_s": 5.169402286,
+          "source_path": "images/overhead/0000087.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 89,
+          "data_time_s": 5.281144989,
+          "source_path": "images/wrist_port2/0000089.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 89,
+          "data_time_s": 5.272002389,
+          "source_path": "images/wrist_port3/0000089.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 88,
+          "data_time_s": 5.265154485,
+          "source_path": "images/overhead/0000088.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 124,
+          "data_time_s": 7.447108367,
+          "source_path": "images/wrist_port2/0000124.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 127,
+          "data_time_s": 7.444290351,
+          "source_path": "images/wrist_port3/0000127.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 122,
+          "data_time_s": 7.437522907,
+          "source_path": "images/overhead/0000122.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 162,
+          "data_time_s": 9.622320423,
+          "source_path": "images/wrist_port2/0000162.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 164,
+          "data_time_s": 9.615677293,
+          "source_path": "images/wrist_port3/0000164.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 157,
+          "data_time_s": 9.611593542,
+          "source_path": "images/overhead/0000157.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 163,
+          "data_time_s": 9.723443643,
+          "source_path": "images/wrist_port2/0000163.jpg",
+          "note": "after endpoint: At 9.72-9.82 s the fingers relax around the handle and wrist begins a sustained downward sweep; through 10.73 s jaws move substantially past the pin approach pose without a clear new correction. Remove that terminal loosened-support movement."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 166,
+          "data_time_s": 9.717080287,
+          "source_path": "images/wrist_port3/0000166.jpg",
+          "note": "after endpoint: At 9.72-9.82 s the fingers relax around the handle and wrist begins a sustained downward sweep; through 10.73 s jaws move substantially past the pin approach pose without a clear new correction. Remove that terminal loosened-support movement."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 158,
+          "data_time_s": 9.712002062,
+          "source_path": "images/overhead/0000158.jpg",
+          "note": "after endpoint: At 9.72-9.82 s the fingers relax around the handle and wrist begins a sustained downward sweep; through 10.73 s jaws move substantially past the pin approach pose without a clear new correction. Remove that terminal loosened-support movement."
+        }
+      ],
+      "expected_rows": 85,
+      "expected_max_camera_offset_s": 0.050043446
+    },
+    {
+      "id": "20261007T204048-488c2952-correction-000-crop-00",
+      "source_id": "20261007T204048-488c2952",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 5.661183001,
+      "end_s": 9.618331355,
+      "original_start_s": 5.661183001,
+      "original_end_s": 9.618331355,
+      "review_approved": true,
+      "reason": "Clean supported corrective motion throughout original human interval; no visible fall, reset or terminal release.",
+      "correction_description": "Controlled pin approach, fine jaw alignment, closure, pickup and initial transport toward the supported carrier.",
+      "removed_prefix_reason": "No removed prefix: supported approach is underway at takeover.",
+      "removed_suffix_reason": "No removed suffix: supported pin pickup/transport continues to original interval end.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-01/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.89,
+      "source_metadata_sha256": "7e0afea779e3be7d590abf52f5c520aff2339bddd6643ac4924dd75d10fb44e4",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port3",
+          "frame_index": 95,
+          "data_time_s": 5.559066093,
+          "source_path": "images/wrist_port3/0000095.jpg",
+          "note": "Before retained correction: No removed prefix: supported approach is underway at takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 98,
+          "data_time_s": 5.769846364,
+          "source_path": "images/wrist_port3/0000098.jpg",
+          "note": "Inside start: Controlled pin approach, fine jaw alignment, closure, pickup and initial transport toward the supported carrier."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 123,
+          "data_time_s": 7.628959324,
+          "source_path": "images/wrist_port3/0000123.jpg",
+          "note": "Inside corrective motion: Controlled pin approach, fine jaw alignment, closure, pickup and initial transport toward the supported carrier."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 154,
+          "data_time_s": 9.603070239,
+          "source_path": "images/wrist_port3/0000154.jpg",
+          "note": "Last retained controlled pose before boundary."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 154,
+          "data_time_s": 9.603070239,
+          "source_path": "images/wrist_port3/0000154.jpg",
+          "note": "Latest available supported pin transport frame; no source frame after the recording endpoint exists."
+        }
+      ],
+      "expected_rows": 77,
+      "expected_max_camera_offset_s": 0.050632394
+    },
+    {
+      "id": "20261007T204122-46025295-correction-000-crop-00",
+      "source_id": "20261007T204122-46025295",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.439208186,
+      "end_s": 12.495828,
+      "original_start_s": 7.439208186,
+      "original_end_s": 12.672452339,
+      "review_approved": true,
+      "reason": "Keep supported pin pickup retries and end before the visible operator hand departure.",
+      "correction_description": "Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin.",
+      "removed_prefix_reason": "Takeover begins with robot approach to the pin and operator wrist support.",
+      "removed_suffix_reason": "Operator hand is open beside the laptop by overhead data time 12.610558; exclude departure and final unsupported hold.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-07/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.83,
+      "source_metadata_sha256": "ed17bcbb67bd5c6b9de29eb8f632ec77f9a78e320cf37ad8460698b26c4e23ba",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 130,
+          "data_time_s": 7.357171165,
+          "source_path": "images/wrist_port2/0000130.jpg",
+          "note": "before start: Takeover begins with robot approach to the pin and operator wrist support."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 130,
+          "data_time_s": 7.313417927,
+          "source_path": "images/wrist_port3/0000130.jpg",
+          "note": "before start: Takeover begins with robot approach to the pin and operator wrist support."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 130,
+          "data_time_s": 7.361578533,
+          "source_path": "images/overhead/0000130.jpg",
+          "note": "before start: Takeover begins with robot approach to the pin and operator wrist support."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 133,
+          "data_time_s": 7.561243922,
+          "source_path": "images/wrist_port2/0000133.jpg",
+          "note": "inside start: Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 134,
+          "data_time_s": 7.561208305,
+          "source_path": "images/wrist_port3/0000134.jpg",
+          "note": "inside start: Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 133,
+          "data_time_s": 7.57626672,
+          "source_path": "images/overhead/0000133.jpg",
+          "note": "inside start: Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 205,
+          "data_time_s": 12.396852539,
+          "source_path": "images/wrist_port2/0000205.jpg",
+          "note": "last controlled pose: Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 209,
+          "data_time_s": 12.396874189,
+          "source_path": "images/wrist_port3/0000209.jpg",
+          "note": "last controlled pose: Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 209,
+          "data_time_s": 12.410460724,
+          "source_path": "images/overhead/0000209.jpg",
+          "note": "last controlled pose: Supported gripper approach, jaw closing and repeated local pickup alignment at the upright pin."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 207,
+          "data_time_s": 12.546513893,
+          "source_path": "images/wrist_port2/0000207.jpg",
+          "note": "after end: Operator hand is open beside the laptop by overhead data time 12.610558; exclude departure and final unsupported hold."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 212,
+          "data_time_s": 12.59653073,
+          "source_path": "images/wrist_port3/0000212.jpg",
+          "note": "after end: Operator hand is open beside the laptop by overhead data time 12.610558; exclude departure and final unsupported hold."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 211,
+          "data_time_s": 12.610557611,
+          "source_path": "images/overhead/0000211.jpg",
+          "note": "after end: Operator hand is open beside the laptop by overhead data time 12.610558; exclude departure and final unsupported hold."
+        }
+      ],
+      "expected_rows": 98,
+      "expected_max_camera_offset_s": 0.049066577
+    },
+    {
+      "id": "20261007T204222-07cef1bc-correction-000-crop-00",
+      "source_id": "20261007T204222-07cef1bc",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 5.997218032,
+      "end_s": 9.23378949,
+      "original_start_s": 5.997218032,
+      "original_end_s": 9.23378949,
+      "review_approved": true,
+      "reason": "Entire original interval shows purposeful approach, pickup and transport without visible release or irrelevant tail.",
+      "correction_description": "Supported fine pin approach and jaw alignment, controlled closure and pickup, then initial transport toward carrier.",
+      "removed_prefix_reason": "No removed prefix: controlled approach begins at takeover.",
+      "removed_suffix_reason": "No removed suffix: guided pin transport continues to original human interval end.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-01/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.88,
+      "source_metadata_sha256": "bf6c3c80217f242012ef1519be170219889108d319684d9ce9e9be3f2c73256a",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port3",
+          "frame_index": 99,
+          "data_time_s": 5.880318168,
+          "source_path": "images/wrist_port3/0000099.jpg",
+          "note": "Before retained correction: No removed prefix: controlled approach begins at takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 102,
+          "data_time_s": 6.128682543,
+          "source_path": "images/wrist_port3/0000102.jpg",
+          "note": "Inside start: Supported fine pin approach and jaw alignment, controlled closure and pickup, then initial transport toward carrier."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 124,
+          "data_time_s": 7.591329802,
+          "source_path": "images/wrist_port3/0000124.jpg",
+          "note": "Inside corrective motion: Supported fine pin approach and jaw alignment, controlled closure and pickup, then initial transport toward carrier."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 150,
+          "data_time_s": 9.209459202,
+          "source_path": "images/wrist_port3/0000150.jpg",
+          "note": "Last retained controlled pose before boundary."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 150,
+          "data_time_s": 9.209459202,
+          "source_path": "images/wrist_port3/0000150.jpg",
+          "note": "Latest available supported pin transport frame; no source frame after the recording endpoint exists."
+        }
+      ],
+      "expected_rows": 63,
+      "expected_max_camera_offset_s": 0.048859722
+    },
+    {
+      "id": "20261007T204304-4a1770ee-correction-000-crop-00",
+      "source_id": "20261007T204304-4a1770ee",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.622906,
+      "end_s": 8.768540517,
+      "original_start_s": 4.573155216,
+      "original_end_s": 8.768540517,
+      "review_approved": true,
+      "reason": "Supported pin pickup approach with repeated jaw-height and angle adjustment, followed by a controlled lift toward the carrier side.",
+      "correction_description": "Supported pin pickup approach with repeated jaw-height and angle adjustment, followed by a controlled lift toward the carrier side.",
+      "removed_prefix_reason": "Brief takeover lead-in before visible wrist support is removed.",
+      "removed_suffix_reason": "No suffix removed: the wrist remains supported and the final pin pickup/lift correction is still active at the recording boundary.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-03/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.86,
+      "source_metadata_sha256": "74f9d5bec536433cf31d6ba332b2c9bcf0fb56267bb9fcc3776350253ede1ad3",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 76,
+          "data_time_s": 4.552654472,
+          "source_path": "images/wrist_port2/0000076.jpg",
+          "note": "Before retained interval: Brief takeover lead-in before visible wrist support is removed."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 76,
+          "data_time_s": 4.540352112,
+          "source_path": "images/wrist_port3/0000076.jpg",
+          "note": "Before retained interval: Brief takeover lead-in before visible wrist support is removed."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 76,
+          "data_time_s": 4.559000499,
+          "source_path": "images/overhead/0000076.jpg",
+          "note": "Before retained interval: Brief takeover lead-in before visible wrist support is removed."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 79,
+          "data_time_s": 4.708890468,
+          "source_path": "images/wrist_port2/0000079.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 78,
+          "data_time_s": 4.723961006,
+          "source_path": "images/wrist_port3/0000078.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 78,
+          "data_time_s": 4.715121235,
+          "source_path": "images/overhead/0000078.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 108,
+          "data_time_s": 6.676611467,
+          "source_path": "images/wrist_port2/0000108.jpg",
+          "note": "Supported pin pickup approach with repeated jaw-height and angle adjustment, followed by a controlled lift toward the carrier side."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 108,
+          "data_time_s": 6.694556007,
+          "source_path": "images/wrist_port3/0000108.jpg",
+          "note": "Supported pin pickup approach with repeated jaw-height and angle adjustment, followed by a controlled lift toward the carrier side."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 109,
+          "data_time_s": 6.680738128,
+          "source_path": "images/overhead/0000109.jpg",
+          "note": "Supported pin pickup approach with repeated jaw-height and angle adjustment, followed by a controlled lift toward the carrier side."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 143,
+          "data_time_s": 8.697410136,
+          "source_path": "images/wrist_port2/0000143.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 142,
+          "data_time_s": 8.763758939,
+          "source_path": "images/wrist_port3/0000142.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 144,
+          "data_time_s": 8.703249128,
+          "source_path": "images/overhead/0000144.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 144,
+          "data_time_s": 8.748766347,
+          "source_path": "images/wrist_port2/0000144.jpg",
+          "note": "At source endpoint (no later frames exist): wrist remains supported; recording stops during correction."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 142,
+          "data_time_s": 8.763758939,
+          "source_path": "images/wrist_port3/0000142.jpg",
+          "note": "At source endpoint (no later frames exist): wrist remains supported; recording stops during correction."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 144,
+          "data_time_s": 8.703249128,
+          "source_path": "images/overhead/0000144.jpg",
+          "note": "At source endpoint (no later frames exist): wrist remains supported; recording stops during correction."
+        }
+      ],
+      "expected_rows": 80,
+      "expected_max_camera_offset_s": 0.049275905
+    },
+    {
+      "id": "20261007T204416-cea12cfb-correction-000-crop-00",
+      "source_id": "20261007T204416-cea12cfb",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.292366734,
+      "end_s": 13.867361808,
+      "original_start_s": 5.546819513,
+      "original_end_s": 13.867361808,
+      "review_approved": true,
+      "reason": "Supported robot pin pickup correction: fine approach, closure/lift retries, then controlled lifting and transport toward the carrier. Initial bare-hand waiting and reaching removed.",
+      "correction_description": "Supported robot pin pickup correction: fine approach, closure/lift retries, then controlled lifting and transport toward the carrier.",
+      "removed_prefix_reason": "Remove bare hands resting on the table beside the parts and reaching for the handle; purposeful handle-controlled pin approach starts near 7.29 s.",
+      "removed_suffix_reason": "None: source ends during supported pin transport, before any clear idle or support release.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-02/decisions.json",
+      "boundary_uncertainty_s": 0.12,
+      "confidence": 0.85,
+      "source_metadata_sha256": "4dd142de782fa9e1f90d7c3338baba95d8772e750406113adf28bff4f90ec76c",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 118,
+          "data_time_s": 7.174020716,
+          "source_path": "images/wrist_port2/0000118.jpg",
+          "note": "Before retained correction: Remove bare hands resting on the table beside the parts and reaching for the handle; purposeful handle-controlled pin approach starts near 7.29 s."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 121,
+          "data_time_s": 7.19078735,
+          "source_path": "images/wrist_port3/0000121.jpg",
+          "note": "Before retained correction: Remove bare hands resting on the table beside the parts and reaching for the handle; purposeful handle-controlled pin approach starts near 7.29 s."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 122,
+          "data_time_s": 7.177236318,
+          "source_path": "images/overhead/0000122.jpg",
+          "note": "Before retained correction: Remove bare hands resting on the table beside the parts and reaching for the handle; purposeful handle-controlled pin approach starts near 7.29 s."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 121,
+          "data_time_s": 7.376550073,
+          "source_path": "images/wrist_port2/0000121.jpg",
+          "note": "Inside: Supported robot pin pickup correction: fine approach, closure/lift retries, then controlled lifting and transport toward the carrier."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 125,
+          "data_time_s": 7.392804075,
+          "source_path": "images/wrist_port3/0000125.jpg",
+          "note": "Inside: Supported robot pin pickup correction: fine approach, closure/lift retries, then controlled lifting and transport toward the carrier."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 126,
+          "data_time_s": 7.37978443,
+          "source_path": "images/overhead/0000126.jpg",
+          "note": "Inside: Supported robot pin pickup correction: fine approach, closure/lift retries, then controlled lifting and transport toward the carrier."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 217,
+          "data_time_s": 13.72165466,
+          "source_path": "images/wrist_port2/0000217.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 222,
+          "data_time_s": 13.741619364,
+          "source_path": "images/wrist_port3/0000222.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 229,
+          "data_time_s": 13.787263813,
+          "source_path": "images/overhead/0000229.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 218,
+          "data_time_s": 13.822429184,
+          "source_path": "images/wrist_port2/0000218.jpg",
+          "note": "Last available source frame at recording end: None: source ends during supported pin transport, before any clear idle or support release."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 223,
+          "data_time_s": 13.842275907,
+          "source_path": "images/wrist_port3/0000223.jpg",
+          "note": "Last available source frame at recording end: None: source ends during supported pin transport, before any clear idle or support release."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 229,
+          "data_time_s": 13.787263813,
+          "source_path": "images/overhead/0000229.jpg",
+          "note": "Last available source frame at recording end: None: source ends during supported pin transport, before any clear idle or support release."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 218,
+          "data_time_s": 13.822429184,
+          "source_path": "images/wrist_port2/0000218.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 223,
+          "data_time_s": 13.842275907,
+          "source_path": "images/wrist_port3/0000223.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 229,
+          "data_time_s": 13.787263813,
+          "source_path": "images/overhead/0000229.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 109,
+          "data_time_s": 6.520716432,
+          "source_path": "images/wrist_port2/0000109.jpg",
+          "note": "Removed prefix: bare hands lie on the table beside the parts; no handle-controlled pin correction yet."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 110,
+          "data_time_s": 6.483188639,
+          "source_path": "images/wrist_port3/0000110.jpg",
+          "note": "Removed prefix: bare hands lie on the table beside the parts; no handle-controlled pin correction yet."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 110,
+          "data_time_s": 6.471772483,
+          "source_path": "images/overhead/0000110.jpg",
+          "note": "Removed prefix: bare hands lie on the table beside the parts; no handle-controlled pin correction yet."
+        }
+      ],
+      "expected_rows": 129,
+      "expected_max_camera_offset_s": 0.050067659
+    },
+    {
+      "id": "20261007T204526-102c221c-correction-000-crop-00",
+      "source_id": "20261007T204526-102c221c",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.705631229,
+      "end_s": 6.717253,
+      "original_start_s": 4.705631229,
+      "original_end_s": 8.057334301,
+      "review_approved": true,
+      "reason": "Supported local approach and jaw closure around the tabletop pin, including initial lifting adjustment.; Carrier supporting hand separates around 6.8\u20136.9 s; carrier arm subsequently sags toward the table while right jaw lifts. Exclude the sag-contaminated tail.",
+      "correction_description": "Supported local approach and jaw closure around the tabletop pin, including initial lifting adjustment.",
+      "removed_prefix_reason": "",
+      "removed_suffix_reason": "Carrier supporting hand separates around 6.8\u20136.9 s; carrier arm subsequently sags toward the table while right jaw lifts. Exclude the sag-contaminated tail.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-04/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.82,
+      "source_metadata_sha256": "96bf52c758bc104d54d415ce6f52b0d951646cb9ca6327b9c434e5fe13459a38",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 80,
+          "data_time_s": 4.616653178,
+          "source_path": "images/wrist_port2/0000080.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 82,
+          "data_time_s": 4.748155595,
+          "source_path": "images/wrist_port2/0000082.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 99,
+          "data_time_s": 5.756644658,
+          "source_path": "images/wrist_port2/0000099.jpg",
+          "note": "Supported local approach and jaw closure around the tabletop pin, including initial lifting adjustment."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 113,
+          "data_time_s": 6.666424002,
+          "source_path": "images/wrist_port2/0000113.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 117,
+          "data_time_s": 6.867838006,
+          "source_path": "images/wrist_port2/0000117.jpg",
+          "note": "After crop: Carrier supporting hand separates around 6.8\u20136.9 s; carrier arm subsequently sags toward the table while right jaw lifts. Exclude the sag-contaminated tail."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 79,
+          "data_time_s": 4.581299741,
+          "source_path": "images/wrist_port3/0000079.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 81,
+          "data_time_s": 4.744508242,
+          "source_path": "images/wrist_port3/0000081.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 97,
+          "data_time_s": 5.702235566,
+          "source_path": "images/wrist_port3/0000097.jpg",
+          "note": "Supported local approach and jaw closure around the tabletop pin, including initial lifting adjustment."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 114,
+          "data_time_s": 6.710348645,
+          "source_path": "images/wrist_port3/0000114.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 117,
+          "data_time_s": 6.86108125,
+          "source_path": "images/wrist_port3/0000117.jpg",
+          "note": "After crop: Carrier supporting hand separates around 6.8\u20136.9 s; carrier arm subsequently sags toward the table while right jaw lifts. Exclude the sag-contaminated tail."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 80,
+          "data_time_s": 4.617646147,
+          "source_path": "images/overhead/0000080.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 82,
+          "data_time_s": 4.749781615,
+          "source_path": "images/overhead/0000082.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 99,
+          "data_time_s": 5.756454932,
+          "source_path": "images/overhead/0000099.jpg",
+          "note": "Supported local approach and jaw closure around the tabletop pin, including initial lifting adjustment."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 112,
+          "data_time_s": 6.615864842,
+          "source_path": "images/overhead/0000112.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 115,
+          "data_time_s": 6.817895113,
+          "source_path": "images/overhead/0000115.jpg",
+          "note": "After crop: Carrier supporting hand separates around 6.8\u20136.9 s; carrier arm subsequently sags toward the table while right jaw lifts. Exclude the sag-contaminated tail."
+        }
+      ],
+      "expected_rows": 39,
+      "expected_max_camera_offset_s": 0.049923605
+    },
+    {
+      "id": "20261007T204640-4988b5bc-correction-000-crop-00",
+      "source_id": "20261007T204640-4988b5bc",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 3.612929581,
+      "end_s": 6.780101621,
+      "original_start_s": 3.55615949,
+      "original_end_s": 6.780101621,
+      "review_approved": true,
+      "reason": "Supported pin pickup approach with repeated fine jaw placement, closing and controlled withdrawal/lift.",
+      "correction_description": "Supported pin pickup approach with repeated fine jaw placement, closing and controlled withdrawal/lift.",
+      "removed_prefix_reason": "Brief takeover lead-in before visible wrist support is removed.",
+      "removed_suffix_reason": "No suffix removed: the wrist remains held and the final controlled pickup/withdrawal is active through the recording boundary.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-03/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.86,
+      "source_metadata_sha256": "b97562f9a1a915fcb9b3ff4cf83ea86be8c8e6129d0ef7261ade1748cfe2c506",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 62,
+          "data_time_s": 3.563798511,
+          "source_path": "images/wrist_port2/0000062.jpg",
+          "note": "Before retained interval: Brief takeover lead-in before visible wrist support is removed."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 62,
+          "data_time_s": 3.529513366,
+          "source_path": "images/wrist_port3/0000062.jpg",
+          "note": "Before retained interval: Brief takeover lead-in before visible wrist support is removed."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 62,
+          "data_time_s": 3.587100586,
+          "source_path": "images/overhead/0000062.jpg",
+          "note": "Before retained interval: Brief takeover lead-in before visible wrist support is removed."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 64,
+          "data_time_s": 3.713858895,
+          "source_path": "images/wrist_port2/0000064.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 64,
+          "data_time_s": 3.713904771,
+          "source_path": "images/wrist_port3/0000064.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 64,
+          "data_time_s": 3.737590186,
+          "source_path": "images/overhead/0000064.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 86,
+          "data_time_s": 5.177127679,
+          "source_path": "images/wrist_port2/0000086.jpg",
+          "note": "Supported pin pickup approach with repeated fine jaw placement, closing and controlled withdrawal/lift."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 87,
+          "data_time_s": 5.176969002,
+          "source_path": "images/wrist_port3/0000087.jpg",
+          "note": "Supported pin pickup approach with repeated fine jaw placement, closing and controlled withdrawal/lift."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 88,
+          "data_time_s": 5.198646038,
+          "source_path": "images/overhead/0000088.jpg",
+          "note": "Supported pin pickup approach with repeated fine jaw placement, closing and controlled withdrawal/lift."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 107,
+          "data_time_s": 6.733739285,
+          "source_path": "images/wrist_port2/0000107.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 113,
+          "data_time_s": 6.744325115,
+          "source_path": "images/wrist_port3/0000113.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 114,
+          "data_time_s": 6.714874134,
+          "source_path": "images/overhead/0000114.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 107,
+          "data_time_s": 6.733739285,
+          "source_path": "images/wrist_port2/0000107.jpg",
+          "note": "At source endpoint (no later frames exist): wrist remains supported; recording stops during correction."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 113,
+          "data_time_s": 6.744325115,
+          "source_path": "images/wrist_port3/0000113.jpg",
+          "note": "At source endpoint (no later frames exist): wrist remains supported; recording stops during correction."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 115,
+          "data_time_s": 6.765030338,
+          "source_path": "images/overhead/0000115.jpg",
+          "note": "At source endpoint (no later frames exist): wrist remains supported; recording stops during correction."
+        }
+      ],
+      "expected_rows": 61,
+      "expected_max_camera_offset_s": 0.048908762
+    },
+    {
+      "id": "20261007T204708-1c4b0159-correction-000-crop-00",
+      "source_id": "20261007T204708-1c4b0159",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.302367238,
+      "end_s": 7.518593545,
+      "original_start_s": 4.302367238,
+      "original_end_s": 7.518593545,
+      "review_approved": true,
+      "reason": "Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach.",
+      "correction_description": "Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach.",
+      "removed_prefix_reason": "No prefix removed.",
+      "removed_suffix_reason": "None: no clear abandonment or unsupported fall appears before recording ends.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-02/decisions.json",
+      "boundary_uncertainty_s": 0.12,
+      "confidence": 0.84,
+      "source_metadata_sha256": "77cb2b00421437311558993b288f91ef02d00ee2aba76a0ba6ba0514630a4326",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 74,
+          "data_time_s": 4.209185167,
+          "source_path": "images/wrist_port2/0000074.jpg",
+          "note": "Context immediately before original human interval; no prefix removed."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 74,
+          "data_time_s": 4.199525394,
+          "source_path": "images/wrist_port3/0000074.jpg",
+          "note": "Context immediately before original human interval; no prefix removed."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 74,
+          "data_time_s": 4.205618528,
+          "source_path": "images/overhead/0000074.jpg",
+          "note": "Context immediately before original human interval; no prefix removed."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 78,
+          "data_time_s": 4.42107791,
+          "source_path": "images/wrist_port2/0000078.jpg",
+          "note": "Inside: Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 77,
+          "data_time_s": 4.393193098,
+          "source_path": "images/wrist_port3/0000077.jpg",
+          "note": "Inside: Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 77,
+          "data_time_s": 4.409139634,
+          "source_path": "images/overhead/0000077.jpg",
+          "note": "Inside: Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 124,
+          "data_time_s": 7.392629976,
+          "source_path": "images/wrist_port2/0000124.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 123,
+          "data_time_s": 7.415586943,
+          "source_path": "images/wrist_port3/0000123.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 121,
+          "data_time_s": 7.385780536,
+          "source_path": "images/overhead/0000121.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 125,
+          "data_time_s": 7.493257935,
+          "source_path": "images/wrist_port2/0000125.jpg",
+          "note": "Last available source frame at recording end: None: no clear abandonment or unsupported fall appears before recording ends."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 124,
+          "data_time_s": 7.466868899,
+          "source_path": "images/wrist_port3/0000124.jpg",
+          "note": "Last available source frame at recording end: None: no clear abandonment or unsupported fall appears before recording ends."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 122,
+          "data_time_s": 7.486790011,
+          "source_path": "images/overhead/0000122.jpg",
+          "note": "Last available source frame at recording end: None: no clear abandonment or unsupported fall appears before recording ends."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 125,
+          "data_time_s": 7.493257935,
+          "source_path": "images/wrist_port2/0000125.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 124,
+          "data_time_s": 7.466868899,
+          "source_path": "images/wrist_port3/0000124.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 122,
+          "data_time_s": 7.486790011,
+          "source_path": "images/overhead/0000122.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        }
+      ],
+      "expected_rows": 63,
+      "expected_max_camera_offset_s": 0.049844855
+    },
+    {
+      "id": "20261007T204743-ea23aa3d-correction-000-crop-00",
+      "source_id": "20261007T204743-ea23aa3d",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 3.783333332,
+      "end_s": 7.971616415,
+      "original_start_s": 3.783333332,
+      "original_end_s": 7.971616415,
+      "review_approved": true,
+      "reason": "Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach.",
+      "correction_description": "Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach.",
+      "removed_prefix_reason": "No prefix removed.",
+      "removed_suffix_reason": "None: no clear abandonment or unsupported fall appears before recording ends.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-02/decisions.json",
+      "boundary_uncertainty_s": 0.12,
+      "confidence": 0.84,
+      "source_metadata_sha256": "150c96e6d5c8091a0f3e5127585c929413acdd1a83577b3a26366fae7e05e9cd",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 62,
+          "data_time_s": 3.69257555,
+          "source_path": "images/wrist_port2/0000062.jpg",
+          "note": "Context immediately before original human interval; no prefix removed."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 62,
+          "data_time_s": 3.689047231,
+          "source_path": "images/wrist_port3/0000062.jpg",
+          "note": "Context immediately before original human interval; no prefix removed."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 62,
+          "data_time_s": 3.676135652,
+          "source_path": "images/overhead/0000062.jpg",
+          "note": "Context immediately before original human interval; no prefix removed."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 65,
+          "data_time_s": 3.860040225,
+          "source_path": "images/wrist_port2/0000065.jpg",
+          "note": "Inside: Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 65,
+          "data_time_s": 3.89654584,
+          "source_path": "images/wrist_port3/0000065.jpg",
+          "note": "Inside: Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 66,
+          "data_time_s": 3.903356316,
+          "source_path": "images/overhead/0000066.jpg",
+          "note": "Inside: Supported pin approach, grasp/lift retry and controlled transport toward the carrier; pin remains between the fingertips during the final approach."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 132,
+          "data_time_s": 7.846149448,
+          "source_path": "images/wrist_port2/0000132.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 128,
+          "data_time_s": 7.879202265,
+          "source_path": "images/wrist_port3/0000128.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 129,
+          "data_time_s": 7.882908989,
+          "source_path": "images/overhead/0000129.jpg",
+          "note": "Last controlled pose before end."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 133,
+          "data_time_s": 7.94699226,
+          "source_path": "images/wrist_port2/0000133.jpg",
+          "note": "Last available source frame at recording end: None: no clear abandonment or unsupported fall appears before recording ends."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 129,
+          "data_time_s": 7.929413662,
+          "source_path": "images/wrist_port3/0000129.jpg",
+          "note": "Last available source frame at recording end: None: no clear abandonment or unsupported fall appears before recording ends."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 130,
+          "data_time_s": 7.934067904,
+          "source_path": "images/overhead/0000130.jpg",
+          "note": "Last available source frame at recording end: None: no clear abandonment or unsupported fall appears before recording ends."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 133,
+          "data_time_s": 7.94699226,
+          "source_path": "images/wrist_port2/0000133.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 129,
+          "data_time_s": 7.929413662,
+          "source_path": "images/wrist_port3/0000129.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 130,
+          "data_time_s": 7.934067904,
+          "source_path": "images/overhead/0000130.jpg",
+          "note": "Final source frame: pin remains at the closed fingertips during carrier-directed approach; no clear passive drop or unrelated reset is visible."
+        }
+      ],
+      "expected_rows": 82,
+      "expected_max_camera_offset_s": 0.047455333
+    },
+    {
+      "id": "20261007T204826-f9d726bb-correction-000-crop-00",
+      "source_id": "20261007T204826-f9d726bb",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.485449297,
+      "end_s": 6.400566178,
+      "original_start_s": 4.485449297,
+      "original_end_s": 6.400566178,
+      "review_approved": true,
+      "reason": "The short pin approach remains purposeful throughout this original segment.",
+      "correction_description": "Guided pin-gripper approach, local jaw placement and closure retries around the upright pin.",
+      "removed_prefix_reason": "Useful pin approach begins at takeover.",
+      "removed_suffix_reason": "No extra suffix within this original segment; next separate segment develops unsupported lowering of the carrier arm.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-00/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.75,
+      "source_metadata_sha256": "f8632af4187c827611c5e9fd8f01c57ca726899b3c00c684111144e64151daed",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 75,
+          "data_time_s": 4.393069597,
+          "source_path": "images/wrist_port2/0000075.jpg",
+          "note": "Before: Useful pin approach begins at takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 75,
+          "data_time_s": 4.380491629,
+          "source_path": "images/wrist_port3/0000075.jpg",
+          "note": "Before: Useful pin approach begins at takeover."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 75,
+          "data_time_s": 4.386143815,
+          "source_path": "images/overhead/0000075.jpg",
+          "note": "Before: Useful pin approach begins at takeover."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 78,
+          "data_time_s": 4.582420234,
+          "source_path": "images/wrist_port2/0000078.jpg",
+          "note": "Inside: Guided pin-gripper approach, local jaw placement and closure retries around the upright pin."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 78,
+          "data_time_s": 4.609179123,
+          "source_path": "images/wrist_port3/0000078.jpg",
+          "note": "Inside: Guided pin-gripper approach, local jaw placement and closure retries around the upright pin."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 78,
+          "data_time_s": 4.615974355,
+          "source_path": "images/overhead/0000078.jpg",
+          "note": "Inside: Guided pin-gripper approach, local jaw placement and closure retries around the upright pin."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 90,
+          "data_time_s": 5.434926572,
+          "source_path": "images/wrist_port2/0000090.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 89,
+          "data_time_s": 5.461755552,
+          "source_path": "images/wrist_port3/0000089.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 93,
+          "data_time_s": 5.425333418,
+          "source_path": "images/overhead/0000093.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 105,
+          "data_time_s": 6.392138662,
+          "source_path": "images/wrist_port2/0000105.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 103,
+          "data_time_s": 6.368992924,
+          "source_path": "images/wrist_port3/0000103.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 106,
+          "data_time_s": 6.437210253,
+          "source_path": "images/overhead/0000106.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 107,
+          "data_time_s": 6.538661368,
+          "source_path": "images/wrist_port2/0000107.jpg",
+          "note": "After: No extra suffix within this original segment; next separate segment develops unsupported lowering of the carrier arm."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 105,
+          "data_time_s": 6.564865736,
+          "source_path": "images/wrist_port3/0000105.jpg",
+          "note": "After: No extra suffix within this original segment; next separate segment develops unsupported lowering of the carrier arm."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 108,
+          "data_time_s": 6.538589623,
+          "source_path": "images/overhead/0000108.jpg",
+          "note": "After: No extra suffix within this original segment; next separate segment develops unsupported lowering of the carrier arm."
+        }
+      ],
+      "expected_rows": 37,
+      "expected_max_camera_offset_s": 0.042595477
+    },
+    {
+      "id": "20261007T204904-ea52c281-correction-000-crop-00",
+      "source_id": "20261007T204904-ea52c281",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.217647546,
+      "end_s": 10.847121,
+      "original_start_s": 7.217647546,
+      "original_end_s": 11.457867603,
+      "review_approved": true,
+      "reason": "Controlled fine tabletop pin approach, jaw closure retries and initial lifting while the carrier is supported.; Carrier-support hand starts separating around 10.9\u201311.0 s; carrier lowers after support release while right jaw continues rising. Exclude the combined sag-contaminated tail.",
+      "correction_description": "Controlled fine tabletop pin approach, jaw closure retries and initial lifting while the carrier is supported.",
+      "removed_prefix_reason": "",
+      "removed_suffix_reason": "Carrier-support hand starts separating around 10.9\u201311.0 s; carrier lowers after support release while right jaw continues rising. Exclude the combined sag-contaminated tail.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-04/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.82,
+      "source_metadata_sha256": "5f63d3c4939d12a24baee22ca354202f3a91a61abd3de4939360669243350a8e",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 122,
+          "data_time_s": 7.115674287,
+          "source_path": "images/wrist_port2/0000122.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 124,
+          "data_time_s": 7.273660025,
+          "source_path": "images/wrist_port2/0000124.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 151,
+          "data_time_s": 9.033665066,
+          "source_path": "images/wrist_port2/0000151.jpg",
+          "note": "Controlled fine tabletop pin approach, jaw closure retries and initial lifting while the carrier is supported."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 179,
+          "data_time_s": 10.847120768,
+          "source_path": "images/wrist_port2/0000179.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 181,
+          "data_time_s": 10.99872245,
+          "source_path": "images/wrist_port2/0000181.jpg",
+          "note": "After crop: Carrier-support hand starts separating around 10.9\u201311.0 s; carrier lowers after support release while right jaw continues rising. Exclude the combined sag-contaminated tail."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 122,
+          "data_time_s": 7.112648879,
+          "source_path": "images/wrist_port3/0000122.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 124,
+          "data_time_s": 7.264055971,
+          "source_path": "images/wrist_port3/0000124.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 154,
+          "data_time_s": 9.080834159,
+          "source_path": "images/wrist_port3/0000154.jpg",
+          "note": "Controlled fine tabletop pin approach, jaw closure retries and initial lifting while the carrier is supported."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 180,
+          "data_time_s": 10.746768746,
+          "source_path": "images/wrist_port3/0000180.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 183,
+          "data_time_s": 10.947908727,
+          "source_path": "images/wrist_port3/0000183.jpg",
+          "note": "After crop: Carrier-support hand starts separating around 10.9\u201311.0 s; carrier lowers after support release while right jaw continues rising. Exclude the combined sag-contaminated tail."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 121,
+          "data_time_s": 7.110474,
+          "source_path": "images/overhead/0000121.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 123,
+          "data_time_s": 7.261125282,
+          "source_path": "images/overhead/0000123.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 150,
+          "data_time_s": 9.02655909,
+          "source_path": "images/overhead/0000150.jpg",
+          "note": "Controlled fine tabletop pin approach, jaw closure retries and initial lifting while the carrier is supported."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 177,
+          "data_time_s": 10.840636759,
+          "source_path": "images/overhead/0000177.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 179,
+          "data_time_s": 10.991628948,
+          "source_path": "images/overhead/0000179.jpg",
+          "note": "After crop: Carrier-support hand starts separating around 10.9\u201311.0 s; carrier lowers after support release while right jaw continues rising. Exclude the combined sag-contaminated tail."
+        }
+      ],
+      "expected_rows": 70,
+      "expected_max_camera_offset_s": 0.046768746
+    },
+    {
+      "id": "20261007T204946-17207b31-correction-000-crop-00",
+      "source_id": "20261007T204946-17207b31",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.322929412,
+      "end_s": 9.590207,
+      "original_start_s": 7.273564679,
+      "original_end_s": 10.786433678,
+      "review_approved": true,
+      "reason": "Supported pin approach and local jaw closure/reposition retry.",
+      "correction_description": "Supported pin approach and local jaw closure/reposition retry.",
+      "removed_prefix_reason": "Brief takeover transition before a full supported handle grip is visible; begin at the first clearly guided pin approach.",
+      "removed_suffix_reason": "From 9.72-9.84 s the hand grip loosens and wrist descends from the corrective approach; subsequent 10.0-10.78 s broad sweep carries the jaws past the local pin-placement pose. Retain last supported pose before that terminal movement.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-05/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.83,
+      "source_metadata_sha256": "00d272c79b588c1e90c6041aa944fd74b5f3ab770f69593aae72da1e2fc51feb",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 126,
+          "data_time_s": 7.243947698,
+          "source_path": "images/wrist_port2/0000126.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 126,
+          "data_time_s": 7.19809344,
+          "source_path": "images/wrist_port3/0000126.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 126,
+          "data_time_s": 7.203604376,
+          "source_path": "images/overhead/0000126.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 127,
+          "data_time_s": 7.303590379,
+          "source_path": "images/wrist_port2/0000127.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 128,
+          "data_time_s": 7.322929412,
+          "source_path": "images/wrist_port3/0000128.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 128,
+          "data_time_s": 7.336762042,
+          "source_path": "images/overhead/0000128.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 144,
+          "data_time_s": 8.408992749,
+          "source_path": "images/wrist_port2/0000144.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 147,
+          "data_time_s": 8.479338377,
+          "source_path": "images/wrist_port3/0000147.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 145,
+          "data_time_s": 8.442312931,
+          "source_path": "images/overhead/0000145.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 162,
+          "data_time_s": 9.568179958,
+          "source_path": "images/wrist_port2/0000162.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 168,
+          "data_time_s": 9.590207237,
+          "source_path": "images/wrist_port3/0000168.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 165,
+          "data_time_s": 9.602007022,
+          "source_path": "images/overhead/0000165.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 163,
+          "data_time_s": 9.669281687,
+          "source_path": "images/wrist_port2/0000163.jpg",
+          "note": "after endpoint: From 9.72-9.84 s the hand grip loosens and wrist descends from the corrective approach; subsequent 10.0-10.78 s broad sweep carries the jaws past the local pin-placement pose. Retain last supported pose before that terminal movement."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 169,
+          "data_time_s": 9.641014888,
+          "source_path": "images/wrist_port3/0000169.jpg",
+          "note": "after endpoint: From 9.72-9.84 s the hand grip loosens and wrist descends from the corrective approach; subsequent 10.0-10.78 s broad sweep carries the jaws past the local pin-placement pose. Retain last supported pose before that terminal movement."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 167,
+          "data_time_s": 9.702750037,
+          "source_path": "images/overhead/0000167.jpg",
+          "note": "after endpoint: From 9.72-9.84 s the hand grip loosens and wrist descends from the corrective approach; subsequent 10.0-10.78 s broad sweep carries the jaws past the local pin-placement pose. Retain last supported pose before that terminal movement."
+        }
+      ],
+      "expected_rows": 42,
+      "expected_max_camera_offset_s": 0.049093204
+    },
+    {
+      "id": "20261007T205033-2c129579-correction-000-crop-00",
+      "source_id": "20261007T205033-2c129579",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 5.859386987,
+      "end_s": 8.69883,
+      "original_start_s": 5.859386987,
+      "original_end_s": 9.264755709,
+      "review_approved": true,
+      "reason": "Keep pin pickup correction and retries, excluding final hand departure and sagging wrist motion.",
+      "correction_description": "Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal.",
+      "removed_prefix_reason": "Operator support and local pin approach begin at the original human takeover.",
+      "removed_suffix_reason": "Hand departs in overhead by 8.849456, followed by downward wrist movement; retain an earlier conservative supported pose.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-07/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.83,
+      "source_metadata_sha256": "cc5ebefa9136450bb4b792b76fe667f26d75b69850150ec7e52f93c7a4a61f6b",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 99,
+          "data_time_s": 5.746075539,
+          "source_path": "images/wrist_port2/0000099.jpg",
+          "note": "before start: Operator support and local pin approach begin at the original human takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 98,
+          "data_time_s": 5.746090986,
+          "source_path": "images/wrist_port3/0000098.jpg",
+          "note": "before start: Operator support and local pin approach begin at the original human takeover."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 98,
+          "data_time_s": 5.746123882,
+          "source_path": "images/overhead/0000098.jpg",
+          "note": "before start: Operator support and local pin approach begin at the original human takeover."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 103,
+          "data_time_s": 5.972621816,
+          "source_path": "images/wrist_port2/0000103.jpg",
+          "note": "inside start: Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 101,
+          "data_time_s": 5.936202117,
+          "source_path": "images/wrist_port3/0000101.jpg",
+          "note": "inside start: Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 102,
+          "data_time_s": 5.969419968,
+          "source_path": "images/overhead/0000102.jpg",
+          "note": "inside start: Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 153,
+          "data_time_s": 8.69882961,
+          "source_path": "images/wrist_port2/0000153.jpg",
+          "note": "last controlled pose: Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 146,
+          "data_time_s": 8.611515747,
+          "source_path": "images/wrist_port3/0000146.jpg",
+          "note": "last controlled pose: Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 149,
+          "data_time_s": 8.698800325,
+          "source_path": "images/overhead/0000149.jpg",
+          "note": "last controlled pose: Supported gripper alignment, closing and local pickup retries at the upright pin, followed by brief controlled withdrawal."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 154,
+          "data_time_s": 8.798210248,
+          "source_path": "images/wrist_port2/0000154.jpg",
+          "note": "after end: Hand departs in overhead by 8.849456, followed by downward wrist movement; retain an earlier conservative supported pose."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 148,
+          "data_time_s": 8.81153222,
+          "source_path": "images/wrist_port3/0000148.jpg",
+          "note": "after end: Hand departs in overhead by 8.849456, followed by downward wrist movement; retain an earlier conservative supported pose."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 150,
+          "data_time_s": 8.798063683,
+          "source_path": "images/overhead/0000150.jpg",
+          "note": "after end: Hand departs in overhead by 8.849456, followed by downward wrist movement; retain an earlier conservative supported pose."
+        }
+      ],
+      "expected_rows": 55,
+      "expected_max_camera_offset_s": 0.050127234
+    },
+    {
+      "id": "20261007T205122-63a16f4f-correction-000-crop-00",
+      "source_id": "20261007T205122-63a16f4f",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.769514751,
+      "end_s": 7.90035,
+      "original_start_s": 4.730875055,
+      "original_end_s": 9.165512407,
+      "review_approved": true,
+      "reason": "Supported approach, close and local retry to position jaws around the table pin.",
+      "correction_description": "Supported approach, close and local retry to position jaws around the table pin.",
+      "removed_prefix_reason": "Brief takeover transition before a full supported handle grip is visible; begin at the first clearly guided pin approach.",
+      "removed_suffix_reason": "Around 8.00 s hand support relaxes and the wrist starts a pronounced terminal downward shift; 8.2-9.16 s becomes a much larger sweep with fingers no longer maintaining the preceding grip. End before this ambiguous release/sag tail.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-05/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.84,
+      "source_metadata_sha256": "d82cb5566e7270a4c673935697d778fd263c177baedab7655999d14914e17793",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 81,
+          "data_time_s": 4.661707833,
+          "source_path": "images/wrist_port2/0000081.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 81,
+          "data_time_s": 4.648662186,
+          "source_path": "images/wrist_port3/0000081.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 82,
+          "data_time_s": 4.688252666,
+          "source_path": "images/overhead/0000082.jpg",
+          "note": "before start"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 83,
+          "data_time_s": 4.789338364,
+          "source_path": "images/wrist_port2/0000083.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 83,
+          "data_time_s": 4.769514751,
+          "source_path": "images/wrist_port3/0000083.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 84,
+          "data_time_s": 4.789502492,
+          "source_path": "images/overhead/0000084.jpg",
+          "note": "first retained correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 109,
+          "data_time_s": 6.350266224,
+          "source_path": "images/wrist_port2/0000109.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 105,
+          "data_time_s": 6.33292012,
+          "source_path": "images/wrist_port3/0000105.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 107,
+          "data_time_s": 6.3502429,
+          "source_path": "images/overhead/0000107.jpg",
+          "note": "Inside supported local pin jaw-placement retry."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 130,
+          "data_time_s": 7.91339798,
+          "source_path": "images/wrist_port2/0000130.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 128,
+          "data_time_s": 7.900350083,
+          "source_path": "images/wrist_port3/0000128.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 129,
+          "data_time_s": 7.910162508,
+          "source_path": "images/overhead/0000129.jpg",
+          "note": "Last retained supported approach/closure pose before relaxed-support terminal descent."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 132,
+          "data_time_s": 8.014037952,
+          "source_path": "images/wrist_port2/0000132.jpg",
+          "note": "after endpoint: Around 8.00 s hand support relaxes and the wrist starts a pronounced terminal downward shift; 8.2-9.16 s becomes a much larger sweep with fingers no longer maintaining the preceding grip. End before this ambiguous release/sag tail."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 129,
+          "data_time_s": 8.00197865,
+          "source_path": "images/wrist_port3/0000129.jpg",
+          "note": "after endpoint: Around 8.00 s hand support relaxes and the wrist starts a pronounced terminal downward shift; 8.2-9.16 s becomes a much larger sweep with fingers no longer maintaining the preceding grip. End before this ambiguous release/sag tail."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 130,
+          "data_time_s": 7.96150847,
+          "source_path": "images/overhead/0000130.jpg",
+          "note": "after endpoint: Around 8.00 s hand support relaxes and the wrist starts a pronounced terminal downward shift; 8.2-9.16 s becomes a much larger sweep with fingers no longer maintaining the preceding grip. End before this ambiguous release/sag tail."
+        }
+      ],
+      "expected_rows": 61,
+      "expected_max_camera_offset_s": 0.0497571
+    },
+    {
+      "id": "20261007T205319-db73a839-correction-000-crop-00",
+      "source_id": "20261007T205319-db73a839",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.093932064,
+      "end_s": 14.099844746,
+      "original_start_s": 7.093932064,
+      "original_end_s": 15.471285443,
+      "review_approved": true,
+      "reason": "Keep controlled retries and placement; end at last supported frame before disengagement.",
+      "correction_description": "Supported gear jaw approach, pickup, fine carrier-rim alignment and deliberate placement opening; final local carrier alignment follows.",
+      "removed_prefix_reason": "Segment begins during supported gear approach.",
+      "removed_suffix_reason": "Operator disengages hands from handles between 14.15 and 14.30; terminal idle and slight unsupported drift remain.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-01/decisions.json",
+      "boundary_uncertainty_s": 0.15,
+      "confidence": 0.85,
+      "source_metadata_sha256": "0ab16e0ca53f98ca0097620a45648aa547e356fd077479831666391648019774",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port3",
+          "frame_index": 114,
+          "data_time_s": 7.020321235,
+          "source_path": "images/wrist_port3/0000114.jpg",
+          "note": "Before retained correction: Segment begins during supported gear approach."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 117,
+          "data_time_s": 7.2000515,
+          "source_path": "images/wrist_port3/0000117.jpg",
+          "note": "Inside start: Supported gear jaw approach, pickup, fine carrier-rim alignment and deliberate placement opening; final local carrier alignment follows."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 164,
+          "data_time_s": 10.62426075,
+          "source_path": "images/wrist_port3/0000164.jpg",
+          "note": "Inside corrective motion: Supported gear jaw approach, pickup, fine carrier-rim alignment and deliberate placement opening; final local carrier alignment follows."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 216,
+          "data_time_s": 14.099844746,
+          "source_path": "images/wrist_port3/0000216.jpg",
+          "note": "Last retained supported local alignment before hand disengagement."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 218,
+          "data_time_s": 14.250387491,
+          "source_path": "images/wrist_port3/0000218.jpg",
+          "note": "After boundary: Operator disengages hands from handles between 14.15 and 14.30; terminal idle and slight unsupported drift remain."
+        }
+      ],
+      "expected_rows": 138,
+      "expected_max_camera_offset_s": 0.050062022
+    },
+    {
+      "id": "20261007T205403-bbea256b-correction-000-crop-00",
+      "source_id": "20261007T205403-bbea256b",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 4.825582578,
+      "end_s": 11.319467,
+      "original_start_s": 4.825582578,
+      "original_end_s": 12.427333897,
+      "review_approved": true,
+      "reason": "Repeated supported gear jaw approach, closure and lifting retries beside the carrier, followed by local placement and controlled withdrawal.; Supporting hand disengages around 11.4\u201311.5 s; ensuing unsupported hold, slight downward drift and terminal idle are excluded.",
+      "correction_description": "Repeated supported gear jaw approach, closure and lifting retries beside the carrier, followed by local placement and controlled withdrawal.",
+      "removed_prefix_reason": "",
+      "removed_suffix_reason": "Supporting hand disengages around 11.4\u201311.5 s; ensuing unsupported hold, slight downward drift and terminal idle are excluded.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-04/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.85,
+      "source_metadata_sha256": "8c6629fc7cc0168ca3ab12306b63fa93b33f1c7dbb280109d97dde9bc92fd6ee",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 81,
+          "data_time_s": 4.696882912,
+          "source_path": "images/wrist_port2/0000081.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 83,
+          "data_time_s": 4.833346669,
+          "source_path": "images/wrist_port2/0000083.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 128,
+          "data_time_s": 8.101580168,
+          "source_path": "images/wrist_port2/0000128.jpg",
+          "note": "Repeated supported gear jaw approach, closure and lifting retries beside the carrier, followed by local placement and controlled withdrawal."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 176,
+          "data_time_s": 11.272590637,
+          "source_path": "images/wrist_port2/0000176.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 178,
+          "data_time_s": 11.422619829,
+          "source_path": "images/wrist_port2/0000178.jpg",
+          "note": "After crop: Supporting hand disengages around 11.4\u201311.5 s; ensuing unsupported hold, slight downward drift and terminal idle are excluded."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 81,
+          "data_time_s": 4.6968952,
+          "source_path": "images/wrist_port3/0000081.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 83,
+          "data_time_s": 4.833374982,
+          "source_path": "images/wrist_port3/0000083.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 130,
+          "data_time_s": 8.050217796,
+          "source_path": "images/wrist_port3/0000130.jpg",
+          "note": "Repeated supported gear jaw approach, closure and lifting retries beside the carrier, followed by local placement and controlled withdrawal."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 179,
+          "data_time_s": 11.31946667,
+          "source_path": "images/wrist_port3/0000179.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 181,
+          "data_time_s": 11.469143901,
+          "source_path": "images/wrist_port3/0000181.jpg",
+          "note": "After crop: Supporting hand disengages around 11.4\u201311.5 s; ensuing unsupported hold, slight downward drift and terminal idle are excluded."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 81,
+          "data_time_s": 4.707236872,
+          "source_path": "images/overhead/0000081.jpg",
+          "note": "Before crop context"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 83,
+          "data_time_s": 4.855687927,
+          "source_path": "images/overhead/0000083.jpg",
+          "note": "First retained supported correction pose"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 134,
+          "data_time_s": 8.078648873,
+          "source_path": "images/overhead/0000134.jpg",
+          "note": "Repeated supported gear jaw approach, closure and lifting retries beside the carrier, followed by local placement and controlled withdrawal."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 180,
+          "data_time_s": 11.297938899,
+          "source_path": "images/overhead/0000180.jpg",
+          "note": "Last retained supported pose before tail contamination"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 182,
+          "data_time_s": 11.448154821,
+          "source_path": "images/overhead/0000182.jpg",
+          "note": "After crop: Supporting hand disengages around 11.4\u201311.5 s; ensuing unsupported hold, slight downward drift and terminal idle are excluded."
+        }
+      ],
+      "expected_rows": 128,
+      "expected_max_camera_offset_s": 0.050018817
+    },
+    {
+      "id": "20261007T205439-cfcecf48-correction-000-crop-00",
+      "source_id": "20261007T205439-cfcecf48",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.12303351,
+      "end_s": 15.780423,
+      "original_start_s": 7.12303351,
+      "original_end_s": 16.355014367,
+      "review_approved": true,
+      "reason": "Keep deliberate supported gear approach/retries and stop conservatively before release.",
+      "correction_description": "Guided gear grasp/lift and local carrier-rim alignment retries, with controlled recovery and reapproach after loss of gear contact.",
+      "removed_prefix_reason": "Purposeful correction starts with hand support at takeover.",
+      "removed_suffix_reason": "Hand opens and withdraws around 15.93-16.03 s; the carrier and jaws then settle without a new useful correction.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-00/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.83,
+      "source_metadata_sha256": "497aa0302289536fe53b20734f67a694abb4ee3ba77b156195d11b66b3fdd786",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 123,
+          "data_time_s": 6.981950453,
+          "source_path": "images/wrist_port2/0000123.jpg",
+          "note": "Before: Purposeful correction starts with hand support at takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 123,
+          "data_time_s": 6.981931835,
+          "source_path": "images/wrist_port3/0000123.jpg",
+          "note": "Before: Purposeful correction starts with hand support at takeover."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 123,
+          "data_time_s": 7.033328813,
+          "source_path": "images/overhead/0000123.jpg",
+          "note": "Before: Purposeful correction starts with hand support at takeover."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 126,
+          "data_time_s": 7.225469362,
+          "source_path": "images/wrist_port2/0000126.jpg",
+          "note": "Inside: Guided gear grasp/lift and local carrier-rim alignment retries, with controlled recovery and reapproach after loss of gear contact."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 126,
+          "data_time_s": 7.225443724,
+          "source_path": "images/wrist_port3/0000126.jpg",
+          "note": "Inside: Guided gear grasp/lift and local carrier-rim alignment retries, with controlled recovery and reapproach after loss of gear contact."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 126,
+          "data_time_s": 7.239648983,
+          "source_path": "images/overhead/0000126.jpg",
+          "note": "Inside: Guided gear grasp/lift and local carrier-rim alignment retries, with controlled recovery and reapproach after loss of gear contact."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 188,
+          "data_time_s": 11.450367494,
+          "source_path": "images/wrist_port2/0000188.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 191,
+          "data_time_s": 11.451322146,
+          "source_path": "images/wrist_port3/0000191.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 188,
+          "data_time_s": 11.4635536,
+          "source_path": "images/overhead/0000188.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 247,
+          "data_time_s": 15.771166504,
+          "source_path": "images/wrist_port2/0000247.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 254,
+          "data_time_s": 15.780422805,
+          "source_path": "images/wrist_port3/0000254.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 248,
+          "data_time_s": 15.780043383,
+          "source_path": "images/overhead/0000248.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 248,
+          "data_time_s": 15.871821334,
+          "source_path": "images/wrist_port2/0000248.jpg",
+          "note": "After: Hand opens and withdraws around 15.93-16.03 s; the carrier and jaws then settle without a new useful correction."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 256,
+          "data_time_s": 15.88190606,
+          "source_path": "images/wrist_port3/0000256.jpg",
+          "note": "After: Hand opens and withdraws around 15.93-16.03 s; the carrier and jaws then settle without a new useful correction."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 250,
+          "data_time_s": 15.881067045,
+          "source_path": "images/overhead/0000250.jpg",
+          "note": "After: Hand opens and withdraws around 15.93-16.03 s; the carrier and jaws then settle without a new useful correction."
+        }
+      ],
+      "expected_rows": 171,
+      "expected_max_camera_offset_s": 0.049482635
+    },
+    {
+      "id": "20261007T205523-ce34d5e3-correction-000-crop-00",
+      "source_id": "20261007T205523-ce34d5e3",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 7.579864559,
+      "end_s": 10.095218721,
+      "original_start_s": 7.579864559,
+      "original_end_s": 11.219494952,
+      "review_approved": true,
+      "reason": "Supported local gear and carrier alignment, with deliberate jaw opening and small seating/placement adjustments at the carrier rim.",
+      "correction_description": "Supported local gear and carrier alignment, with deliberate jaw opening and small seating/placement adjustments at the carrier rim.",
+      "removed_prefix_reason": "No prefix removed; the operator is supporting the wrist at the gear/carrier interface.",
+      "removed_suffix_reason": "Hand withdraws beginning around 10.19 s, and both wrist views show abrupt lowering by 10.30-10.40 s followed by a lowered idle pose.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-06/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.84,
+      "source_metadata_sha256": "a4cc3bc85eec1f57af7a575b53cf9741b98fc8f70948dea924883933e1bbc79e",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 133,
+          "data_time_s": 7.48088666,
+          "source_path": "images/wrist_port2/0000133.jpg",
+          "note": "Before retained correction: No prefix removed; the operator is supporting the wrist at the gear/carrier interface."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 133,
+          "data_time_s": 7.471198006,
+          "source_path": "images/wrist_port3/0000133.jpg",
+          "note": "Before retained correction: No prefix removed; the operator is supporting the wrist at the gear/carrier interface."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 136,
+          "data_time_s": 7.706195816,
+          "source_path": "images/wrist_port2/0000136.jpg",
+          "note": "Inside correction start: Supported local gear and carrier alignment, with deliberate jaw opening and small seating/placement adjustments at the carrier rim."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 136,
+          "data_time_s": 7.676276345,
+          "source_path": "images/wrist_port3/0000136.jpg",
+          "note": "Inside correction start: Supported local gear and carrier alignment, with deliberate jaw opening and small seating/placement adjustments at the carrier rim."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 170,
+          "data_time_s": 10.016851588,
+          "source_path": "images/wrist_port2/0000170.jpg",
+          "note": "Last controlled endpoint: Supported local gear and carrier alignment, with deliberate jaw opening and small seating/placement adjustments at the carrier rim."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 170,
+          "data_time_s": 9.994745962,
+          "source_path": "images/wrist_port3/0000170.jpg",
+          "note": "Last controlled endpoint: Supported local gear and carrier alignment, with deliberate jaw opening and small seating/placement adjustments at the carrier rim."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 173,
+          "data_time_s": 10.217753763,
+          "source_path": "images/wrist_port2/0000173.jpg",
+          "note": "After retained endpoint: Hand withdraws beginning around 10.19 s, and both wrist views show abrupt lowering by 10.30-10.40 s followed by a lowered idle pose."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 172,
+          "data_time_s": 10.195523514,
+          "source_path": "images/wrist_port3/0000172.jpg",
+          "note": "After retained endpoint: Hand withdraws beginning around 10.19 s, and both wrist views show abrupt lowering by 10.30-10.40 s followed by a lowered idle pose."
+        }
+      ],
+      "expected_rows": 48,
+      "expected_max_camera_offset_s": 0.044357584
+    },
+    {
+      "id": "20261007T205608-16f63fad-correction-000-crop-00",
+      "source_id": "20261007T205608-16f63fad",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 3.635315965,
+      "end_s": 10.886329,
+      "original_start_s": 3.635315965,
+      "original_end_s": 11.912308538,
+      "review_approved": true,
+      "reason": "Supported gear pickup retries, controlled transport toward the carrier, local alignment and deliberate jaw opening followed by guided withdrawal.",
+      "correction_description": "Supported gear pickup retries, controlled transport toward the carrier, local alignment and deliberate jaw opening followed by guided withdrawal.",
+      "removed_prefix_reason": "No prefix removed: the operator takes the wrist and starts the gear correction at the segment boundary.",
+      "removed_suffix_reason": "The wrist-supporting hand loosens and withdraws around 11.01\u201311.14s; the subsequent arm settling and computer interaction are removed.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-03/decisions.json",
+      "boundary_uncertainty_s": 0.12,
+      "confidence": 0.85,
+      "source_metadata_sha256": "ad15b6974b051fe94fb98cf0b930e18311a0c57fa61ef503abe0bb0468822207",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 62,
+          "data_time_s": 3.604917762,
+          "source_path": "images/wrist_port2/0000062.jpg",
+          "note": "Before retained interval: No prefix removed: the operator takes the wrist and starts the gear correction at the segment boundary."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 63,
+          "data_time_s": 3.667199381,
+          "source_path": "images/wrist_port3/0000063.jpg",
+          "note": "Before retained interval: No prefix removed: the operator takes the wrist and starts the gear correction at the segment boundary."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 63,
+          "data_time_s": 3.657422031,
+          "source_path": "images/overhead/0000063.jpg",
+          "note": "Before retained interval: No prefix removed: the operator takes the wrist and starts the gear correction at the segment boundary."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 64,
+          "data_time_s": 3.744879053,
+          "source_path": "images/wrist_port2/0000064.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 64,
+          "data_time_s": 3.718108101,
+          "source_path": "images/wrist_port3/0000064.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 64,
+          "data_time_s": 3.707661506,
+          "source_path": "images/overhead/0000064.jpg",
+          "note": "Beginning of purposeful correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 113,
+          "data_time_s": 7.213055227,
+          "source_path": "images/wrist_port2/0000113.jpg",
+          "note": "Supported gear pickup retries, controlled transport toward the carrier, local alignment and deliberate jaw opening followed by guided withdrawal."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 115,
+          "data_time_s": 7.236662982,
+          "source_path": "images/wrist_port3/0000115.jpg",
+          "note": "Supported gear pickup retries, controlled transport toward the carrier, local alignment and deliberate jaw opening followed by guided withdrawal."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 114,
+          "data_time_s": 7.231516504,
+          "source_path": "images/overhead/0000114.jpg",
+          "note": "Supported gear pickup retries, controlled transport toward the carrier, local alignment and deliberate jaw opening followed by guided withdrawal."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 170,
+          "data_time_s": 10.835927983,
+          "source_path": "images/wrist_port2/0000170.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 165,
+          "data_time_s": 10.859612772,
+          "source_path": "images/wrist_port3/0000165.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 168,
+          "data_time_s": 10.848343483,
+          "source_path": "images/overhead/0000168.jpg",
+          "note": "Last supported controlled endpoint"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 173,
+          "data_time_s": 11.038368806,
+          "source_path": "images/wrist_port2/0000173.jpg",
+          "note": "After endpoint: The wrist-supporting hand loosens and withdraws around 11.01\u201311.14s; the subsequent arm settling and computer interaction are removed."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 167,
+          "data_time_s": 11.011694365,
+          "source_path": "images/wrist_port3/0000167.jpg",
+          "note": "After endpoint: The wrist-supporting hand loosens and withdraws around 11.01\u201311.14s; the subsequent arm settling and computer interaction are removed."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 170,
+          "data_time_s": 10.997771576,
+          "source_path": "images/overhead/0000170.jpg",
+          "note": "After endpoint: The wrist-supporting hand loosens and withdraws around 11.01\u201311.14s; the subsequent arm settling and computer interaction are removed."
+        }
+      ],
+      "expected_rows": 143,
+      "expected_max_camera_offset_s": 0.050503072
+    },
+    {
+      "id": "20261007T205640-20ca9a87-correction-000-crop-00",
+      "source_id": "20261007T205640-20ca9a87",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 2.996007537,
+      "end_s": 5.481972,
+      "original_start_s": 2.996007537,
+      "original_end_s": 6.157266055,
+      "review_approved": true,
+      "reason": "Retain gear approach and initial lift before left support is released.",
+      "correction_description": "Guided jaw approach and closure around the gear, followed by controlled initial lift while the carrier is stabilized.",
+      "removed_prefix_reason": "Guided correction begins at takeover.",
+      "removed_suffix_reason": "Operator carrier support hand opens by about 5.60 s; subsequent carrier lowering and terminal gripper motions mix useful right-arm movement with unsupported sag.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-00/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.81,
+      "source_metadata_sha256": "e6590db02ec4aa05ca56abd6c6861cf5435a0ff4f7251ee78b0c8442d4196366",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 53,
+          "data_time_s": 2.903457865,
+          "source_path": "images/wrist_port2/0000053.jpg",
+          "note": "Before: Guided correction begins at takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 53,
+          "data_time_s": 2.884088126,
+          "source_path": "images/wrist_port3/0000053.jpg",
+          "note": "Before: Guided correction begins at takeover."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 52,
+          "data_time_s": 2.86907613,
+          "source_path": "images/overhead/0000052.jpg",
+          "note": "Before: Guided correction begins at takeover."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 56,
+          "data_time_s": 3.119700974,
+          "source_path": "images/wrist_port2/0000056.jpg",
+          "note": "Inside: Guided jaw approach and closure around the gear, followed by controlled initial lift while the carrier is stabilized."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 57,
+          "data_time_s": 3.095205704,
+          "source_path": "images/wrist_port3/0000057.jpg",
+          "note": "Inside: Guided jaw approach and closure around the gear, followed by controlled initial lift while the carrier is stabilized."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 56,
+          "data_time_s": 3.129786421,
+          "source_path": "images/overhead/0000056.jpg",
+          "note": "Inside: Guided jaw approach and closure around the gear, followed by controlled initial lift while the carrier is stabilized."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 73,
+          "data_time_s": 4.226781233,
+          "source_path": "images/wrist_port2/0000073.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 73,
+          "data_time_s": 4.204997722,
+          "source_path": "images/wrist_port3/0000073.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 73,
+          "data_time_s": 4.239149725,
+          "source_path": "images/overhead/0000073.jpg",
+          "note": "Inside correction"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 88,
+          "data_time_s": 5.481972054,
+          "source_path": "images/wrist_port2/0000088.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 89,
+          "data_time_s": 5.460935985,
+          "source_path": "images/wrist_port3/0000089.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 89,
+          "data_time_s": 5.495477169,
+          "source_path": "images/overhead/0000089.jpg",
+          "note": "Last retained pose"
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 89,
+          "data_time_s": 5.581936959,
+          "source_path": "images/wrist_port2/0000089.jpg",
+          "note": "After: Operator carrier support hand opens by about 5.60 s; subsequent carrier lowering and terminal gripper motions mix useful right-arm movement with unsupported sag."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 91,
+          "data_time_s": 5.562578338,
+          "source_path": "images/wrist_port3/0000091.jpg",
+          "note": "After: Operator carrier support hand opens by about 5.60 s; subsequent carrier lowering and terminal gripper motions mix useful right-arm movement with unsupported sag."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 91,
+          "data_time_s": 5.596209845,
+          "source_path": "images/overhead/0000091.jpg",
+          "note": "After: Operator carrier support hand opens by about 5.60 s; subsequent carrier lowering and terminal gripper motions mix useful right-arm movement with unsupported sag."
+        }
+      ],
+      "expected_rows": 47,
+      "expected_max_camera_offset_s": 0.050092804
+    },
+    {
+      "id": "20261007T205706-b38b31cb-correction-000-crop-00",
+      "source_id": "20261007T205706-b38b31cb",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "crop_index": 0,
+      "start_s": 5.194251448,
+      "end_s": 9.152419,
+      "original_start_s": 5.194251448,
+      "original_end_s": 10.083640256,
+      "review_approved": true,
+      "reason": "Keep purposeful gear placement and local contact; trim operator release of wrist support and subsequent drift.",
+      "correction_description": "Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal.",
+      "removed_prefix_reason": "Task-directed gear approach and operator support begin at original takeover.",
+      "removed_suffix_reason": "Fingers unfold from wrist support around 9.3-9.4 seconds, with departure and terminal arm drift afterward.",
+      "annotation_source": "Saved-data visual crop review; parent boundary spot checks",
+      "visual_review_file": "/home/zeb/Desktop/Panthera-Teleop/work/hitl-correction-crops-20261007/additional/batch-07/decisions.json",
+      "boundary_uncertainty_s": 0.1,
+      "confidence": 0.88,
+      "source_metadata_sha256": "70af6739204e54230dee93cab81c1070198aef75ccec19f3db6f00c0486fa8b7",
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_042500",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": "",
+        "milestones": {},
+        "reset_after_finish": true
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "evidence": [
+        {
+          "camera": "wrist_port2",
+          "frame_index": 85,
+          "data_time_s": 5.090814975,
+          "source_path": "images/wrist_port2/0000085.jpg",
+          "note": "before start: Task-directed gear approach and operator support begin at original takeover."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 85,
+          "data_time_s": 5.076643894,
+          "source_path": "images/wrist_port3/0000085.jpg",
+          "note": "before start: Task-directed gear approach and operator support begin at original takeover."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 86,
+          "data_time_s": 5.12398138,
+          "source_path": "images/overhead/0000086.jpg",
+          "note": "before start: Task-directed gear approach and operator support begin at original takeover."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 88,
+          "data_time_s": 5.283631599,
+          "source_path": "images/wrist_port2/0000088.jpg",
+          "note": "inside start: Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 88,
+          "data_time_s": 5.300463888,
+          "source_path": "images/wrist_port3/0000088.jpg",
+          "note": "inside start: Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 89,
+          "data_time_s": 5.300398185,
+          "source_path": "images/overhead/0000089.jpg",
+          "note": "inside start: Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 140,
+          "data_time_s": 9.052803935,
+          "source_path": "images/wrist_port2/0000140.jpg",
+          "note": "last controlled pose: Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 147,
+          "data_time_s": 9.124412533,
+          "source_path": "images/wrist_port3/0000147.jpg",
+          "note": "last controlled pose: Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 146,
+          "data_time_s": 9.121071313,
+          "source_path": "images/overhead/0000146.jpg",
+          "note": "last controlled pose: Controlled gear alignment at the supported carrier, deliberate opening to release the gear, then closed-jaw local seating contact and withdrawal."
+        },
+        {
+          "camera": "wrist_port2",
+          "frame_index": 142,
+          "data_time_s": 9.252747201,
+          "source_path": "images/wrist_port2/0000142.jpg",
+          "note": "after end: Fingers unfold from wrist support around 9.3-9.4 seconds, with departure and terminal arm drift afterward."
+        },
+        {
+          "camera": "wrist_port3",
+          "frame_index": 149,
+          "data_time_s": 9.275025831,
+          "source_path": "images/wrist_port3/0000149.jpg",
+          "note": "after end: Fingers unfold from wrist support around 9.3-9.4 seconds, with departure and terminal arm drift afterward."
+        },
+        {
+          "camera": "overhead",
+          "frame_index": 147,
+          "data_time_s": 9.221519295,
+          "source_path": "images/overhead/0000147.jpg",
+          "note": "after end: Fingers unfold from wrist support around 9.3-9.4 seconds, with departure and terminal arm drift afterward."
+        }
+      ],
+      "expected_rows": 77,
+      "expected_max_camera_offset_s": 0.049610455
+    }
+  ],
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified.",
+  "source_kind": "visually_trimmed_human_corrections_only",
+  "annotation_time_basis": "data_monotonic_ns relative to start_data_monotonic_ns when present, otherwise host clock"
+}

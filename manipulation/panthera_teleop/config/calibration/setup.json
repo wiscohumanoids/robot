@@ -1,0 +1,34 @@
+{
+  "status": "uncalibrated",
+  "pattern": {
+    "squares": [
+      10,
+      7
+    ],
+    "inner_corners": [
+      9,
+      6
+    ],
+    "square_size_mm": null
+  },
+  "cameras": {
+    "wrist_video2": {
+      "device": "/dev/v4l/by-path/pci-0000:08:00.4-usb-0:1.2:1.0-video-index0",
+      "arm_assignment": "unverified"
+    },
+    "wrist_video4": {
+      "device": "/dev/v4l/by-path/pci-0000:08:00.4-usb-0:1.3:1.0-video-index0",
+      "arm_assignment": "unverified"
+    },
+    "overhead": {
+      "device": "/dev/v4l/by-path/pci-0000:06:00.3-usb-0:1:1.0-video-index0"
+    }
+  },
+  "capture_resolution": [
+    1280,
+    720
+  ],
+  "intrinsics": null,
+  "camera_to_robot_transforms": null,
+  "note": "No autonomous assembly or calibration motions have been commanded."
+}

@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "verified_utc": "2026-10-04T22:46:24.651726+00:00",
+  "hardware_free_tests_passed": 75,
+  "remote_restarted": true,
+  "local_dashboard_restarted": true,
+  "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_015500",
+  "contract_sha256": "40b54af0f3fd03688b017f0f7e7cdc1b6e5f704848ed20dbf7f62ae5b402c32c",
+  "contracts_match": true,
+  "probe": {
+    "mock": false,
+    "actions": 50,
+    "dimensions": 14,
+    "latency_s": 3.799007637999239,
+    "images": "synthetic; no robot motion"
+  },
+  "dashboard": {
+    "mode": "fault",
+    "connected": false,
+    "joint_speed_rad_s": 0.6,
+    "gripper_speed_rad_s": 0.8
+  }
+}

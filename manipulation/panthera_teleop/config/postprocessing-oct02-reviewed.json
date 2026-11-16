@@ -1,0 +1,2038 @@
+{
+  "processing_version": 2,
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Regular 50ms host-monotonic grid; nearest measured state and nearest frame per camera within the annotated crop; ties select earlier samples. No interpolation, numerical low-pass filter, or duplicated synthetic states. Some camera frames repeat because achieved capture rate is below 20 Hz; counts are reported per episode.",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.04,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Host receive timestamps, not hardware exposure timestamps. Offline nearest-frame alignment may choose a frame slightly later than the grid tick; all actual offsets are retained.",
+  "trim_method": "Existing visual cuts reused; new final-release proposals from right gripper position checked visually using synchronized multi-camera boundary and trajectory samples; two recovery endings manually refined.",
+  "trim_uncertainty_s": 0.15,
+  "episodes": [
+    {
+      "id": "20260930T015939-b4f0fa99",
+      "start_s": 0,
+      "end_s": 17.84110223,
+      "original_end_s": 17.84110223,
+      "source_category": "kept",
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20260930T203111-0934a310",
+      "start_s": 0,
+      "end_s": 18.258,
+      "original_end_s": 20.160163369,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 20.160163369,
+        "right_gripper_baseline_rad": 1.1033273935317993,
+        "final_rad": 1.9672654867172241,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T175615-32a3e2be",
+      "start_s": 0,
+      "end_s": 14.249,
+      "original_end_s": 16.395823496,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 16.395823496,
+        "right_gripper_baseline_rad": 1.000283122062683,
+        "final_rad": 1.7033716440200806,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T175740-b500cdd6",
+      "start_s": 0,
+      "end_s": 10.982,
+      "original_end_s": 12.987461187,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.987461187,
+        "right_gripper_baseline_rad": 0.9864601492881775,
+        "final_rad": 1.6348848342895508,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T175839-33e3ab4c",
+      "start_s": 0,
+      "end_s": 13.535,
+      "original_end_s": 15.563885852,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 15.563885852,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.589017629623413,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T175906-785859ef",
+      "start_s": 0,
+      "end_s": 12.096,
+      "original_end_s": 14.191950677,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.191950677,
+        "right_gripper_baseline_rad": 1.0851061344146729,
+        "final_rad": 1.8359469175338745,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T175934-dde8b263",
+      "start_s": 0,
+      "end_s": 11.562,
+      "original_end_s": 13.398460744,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.398460744,
+        "right_gripper_baseline_rad": 0.9471902251243591,
+        "final_rad": 1.7329025268554688,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180049-967d16d9",
+      "start_s": 0,
+      "end_s": 10.932,
+      "original_end_s": 13.517989053,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.517989053,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.6876636743545532,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180111-59368143",
+      "start_s": 0,
+      "end_s": 13.075,
+      "original_end_s": 14.930867677,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.930867677,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.8416017293930054,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180236-0d2825ae",
+      "start_s": 0,
+      "end_s": 13.984,
+      "original_end_s": 15.808076496,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 15.808076496,
+        "right_gripper_baseline_rad": 0.9720087647438049,
+        "final_rad": 1.6625308990478516,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180405-c7ea1278",
+      "start_s": 0,
+      "end_s": 12.468,
+      "original_end_s": 14.43368252,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.43368252,
+        "right_gripper_baseline_rad": 0.9770353436470032,
+        "final_rad": 1.8554246425628662,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180429-8846511d",
+      "start_s": 0,
+      "end_s": 11.164,
+      "original_end_s": 13.111966201,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.111966201,
+        "right_gripper_baseline_rad": 1.0518052577972412,
+        "final_rad": 1.5079644918441772,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180544-d3d175d7",
+      "start_s": 0,
+      "end_s": 10.066,
+      "original_end_s": 13.129892705,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.129892705,
+        "right_gripper_baseline_rad": 1.0329556465148926,
+        "final_rad": 1.5896458625793457,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180607-cc24fedf",
+      "start_s": 0,
+      "end_s": 11.179,
+      "original_end_s": 12.881560718,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.881560718,
+        "right_gripper_baseline_rad": 1.0568318367004395,
+        "final_rad": 1.7574070692062378,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180632-53ee44c9",
+      "start_s": 0,
+      "end_s": 10.131,
+      "original_end_s": 11.887534629,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.887534629,
+        "right_gripper_baseline_rad": 1.0844777822494507,
+        "final_rad": 1.7712301015853882,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180703-ad5cf6eb",
+      "start_s": 0,
+      "end_s": 11.649,
+      "original_end_s": 13.433383052,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.433383052,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.8491413593292236,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180840-344a07fa",
+      "start_s": 0,
+      "end_s": 15.64,
+      "original_end_s": 21.060568896,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 21.060568896,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.4432477951049805,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T180916-f2d75e13",
+      "start_s": 0,
+      "end_s": 11.87,
+      "original_end_s": 13.734090386,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.734090386,
+        "right_gripper_baseline_rad": 0.9339955151081085,
+        "final_rad": 1.435079574584961,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T181048-e19ba0e7",
+      "start_s": 0,
+      "end_s": 11.94,
+      "original_end_s": 13.660177332,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.660177332,
+        "right_gripper_baseline_rad": 0.989601731300354,
+        "final_rad": 1.6267167329788208,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T181113-2cc794de",
+      "start_s": 0,
+      "end_s": 16.499,
+      "original_end_s": 18.27955931,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 18.27955931,
+        "right_gripper_baseline_rad": 0.9858318567276001,
+        "final_rad": 1.4784334897994995,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T181219-418f588f",
+      "start_s": 0,
+      "end_s": 12.434,
+      "original_end_s": 14.452336947,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.452336947,
+        "right_gripper_baseline_rad": 1.0291857719421387,
+        "final_rad": 1.5733096599578857,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T181242-3a090f8c",
+      "start_s": 0,
+      "end_s": 10.063,
+      "original_end_s": 12.029261758,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.029261758,
+        "right_gripper_baseline_rad": 0.9726371169090271,
+        "final_rad": 1.6405396461486816,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T181402-4edc9d93",
+      "start_s": 0,
+      "end_s": 11.272,
+      "original_end_s": 12.917688516,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.917688516,
+        "right_gripper_baseline_rad": 1.0543185472488403,
+        "final_rad": 1.6216901540756226,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182024-d8ab8052",
+      "start_s": 0,
+      "end_s": 12.084,
+      "original_end_s": 14.941624572,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.941624572,
+        "right_gripper_baseline_rad": 0.9588140845298767,
+        "final_rad": 1.3182122707366943,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182052-23f461c8",
+      "start_s": 0,
+      "end_s": 11.553,
+      "original_end_s": 13.607585719,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.607585719,
+        "right_gripper_baseline_rad": 0.9864601492881775,
+        "final_rad": 1.224592924118042,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182119-697d2e0e",
+      "start_s": 0,
+      "end_s": 11.214,
+      "original_end_s": 13.133404181,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.133404181,
+        "right_gripper_baseline_rad": 0.9720087647438049,
+        "final_rad": 1.4627256393432617,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182204-d2477dec",
+      "start_s": 0,
+      "end_s": 8.666,
+      "original_end_s": 13.402862357,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.402862357,
+        "right_gripper_baseline_rad": 0.9726371169090271,
+        "final_rad": 1.57456636428833,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182236-988e8c8a",
+      "start_s": 0,
+      "end_s": 14.535,
+      "original_end_s": 16.902889832,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 16.902889832,
+        "right_gripper_baseline_rad": 1.0304423570632935,
+        "final_rad": 1.766831874847412,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182350-3785e6c1",
+      "start_s": 0,
+      "end_s": 12.623,
+      "original_end_s": 14.96880726,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.96880726,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.6593892574310303,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182418-a6f63acd",
+      "start_s": 0,
+      "end_s": 11.552,
+      "original_end_s": 13.88956999,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.88956999,
+        "right_gripper_baseline_rad": 0.9588140845298767,
+        "final_rad": 1.5368671417236328,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182509-9b8ee1a4",
+      "start_s": 0,
+      "end_s": 11.805,
+      "original_end_s": 13.703712089,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.703712089,
+        "right_gripper_baseline_rad": 1.001539707183838,
+        "final_rad": 1.6348848342895508,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182533-d5f117e8",
+      "start_s": 0,
+      "end_s": 10.153,
+      "original_end_s": 11.886341632,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.886341632,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.4382212162017822,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182604-cec94ac5",
+      "start_s": 0,
+      "end_s": 10.391,
+      "original_end_s": 12.142762373,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.142762373,
+        "right_gripper_baseline_rad": 1.0474070310592651,
+        "final_rad": 1.4099467992782593,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182653-aeb6689c",
+      "start_s": 0,
+      "end_s": 13.642,
+      "original_end_s": 15.79126587,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 15.79126587,
+        "right_gripper_baseline_rad": 0.9720087647438049,
+        "final_rad": 1.4099467992782593,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182721-9ae05016",
+      "start_s": 0,
+      "end_s": 12.923,
+      "original_end_s": 14.904148211,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.904148211,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.4275397062301636,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182749-6e4d2fb3",
+      "start_s": 0,
+      "end_s": 11.852,
+      "original_end_s": 13.701278864,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.701278864,
+        "right_gripper_baseline_rad": 0.9867743253707886,
+        "final_rad": 1.1969468593597412,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T182817-b8e699dd",
+      "start_s": 0,
+      "end_s": 8.99,
+      "original_end_s": 10.713284115,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.713284115,
+        "right_gripper_baseline_rad": 1.0103362798690796,
+        "final_rad": 1.7109112739562988,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183029-fc30c282",
+      "start_s": 0,
+      "end_s": 10.682,
+      "original_end_s": 12.809979826,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.809979826,
+        "right_gripper_baseline_rad": 1.0009114742279053,
+        "final_rad": 1.4909999370574951,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183104-066d4455",
+      "start_s": 0,
+      "end_s": 12.904,
+      "original_end_s": 14.885260043,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.885260043,
+        "right_gripper_baseline_rad": 0.987716794013977,
+        "final_rad": 1.4344512224197388,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183134-c357dfe9",
+      "start_s": 0,
+      "end_s": 11.567,
+      "original_end_s": 14.063865114,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.063865114,
+        "right_gripper_baseline_rad": 0.9908583760261536,
+        "final_rad": 1.4909999370574951,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183351-c596409f",
+      "start_s": 0,
+      "end_s": 11.079,
+      "original_end_s": 12.79310774,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.79310774,
+        "right_gripper_baseline_rad": 0.9911724925041199,
+        "final_rad": 1.5362389087677002,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183525-c9fa600f",
+      "start_s": 0,
+      "end_s": 9.04,
+      "original_end_s": 11.037120756,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.037120756,
+        "right_gripper_baseline_rad": 1.0134778022766113,
+        "final_rad": 1.7429556846618652,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183546-3d3c0a22",
+      "start_s": 0,
+      "end_s": 10.398,
+      "original_end_s": 12.075579119,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.075579119,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.541893720626831,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183606-2745f918",
+      "start_s": 0,
+      "end_s": 8.943,
+      "original_end_s": 10.711865801,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.711865801,
+        "right_gripper_baseline_rad": 1.0141061544418335,
+        "final_rad": 1.6216901540756226,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183656-a71264d9",
+      "start_s": 0,
+      "end_s": 9.927,
+      "original_end_s": 11.976941491,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.976941491,
+        "right_gripper_baseline_rad": 1.0562034845352173,
+        "final_rad": 1.476548671722412,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183801-d0b5ea05",
+      "start_s": 0,
+      "end_s": 10.264,
+      "original_end_s": 12.075068848,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.075068848,
+        "right_gripper_baseline_rad": 1.0518052577972412,
+        "final_rad": 1.5067079067230225,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183821-8881b8b3",
+      "start_s": 0,
+      "end_s": 9.573,
+      "original_end_s": 11.345049078,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.345049078,
+        "right_gripper_baseline_rad": 1.0518052577972412,
+        "final_rad": 1.5751945972442627,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183856-6408c863",
+      "start_s": 0,
+      "end_s": 10.335,
+      "original_end_s": 12.118484066,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.118484066,
+        "right_gripper_baseline_rad": 0.9864601492881775,
+        "final_rad": 1.5079644918441772,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183917-ef78593b",
+      "start_s": 0,
+      "end_s": 10.042,
+      "original_end_s": 11.958109848,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.958109848,
+        "right_gripper_baseline_rad": 0.9914866089820862,
+        "final_rad": 1.5469202995300293,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T183940-35e7e99e",
+      "start_s": 0,
+      "end_s": 11.242,
+      "original_end_s": 12.982271524,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.982271524,
+        "right_gripper_baseline_rad": 1.0009114742279053,
+        "final_rad": 1.4909999370574951,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184003-c3d60734",
+      "start_s": 0,
+      "end_s": 9.432,
+      "original_end_s": 11.661995633,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.661995633,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.476548671722412,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184032-78afb154",
+      "start_s": 0,
+      "end_s": 8.203,
+      "original_end_s": 9.702285563,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 9.702285563,
+        "right_gripper_baseline_rad": 1.0285574197769165,
+        "final_rad": 1.5274423360824585,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184050-7eecd205",
+      "start_s": 0,
+      "end_s": 8.743,
+      "original_end_s": 10.229189461,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.229189461,
+        "right_gripper_baseline_rad": 1.042380452156067,
+        "final_rad": 1.5613715648651123,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184109-825e151b",
+      "start_s": 0,
+      "end_s": 9.063,
+      "original_end_s": 10.750224973,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.750224973,
+        "right_gripper_baseline_rad": 0.9676105380058289,
+        "final_rad": 1.4489024877548218,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184128-31ad382d",
+      "start_s": 0,
+      "end_s": 8.532,
+      "original_end_s": 10.21868415,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.21868415,
+        "right_gripper_baseline_rad": 1.042380452156067,
+        "final_rad": 1.4909999370574951,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184210-490b5fe6",
+      "start_s": 0,
+      "end_s": 9.2,
+      "original_end_s": 11.082541154,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.082541154,
+        "right_gripper_baseline_rad": 1.041123867034912,
+        "final_rad": 1.4658671617507935,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184327-16648a42",
+      "start_s": 0,
+      "end_s": 9.202,
+      "original_end_s": 11.069085892,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.069085892,
+        "right_gripper_baseline_rad": 0.9770353436470032,
+        "final_rad": 1.6876636743545532,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184347-4391333d",
+      "start_s": 0,
+      "end_s": 8.725,
+      "original_end_s": 10.67186913,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.67186913,
+        "right_gripper_baseline_rad": 1.0316990613937378,
+        "final_rad": 1.6066105365753174,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184407-5984a9e1",
+      "start_s": 0,
+      "end_s": 9.819,
+      "original_end_s": 12.052942362,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.052942362,
+        "right_gripper_baseline_rad": 0.9581857323646545,
+        "final_rad": 1.7039999961853027,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184427-83d1b68f",
+      "start_s": 0,
+      "end_s": 11.41,
+      "original_end_s": 13.584179744,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.584179744,
+        "right_gripper_baseline_rad": 1.0329556465148926,
+        "final_rad": 1.7574070692062378,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184506-c5783a9e",
+      "start_s": 0,
+      "end_s": 11.281,
+      "original_end_s": 13.032317799,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.032317799,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.6876636743545532,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184625-090bc6ef",
+      "start_s": 0,
+      "end_s": 8.678,
+      "original_end_s": 10.700755473,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.700755473,
+        "right_gripper_baseline_rad": 1.0285574197769165,
+        "final_rad": 1.576451301574707,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184645-43dd5929",
+      "start_s": 0,
+      "end_s": 10.76,
+      "original_end_s": 12.436015333,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.436015333,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.7530088424682617,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184706-3772283f",
+      "start_s": 0,
+      "end_s": 9.781,
+      "original_end_s": 11.688649836,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.688649836,
+        "right_gripper_baseline_rad": 1.0316990613937378,
+        "final_rad": 1.6958318948745728,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T184729-026a53bd",
+      "start_s": 0,
+      "end_s": 10.689,
+      "original_end_s": 12.650409502,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.650409502,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.6172919273376465,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195333-2cc53936",
+      "start_s": 0,
+      "end_s": 13.746,
+      "original_end_s": 16.580768366,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 16.580768366,
+        "right_gripper_baseline_rad": 1.046778678894043,
+        "final_rad": 1.6455662250518799,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195422-7b2c8a30",
+      "start_s": 0,
+      "end_s": 11.707,
+      "original_end_s": 13.54386548,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.54386548,
+        "right_gripper_baseline_rad": 1.0568318367004395,
+        "final_rad": 1.4489024877548218,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195444-9c37fa14",
+      "start_s": 0,
+      "end_s": 10.11,
+      "original_end_s": 11.796826231,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.796826231,
+        "right_gripper_baseline_rad": 1.0744247436523438,
+        "final_rad": 1.57456636428833,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195531-e7f7477e",
+      "start_s": 0,
+      "end_s": 9.213,
+      "original_end_s": 11.088769837,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.088769837,
+        "right_gripper_baseline_rad": 1.043008804321289,
+        "final_rad": 1.4784334897994995,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195551-fb0dd039",
+      "start_s": 0,
+      "end_s": 10.257,
+      "original_end_s": 12.070073846,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.070073846,
+        "right_gripper_baseline_rad": 1.0518052577972412,
+        "final_rad": 1.5896458625793457,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195611-e3cc9703",
+      "start_s": 0,
+      "end_s": 10.305,
+      "original_end_s": 12.140706817,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.140706817,
+        "right_gripper_baseline_rad": 1.042380452156067,
+        "final_rad": 1.4909999370574951,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195630-e1abd4c5",
+      "start_s": 0,
+      "end_s": 10.004,
+      "original_end_s": 11.797732997,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.797732997,
+        "right_gripper_baseline_rad": 1.042380452156067,
+        "final_rad": 1.6531060934066772,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195730-89e4c017",
+      "start_s": 0,
+      "end_s": 10.346,
+      "original_end_s": 12.26140421,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.26140421,
+        "right_gripper_baseline_rad": 1.0191327333450317,
+        "final_rad": 1.4815751314163208,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195813-914acaec",
+      "start_s": 0,
+      "end_s": 10.745,
+      "original_end_s": 12.340746417,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.340746417,
+        "right_gripper_baseline_rad": 1.0788229703903198,
+        "final_rad": 1.5896458625793457,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195834-3efcd765",
+      "start_s": 0,
+      "end_s": 8.164,
+      "original_end_s": 9.747567891,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 9.747567891,
+        "right_gripper_baseline_rad": 1.081336259841919,
+        "final_rad": 1.5896458625793457,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195922-7b2fa4aa",
+      "start_s": 0,
+      "end_s": 11.955,
+      "original_end_s": 15.001093904,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 15.001093904,
+        "right_gripper_baseline_rad": 1.0750529766082764,
+        "final_rad": 1.7856812477111816,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T195945-e43a7b17",
+      "start_s": 0,
+      "end_s": 7.603,
+      "original_end_s": 9.239424811,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 9.239424811,
+        "right_gripper_baseline_rad": 1.0819644927978516,
+        "final_rad": 1.8365751504898071,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200002-a9c64ef1",
+      "start_s": 0,
+      "end_s": 11.13,
+      "original_end_s": 12.938479965,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.938479965,
+        "right_gripper_baseline_rad": 1.1114954948425293,
+        "final_rad": 1.8139556646347046,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200025-3d32c120",
+      "start_s": 0,
+      "end_s": 8.668,
+      "original_end_s": 10.652122792,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.652122792,
+        "right_gripper_baseline_rad": 1.0788229703903198,
+        "final_rad": 1.759920358657837,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200102-afea3e67",
+      "start_s": 0,
+      "end_s": 9.054,
+      "original_end_s": 10.733269294,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.733269294,
+        "right_gripper_baseline_rad": 1.083849549293518,
+        "final_rad": 1.8836990594863892,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200120-6f9143eb",
+      "start_s": 0,
+      "end_s": 8.397,
+      "original_end_s": 10.049716139,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.049716139,
+        "right_gripper_baseline_rad": 1.0964158773422241,
+        "final_rad": 1.8026459217071533,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200142-4eb6bf3b",
+      "start_s": 0,
+      "end_s": 10.25,
+      "original_end_s": 12.004006527,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.004006527,
+        "right_gripper_baseline_rad": 1.1070972681045532,
+        "final_rad": 1.8466280698776245,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200202-e7069c57",
+      "start_s": 0,
+      "end_s": 10.561,
+      "original_end_s": 12.481118317,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.481118317,
+        "right_gripper_baseline_rad": 1.0285574197769165,
+        "final_rad": 1.7938494682312012,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200250-7e8ec6ec",
+      "start_s": 0,
+      "end_s": 11.672,
+      "original_end_s": 13.28014705,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.28014705,
+        "right_gripper_baseline_rad": 1.108353853225708,
+        "final_rad": 1.8686193227767944,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200334-49b76160",
+      "start_s": 0,
+      "end_s": 10.122,
+      "original_end_s": 11.997132576,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.997132576,
+        "right_gripper_baseline_rad": 1.083849549293518,
+        "final_rad": 1.8026459217071533,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200509-5a4ca8b4",
+      "start_s": 0,
+      "end_s": 8.948,
+      "original_end_s": 10.845363366,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.845363366,
+        "right_gripper_baseline_rad": 1.081336259841919,
+        "final_rad": 1.6028406620025635,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200539-7cb8eb0c",
+      "start_s": 0,
+      "end_s": 9.5,
+      "original_end_s": 11.364437781,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.364437781,
+        "right_gripper_baseline_rad": 1.0159910917282104,
+        "final_rad": 1.7712301015853882,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200558-96694ed7",
+      "start_s": 0,
+      "end_s": 9.246,
+      "original_end_s": 10.827223305,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.827223305,
+        "right_gripper_baseline_rad": 1.0932743549346924,
+        "final_rad": 1.8931238651275635,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T200618-163cdf11",
+      "start_s": 0,
+      "end_s": 9.1,
+      "original_end_s": 11.014366082,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.014366082,
+        "right_gripper_baseline_rad": 1.0285574197769165,
+        "final_rad": 1.9396193027496338,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202509-1f2adf88",
+      "start_s": 0,
+      "end_s": 12.398,
+      "original_end_s": 14.397140557,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.397140557,
+        "right_gripper_baseline_rad": 1.0706547498703003,
+        "final_rad": 1.5613715648651123,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202532-a38e473f",
+      "start_s": 0,
+      "end_s": 10.48,
+      "original_end_s": 12.156066668,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.156066668,
+        "right_gripper_baseline_rad": 1.1146371364593506,
+        "final_rad": 1.7373007535934448,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202554-82093bb5",
+      "start_s": 0,
+      "end_s": 10.516,
+      "original_end_s": 12.199556785,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.199556785,
+        "right_gripper_baseline_rad": 1.1114954948425293,
+        "final_rad": 1.5236724615097046,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202629-8ccc1e5a",
+      "start_s": 0,
+      "end_s": 10.601,
+      "original_end_s": 14.051212959,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.051212959,
+        "right_gripper_baseline_rad": 1.1121238470077515,
+        "final_rad": 1.7033716440200806,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202746-ec2dd4ca",
+      "start_s": 0,
+      "end_s": 15.049,
+      "original_end_s": 17.399807633,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 17.399807633,
+        "right_gripper_baseline_rad": 1.1114954948425293,
+        "final_rad": 1.7712301015853882,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202817-de7861bb",
+      "start_s": 0,
+      "end_s": 11.988,
+      "original_end_s": 13.836313954,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.836313954,
+        "right_gripper_baseline_rad": 1.0989290475845337,
+        "final_rad": 1.5795928239822388,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202916-44f1c414",
+      "start_s": 0,
+      "end_s": 8.949,
+      "original_end_s": 10.745369051,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.745369051,
+        "right_gripper_baseline_rad": 1.0800795555114746,
+        "final_rad": 1.715937852859497,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T202959-73e53b6c",
+      "start_s": 0,
+      "end_s": 12.485,
+      "original_end_s": 14.474345279,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 14.474345279,
+        "right_gripper_baseline_rad": 1.042380452156067,
+        "final_rad": 1.47592031955719,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T203024-22dad1f5",
+      "start_s": 0,
+      "end_s": 9.889,
+      "original_end_s": 11.395461517,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 11.395461517,
+        "right_gripper_baseline_rad": 1.0803937315940857,
+        "final_rad": 1.8139556646347046,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T203048-a5b2f1f1",
+      "start_s": 0,
+      "end_s": 10.409,
+      "original_end_s": 12.179711597,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.179711597,
+        "right_gripper_baseline_rad": 1.0474070310592651,
+        "final_rad": 1.6311149597167969,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T203113-d841dcb3",
+      "start_s": 0,
+      "end_s": 11.463,
+      "original_end_s": 13.176844556,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 13.176844556,
+        "right_gripper_baseline_rad": 1.0687698125839233,
+        "final_rad": 1.759920358657837,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T203140-9c3d318b",
+      "start_s": 0,
+      "end_s": 10.866,
+      "original_end_s": 12.466225421,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 12.466225421,
+        "right_gripper_baseline_rad": 1.1077256202697754,
+        "final_rad": 1.7285043001174927,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20261002T203203-46d0f382",
+      "start_s": 0,
+      "end_s": 8.738,
+      "original_end_s": 10.599920525,
+      "source_category": "kept",
+      "auto_trim": {
+        "previous_end_s": 10.599920525,
+        "right_gripper_baseline_rad": 1.0562034845352173,
+        "final_rad": 1.7605485916137695,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      },
+      "review_approved": true,
+      "annotation_source": "automated release proposal followed by visual multi-camera review",
+      "reason": "Retain visible completed supported assembly; exclude final gripper release and pullback."
+    },
+    {
+      "id": "20260930T014701-209b1e08",
+      "start_s": 35.13625846445408,
+      "end_s": 47.56,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 50.096335522,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:35:34.358419+00:00",
+      "auto_trim": {
+        "previous_end_s": 50.096335522,
+        "right_gripper_baseline_rad": 1.1831238269805908,
+        "final_rad": 1.541893720626831,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T014908-e6c9eabd",
+      "start_s": 14.477902547718003,
+      "end_s": 42.7,
+      "reason": "",
+      "annotation_source": "visual wrist-camera refinement of release boundary",
+      "original_end_s": 45.714473113,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:36:09.657212+00:00"
+    },
+    {
+      "id": "20260930T015016-2dc743a5",
+      "start_s": 23.563659202169198,
+      "end_s": 46.9,
+      "reason": "",
+      "annotation_source": "visual wrist-camera refinement of release boundary",
+      "original_end_s": 49.8295729,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:37:31.534762+00:00"
+    },
+    {
+      "id": "20260930T020817-d235eb20",
+      "start_s": 2.1569573271503977,
+      "end_s": 11.096100064412871,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 30.753319417,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:39:01.346840+00:00"
+    },
+    {
+      "id": "20260930T020908-ea1547ae",
+      "start_s": 6.333554889974693,
+      "end_s": 22.175459273,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 22.175459273,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:39:35.155446+00:00"
+    },
+    {
+      "id": "20260930T202219-de58aba5",
+      "start_s": 8.797034916709327,
+      "end_s": 25.377,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 27.587980249,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:40:49.245544+00:00",
+      "auto_trim": {
+        "previous_end_s": 27.587980249,
+        "right_gripper_baseline_rad": 1.0844777822494507,
+        "final_rad": 1.556344985961914,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T203034-162ed845",
+      "start_s": 5.199328896650759,
+      "end_s": 15.05,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 16.879511418,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:41:35.013086+00:00",
+      "auto_trim": {
+        "previous_end_s": 16.879511418,
+        "right_gripper_baseline_rad": 1.1171504259109497,
+        "final_rad": 1.9672654867172241,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T203143-361c4329",
+      "start_s": 3.9175817235921913,
+      "end_s": 17.864,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 19.630491028,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:42:45.858975+00:00",
+      "auto_trim": {
+        "previous_end_s": 19.630491028,
+        "right_gripper_baseline_rad": 1.0555752515792847,
+        "final_rad": 1.9672654867172241,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T203818-233e3c4f",
+      "start_s": 4.677624014700651,
+      "end_s": 20.953,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 22.859201457,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:43:06.542721+00:00",
+      "auto_trim": {
+        "previous_end_s": 22.859201457,
+        "right_gripper_baseline_rad": 1.0844777822494507,
+        "final_rad": 1.9572123289108276,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T203951-a4982f77",
+      "start_s": 5.299882812637744,
+      "end_s": 24.87,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 26.848856886,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:43:33.362545+00:00",
+      "auto_trim": {
+        "previous_end_s": 26.848856886,
+        "right_gripper_baseline_rad": 1.0744247436523438,
+        "final_rad": 1.7435840368270874,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T211934-0572f542",
+      "start_s": 5.902586204210412,
+      "end_s": 15.446,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 17.258513151,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:44:29.158709+00:00",
+      "auto_trim": {
+        "previous_end_s": 17.258513151,
+        "right_gripper_baseline_rad": 1.093902587890625,
+        "final_rad": 1.8139556646347046,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T212056-b96c00d9",
+      "start_s": 2.0923202205668834,
+      "end_s": 14.988,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 16.726467428,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:44:50.014445+00:00",
+      "auto_trim": {
+        "previous_end_s": 16.726467428,
+        "right_gripper_baseline_rad": 1.122177004814148,
+        "final_rad": 1.9396193027496338,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T212237-e973a8a2",
+      "start_s": 11.207171474417931,
+      "end_s": 15.054,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 16.847302336,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:45:12.620934+00:00",
+      "auto_trim": {
+        "previous_end_s": 16.847302336,
+        "right_gripper_baseline_rad": 1.1008141040802002,
+        "final_rad": 1.6593892574310303,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T212857-b75548ea",
+      "start_s": 11.606077704338396,
+      "end_s": 14.553,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 16.462774836,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:45:36.537042+00:00",
+      "auto_trim": {
+        "previous_end_s": 16.462774836,
+        "right_gripper_baseline_rad": 1.0712831020355225,
+        "final_rad": 1.9540706872940063,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T213231-4f82d04a",
+      "start_s": 3.136398373963124,
+      "end_s": 14.032,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 15.888787367,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:46:10.987891+00:00",
+      "auto_trim": {
+        "previous_end_s": 15.888787367,
+        "right_gripper_baseline_rad": 1.1403981447219849,
+        "final_rad": 1.9540706872940063,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T213258-958ef817",
+      "start_s": 1.938897384625452,
+      "end_s": 11.356,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 13.474849663,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:46:34.111447+00:00",
+      "auto_trim": {
+        "previous_end_s": 13.474849663,
+        "right_gripper_baseline_rad": 0.9958848357200623,
+        "final_rad": 1.8836990594863892,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T213320-4e36124b",
+      "start_s": 4.294192857872017,
+      "end_s": 12.887,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 14.884382763,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:47:07.954919+00:00",
+      "auto_trim": {
+        "previous_end_s": 14.884382763,
+        "right_gripper_baseline_rad": 1.0706547498703003,
+        "final_rad": 1.9672654867172241,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T213418-ce8ce62e",
+      "start_s": 3.3210480875972523,
+      "end_s": 15.586,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 17.733627433,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:47:27.285250+00:00",
+      "auto_trim": {
+        "previous_end_s": 17.733627433,
+        "right_gripper_baseline_rad": 1.0285574197769165,
+        "final_rad": 1.7329025268554688,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T213644-3db6d4f9",
+      "start_s": 10.96406704470065,
+      "end_s": 14.587,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 16.357394523,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:47:49.770839+00:00",
+      "auto_trim": {
+        "previous_end_s": 16.357394523,
+        "right_gripper_baseline_rad": 1.0009114742279053,
+        "final_rad": 1.573938012123108,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T213912-52d5ab27",
+      "start_s": 2.9303474051489515,
+      "end_s": 9.082688165722343,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 19.206969011,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:48:44.563457+00:00"
+    },
+    {
+      "id": "20260930T214056-a95c50c1",
+      "start_s": 0.0,
+      "end_s": 10.456355126713667,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 14.475614755,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:49:12.647115+00:00"
+    },
+    {
+      "id": "20260930T214251-2b0f1213",
+      "start_s": 4.22521108607086,
+      "end_s": 12.081,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 13.847078038,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:49:28.743537+00:00",
+      "auto_trim": {
+        "previous_end_s": 13.847078038,
+        "right_gripper_baseline_rad": 1.0640574097633362,
+        "final_rad": 1.966637134552002,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    },
+    {
+      "id": "20260930T214314-243301e9",
+      "start_s": 10.32510743634129,
+      "end_s": 15.502,
+      "reason": "",
+      "annotation_source": "review_runs synchronized camera editor",
+      "original_end_s": 17.414175103,
+      "review_approved": true,
+      "source_category": "review",
+      "edited_utc": "2026-10-02T20:49:54.420990+00:00",
+      "auto_trim": {
+        "previous_end_s": 17.414175103,
+        "right_gripper_baseline_rad": 1.0178760290145874,
+        "final_rad": 1.6449378728866577,
+        "method": "Last supported-grip sample before final sustained opening, minus 0.10s; requires visual validation"
+      }
+    }
+  ],
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified.",
+  "source_kind": "operator_kept_and_visually_approved_review_real_recordings"
+}

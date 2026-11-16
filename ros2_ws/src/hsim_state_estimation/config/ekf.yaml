@@ -1,0 +1,33 @@
+# robot_localization EKF, node name `state_estimation` (owns odom -> base_footprint and /odometry/filtered).
+# Inputs are only real-robot signals: leg odometry (joint encoders + kinematics) and the IMU.
+state_estimation:
+  ros__parameters:
+    frequency: 50.0                  # = policy rate; more only floods TF listeners
+    sensor_timeout: 0.1
+    two_d_mode: true                 # Nav2 works in 2D; height/roll/pitch are not estimated here
+    publish_tf: true
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint   # 2D robot frame on the floor; leg_odometry adds height + tilt
+    world_frame: odom
+    print_diagnostics: false
+
+    # body velocity from stance-foot kinematics
+    odom0: /leg_odometry
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, false,
+                   false, false, false]
+    odom0_queue_size: 10
+
+    # IMU: heading (relative to power-on) and yaw rate
+    imu0: /imu
+    imu0_config: [false, false, false,
+                  false, false, true,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+    imu0_relative: true
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true

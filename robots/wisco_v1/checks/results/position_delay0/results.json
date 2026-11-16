@@ -1,0 +1,1822 @@
+{
+ "A1": {
+  "pass": true,
+  "policy_joints": 29,
+  "collision_geoms": 32,
+  "mass_kg": 40.551,
+  "sensors": [
+   "imu_ang_vel",
+   "imu_lin_vel",
+   "imu_lin_acc",
+   "imu_upvector",
+   "root_angmom"
+  ]
+ },
+ "A2": {
+  "pass": true,
+  "self_contacts_over_1mm": [],
+  "sole_tilt_deg": {
+   "left_foot_collision": 1.2074182697257333e-06,
+   "right_foot_collision": 1.2074182697257333e-06
+  },
+  "foot_site_height_m": {
+   "left_foot": -0.0,
+   "right_foot": 0.0001
+  },
+  "com_xy": [
+   0.0222,
+   -0.0003
+  ],
+  "com_margin_to_toe_m": 0.133,
+  "com_margin_to_heel_m": 0.077,
+  "pelvis_height_m": 0.68765
+ },
+ "A3": {
+  "pass": true,
+  "pelvis_height_change_m": 0.0054,
+  "max_tilt_deg": 4.06,
+  "horizontal_drift_m": 0.0217,
+  "joint_speed_rms_last_2s": 7e-05,
+  "max_joint_sag_rad": {
+   "right_knee": 0.0624,
+   "left_knee": 0.062,
+   "left_wrist_pitch": 0.0352,
+   "right_wrist_pitch": 0.035,
+   "left_shoulder_pitch": 0.0191
+  },
+  "joints": {
+   "left_hip_pitch": {
+    "hold_nm": 1.17,
+    "hold_pct_rated": 2.7,
+    "peak_nm": 3.29,
+    "peak_pct_effort": 2.7
+   },
+   "left_hip_roll": {
+    "hold_nm": 0.03,
+    "hold_pct_rated": 0.1,
+    "peak_nm": 0.03,
+    "peak_pct_effort": 0.0
+   },
+   "left_knee": {
+    "hold_nm": 14.1,
+    "hold_pct_rated": 32.8,
+    "peak_nm": 14.11,
+    "peak_pct_effort": 11.8
+   },
+   "right_hip_pitch": {
+    "hold_nm": 1.08,
+    "hold_pct_rated": 2.5,
+    "peak_nm": 3.22,
+    "peak_pct_effort": 2.7
+   },
+   "right_hip_roll": {
+    "hold_nm": 0.03,
+    "hold_pct_rated": 0.1,
+    "peak_nm": 0.03,
+    "peak_pct_effort": 0.0
+   },
+   "right_knee": {
+    "hold_nm": 14.19,
+    "hold_pct_rated": 33.0,
+    "peak_nm": 14.21,
+    "peak_pct_effort": 11.8
+   },
+   "torso_yaw": {
+    "hold_nm": 0.02,
+    "hold_pct_rated": 0.0,
+    "peak_nm": 0.02,
+    "peak_pct_effort": 0.0
+   },
+   "left_hip_yaw": {
+    "hold_nm": 0.02,
+    "hold_pct_rated": 0.1,
+    "peak_nm": 0.02,
+    "peak_pct_effort": 0.0
+   },
+   "right_hip_yaw": {
+    "hold_nm": 0.02,
+    "hold_pct_rated": 0.1,
+    "peak_nm": 0.02,
+    "peak_pct_effort": 0.0
+   },
+   "left_shoulder_pitch": {
+    "hold_nm": 1.91,
+    "hold_pct_rated": 9.5,
+    "peak_nm": 1.91,
+    "peak_pct_effort": 3.2
+   },
+   "left_shoulder_roll": {
+    "hold_nm": 1.41,
+    "hold_pct_rated": 7.0,
+    "peak_nm": 1.41,
+    "peak_pct_effort": 2.4
+   },
+   "right_shoulder_pitch": {
+    "hold_nm": 1.88,
+    "hold_pct_rated": 9.4,
+    "peak_nm": 1.88,
+    "peak_pct_effort": 3.1
+   },
+   "right_shoulder_roll": {
+    "hold_nm": 1.42,
+    "hold_pct_rated": 7.1,
+    "peak_nm": 1.43,
+    "peak_pct_effort": 2.4
+   },
+   "left_shoulder_yaw": {
+    "hold_nm": 0.3,
+    "hold_pct_rated": 2.9,
+    "peak_nm": 0.31,
+    "peak_pct_effort": 0.9
+   },
+   "left_elbow": {
+    "hold_nm": 1.12,
+    "hold_pct_rated": 10.6,
+    "peak_nm": 1.12,
+    "peak_pct_effort": 3.3
+   },
+   "left_forearm_yaw": {
+    "hold_nm": 0.03,
+    "hold_pct_rated": 0.3,
+    "peak_nm": 0.03,
+    "peak_pct_effort": 0.1
+   },
+   "right_shoulder_yaw": {
+    "hold_nm": 0.29,
+    "hold_pct_rated": 2.7,
+    "peak_nm": 0.3,
+    "peak_pct_effort": 0.9
+   },
+   "right_elbow": {
+    "hold_nm": 1.11,
+    "hold_pct_rated": 10.5,
+    "peak_nm": 1.11,
+    "peak_pct_effort": 3.3
+   },
+   "right_forearm_yaw": {
+    "hold_nm": 0.01,
+    "hold_pct_rated": 0.1,
+    "peak_nm": 0.02,
+    "peak_pct_effort": 0.1
+   },
+   "left_wrist_pitch": {
+    "hold_nm": 0.54,
+    "hold_pct_rated": 13.6,
+    "peak_nm": 0.54,
+    "peak_pct_effort": 5.4
+   },
+   "left_wrist_roll": {
+    "hold_nm": 0.03,
+    "hold_pct_rated": 0.8,
+    "peak_nm": 0.03,
+    "peak_pct_effort": 0.3
+   },
+   "right_wrist_pitch": {
+    "hold_nm": 0.54,
+    "hold_pct_rated": 13.5,
+    "peak_nm": 0.54,
+    "peak_pct_effort": 5.4
+   },
+   "right_wrist_roll": {
+    "hold_nm": 0.04,
+    "hold_pct_rated": 0.9,
+    "peak_nm": 0.04,
+    "peak_pct_effort": 0.4
+   },
+   "left_ankle_pitch": {
+    "hold_nm": 1.36,
+    "hold_pct_rated": 5.1,
+    "peak_nm": 10.02,
+    "peak_pct_effort": 11.6
+   },
+   "left_ankle_roll": {
+    "hold_nm": 0.01,
+    "hold_pct_rated": 0.1,
+    "peak_nm": 0.02,
+    "peak_pct_effort": 0.1
+   },
+   "right_ankle_pitch": {
+    "hold_nm": 1.33,
+    "hold_pct_rated": 5.0,
+    "peak_nm": 9.71,
+    "peak_pct_effort": 11.3
+   },
+   "right_ankle_roll": {
+    "hold_nm": 0.04,
+    "hold_pct_rated": 0.4,
+    "peak_nm": 0.04,
+    "peak_pct_effort": 0.1
+   },
+   "torso_roll": {
+    "hold_nm": 0.22,
+    "hold_pct_rated": 0.9,
+    "peak_nm": 0.23,
+    "peak_pct_effort": 0.3
+   },
+   "torso_pitch": {
+    "hold_nm": 0.88,
+    "hold_pct_rated": 3.2,
+    "peak_nm": 2.6,
+    "peak_pct_effort": 3.1
+   }
+  },
+  "ankle_motor_hold_nm": {
+   "left": [
+    0.5,
+    0.52
+   ],
+   "right": [
+    0.53,
+    0.47
+   ]
+  },
+  "ankle_motor_peak_nm": {
+   "left": [
+    3.75,
+    3.76
+   ],
+   "right": [
+    3.6,
+    3.75
+   ]
+  },
+  "ankle_motor_rated_nm": 10.5,
+  "ankle_motor_peak_limit_nm": 34.0
+ },
+ "A4": {
+  "pass": false,
+  "joints": {
+   "left_hip_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.916,
+    "overshoot_frac": 0.202,
+    "settle_s": 0.36,
+    "stable": true,
+    "pass": true
+   },
+   "left_hip_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.917,
+    "overshoot_frac": 0.181,
+    "settle_s": 0.335,
+    "stable": true,
+    "pass": true
+   },
+   "left_knee": {
+    "step_rad": 0.2,
+    "reached_frac": 0.975,
+    "overshoot_frac": 0.005,
+    "settle_s": 0.16,
+    "stable": true,
+    "pass": true
+   },
+   "right_hip_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.916,
+    "overshoot_frac": 0.202,
+    "settle_s": 0.36,
+    "stable": true,
+    "pass": true
+   },
+   "right_hip_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.917,
+    "overshoot_frac": 0.181,
+    "settle_s": 0.335,
+    "stable": true,
+    "pass": true
+   },
+   "right_knee": {
+    "step_rad": 0.2,
+    "reached_frac": 0.975,
+    "overshoot_frac": 0.005,
+    "settle_s": 0.16,
+    "stable": true,
+    "pass": true
+   },
+   "torso_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 1.001,
+    "overshoot_frac": 0.067,
+    "settle_s": 0.285,
+    "stable": true,
+    "pass": true
+   },
+   "left_hip_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 0.981,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.325,
+    "stable": true,
+    "pass": true
+   },
+   "right_hip_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 0.981,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.325,
+    "stable": true,
+    "pass": true
+   },
+   "left_shoulder_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.904,
+    "overshoot_frac": 0.015,
+    "settle_s": 0.165,
+    "stable": true,
+    "pass": true
+   },
+   "left_shoulder_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.892,
+    "overshoot_frac": 0.007,
+    "settle_s": 0.15,
+    "stable": true,
+    "pass": true
+   },
+   "right_shoulder_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.905,
+    "overshoot_frac": 0.015,
+    "settle_s": 0.165,
+    "stable": true,
+    "pass": true
+   },
+   "right_shoulder_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.89,
+    "overshoot_frac": 0.007,
+    "settle_s": 0.15,
+    "stable": true,
+    "pass": true
+   },
+   "left_shoulder_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 0.997,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.225,
+    "stable": true,
+    "pass": true
+   },
+   "left_elbow": {
+    "step_rad": 0.2,
+    "reached_frac": 0.974,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.2,
+    "stable": true,
+    "pass": true
+   },
+   "left_forearm_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 0.997,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.235,
+    "stable": true,
+    "pass": true
+   },
+   "right_shoulder_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 0.997,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.225,
+    "stable": true,
+    "pass": true
+   },
+   "right_elbow": {
+    "step_rad": 0.2,
+    "reached_frac": 0.974,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.2,
+    "stable": true,
+    "pass": true
+   },
+   "right_forearm_yaw": {
+    "step_rad": 0.2,
+    "reached_frac": 0.997,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.235,
+    "stable": true,
+    "pass": true
+   },
+   "left_wrist_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.823,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.7,
+    "stable": true,
+    "pass": false
+   },
+   "left_wrist_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.933,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.675,
+    "stable": true,
+    "pass": false
+   },
+   "right_wrist_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.823,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.7,
+    "stable": true,
+    "pass": false
+   },
+   "right_wrist_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.933,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.675,
+    "stable": true,
+    "pass": false
+   },
+   "left_ankle_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.996,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.205,
+    "stable": true,
+    "pass": true
+   },
+   "left_ankle_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.992,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.36,
+    "stable": true,
+    "pass": true
+   },
+   "right_ankle_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 0.996,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.21,
+    "stable": true,
+    "pass": true
+   },
+   "right_ankle_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 0.992,
+    "overshoot_frac": 0.0,
+    "settle_s": 0.36,
+    "stable": true,
+    "pass": true
+   },
+   "torso_roll": {
+    "step_rad": 0.2,
+    "reached_frac": 1.681,
+    "overshoot_frac": 0.098,
+    "settle_s": 0.75,
+    "stable": true,
+    "pass": false
+   },
+   "torso_pitch": {
+    "step_rad": 0.2,
+    "reached_frac": 1.449,
+    "overshoot_frac": 0.004,
+    "settle_s": 0.33,
+    "stable": true,
+    "pass": true
+   }
+  }
+ },
+ "A5": {
+  "pass": true,
+  "directions": {
+   "left_hip_pitch": {
+    "tracked": "left_ankle_roll_link",
+    "move_mm_per_0.05rad": [
+     33.32,
+     0.0,
+     2.82
+    ],
+    "expected": "foot swings forward",
+    "matches": true
+   },
+   "left_hip_roll": {
+    "tracked": "left_ankle_roll_link",
+    "move_mm_per_0.05rad": [
+     -0.23,
+     31.47,
+     0.73
+    ],
+    "expected": "foot moves outward",
+    "matches": true
+   },
+   "left_knee": {
+    "tracked": "left_ankle_roll_link",
+    "move_mm_per_0.05rad": [
+     -17.68,
+     0.0,
+     2.0
+    ],
+    "expected": "foot swings backward",
+    "matches": true
+   },
+   "right_hip_pitch": {
+    "tracked": "right_ankle_roll_link",
+    "move_mm_per_0.05rad": [
+     33.32,
+     0.0,
+     2.84
+    ],
+    "expected": "foot swings forward",
+    "matches": true
+   },
+   "right_hip_roll": {
+    "tracked": "right_ankle_roll_link",
+    "move_mm_per_0.05rad": [
+     -0.22,
+     -31.48,
+     0.71
+    ],
+    "expected": "foot moves outward",
+    "matches": true
+   },
+   "right_knee": {
+    "tracked": "right_ankle_roll_link",
+    "move_mm_per_0.05rad": [
+     -17.69,
+     0.0,
+     1.98
+    ],
+    "expected": "foot swings backward",
+    "matches": true
+   },
+   "torso_yaw": {
+    "tracked": "torso",
+    "move_mm_per_0.05rad": [
+     0.0,
+     -0.2,
+     0.0
+    ]
+   },
+   "left_hip_yaw": {
+    "tracked": "left_foot",
+    "move_mm_per_0.05rad": [
+     0.18,
+     7.76,
+     0.05
+    ]
+   },
+   "right_hip_yaw": {
+    "tracked": "right_foot",
+    "move_mm_per_0.05rad": [
+     0.16,
+     -7.78,
+     0.05
+    ]
+   },
+   "left_shoulder_pitch": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     24.03,
+     -0.73,
+     8.32
+    ],
+    "expected": "hand swings forward",
+    "matches": true
+   },
+   "left_shoulder_roll": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     0.0,
+     22.84,
+     4.75
+    ],
+    "expected": "hand moves outward",
+    "matches": true
+   },
+   "right_shoulder_pitch": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     24.04,
+     0.72,
+     8.28
+    ],
+    "expected": "hand swings forward",
+    "matches": true
+   },
+   "right_shoulder_roll": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     0.0,
+     -22.84,
+     4.85
+    ],
+    "expected": "hand moves outward",
+    "matches": true
+   },
+   "left_shoulder_yaw": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     -0.66,
+     -7.58,
+     -1.54
+    ]
+   },
+   "left_elbow": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     12.66,
+     -1.33,
+     6.56
+    ],
+    "expected": "hand moves forward/up (flexion)",
+    "matches": true
+   },
+   "left_forearm_yaw": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     -0.43,
+     -0.75,
+     -0.39
+    ]
+   },
+   "right_shoulder_yaw": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     -0.56,
+     7.54,
+     -1.53
+    ]
+   },
+   "right_elbow": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     12.68,
+     1.32,
+     6.52
+    ],
+    "expected": "hand moves forward/up (flexion)",
+    "matches": true
+   },
+   "right_forearm_yaw": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     -0.34,
+     0.72,
+     -0.33
+    ]
+   },
+   "left_wrist_pitch": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     6.35,
+     -0.92,
+     4.54
+    ]
+   },
+   "left_wrist_roll": {
+    "tracked": "left_hand",
+    "move_mm_per_0.05rad": [
+     0.17,
+     4.36,
+     0.57
+    ]
+   },
+   "right_wrist_pitch": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     6.37,
+     0.91,
+     4.5
+    ]
+   },
+   "right_wrist_roll": {
+    "tracked": "right_hand",
+    "move_mm_per_0.05rad": [
+     0.12,
+     -4.34,
+     0.65
+    ]
+   },
+   "left_ankle_pitch": {
+    "tracked": "left_foot",
+    "move_mm_per_0.05rad": [
+     -0.19,
+     0.0,
+     7.5
+    ],
+    "expected": "toe goes up",
+    "matches": true
+   },
+   "left_ankle_roll": {
+    "tracked": "left_foot",
+    "move_mm_per_0.05rad": [
+     0.0,
+     2.2,
+     0.06
+    ]
+   },
+   "right_ankle_pitch": {
+    "tracked": "right_foot",
+    "move_mm_per_0.05rad": [
+     -0.19,
+     0.0,
+     7.5
+    ],
+    "expected": "toe goes up",
+    "matches": true
+   },
+   "right_ankle_roll": {
+    "tracked": "right_foot",
+    "move_mm_per_0.05rad": [
+     0.0,
+     -2.2,
+     0.05
+    ]
+   },
+   "torso_roll": {
+    "tracked": "torso",
+    "move_mm_per_0.05rad": [
+     -0.0,
+     -14.99,
+     -0.37
+    ]
+   },
+   "torso_pitch": {
+    "tracked": "torso",
+    "move_mm_per_0.05rad": [
+     -14.99,
+     0.0,
+     -0.37
+    ]
+   }
+  },
+  "left_right_mirror_cosine": {
+   "hip_pitch": 1.0,
+   "hip_roll": 1.0,
+   "knee": 1.0,
+   "hip_yaw": 1.0,
+   "shoulder_pitch": 1.0,
+   "shoulder_roll": 1.0,
+   "shoulder_yaw": 0.9999,
+   "elbow": 1.0,
+   "forearm_yaw": 0.9969,
+   "wrist_pitch": 1.0,
+   "wrist_roll": 0.9998,
+   "ankle_pitch": 1.0,
+   "ankle_roll": 1.0
+  },
+  "range_sweep": {
+   "left_hip_pitch": {
+    "upper": {
+     "limit_rad": 2.793,
+     "reached_rad": 2.756,
+     "reached_frac": 0.986,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.793,
+     "reached_rad": -2.765,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.3
+      },
+      "left_knee_link / torso": {
+       "first_at_rad": -2.702,
+       "max_penetration_mm": 3.8
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_hip_roll": {
+    "upper": {
+     "limit_rad": 2.793,
+     "reached_rad": 2.768,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.611,
+     "reached_rad": -0.449,
+     "reached_frac": 0.736,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_knee": {
+    "upper": {
+     "limit_rad": 2.793,
+     "reached_rad": 2.772,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.087,
+     "reached_rad": -0.074,
+     "reached_frac": 0.981,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_hip_pitch": {
+    "upper": {
+     "limit_rad": 2.793,
+     "reached_rad": 2.756,
+     "reached_frac": 0.985,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.793,
+     "reached_rad": -2.764,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.286,
+       "max_penetration_mm": 2.3
+      },
+      "right_knee_link / torso": {
+       "first_at_rad": -2.701,
+       "max_penetration_mm": 4.2
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_hip_roll": {
+    "upper": {
+     "limit_rad": 2.793,
+     "reached_rad": 2.768,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.611,
+     "reached_rad": -0.449,
+     "reached_frac": 0.735,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_knee": {
+    "upper": {
+     "limit_rad": 2.793,
+     "reached_rad": 2.773,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.087,
+     "reached_rad": -0.074,
+     "reached_frac": 0.981,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.597,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "torso_yaw": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.618,
+     "reached_frac": 1.0,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.618,
+     "reached_rad": -2.618,
+     "reached_frac": 1.0,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_hip_yaw": {
+    "upper": {
+     "limit_rad": 2.758,
+     "reached_rad": 2.741,
+     "reached_frac": 0.994,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.758,
+     "reached_rad": -2.741,
+     "reached_frac": 0.994,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_hip_yaw": {
+    "upper": {
+     "limit_rad": 2.758,
+     "reached_rad": 2.741,
+     "reached_frac": 0.994,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.758,
+     "reached_rad": -2.741,
+     "reached_frac": 0.994,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_shoulder_pitch": {
+    "upper": {
+     "limit_rad": 3.142,
+     "reached_rad": 3.142,
+     "reached_frac": 1.0,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.356,
+     "reached_rad": -2.282,
+     "reached_frac": 0.968,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_shoulder_roll": {
+    "upper": {
+     "limit_rad": 2.967,
+     "reached_rad": 2.939,
+     "reached_frac": 0.99,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.436,
+     "reached_rad": -0.172,
+     "reached_frac": 0.584,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_shoulder_pitch": {
+    "upper": {
+     "limit_rad": 3.142,
+     "reached_rad": 3.142,
+     "reached_frac": 1.0,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.356,
+     "reached_rad": -2.282,
+     "reached_frac": 0.968,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.003,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_shoulder_roll": {
+    "upper": {
+     "limit_rad": 2.967,
+     "reached_rad": 2.939,
+     "reached_frac": 0.99,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.436,
+     "reached_rad": -0.233,
+     "reached_frac": 0.68,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.198,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_shoulder_yaw": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.608,
+     "reached_frac": 0.996,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.3
+      },
+      "left_hand / left_hip_pitch_link": {
+       "first_at_rad": 2.108,
+       "max_penetration_mm": 3.0
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.618,
+     "reached_rad": -2.612,
+     "reached_frac": 0.998,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_elbow": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.599,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": 0.0,
+     "reached_rad": 0.008,
+     "reached_frac": 0.984,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_forearm_yaw": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.611,
+     "reached_frac": 0.997,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.618,
+     "reached_rad": -2.611,
+     "reached_frac": 0.997,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_shoulder_yaw": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.608,
+     "reached_frac": 0.996,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.3
+      },
+      "right_hand / right_hip_pitch_link": {
+       "first_at_rad": 2.108,
+       "max_penetration_mm": 3.2
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.618,
+     "reached_rad": -2.612,
+     "reached_frac": 0.998,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.001,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_elbow": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.599,
+     "reached_frac": 0.991,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": 0.0,
+     "reached_rad": 0.008,
+     "reached_frac": 0.984,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.496,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_forearm_yaw": {
+    "upper": {
+     "limit_rad": 2.618,
+     "reached_rad": 2.611,
+     "reached_frac": 0.997,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -2.618,
+     "reached_rad": -2.611,
+     "reached_frac": 0.997,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_wrist_pitch": {
+    "upper": {
+     "limit_rad": 0.611,
+     "reached_rad": 0.519,
+     "reached_frac": 0.85,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.611,
+     "reached_rad": -0.575,
+     "reached_frac": 0.942,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_wrist_roll": {
+    "upper": {
+     "limit_rad": 1.571,
+     "reached_rad": 1.511,
+     "reached_frac": 0.962,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -1.571,
+     "reached_rad": -1.511,
+     "reached_frac": 0.962,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_wrist_pitch": {
+    "upper": {
+     "limit_rad": 0.611,
+     "reached_rad": 0.52,
+     "reached_frac": 0.851,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.611,
+     "reached_rad": -0.575,
+     "reached_frac": 0.941,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.013,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_wrist_roll": {
+    "upper": {
+     "limit_rad": 1.571,
+     "reached_rad": 1.511,
+     "reached_frac": 0.962,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -1.571,
+     "reached_rad": -1.512,
+     "reached_frac": 0.962,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.001,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_ankle_pitch": {
+    "upper": {
+     "limit_rad": 0.785,
+     "reached_rad": 0.78,
+     "reached_frac": 0.989,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.546,
+     "reached_rad": -0.541,
+     "reached_frac": 0.994,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "left_ankle_roll": {
+    "upper": {
+     "limit_rad": 0.262,
+     "reached_rad": 0.253,
+     "reached_frac": 0.967,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.262,
+     "reached_rad": -0.253,
+     "reached_frac": 0.967,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_ankle_pitch": {
+    "upper": {
+     "limit_rad": 0.785,
+     "reached_rad": 0.78,
+     "reached_frac": 0.989,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.546,
+     "reached_rad": -0.541,
+     "reached_frac": 0.994,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.3,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "right_ankle_roll": {
+    "upper": {
+     "limit_rad": 0.262,
+     "reached_rad": 0.253,
+     "reached_frac": 0.967,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.262,
+     "reached_rad": -0.253,
+     "reached_frac": 0.966,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "torso_roll": {
+    "upper": {
+     "limit_rad": 0.524,
+     "reached_rad": 0.524,
+     "reached_frac": 1.001,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.524,
+     "reached_rad": -0.524,
+     "reached_frac": 1.001,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": 0.0,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   },
+   "torso_pitch": {
+    "upper": {
+     "limit_rad": 0.524,
+     "reached_rad": 0.524,
+     "reached_frac": 1.001,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.014,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.014,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    },
+    "lower": {
+     "limit_rad": -0.524,
+     "reached_rad": -0.524,
+     "reached_frac": 1.001,
+     "self_collisions": {
+      "left_hip_pitch_link / pelvis": {
+       "first_at_rad": -0.014,
+       "max_penetration_mm": 2.0
+      },
+      "pelvis / right_hip_pitch_link": {
+       "first_at_rad": -0.014,
+       "max_penetration_mm": 2.3
+      }
+     },
+     "finite": true
+    }
+   }
+  }
+ },
+ "A6": {
+  "pass": true,
+  "tilt_rule_deg": 70.0,
+  "cases": {
+   "limp_collapse": {
+    "detected_at_s": 0.9400000000000001,
+    "final_pelvis_z": 0.058,
+    "final_tilt_deg": 82.8
+   },
+   "push_forward_1.5mps": {
+    "detected_at_s": 1.1400000000000001,
+    "final_pelvis_z": 0.088,
+    "final_tilt_deg": 93.9,
+    "fell": true
+   },
+   "push_sideways_1.0mps": {
+    "detected_at_s": 1.3800000000000001,
+    "final_pelvis_z": 0.196,
+    "final_tilt_deg": 82.8,
+    "fell": true
+   },
+   "push_forward_0.5mps": {
+    "detected_at_s": null,
+    "final_pelvis_z": 0.682,
+    "final_tilt_deg": 3.9,
+    "fell": false
+   },
+   "start_tilted_25deg": {
+    "detected_at_s": 0.64,
+    "final_pelvis_z": 0.088,
+    "final_tilt_deg": 93.9,
+    "fell": true
+   }
+  },
+  "missed_falls": []
+ },
+ "A7": {
+  "pass": true,
+  "weight_N": 397.8,
+  "foot_normal_force_N": {
+   "left_ankle_roll_link": 198.2,
+   "right_ankle_roll_link": 199.6
+  },
+  "share_of_weight": {
+   "left_ankle_roll_link": 0.498,
+   "right_ankle_roll_link": 0.502
+  }
+ },
+ "A8": {
+  "pass": true,
+  "max_contacts_seen": 24,
+  "max_constraint_rows_seen": 125,
+  "g1_flat_njmax": 300,
+  "cpu_realtime_factor": 169.7
+ }
+}

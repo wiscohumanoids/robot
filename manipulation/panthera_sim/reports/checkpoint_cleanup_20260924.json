@@ -1,0 +1,1016 @@
+{
+  "completed_at": "2026-09-24T14:29:50.370783+00:00",
+  "removed_files": 252,
+  "removed_bytes": 29377472648,
+  "remaining_checkpoint_files": [],
+  "files": [
+    {
+      "path": "outputs/act/ik_overfit_20260923/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923/checkpoint/overfit_training.pt",
+      "bytes": 412639554
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923_fp32/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923_fp32/checkpoint/overfit_training.pt",
+      "bytes": 412639426
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923_fp32/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_overfit_20260923_fp32/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict/zero/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict/zero/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict/zero/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_corrected/phase/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_corrected/phase/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_corrected/phase/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_normalized_phase/phase/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_normalized_phase/phase/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_normalized_phase/phase/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_phase_adapter/phase/checkpoint/model.safetensors",
+      "bytes": 206423348
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_phase_adapter/phase/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_phase_adapter/phase/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_state_phase/phase/checkpoint/model.safetensors",
+      "bytes": 206423348
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_state_phase/phase/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/conflict_state_phase/phase/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/fixed/vae/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/fixed/vae/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/fixed/vae/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/fixed/zero/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/fixed/zero/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/fixed/zero/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_controlled/phase/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_controlled/phase/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_controlled/phase/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_controlled/zero/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_controlled/zero/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_controlled/zero/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_low_lr/zero/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_low_lr/zero/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_low_lr/zero/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_phase_adapter/phase/checkpoint/model.safetensors",
+      "bytes": 206423348
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_phase_adapter/phase/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_phase_adapter/phase/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_vae_low_lr/vae/checkpoint/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_vae_low_lr/vae/checkpoint/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/ik_root_cause/full_vae_low_lr/vae/checkpoint/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/best_rollout/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00100000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00100000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00100000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/checkpoints/step_00100000/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/checkpoints/step_00103000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/checkpoints/step_00103000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/checkpoints/step_00103000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_scripted_stack_30hz_low_lr_20260923/checkpoints/step_00103000/training_state.pt",
+      "bytes": 273613161
+    },
+    {
+      "path": "outputs/act/panthera_stack/model.safetensors",
+      "bytes": 206503124
+    },
+    {
+      "path": "outputs/act/panthera_stack/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/best/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/checkpoints/step_00026000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/checkpoints/step_00026000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/checkpoints/step_00026000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/checkpoints/step_00026000/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/best_rollout/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/checkpoints/step_00100000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/checkpoints/step_00100000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/checkpoints/step_00100000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/checkpoints/step_00100000/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_stack_30hz_rollout_selected/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/checkpoints/step_00029000/model.safetensors",
+      "bytes": 206503124
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/checkpoints/step_00029000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/checkpoints/step_00029000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/checkpoints/step_00029000/training_state.pt",
+      "bytes": 412736310
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/model.safetensors",
+      "bytes": 206503124
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_full/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_full_v2/checkpoints/step_00030000/model.safetensors",
+      "bytes": 206503124
+    },
+    {
+      "path": "outputs/act/panthera_stack_full_v2/checkpoints/step_00030000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_stack_full_v2/checkpoints/step_00030000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/panthera_stack_full_v2/checkpoints/step_00030000/training_state.pt",
+      "bytes": 412736310
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/best_rollout/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/checkpoints/step_00100000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/checkpoints/step_00100000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/checkpoints/step_00100000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/checkpoints/step_00100000/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/panthera_two_block_fixed_30hz/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/best_rollout/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/checkpoints/step_00030000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/checkpoints/step_00030000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/checkpoints/step_00030000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/checkpoints/step_00030000/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/absolute/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/best_rollout/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/checkpoints/step_00030000/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/checkpoints/step_00030000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/checkpoints/step_00030000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/checkpoints/step_00030000/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/relative/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/best_rollout/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/checkpoints/step_00000002/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/checkpoints/step_00000002/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/checkpoints/step_00000002/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/checkpoints/step_00000002/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/absolute/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/best_rollout/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/checkpoints/step_00000002/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/checkpoints/step_00000002/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/checkpoints/step_00000002/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/checkpoints/step_00000002/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_pipeline/relative/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/best/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7120
+    },
+    {
+      "path": "outputs/act/pickup_ablation_20260923/smoke_relative/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/best/model.safetensors",
+      "bytes": 206765304
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/best/training_state.pt",
+      "bytes": 413056118
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00009000/model.safetensors",
+      "bytes": 206765304
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00009000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00009000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00009000/training_state.pt",
+      "bytes": 413056118
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00010000/model.safetensors",
+      "bytes": 206765304
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00010000/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00010000/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/checkpoints/step_00010000/training_state.pt",
+      "bytes": 413056118
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/model.safetensors",
+      "bytes": 206765304
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act/reference_transfer_cube/training_state.pt",
+      "bytes": 413056118
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/best/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/scripted_pipeline_smoke/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/smoke8/model.safetensors",
+      "bytes": 206503124
+    },
+    {
+      "path": "outputs/act/smoke8/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke8/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_30hz/best/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/smoke_30hz/best/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_30hz/best/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_30hz/best/training_state.pt",
+      "bytes": 15805
+    },
+    {
+      "path": "outputs/act/smoke_30hz/checkpoints/step_00000101/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/smoke_30hz/checkpoints/step_00000101/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_30hz/checkpoints/step_00000101/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/smoke_30hz/checkpoints/step_00000101/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/smoke_30hz/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/smoke_30hz/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_30hz/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/smoke_30hz/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/best_rollout/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/best_rollout/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/best_rollout/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/best_rollout/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/checkpoints/step_00000102/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/checkpoints/step_00000102/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/checkpoints/step_00000102/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/checkpoints/step_00000102/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7600
+    },
+    {
+      "path": "outputs/act/smoke_rollout_selection/training_state.pt",
+      "bytes": 412654646
+    },
+    {
+      "path": "outputs/act_reference/smoke/model.safetensors",
+      "bytes": 206765304
+    },
+    {
+      "path": "outputs/act_reference/smoke/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act_reference/smoke/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 720
+    },
+    {
+      "path": "outputs/act_reference/smoke/training_state.pt",
+      "bytes": 413055542
+    },
+    {
+      "path": "outputs/two_block_fixed/rollout_compatibility_smoke/model.safetensors",
+      "bytes": 206421204
+    },
+    {
+      "path": "outputs/two_block_fixed/rollout_compatibility_smoke/policy_postprocessor_step_0_unnormalizer_processor.safetensors",
+      "bytes": 7656
+    },
+    {
+      "path": "outputs/two_block_fixed/rollout_compatibility_smoke/policy_preprocessor_step_3_normalizer_processor.safetensors",
+      "bytes": 7656
+    }
+  ]
+}

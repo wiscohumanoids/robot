@@ -1,0 +1,23 @@
+{
+  "status": "active_verified",
+  "resume_step": 35000,
+  "target_steps": 45000,
+  "additional_steps": 10000,
+  "episodes": 202,
+  "frames": 61902,
+  "dataset_aws_path": "/mnt/pi05/dataset_oct05_original_camera_202",
+  "dataset_manifest_sha256": "041690aea82ae8658c870159d12ba33717b2312a5683c3237f659764c6651b54",
+  "service": "panthera-pi05-today202-45000.service",
+  "launcher": "/mnt/pi05/resume-today202-45000.sh",
+  "wrapper": "/mnt/pi05/train_panthera_today202_45000.py",
+  "log": "/mnt/pi05/train-today202-45000.log",
+  "resume_checkpoint": "/mnt/pi05/runs/panthera_pi05_20261003/checkpoints/035000",
+  "last_verified_step": 35004,
+  "dataset_and_sampler_verified": true,
+  "full_model_backward_verified": true,
+  "normalization": "preserved checkpoint processors",
+  "optimizer": "restored checkpoint optimizer state",
+  "lr_schedule": "existing schedule retained; 2.5e-6 through 45000",
+  "wandb_url": "https://wandb.ai/foxnerdsaysmoo/panthera-pi05/runs/q4pmwlw3",
+  "verified_utc": "2026-10-07T01:19:32.390716+00:00"
+}

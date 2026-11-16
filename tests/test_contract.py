@@ -1,175 +1,115 @@
-"""Static interface-contract enforcement: runs anywhere, no ROS needed.
+"""Static interface-contract checks: run anywhere, no ROS needed.
 
-Catches, at PR time, the mistakes the live checker (bringup/check_contract.py)
-would only catch after launching: a second publisher on a topic, a node that
-publishes something the contract doesn't list, a stub missing its executable,
-a launch switch that doesn't exist, docs that drifted from the YAML.
+The live check is `ros2 run hsim_bringup contract_check --phase N` (needs a running stack).
+These tests catch the cheaper mistakes before anything is launched:
+  - the contract YAML is well formed
+  - every owner in the contract is a real node (in code or a launch file)
+  - every topic the stack's own code publishes (literal name) is in the contract
+  - every custom interface type exists on disk and is registered in CMake (and the reverse)
+
+    python -m pytest tests -q
 """
-import ast
-import glob
-import os
+import fnmatch
 import re
-import subprocess
-import sys
+from pathlib import Path
 
 import yaml
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'src')
-CONTRACT = os.path.join(SRC, 'humanoid_interfaces', 'config', 'interface_contract.yaml')
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / 'ros2_ws' / 'src'
+CONTRACT_PATH = SRC / 'hsim_bringup' / 'config' / 'interface_contract.yaml'
+CONTRACT = yaml.safe_load(CONTRACT_PATH.read_text())
+INTERFACES = SRC / 'hsim_interfaces'
 
-with open(CONTRACT) as _f:
-    C = yaml.safe_load(_f)
-NODES = {n['id']: n for n in C['nodes']}
-STATUSES = {'real', 'stub', 'scaffold', 'external', 'missing'}
-# Vendored third-party code: not held to the contract-literal scan.
-SCAN_SKIP = {'mujoco_ros2_control'}
+# Packages whose publishers are outside the stack contract: the EtherCAT test bench (talks to
+# ros2_control's own controllers) and legacy packages kept for porting (COLCON_IGNORE'd).
+OUTSIDE_CONTRACT = ('wisco_ethercat_ros2_hw', 'lowlevel_control', 'mujoco_ros2_control')
 
+# Contract owners that are people / CLIs rather than nodes started by our launch files.
+NON_NODE_OWNERS = {'operator'}
 
-def _sources(package):
-    base = os.path.join(SRC, package)
-    for pattern in ('**/*.py', '**/*.cpp'):
-        for path in glob.glob(os.path.join(base, pattern), recursive=True):
-            if '/test/' not in path and '/scripts/' not in path:
-                yield path
+TYPE_RE = re.compile(r'^[a-z0-9_]+/(msg|srv|action)/[A-Z][A-Za-z0-9]*$')
+PY_PUB = re.compile(r'create_publisher\s*\(\s*[\w.]+\s*,\s*["\']([^"\']+)["\']')
+CPP_PUB = re.compile(r'create_publisher\s*<[^>]*>\s*\(\s*["\']([^"\']+)["\']')
 
 
-def _publisher_topics(package):
-    """Literal topic names passed to create_publisher in a package's sources."""
-    found = set()
-    py = re.compile(r"create_publisher\(\s*\w+\s*,\s*'(/[^']+)'")
-    cpp = re.compile(r'create_publisher<[\w:]+>\(\s*"(/[^"]+)"')
-    for path in _sources(package):
-        text = open(path).read()
-        found |= set(py.findall(text)) | set(cpp.findall(text))
-    return found
+def _owners(spec):
+    o = spec['owner']
+    return o if isinstance(o, list) else [o]
 
 
-def test_schema_and_references():
-    assert C['contract_version'] == 1
-    layer_ids = {l['id'] for l in C['layers']}
-    assert len(NODES) == len(C['nodes']), 'duplicate node ids'
-    for n in C['nodes']:
-        assert n['status'] in STATUSES, n['id']
-        assert n['layer'] in layer_ids, n['id']
-        assert n.get('summary') and n.get('area'), n['id']
-    for t in C['topics']:
-        assert t['owner'] in NODES, f"{t['name']}: unknown owner {t['owner']}"
-        assert all(x in NODES for x in t['consumers']), t['name']
-        assert t['check'] in ('rate', 'latched', 'event'), t['name']
-        if t['check'] == 'rate':
-            assert 0 < t['min_rate_hz'] <= t['rate_hz'], t['name']
-    for a in C['actions']:
-        assert a['server'] in NODES and all(x in NODES for x in a['clients']), a['name']
-    for e in C['tf']:
-        assert e['owner'] in NODES, e
-
-
-def test_one_publisher_per_topic_and_per_tf_child():
-    names = [t['name'] for t in C['topics']]
-    assert len(names) == len(set(names)), 'a topic is listed twice'
-    children = [e['child'] for e in C['tf']]
-    assert len(children) == len(set(children)), 'a TF frame has two contract parents'
-
-
-def test_owner_status_matches_reality():
-    """A 'missing' node cannot be relied on to publish; a rate-checked topic
-    must therefore not be owned by one (it would fail the live check forever)."""
-    for t in C['topics']:
-        if t['check'] in ('rate', 'latched'):
-            assert NODES[t['owner']]['status'] != 'missing', t['name']
-
-
-def test_python_packages_have_the_declared_executable():
-    for n in C['nodes']:
-        if not n.get('package') or not n.get('executable'):
+def _stack_sources():
+    for p in list(SRC.rglob('*.py')) + list(SRC.rglob('*.cpp')) + list((ROOT / 'tools').rglob('*.py')):
+        rel = p.relative_to(ROOT).as_posix()
+        if any(f'/src/{pkg}/' in f'/{rel}' for pkg in OUTSIDE_CONTRACT) or '/test/' in rel:
             continue
-        setup_py = os.path.join(SRC, n['package'], 'setup.py')
-        assert os.path.isfile(setup_py), f"{n['id']}: package {n['package']} not in src/"
-        assert f"'{n['executable']} = " in open(setup_py).read(), (
-            f"{n['id']}: {n['package']} setup.py lacks console_script {n['executable']}")
+        yield p
 
 
-def test_launch_switches_exist_in_full_stack():
-    text = open(os.path.join(SRC, 'bringup', 'launch', 'full_stack.launch.py')).read()
-    for n in C['nodes']:
-        arg = n.get('launch_arg')
-        if arg:
-            assert f"'{arg}'" in text, f"{n['id']}: launch_arg {arg} not handled by full_stack.launch.py"
+def test_contract_schema():
+    assert isinstance(CONTRACT.get('version'), int)
+    for name, spec in CONTRACT['topics'].items():
+        assert name.startswith('/'), name
+        assert TYPE_RE.match(spec['type']), f'{name}: bad type {spec["type"]!r}'
+        assert _owners(spec) and all(isinstance(o, str) and o for o in _owners(spec)), name
+        assert spec.get('rate_hz') is None or spec['rate_hz'] > 0, name
+        assert isinstance(spec['phase'], int), name
+        assert set(spec) <= {'type', 'owner', 'rate_hz', 'phase', 'required'}, f'{name}: unknown keys'
+    children = [e['child'] for e in CONTRACT['tf_edges']]
+    assert len(children) == len(set(children)), 'a TF child frame has more than one parent/owner'
+    for e in CONTRACT['tf_edges']:
+        assert set(e) == {'parent', 'child', 'owner', 'static', 'phase'}, e
+    for key, kind in (('actions', 'action'), ('services', 'srv')):
+        for name, spec in CONTRACT.get(key, {}).items():
+            assert name.startswith('/'), name
+            assert set(spec) == {'type', 'server', 'clients', 'phase'}, f'{name}: keys {sorted(spec)}'
+            assert TYPE_RE.match(spec['type']) and f'/{kind}/' in spec['type'], f'{name}: bad type {spec["type"]!r}'
 
 
-def test_every_literal_publisher_topic_is_in_the_contract_with_the_right_owner():
-    owner_of = {t['name']: NODES[t['owner']].get('package') for t in C['topics']}
-    for package in sorted(os.listdir(SRC)):
-        if package in SCAN_SKIP or not os.path.isdir(os.path.join(SRC, package)):
-            continue
-        for topic in _publisher_topics(package):
-            assert topic in owner_of, (
-                f'{package} publishes {topic}, which is not in interface_contract.yaml '
-                f'(add it, or you are creating an undeclared interface)')
-            assert owner_of[topic] == package, (
-                f'{package} publishes {topic}, but the contract says {owner_of[topic]} owns it '
-                f'(two publishers on one topic)')
+def test_every_owner_is_a_real_node():
+    """A stub and the real node share a ROS node name; that name must exist somewhere."""
+    text = '\n'.join(p.read_text(errors='ignore') for p in
+                     list(SRC.rglob('*.py')) + list(SRC.rglob('*.cpp')) + list((ROOT / 'tools').rglob('*.py')))
+    owners = {o for s in CONTRACT['topics'].values() for o in _owners(s)} | {e['owner'] for e in CONTRACT['tf_edges']}
+    missing = []
+    for o in sorted(owners - NON_NODE_OWNERS):
+        pats = [f"name='{o}'", f'name="{o}"', f"('{o}'", f'("{o}"', f"'{o}':", f'"{o}":']
+        if not any(p in text for p in pats):
+            missing.append(o)
+    assert not missing, f'contract owners with no node of that name in code or launch files: {missing}'
 
 
-def test_every_owned_topic_is_published_by_its_owner_package():
-    """The reverse direction: the contract must not promise a topic that the
-    owner's code never publishes (excluding third-party/missing owners)."""
-    for t in C['topics']:
-        owner = NODES[t['owner']]
-        if owner['status'] in ('missing', 'external') or not owner.get('package'):
-            continue
-        assert t['name'] in _publisher_topics(owner['package']), (
-            f"{t['name']}: owner {owner['package']} has no create_publisher for it")
+def test_every_literal_publisher_is_in_the_contract():
+    topics = set(CONTRACT['topics'])
+    shared = CONTRACT.get('shared_topics', [])
+    extra = {}
+    for p in _stack_sources():
+        t = p.read_text(errors='ignore')
+        for m in list(PY_PUB.finditer(t)) + list(CPP_PUB.finditer(t)):
+            name = m.group(1)
+            if name.startswith('/') and name not in topics and not any(fnmatch.fnmatch(name, s) for s in shared):
+                extra.setdefault(name, []).append(p.relative_to(ROOT).as_posix())
+    assert not extra, f'published in code but missing from {CONTRACT_PATH.name}: {extra}'
 
 
-def test_tf_edges_published_in_code_match_the_contract():
-    contract_edges = {(e['parent'], e['child']): NODES[e['owner']].get('package') for e in C['tf']}
-    for package in sorted(os.listdir(SRC)):
-        if package in SCAN_SKIP or not os.path.isdir(os.path.join(SRC, package)):
-            continue
-        for path in _sources(package):
-            text = open(path).read()
-            if 'sendTransform' not in text:
-                continue
-            # convention: the TransformStamped variable is named `tf` and its frame
-            # ids are string literals, so the edge can be read statically
-            parent = re.search(r"\btf\.header\.frame_id = '(\w+)'", text)
-            child = re.search(r"\btf\.child_frame_id = '(\w+)'", text)
-            assert parent and child, (
-                f'{path}: sendTransform needs `tf.header.frame_id = \'..\'` and '
-                f'`tf.child_frame_id = \'..\'` literals so the contract can be checked')
-            edge = (parent.group(1), child.group(1))
-            assert edge in contract_edges, f'{path} publishes TF {edge} not in the contract'
-            assert contract_edges[edge] == package, f'{path}: TF {edge} owned by {contract_edges[edge]}'
+def _registered_interfaces():
+    cmake = (INTERFACES / 'CMakeLists.txt').read_text()
+    return set(re.findall(r'"((?:msg|srv|action)/[A-Za-z0-9]+\.(?:msg|srv|action))"', cmake))
 
 
-def test_custom_message_types_exist():
-    for t in C['topics']:
-        pkg, kind, name = t['type'].split('/')
-        if pkg == 'humanoid_interfaces':
-            assert os.path.isfile(os.path.join(SRC, pkg, kind, name + '.' + kind)), t['type']
-    for a in C['actions']:
-        pkg, kind, name = a['type'].split('/')
-        if pkg == 'humanoid_interfaces':
-            assert os.path.isfile(os.path.join(SRC, pkg, kind, name + '.' + kind)), a['type']
+def test_interface_files_match_cmake():
+    """Every .msg/.srv/.action is registered in CMake, and every registered one exists on disk."""
+    on_disk = {p.relative_to(INTERFACES).as_posix() for kind in ('msg', 'srv', 'action')
+               for p in (INTERFACES / kind).glob(f'*.{kind}')}
+    registered = _registered_interfaces()
+    assert registered - on_disk == set(), f'registered in CMake but missing on disk: {registered - on_disk}'
+    assert on_disk - registered == set(), f'on disk but not registered in CMake: {on_disk - registered}'
 
 
-def test_msg_files_are_registered_in_cmake():
-    cmake = open(os.path.join(SRC, 'humanoid_interfaces', 'CMakeLists.txt')).read()
-    for path in glob.glob(os.path.join(SRC, 'humanoid_interfaces', '*', '*.[ma]*')):
-        kind = os.path.basename(os.path.dirname(path))
-        if kind in ('msg', 'action'):
-            assert f'"{kind}/{os.path.basename(path)}"' in cmake, f'{path} not in CMakeLists.txt'
-
-
-def test_every_python_source_parses():
-    for path in glob.glob(os.path.join(SRC, '**', '*.py'), recursive=True):
-        ast.parse(open(path).read(), path)
-
-
-def test_generated_docs_are_current():
-    result = subprocess.run(
-        [sys.executable, os.path.join(ROOT, 'tools', 'gen_docs.py'), '--check'],
-        capture_output=True, text=True)
-    assert result.returncode == 0, result.stdout + result.stderr
+def test_custom_types_in_the_contract_exist():
+    registered = _registered_interfaces()
+    entries = {**CONTRACT['topics'], **CONTRACT.get('actions', {}), **CONTRACT.get('services', {})}
+    for name, spec in entries.items():
+        pkg, kind, typ = spec['type'].split('/')
+        if pkg == 'hsim_interfaces':
+            assert f'{kind}/{typ}.{kind}' in registered, f'{name}: {spec["type"]} is not defined'

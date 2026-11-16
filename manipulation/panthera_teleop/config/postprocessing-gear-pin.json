@@ -1,0 +1,268 @@
+{
+  "processing_version": 2,
+  "recording_session_local_date": "2026-09-29",
+  "recording_timezone": "America/Chicago",
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Regular 50ms host-monotonic grid; nearest measured state and nearest frame per camera within the annotated crop; ties select earlier samples. No interpolation, numerical low-pass filter, or duplicated synthetic states. Some camera frames repeat because achieved capture rate is below 20 Hz; counts are reported per episode.",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.04,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Host receive timestamps, not hardware exposure timestamps. Offline nearest-frame alignment may choose a frame slightly later than the grid tick; all actual offsets are retained.",
+  "trim_method": "Manual visual review of both wrist-camera tails, assisted by gripper position and tool-motion plots; conservative contact-boundary cuts before the assembly becomes unsupported. No automatic contact sensor or exact release event exists.",
+  "trim_uncertainty_s": 0.15,
+  "episodes": [
+    {
+      "id": "20260930T014423-a9ac3ac6",
+      "start_s": 0.0,
+      "end_s": 40.45,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015241-389cd14c",
+      "start_s": 0.0,
+      "end_s": 19.9,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015415-0dadf220",
+      "start_s": 0.0,
+      "end_s": 17.75,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015451-85a9ded0",
+      "start_s": 0.0,
+      "end_s": 25.4,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015606-1c71478a",
+      "start_s": 0.0,
+      "end_s": 20.45,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015649-b81566ad",
+      "start_s": 0.0,
+      "end_s": 16.32,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015820-100c30b7",
+      "start_s": 0.0,
+      "end_s": 19.65,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T015902-5120ed1c",
+      "start_s": 0.0,
+      "end_s": 18.0,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020009-e3a82cd5",
+      "start_s": 0.0,
+      "end_s": 14.6,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020038-3d6c6f29",
+      "start_s": 0.0,
+      "end_s": 15.85,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020113-09c4644d",
+      "start_s": 0.0,
+      "end_s": 14.95,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020153-bfbc88e0",
+      "start_s": 0.0,
+      "end_s": 13.4,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020234-6b0345c4",
+      "start_s": 0.0,
+      "end_s": 15.85,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020311-ee8fe583",
+      "start_s": 0.0,
+      "end_s": 11.8,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020355-63d160f3",
+      "start_s": 0.0,
+      "end_s": 16.25,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020432-eacee9a3",
+      "start_s": 0.0,
+      "end_s": 12.6,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020558-ca008d0e",
+      "start_s": 0.0,
+      "end_s": 16.15,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020635-bd87c085",
+      "start_s": 0.0,
+      "end_s": 18.9,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020715-ad9b2079",
+      "start_s": 0.0,
+      "end_s": 14.75,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020748-2d02ceec",
+      "start_s": 0.0,
+      "end_s": 12.65,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T020948-a1e3bb18",
+      "start_s": 0.0,
+      "end_s": 15.65,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021051-f180f580",
+      "start_s": 0.0,
+      "end_s": 14.15,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021124-963f11a8",
+      "start_s": 0.0,
+      "end_s": 15.15,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021155-dc47e104",
+      "start_s": 0.0,
+      "end_s": 12.85,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021225-e59dae84",
+      "start_s": 0.0,
+      "end_s": 13.85,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021442-8583aa6f",
+      "start_s": 0.0,
+      "end_s": 16.05,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021519-8342b4ce",
+      "start_s": 0.0,
+      "end_s": 13.4,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021547-98ddcfde",
+      "start_s": 0.0,
+      "end_s": 13.65,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021618-5b1445c9",
+      "start_s": 0.0,
+      "end_s": 13.8,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    },
+    {
+      "id": "20260930T021650-683688b1",
+      "start_s": 0.0,
+      "end_s": 12.85,
+      "reason": "Retain the final supported assembly/contact; exclude terminal separation, pullback and subsequent fall.",
+      "annotation_source": "visual wrist-camera contact review"
+    }
+  ],
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified."
+}

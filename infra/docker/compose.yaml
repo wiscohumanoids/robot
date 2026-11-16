@@ -1,0 +1,29 @@
+# Usage: tools/ros.sh up | shell | build | test | down
+services:
+  ros:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hsim/ros-jazzy:dev
+    container_name: hsim-ros
+    init: true                 # reap exited processes (no zombies from test runs)
+    shm_size: "1gb"            # DDS shared-memory transport; Docker's 64 MB default fills up after many launches
+                               # (2026-11-10: 828 stale segments -> 100 % full -> slow/failed discovery in tests)
+    volumes:
+      - ../..:/hsim              # the whole repo, live-edited from the Mac
+    working_dir: /hsim/ros2_ws
+    env_file:                  # secrets (ANTHROPIC_API_KEY ...) from the repo's .env, if present
+      - path: ../../.env
+        required: false
+    environment:
+      - ROS_DOMAIN_ID=42
+      - ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST   # keep DDS traffic inside the container
+      - MUJOCO_GL=osmesa         # CPU rendering for the sim's camera image
+    ports:
+      - "9871:9871/udp"          # Mac MuJoCo viewer -> teleop node (key commands)
+      - "8765:8765"              # foxglove_bridge (optional, off by default)
+      - "1667-1669:1667-1669"    # Groot2: watch the live behavior tree from the Mac
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # sim -> Mac viewer (state stream, udp/9870); built in on Docker Desktop
+    tty: true
+    stdin_open: true

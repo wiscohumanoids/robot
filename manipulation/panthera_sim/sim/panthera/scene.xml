@@ -1,0 +1,52 @@
+<mujoco model="panthera_scene">
+  <include file="panthera.xml" />
+  <statistic center="0.3 0 0.3" extent="1.2" />
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
+    <rgba haze="0.15 0.25 0.35 1" />
+    <global azimuth="14" elevation="-34" offwidth="1920" offheight="1080" />
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072" />
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.1" />
+    <material name="table" rgba="0.75 0.68 0.55 1" reflectance="0.05" />
+  </asset>
+  <worldbody>
+    <light pos="0 0 2" dir="0 0 -1" directional="true" />
+    <geom name="floor" type="plane" size="0 0 0.05" material="groundplane" />
+    <camera name="overhead" pos="0.4 0 0.9" xyaxes="0 -1 0 1 0 0" fovy="50" />
+    <body name="table" pos="0.4 0 0.0400">
+      <geom name="table_top" type="box" size="0.22 0.32 0.0100" material="table" condim="4" friction="0.3 0.02 0.0005" />
+      <geom name="table_leg_mm" type="box" size="0.015 0.015 0.0150" pos="-0.1900 -0.2900 -0.0250" material="table" contype="0" conaffinity="0" />
+      <geom name="table_leg_mp" type="box" size="0.015 0.015 0.0150" pos="-0.1900 0.2900 -0.0250" material="table" contype="0" conaffinity="0" />
+      <geom name="table_leg_pm" type="box" size="0.015 0.015 0.0150" pos="0.1900 -0.2900 -0.0250" material="table" contype="0" conaffinity="0" />
+      <geom name="table_leg_pp" type="box" size="0.015 0.015 0.0150" pos="0.1900 0.2900 -0.0250" material="table" contype="0" conaffinity="0" />
+    </body>
+    <body name="cube_red" pos="0.38 0.12 0.0725">
+      <freejoint name="cube_red" />
+      <geom name="cube_red" type="box" size="0.0225 0.0225 0.0225" rgba="0.85 0.2 0.18 1" density="500.0" condim="6" friction="0.8 0.08 0.004" solimp="0.98 0.99 0.001" solref="0.005 1" />
+    </body>
+    <body name="cube_green" pos="0.45 0.0 0.0725">
+      <freejoint name="cube_green" />
+      <geom name="cube_green" type="box" size="0.0225 0.0225 0.0225" rgba="0.25 0.7 0.3 1" density="500.0" condim="6" friction="0.8 0.08 0.004" solimp="0.98 0.99 0.001" solref="0.005 1" />
+    </body>
+    <body name="cube_blue" pos="0.36 -0.13 0.0725">
+      <freejoint name="cube_blue" />
+      <geom name="cube_blue" type="box" size="0.0225 0.0225 0.0225" rgba="0.2 0.4 0.85 1" density="500.0" condim="6" friction="0.8 0.08 0.004" solimp="0.98 0.99 0.001" solref="0.005 1" />
+    </body>
+  </worldbody>
+  <equality>
+    <weld name="pad_grasp_cube_red" body1="link6" body2="cube_red" active="false" solref="0.015 1" solimp="0.90 0.98 0.002" />
+    <weld name="pad_grasp_cube_green" body1="link6" body2="cube_green" active="false" solref="0.015 1" solimp="0.90 0.98 0.002" />
+    <weld name="pad_grasp_cube_blue" body1="link6" body2="cube_blue" active="false" solref="0.015 1" solimp="0.90 0.98 0.002" />
+  </equality>
+  <contact>
+    <pair geom1="L_finger_pad" geom2="cube_red" condim="6" friction="0.8 0.8 0.01 0.001 0.001" solref="0.005 1" solimp="0.98 0.99 0.001" />
+    <pair geom1="R_finger_pad" geom2="cube_red" condim="6" friction="0.8 0.8 0.01 0.001 0.001" solref="0.005 1" solimp="0.98 0.99 0.001" />
+    <pair geom1="L_finger_pad" geom2="cube_green" condim="6" friction="0.8 0.8 0.01 0.001 0.001" solref="0.005 1" solimp="0.98 0.99 0.001" />
+    <pair geom1="R_finger_pad" geom2="cube_green" condim="6" friction="0.8 0.8 0.01 0.001 0.001" solref="0.005 1" solimp="0.98 0.99 0.001" />
+    <pair geom1="L_finger_pad" geom2="cube_blue" condim="6" friction="0.8 0.8 0.01 0.001 0.001" solref="0.005 1" solimp="0.98 0.99 0.001" />
+    <pair geom1="R_finger_pad" geom2="cube_blue" condim="6" friction="0.8 0.8 0.01 0.001 0.001" solref="0.005 1" solimp="0.98 0.99 0.001" />
+  </contact>
+</mujoco>

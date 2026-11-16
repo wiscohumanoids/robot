@@ -1,0 +1,19 @@
+[Unit]
+Description=Panthera pi0.5 inference over SSH
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/pi05/lerobot
+Environment=HF_HUB_OFFLINE=1
+Environment=TRANSFORMERS_OFFLINE=1
+Environment=OMP_NUM_THREADS=2
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/mnt/pi05/lerobot/.venv/bin/python /mnt/pi05/inference/server.py --checkpoint /mnt/pi05/inference/checkpoints/panthera_pi05_hitl355_20261007_050750 --allow-training
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

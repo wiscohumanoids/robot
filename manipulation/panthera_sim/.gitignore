@@ -1,0 +1,43 @@
+# Python bytecode and tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+.venv-*/
+venv/
+env/
+
+# Packaging and build output
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Local logs and temporary files
+*.log
+*.bak
+*.tmp
+MUJOCO_LOG.TXT
+
+# Generated recordings, calibration captures, and renders
+/data/
+/calib_frames/
+/replay_grid.mp4
+
+# External checkout used by the VLA data pipeline
+/VLA-Adapter/
+/outputs/

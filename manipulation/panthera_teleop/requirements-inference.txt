@@ -1,0 +1,2 @@
+# Add to the existing robot SDK / recording environment.
+Pillow==11.3.0

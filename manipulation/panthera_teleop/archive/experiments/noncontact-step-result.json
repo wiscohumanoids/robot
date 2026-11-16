@@ -1,0 +1,72 @@
+{
+  "status": "failed_tracking_holding",
+  "baseline_joints": {
+    "left": [
+      -0.049637164920568466,
+      0.00062831852119416,
+      0.00376991112716496,
+      0.011938052251935005,
+      0.4115486443042755,
+      0.5309291481971741
+    ],
+    "right": [
+      -0.05780530348420143,
+      0.00188495556358248,
+      0.07099999487400055,
+      -0.24881413578987122,
+      -0.00188495556358248,
+      -0.19917698204517365
+    ]
+  },
+  "target_joints": {
+    "left": [
+      -0.049637164940337715,
+      0.01916694862001202,
+      0.023093013913716723,
+      0.011153579571160643,
+      0.41154864427671306,
+      0.5309291481946219
+    ],
+    "right": [
+      -0.05780530348420143,
+      0.00188495556358248,
+      0.07099999487400055,
+      -0.24881413578987122,
+      -0.00188495556358248,
+      -0.19917698204517365
+    ]
+  },
+  "measured_joints": {
+    "left": [
+      -0.049637164920568466,
+      0.01696460135281086,
+      0.0062831854447722435,
+      0.011938052251935005,
+      0.4115486443042755,
+      0.5309291481971741
+    ],
+    "right": [
+      -0.05780530348420143,
+      0.00188495556358248,
+      0.07099999487400055,
+      -0.24881413578987122,
+      -0.00188495556358248,
+      -0.19917698204517365
+    ]
+  },
+  "measured_tcp_delta_m": {
+    "left": [
+      0.000844049138412517,
+      -4.193064885933684e-05,
+      -0.002290362667599133
+    ],
+    "right": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "note": "TCP from encoders/model, not independently calibrated vision. No assembly attempted.",
+  "verification": "Requested +5 mm Z, measured model delta [0.844, -0.042, -2.290] mm. Not a successful Cartesian move. Overhead video6 could not be opened during post-move capture but remains enumerated on USB; cause unconfirmed. No assembly attempted.",
+  "camera_followup": "User confirmed camera was in use by another application; retry capture succeeded."
+}

@@ -1,169 +1,66 @@
-# robot
+# WiscoHumanoids robot
 
-The canonical ROS2 Humble humanoid software stack for WiscoHumanoids: **a frozen
-interface contract, a stub for every layer of the stack, and the real low-level
-infrastructure underneath**, so several teams can build their own piece in
-parallel and swap it in without waiting on anyone else.
+The single source of truth for the WiscoHumanoids software stack: every layer from a spoken command down to the
+motors, for our humanoid **Wisco V1**, in simulation today and on the robot next. Code, robot model, training,
+hardware interface, and the knowledge base that explains how all of it works.
+
+```
+ "walk to the sink" ─► Claude planner ─► behavior tree ─► Nav2 ─┐
+ keyboard / viewer ───────────────────────────────────────────┤ /cmd_vel
+                                                               ▼
+        perception + SLAM + state estimation ─────► walking policy (ONNX, 50 Hz) ◄── arm targets (manipulation)
+                                                               │ joint targets
+                                                               ▼
+                                       MuJoCo (now)  |  ros2_control + EtherCAT ─► MyActuator drives (next)
+```
+
+**Stack:** ROS 2 Jazzy · MuJoCo 3.11 / mjlab 1.6 (RSL-RL PPO) · Nav2 · RTAB-Map · BehaviorTree.CPP · Claude ·
+Grounding DINO + SAM 2.1 · GR00T / LeRobot · ros2_control + `ethercat_driver_ros2`
 
 ## Start here
 
 | If you want to... | Read |
 |---|---|
-| Know **where the project stands**: what's real, what's stubbed, who owns what, what to do next | [`STATUS.md`](STATUS.md) |
-| Know **every topic, action and TF edge** between layers, and who publishes it | [`INTERFACE_CONTRACT.md`](INTERFACE_CONTRACT.md) |
-| Understand **how the stack fits together** (both halves, rates, data flow, gaps) | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
-| Find **where your team plugs in** (which stub you replace, what you must honor) | [`INTEGRATION_POINTS.md`](INTEGRATION_POINTS.md) |
-| **Contribute**: workflow, changing an interface, adding a node, running the checks | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| See the EtherCAT / `ros2_control` / real-time research (and what's unverified) | [`RESEARCH_NOTES.md`](RESEARCH_NOTES.md) |
+| Know **where things stand**: what's real, what's simulated, what's next, known issues | [`STATUS.md`](STATUS.md) |
+| **Understand the whole stack** from first principles (planning, perception, RL, manipulation, ros2_control, EtherCAT) | [`docs/knowledge/`](docs/knowledge/README.md) and the interactive [academy](docs/academy/README.md) |
+| See **how this repo's stack fits together**: layers, rates, machines, code map | [`docs/architecture.md`](docs/architecture.md) |
+| Know **every topic, action and TF edge** and who owns it | [`docs/interface_contract.md`](docs/interface_contract.md) |
+| Work on the **robot itself**: model, motors, numbers, hardware findings | [`robots/wisco_v1/`](robots/wisco_v1/README.md), [`hardware/`](hardware/README.md) |
+| Train **walking** or **motion tracking** | [`training/`](training/README.md) |
+| Work on **arms and hands** | [`manipulation/`](manipulation/README.md) |
+| **Contribute**: workflow, interfaces, tests | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
-Every package has its own `README.md` stating its layer, status (real / stub /
-scaffold), rate and interfaces. Read those before assuming anything works.
-
-## How it works
-
-Nodes never call each other; they publish/subscribe (or call an action) through
-interfaces listed in the contract. Each topic and each TF edge has **exactly one
-owner**. Every layer has a stub that honors its interface, so:
+## Quick start (Mac with Docker Desktop)
 
 ```bash
-ros2 launch bringup full_stack.launch.py locomotion:=external   # whole stack, minus your stub
-ros2 run my_pkg my_locomotion_node                              # your real node takes its place
-ros2 run bringup check_contract.py                              # prove you honored the contract
+cp .env.example .env                     # add ANTHROPIC_API_KEY for the planner
+tools/ros.sh up                          # build the ROS 2 Jazzy image and start the container (first time ~10-20 min)
+python3 -m venv .venv && .venv/bin/pip install -r tools/requirements-mac.txt   # Mac-side MuJoCo (viewer, env builder)
+.venv/bin/python tools/env_build.py assets/envs/test/table_room      # build the test room for Wisco V1 (build_wisco/)
+tools/ros.sh test sim test/table_room    # MuJoCo + Wisco V1 walking policy: contract check + drive test
+tools/ros.sh shell                       # then: ros2 launch hsim_bringup autonomy.launch.py env:=test/table_room
 ```
+Watch it with `tools/viewer.sh --env test/table_room`; talk to it with `tools/ask.sh "walk to the table"`. The full
+autonomy defaults (RTAB-Map, perception on the GPU VM) and other robots (`robot:=g1`, `g1_arms_free`) are in
+`docs/architecture.md` §4. Static checks, no ROS needed: `python -m pytest tests ros2_ws/src/*/test`.
 
-**What stubs prove:** data flows through the right topics at the right rates
-with the right types, and everyone can develop in parallel. **What they can't:**
-real-time timing, dynamics, whether a policy balances the real robot. Those only
-show up on hardware.
+## Repository layout
 
-## The four-repo context
-
-This repo does not contain a trained locomotion or manipulation policy, an LLM
-planner, a real perception system, or a real EtherCAT master. It provides the
-glue and the slots they plug into:
-
-1. **`berkeley_humanoid`**: MuJoCo + Stable-Baselines3 PPO locomotion RL,
-   sim-only, no ROS. Will eventually export `policy.onnx`, which drops into
-   this repo's `locomotion_runner` slot. See `INTEGRATION_POINTS.md`
-   "Locomotion" for the (nontrivial) 29-DOF-to-23-DOF reconciliation this
-   requires.
-2. **`bipedal_nav`**: a real ROS2 Humble workspace. Its `g1_description`
-   (URDF+MJCF with `ros2_control` bindings) and `mujoco_ros2_control` bridge
-   are ported into this repo as the canonical robot model and sim backend (see
-   `src/g1_description/README.md` for the small, disclosed changes made). Its
-   SLAM/state-estimation/planner nodes were non-functional stubs and were **not**
-   brought over; this repo's stubs for those layers are new.
-3. **`lerobot_alohamini`**: a LeRobot fork for bimanual manipulation,
-   ZMQ-based, with no ROS dependency. Will eventually be wrapped as the
-   `ExecuteManipulation` action server this repo's `manipulation_runner`
-   already implements as a stub. See `INTEGRATION_POINTS.md` "Manipulation".
-4. **`ros2_hub`**: an empty ROS2 tutorial workspace. Not used; superseded by this repo.
-
-## Repo structure
-
-```
-robot/
-  README.md  STATUS.md  INTERFACE_CONTRACT.md  ARCHITECTURE.md
-  INTEGRATION_POINTS.md  CONTRIBUTING.md  RESEARCH_NOTES.md
-  tools/gen_docs.py            regenerates the tables in STATUS.md / INTERFACE_CONTRACT.md from the YAML
-  tests/                       static contract + consistency tests (pytest, no ROS needed)
-  docker/                      ROS2 Humble + MuJoCo dev container (x86_64 and arm64, headless-capable)
-  .github/workflows/ci.yml     static checks, then colcon build + stub-stack contract check + end-to-end task
-  src/
-    humanoid_interfaces/       THE contract: messages, action, canonical joint order, interface_contract.yaml
-    bringup/                   full_stack / lowlevel_test launch files, controllers.yaml, check_contract.py, smoke_task.py
-
-    # task stack (all stubs today)
-    task_planner_stub/         /user_intent -> /skill_sequence
-    behavior_tree_stub/        /skill_sequence -> navigate_to_pose + execute_manipulation, /task_status
-    perception_stub/           /object_poses (hardcoded cube)
-    slam_stub/                 /map, map->odom
-    state_estimation_stub/     /robot_pose, odom->base_link (dead-reckons /cmd_vel)
-    nav_stub/                  navigate_to_pose action server (stands in for Nav2) -> /cmd_vel_nav
-
-    # velocity arbitration (real)
-    teleop_input/              keyboard/joystick -> /cmd_vel_teleop
-    cmd_vel_mux/               teleop > nav > zero -> /cmd_vel (sole publisher)
-
-    # control stack
-    locomotion_runner/         50 Hz stub gait + ONNX-policy slot
-    manipulation_runner/       10 Hz stub ExecuteManipulation action server
-    wbc_stub/                  500 Hz pass-through arbitration (stands in for a real WBC)
-    lowlevel_control/          1000 Hz REAL joint impedance controller (ros2_control plugin)
-    ethercat_bridge/           1000 Hz REAL SCAFFOLD ros2_control hardware_interface
-    safety/                    100 Hz E-stop/fault monitor
-
-    # platform
-    g1_description/            canonical URDF/MJCF (ported from bipedal_nav; adds base_link)
-    mujoco_ros2_control/       vendored MuJoCo<->ros2_control bridge (unmodified, MIT)
-    mujoco_sim/                G1-specific MuJoCo sim bringup
-```
-
-## Prerequisites
-
-Docker is **optional**. ROS 2 Humble is Ubuntu 22.04 software, so pick by what you have:
-
-| You have | Use |
+| Folder | What it holds |
 |---|---|
-| **Ubuntu 22.04** (workstation, lab PC, the robot's computer) | Native setup below, no Docker |
-| macOS, Windows, or another Linux | The dev container, an Ubuntu 22.04 VM, or WSL2 on Windows |
-| Just Python, no ROS | Enough to run the static tests and doc tooling (see [Test](#test)) |
+| `robots/wisco_v1/` | the robot: URDF/MJCF + meshes (from CAD), every number with its source, pre-training checks, hardware findings |
+| `ros2_ws/src/` | ROS 2 packages, one per layer (`hsim_*`), the EtherCAT hardware interface, ported ros2_control packages |
+| `hardware/` | wireless e-stop (ESP32 + RK3588); overview of the real-robot side |
+| `manipulation/` | arm pipelines: real Panthera arms (teleop, recording, pi0.5) and their simulation (IK, ACT, VLAs) |
+| `training/` | GPU training: locomotion (Wisco V1, G1), motion tracking, humanoid manipulation (GR00T) |
+| `models/` | deployed policies (ONNX + manifest) |
+| `assets/` | robot worlds exported from mjlab, environments (test rooms, RoboCasa kitchens) |
+| `services/` | GPU inference servers: perception, VLA |
+| `tools/`, `tests/` | dev scripts and graders; static checks |
+| `infra/` | container, GPU VM setup, overnight job runner |
+| `docs/` | architecture, interface contract, decisions, knowledge base, academy, hardware notes, run logs, migration notes |
 
-**Native (Ubuntu 22.04):** install [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
-first, then:
-
-```bash
-./scripts/setup_ubuntu.sh      # apt/pip deps, MuJoCo into ~/.local/mujoco, rosdep (uses sudo)
-./scripts/build.sh             # colcon build
-source install/setup.bash
-export LD_LIBRARY_PATH="$HOME/.local/mujoco/mujoco-3.2.7/lib:${LD_LIBRARY_PATH:-}"   # for the sim; add to ~/.bashrc
-```
-(That is a wrapper around `rosdep install --from-paths src --ignore-src -y` and
-`colcon build --symlink-install`; `docker/Dockerfile` does the same steps.)
-
-**Dev container** (macOS/Windows/any Docker host; x86_64 or Apple silicon):
-
-```bash
-./docker/build.sh      # builds the workspace inside the image (a few minutes; needs network)
-./docker/run.sh        # shell with your working copy mounted; Python edits are live
-```
-On macOS there is no X11 forwarding, so run the sim with `headless:=true`. The
-image builds MuJoCo with OSMesa so headless needs no display at all.
-
-## Build by hand (what `scripts/build.sh` wraps)
-
-```bash
-cd robot
-rosdep install --from-paths src --ignore-src -y
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
-source install/setup.bash
-```
-
-## Run
-
-```bash
-ros2 launch bringup full_stack.launch.py                  # MuJoCo sim + every stub
-ros2 launch bringup full_stack.launch.py sim:=false       # stubs only, no MuJoCo, runs on a laptop
-ros2 launch bringup full_stack.launch.py headless:=true   # sim with no GUI window
-
-ros2 run teleop_input teleop_node                         # keyboard, in a SECOND terminal
-ros2 topic pub --once /user_intent std_msgs/msg/String "{data: 'pick up the cube'}"
-ros2 topic echo /task_status                              # RUNNING 1/2 navigate_to ... SUCCEEDED
-```
-Launch switches (per-layer `stub|external`, `sim`, `headless`, ...) are in
-`bringup/README.md`. The EtherCAT-scaffold milestone harness:
-`ros2 launch bringup lowlevel_test.launch.py [use_hardware:=true]`.
-
-## Test
-
-```bash
-pip install pytest pyyaml xacro
-python3 tools/gen_docs.py --check     # generated doc tables match the contract
-python3 -m pytest tests src/*/test    # static contract/consistency + pure-logic unit tests (no ROS)
-
-ros2 run bringup check_contract.py [--no-sim]   # live: one publisher per topic, types, rates, TF, actions
-ros2 run bringup smoke_task.py                  # live: intent -> plan -> navigate -> manipulate -> SUCCEEDED
-```
-CI (`.github/workflows/ci.yml`) runs all of the above. `STATUS.md` records what has
-actually been built and launched on a ROS machine and what has not; check it before
-assuming anything works.
+History: this repo merges the simulation/autonomy stack, the Wisco robot model and training, the EtherCAT hardware
+interface, the wireless e-stop and the arm pipelines (2026-11-15). The pre-unification scaffold and the
+planner/BT/Nav2 branch are kept as tags (`legacy-scaffold-v0`, `archive/task-planner`); renamed things are listed in
+[`docs/migration/renames.md`](docs/migration/renames.md).

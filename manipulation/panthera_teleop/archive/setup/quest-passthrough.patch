@@ -1,0 +1,104 @@
+diff --git a/index.html b/index.html
+index e1a6545..8b529b4 100644
+--- a/index.html
++++ b/index.html
+@@ -1,9 +1,9 @@
+ <!doctype html>
+-<html lang="zh-CN">
++<html lang="en">
+ <head>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width,initial-scale=1" />
+-  <title>Quest 2 WebXR Controller Stream</title>
++  <title>Quest Passthrough Controller Stream</title>
+   <style>
+     :root {
+       --bg: #f4f1ea;
+@@ -171,27 +171,27 @@
+ </head>
+ <body>
+   <div class="app">
+-    <h1>Quest Controller Stream</h1>
+-    <p class="subtitle">进入 XR 后采集左右手控制器位姿和按钮状态，并通过 WebSocket 推送到电脑端。</p>
++    <h1>Quest Passthrough</h1>
++    <p class="subtitle">See the room around you while streaming both controllers to your computer.</p>
+ 
+     <section class="panel">
+       <div class="controls">
+         <div class="field">
+-          <label for="wsUrlInput">WebSocket 地址</label>
++          <label for="wsUrlInput">Computer connection</label>
+           <input id="wsUrlInput" type="text" placeholder="ws://192.168.1.50:8765" />
+         </div>
+         <div class="field">
+-          <label for="sendRateInput">发送频率 (Hz)</label>
++          <label for="sendRateInput">Tracking updates per second</label>
+           <input id="sendRateInput" type="number" min="1" max="120" step="1" value="120" />
+         </div>
+         <div class="button-row">
+-          <button id="startBtn">Start XR Stream</button>
+-          <button id="endBtn" class="secondary">End XR Session</button>
++          <button id="startBtn">Start Passthrough</button>
++          <button id="endBtn" class="secondary">End Passthrough</button>
+           <button id="saveBtn" class="secondary">Save Settings</button>
+         </div>
+       </div>
+       <div class="hint">
+-        无线使用时，把地址改成电脑局域网 IP。若 Quest 浏览器限制 `immersive-vr`，需要改成 `https` / `wss`。
++        Pick up both controllers after entering passthrough. Use the Meta button to return to the browser.
+       </div>
+     </section>
+ 
+@@ -616,7 +616,8 @@
+       if (baseLayer) {
+         gl.bindFramebuffer(gl.FRAMEBUFFER, baseLayer.framebuffer);
+         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+-        gl.clearColor(0.08, 0.08, 0.08, 1.0);
++        // Transparent pixels reveal the Quest's passthrough environment.
++        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+       }
+     }
+@@ -640,8 +641,8 @@
+         return;
+       }
+ 
+-      const supported = await navigator.xr.isSessionSupported("immersive-vr");
+-      log("immersive-vr supported =", supported);
++      const supported = await navigator.xr.isSessionSupported("immersive-ar");
++      log("Passthrough supported =", supported);
+       if (!supported) {
+         setStatus(xrStatusEl, "Unsupported", "bad");
+         return;
+@@ -655,7 +656,7 @@
+ 
+       gl = xrCanvas.getContext("webgl2", {
+         xrCompatible: true,
+-        alpha: false,
++        alpha: true,
+         antialias: true,
+         depth: true,
+         stencil: false
+@@ -670,10 +671,11 @@
+       await gl.makeXRCompatible();
+ 
+       // 先拿 XR session，别被 WS 阻塞
+-      session = await navigator.xr.requestSession("immersive-vr", {
++      session = await navigator.xr.requestSession("immersive-ar", {
+         requiredFeatures: ["local-floor"],
+       });
+-      setStatus(xrStatusEl, "Running", "ok");
++      setStatus(xrStatusEl, "Passthrough", "ok");
++      log("Environment blend mode =", session.environmentBlendMode);
+       refreshButtonState();
+ 
+       session.addEventListener("inputsourceschange", (ev) => {
+@@ -715,7 +717,7 @@
+       });
+ 
+       session.updateRenderState({
+-        baseLayer: new XRWebGLLayer(session, gl),
++        baseLayer: new XRWebGLLayer(session, gl, { alpha: true }),
+       });
+ 
+       refSpace = await session.requestReferenceSpace("local-floor");

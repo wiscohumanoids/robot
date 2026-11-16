@@ -1,0 +1,2 @@
+# Map images are raw bytes (P5); never diff or merge them as text.
+*.pgm binary

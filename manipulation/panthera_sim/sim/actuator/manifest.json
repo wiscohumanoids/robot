@@ -1,0 +1,230 @@
+{
+  "source_url": "https://cad.onshape.com/documents/6ebda61ccb55656f56193289/w/a3ae93aac555a13ff6d266af/e/b429d4c9da58a01075feb849",
+  "export_date": "2026-09-28",
+  "units": "metres",
+  "up_axis": "Z",
+  "source_sha256": "89d07027cb5565c4821840b00defcca46bcea2195b7b4baeaaa6b440154debc3",
+  "collision_method": "horizontal CAD sections, 15 micrometre outline simplification, convex prisms",
+  "parts": {
+    "pin_1": {
+      "source_name": "06_Planet_pin_3",
+      "assembled_origin": [
+        0.0,
+        -0.0179625,
+        0.0305
+      ],
+      "bounds": [
+        [
+          -0.004,
+          -0.004,
+          0.0
+        ],
+        [
+          0.004,
+          0.004,
+          0.01788
+        ]
+      ],
+      "volume_m3": 8.972684829424105e-07,
+      "collision_pieces": 1
+    },
+    "gear_3": {
+      "source_name": "05_Planet_gear_3",
+      "assembled_origin": [
+        -0.0179625,
+        0.0,
+        0.0352
+      ],
+      "bounds": [
+        [
+          -0.011975,
+          -0.01185,
+          0.0
+        ],
+        [
+          0.011975,
+          0.01185,
+          0.008199999999999999
+        ]
+      ],
+      "volume_m3": 2.4400792599141895e-06,
+      "collision_pieces": 68
+    },
+    "pin_2": {
+      "source_name": "06_Planet_pin_3",
+      "assembled_origin": [
+        -0.0179625,
+        0.0,
+        0.0305
+      ],
+      "bounds": [
+        [
+          -0.004,
+          -0.004,
+          0.0
+        ],
+        [
+          0.004,
+          0.004,
+          0.01788
+        ]
+      ],
+      "volume_m3": 8.972684829424106e-07,
+      "collision_pieces": 1
+    },
+    "gear_4": {
+      "source_name": "05_Planet_gear_4",
+      "assembled_origin": [
+        0.0,
+        -0.0179625,
+        0.0352
+      ],
+      "bounds": [
+        [
+          -0.01185,
+          -0.011975,
+          0.0
+        ],
+        [
+          0.01185,
+          0.011975,
+          0.008199999999999999
+        ]
+      ],
+      "volume_m3": 2.4400792599141895e-06,
+      "collision_pieces": 68
+    },
+    "pin_3": {
+      "source_name": "06_Planet_pin_3",
+      "assembled_origin": [
+        0.0179625,
+        0.0,
+        0.0305
+      ],
+      "bounds": [
+        [
+          -0.004,
+          -0.004,
+          0.0
+        ],
+        [
+          0.004,
+          0.004,
+          0.01788
+        ]
+      ],
+      "volume_m3": 8.972684829424105e-07,
+      "collision_pieces": 1
+    },
+    "gear_1": {
+      "source_name": "05_Planet_gear_1",
+      "assembled_origin": [
+        0.0179625,
+        0.0,
+        0.0352
+      ],
+      "bounds": [
+        [
+          -0.011975,
+          -0.01185,
+          0.0
+        ],
+        [
+          0.011975,
+          0.01185,
+          0.008199999999999999
+        ]
+      ],
+      "volume_m3": 2.4400792599141895e-06,
+      "collision_pieces": 68
+    },
+    "large_carrier": {
+      "source_name": "04_Quad_planetary_carrier",
+      "assembled_origin": [
+        0.0,
+        0.0,
+        0.03
+      ],
+      "bounds": [
+        [
+          -0.02649,
+          -0.02649,
+          0.0
+        ],
+        [
+          0.02649,
+          0.02649,
+          0.019209999999999998
+        ]
+      ],
+      "volume_m3": 9.129613983098657e-06,
+      "collision_pieces": 872
+    },
+    "small_carrier": {
+      "source_name": "03_Small_planetary_carrier_unit",
+      "assembled_origin": [
+        0.0,
+        0.0,
+        0.0175
+      ],
+      "bounds": [
+        [
+          -0.01575,
+          -0.0168366,
+          0.0
+        ],
+        [
+          0.01838,
+          0.0168366,
+          0.031459999999999995
+        ]
+      ],
+      "volume_m3": 7.1381864086661435e-06,
+      "collision_pieces": 695
+    },
+    "pin_4": {
+      "source_name": "06_Planet_pin_3",
+      "assembled_origin": [
+        0.0,
+        0.0179625,
+        0.0305
+      ],
+      "bounds": [
+        [
+          -0.004,
+          -0.004,
+          0.0
+        ],
+        [
+          0.004,
+          0.004,
+          0.01788
+        ]
+      ],
+      "volume_m3": 8.972684829424105e-07,
+      "collision_pieces": 1
+    },
+    "gear_2": {
+      "source_name": "05_Planet_gear_2",
+      "assembled_origin": [
+        0.0,
+        0.0179625,
+        0.0352
+      ],
+      "bounds": [
+        [
+          -0.01185,
+          -0.011975,
+          0.0
+        ],
+        [
+          0.01185,
+          0.011975,
+          0.008199999999999999
+        ]
+      ],
+      "volume_m3": 2.4400792599141895e-06,
+      "collision_pieces": 69
+    }
+  }
+}

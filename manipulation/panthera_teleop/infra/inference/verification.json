@@ -1,0 +1,19 @@
+{
+  "verified_date_local": "2026-10-03",
+  "aws_host": "3.83.15.102",
+  "aws_service": "panthera-inference.service",
+  "local_tunnel_service": "panthera-inference-tunnel.service",
+  "aws_health_status": "waiting_for_training",
+  "training_was_left_running": true,
+  "checkpoint_processors_tested": "/mnt/pi05/runs/panthera_pi05_20261003/checkpoints/006000/pretrained_model",
+  "processor_input_state_shape": [1, 14],
+  "processor_input_image_shape": [1, 3, 256, 256],
+  "processor_language_shape": [1, 200],
+  "postprocessor_output_shape": [1, 50, 14],
+  "transport_test": "AWS mock service via SSH, three cropped RGB images and 14 states, 50 returned actions",
+  "transport_roundtrip_seconds": 0.203797,
+  "action_validation_unit_tests_passed": 4,
+  "gpu_learned_inference_tested": false,
+  "physical_rollout_tested": false,
+  "motor_devices_opened_for_verification": false
+}

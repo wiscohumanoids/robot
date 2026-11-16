@@ -1,0 +1,21 @@
+# Robot profile: everything the stack needs to know about one robot. Selected with robot:=<name> on
+# sim_stack.launch.py / autonomy.launch.py. Paths are inside the container (/hsim = repo root).
+# ROS frame names are the same for every robot (base_footprint, base_link = pelvis, torso_link, head_camera,
+# imu_link, lidar_link); only the MuJoCo names, mounts and limits below differ.
+name: g1
+world: /hsim/assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml   # bare training world (no env)
+env_build_dir: build                 # assets/envs/<env>/<this>/  (tools/env_build.py --robot g1)
+policy: /hsim/models/locomotion/g1_velocity_all_joints
+default_sensors: lidar               # lidar | stereo
+bodies:
+  root: pelvis                       # MuJoCo body = ROS base_link
+  torso: torso_link                  # MuJoCo body = ROS torso_link (head camera / lidar sit on it)
+fall_height: 0.45                    # m, root below this = fallen (sim reset, safety)
+sole_offset: 0.0015                  # m, foot sites (left_foot/right_foot) above the sole
+mounts:                              # x y z [m], pitch [rad] (+ = down)
+  imu: [0.0452, 0.0, -0.0834]        # imu_in_pelvis site, in base_link
+  lidar: [0.056, 0.0, 1.224]         # level scan frame, in base_footprint (head lidar, ~1.2 m up)
+  lidar_on_torso: [0.06, 0.0, 0.42]  # same lidar, in the torso body (what the sim casts from)
+  camera: [0.08, 0.0, 0.45, 0.4363]  # head camera in torso_link, pitched 25 deg down
+footprint_radius: 0.30               # m, Nav2 robot_radius (nav2.yaml)
+reach_standoff: 0.30                 # m, how far into a surface's edge the BT stops (arms reach ~0.5 m)

@@ -1,0 +1,1142 @@
+{
+  "processing_version": 2,
+  "recording_session_local_date": "2026-10-05",
+  "recording_timezone": "America/Chicago",
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Reference 20 Hz grid; nearest measured state and timestamp-aligned camera frames. No dataset has been exported.",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.055,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Original host receive timestamps preserved; active data clock used for newer records. Nearest image may precede or follow grid tick; offsets and repeats reported perclip.",
+  "trim_method": "Explicit human control ownership and synchronized visual review; independent contiguous interval per approved correction",
+  "trim_uncertainty_s": null,
+  "episodes": [
+    {
+      "id": "20261005T163552-b5d35bee-hitl-003",
+      "source_id": "20261005T163552-b5d35bee",
+      "source_category": "review",
+      "selection": "human_correction",
+      "segment_index": 3,
+      "start_s": 59.806234391,
+      "end_s": 63.094319865,
+      "original_start_s": 57.178312256,
+      "original_end_s": 63.32361904,
+      "duration_s": 3.288085474000006,
+      "review_approved": true,
+      "visual_decision": "trim",
+      "reason": "Keep the final pin alignment, jaw closure, and stable retention only. At 59.4\u201360.4 s the upright pin is between open tips; by 61.4\u201363.3 s the tips hold its sides and retain it as the wrist moves. Exclude preceding search/alignment.",
+      "confidence": 0.92,
+      "visual_review_file": "work/hitl-round1/review/review-category.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "513e249d867205bfcdcec0781d1d08875b00ba00368086d0d24ade10b0213e49",
+      "source_log_sha256": {
+        "states.jsonl": "4f10c9d99a8e2121a97c4a38b7008c425a35d713188d0926afc452ece41b7a49",
+        "frames.jsonl": "45f06f1dd8a1b37ef0304a8b2ced9cb88f7536920a18d48f81569c390ac20a87"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "review",
+        "success": false,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 63,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.012783465,
+          "p95_abs_offset_s": 0.0118780309,
+          "achieved_saved_fps": 19.905745715526248,
+          "repeated_frames": 0
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.014089099,
+          "p95_abs_offset_s": 0.0132173451,
+          "achieved_saved_fps": 19.912474135010633,
+          "repeated_frames": 0
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.014115829,
+          "p95_abs_offset_s": 0.0135125558,
+          "achieved_saved_fps": 19.92627075576093,
+          "repeated_frames": 0
+        }
+      }
+    },
+    {
+      "id": "20261005T182233-fbd89366-hitl-000",
+      "source_id": "20261005T182233-fbd89366",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 2.569999979,
+      "end_s": 25.55,
+      "original_start_s": 2.569999979,
+      "original_end_s": 26.455907633,
+      "duration_s": 22.980000021000002,
+      "review_approved": true,
+      "visual_decision": "trim",
+      "reason": "Keep the useful continuous gear approach/alignment followed by pin grasp/transport/placement correction; remove the final stationary tail.",
+      "confidence": 0.9,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "e0648f79f723849a85ee175c0dbbf29ba6959a2bbbabb4cfff134b78cf99a9e7",
+      "source_log_sha256": {
+        "states.jsonl": "244213cf71e3a55382be85cdea6810704b696d99a77bf830f9a939bda030c0f7",
+        "frames.jsonl": "f61aef295d48fe65c82333d80f9fbf52b2c42b290a4bbc1bf1e01e51b173ad47"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 457,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050518879,
+          "p95_abs_offset_s": 0.045328786,
+          "achieved_saved_fps": 14.972932119711711,
+          "repeated_frames": 115
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.05004749,
+          "p95_abs_offset_s": 0.0446592892,
+          "achieved_saved_fps": 14.707414109968312,
+          "repeated_frames": 121
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049395862,
+          "p95_abs_offset_s": 0.044604110399999994,
+          "achieved_saved_fps": 14.62083474854994,
+          "repeated_frames": 122
+        }
+      }
+    },
+    {
+      "id": "20261005T182335-656ef6db-hitl-000",
+      "source_id": "20261005T182335-656ef6db",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 1.713333339,
+      "end_s": 6.040151518,
+      "original_start_s": 1.713333339,
+      "original_end_s": 6.040151518,
+      "duration_s": 4.326818179,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful short gear approach/gripper retargeting after policy takeover; no direct human object manipulation observed.",
+      "confidence": 0.86,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "5d8234a74a6da83987cf92c3f494c5ef07af61261999f16f8e8d1c2c6fb8b70c",
+      "source_log_sha256": {
+        "states.jsonl": "de0745b795dd2f5bc4476dce7663104d08a6cc71cd6340d7ba250afdd9e57035",
+        "frames.jsonl": "1d761c46b2280ef30d9022b650d441ad027860b9e612a17e2a6bb048a439abec"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 84,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050832856,
+          "p95_abs_offset_s": 0.0480243513,
+          "achieved_saved_fps": 14.055896607856878,
+          "repeated_frames": 25
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.048763094,
+          "p95_abs_offset_s": 0.04582392809999999,
+          "achieved_saved_fps": 14.054582977645707,
+          "repeated_frames": 25
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.038279049,
+          "p95_abs_offset_s": 0.0350340046,
+          "achieved_saved_fps": 14.974628444909648,
+          "repeated_frames": 20
+        }
+      }
+    },
+    {
+      "id": "20261005T182335-656ef6db-hitl-001",
+      "source_id": "20261005T182335-656ef6db",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 1,
+      "start_s": 11.186818183,
+      "end_s": 15.944408127,
+      "original_start_s": 11.186818183,
+      "original_end_s": 15.944408127,
+      "duration_s": 4.757589944000001,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful close alignment/seating correction around the carrier; preserve measured robot-mediated motion rather than treating the almost fixed wrist view as inactivity.",
+      "confidence": 0.86,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "5d8234a74a6da83987cf92c3f494c5ef07af61261999f16f8e8d1c2c6fb8b70c",
+      "source_log_sha256": {
+        "states.jsonl": "de0745b795dd2f5bc4476dce7663104d08a6cc71cd6340d7ba250afdd9e57035",
+        "frames.jsonl": "1d761c46b2280ef30d9022b650d441ad027860b9e612a17e2a6bb048a439abec"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 93,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.041331899,
+          "p95_abs_offset_s": 0.038741829400000004,
+          "achieved_saved_fps": 14.390186474188138,
+          "repeated_frames": 26
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.045504861,
+          "p95_abs_offset_s": 0.038393214599999975,
+          "achieved_saved_fps": 15.418567069301988,
+          "repeated_frames": 21
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.050340558,
+          "p95_abs_offset_s": 0.04746161959999999,
+          "achieved_saved_fps": 14.969328460795534,
+          "repeated_frames": 23
+        }
+      }
+    },
+    {
+      "id": "20261005T182335-656ef6db-hitl-002",
+      "source_id": "20261005T182335-656ef6db",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 2,
+      "start_s": 17.664408131,
+      "end_s": 29.613877532,
+      "original_start_s": 17.664408131,
+      "original_end_s": 29.613877532,
+      "duration_s": 11.949469401000002,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Clear pin approach/grasp/transport and return-to-carrier correction; keep final robot withdrawal instead of trimming it.",
+      "confidence": 0.91,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "5d8234a74a6da83987cf92c3f494c5ef07af61261999f16f8e8d1c2c6fb8b70c",
+      "source_log_sha256": {
+        "states.jsonl": "de0745b795dd2f5bc4476dce7663104d08a6cc71cd6340d7ba250afdd9e57035",
+        "frames.jsonl": "1d761c46b2280ef30d9022b650d441ad027860b9e612a17e2a6bb048a439abec"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 237,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.049149201,
+          "p95_abs_offset_s": 0.042723512799999995,
+          "achieved_saved_fps": 15.006283653656565,
+          "repeated_frames": 59
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.047885788,
+          "p95_abs_offset_s": 0.0429697634,
+          "achieved_saved_fps": 14.974434950498617,
+          "repeated_frames": 60
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049579662,
+          "p95_abs_offset_s": 0.045704324399999996,
+          "achieved_saved_fps": 15.10213864185076,
+          "repeated_frames": 58
+        }
+      }
+    },
+    {
+      "id": "20261005T182920-f1744250-hitl-000",
+      "source_id": "20261005T182920-f1744250",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 2.570000004,
+      "end_s": 5.400259139,
+      "original_start_s": 2.570000004,
+      "original_end_s": 5.400259139,
+      "duration_s": 2.830259135,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful short gear approach correction with motion throughout; no strong evidence for excluding the whole segment or clipping the slow end.",
+      "confidence": 0.87,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "14ccf04e22d02315798b20a36a0544f7e5148769e53cd2e0bdd3a0751dd1035f",
+      "source_log_sha256": {
+        "states.jsonl": "0c40676e0496887216a0f8ff0e0bca48b9f4b58bc1eca58117d9ae1fe90d94e0",
+        "frames.jsonl": "60ac25a73674ddda4c9b5f19cd8a343262f607793253d434c06b8f11793e1d47"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 56,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.038054858,
+          "p95_abs_offset_s": 0.03639056425,
+          "achieved_saved_fps": 15.291654087532715,
+          "repeated_frames": 13
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.047906036,
+          "p95_abs_offset_s": 0.0459030015,
+          "achieved_saved_fps": 16.262824851028657,
+          "repeated_frames": 10
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049276141,
+          "p95_abs_offset_s": 0.04781323325,
+          "achieved_saved_fps": 15.908884778098145,
+          "repeated_frames": 11
+        }
+      }
+    },
+    {
+      "id": "20261005T182920-f1744250-hitl-001",
+      "source_id": "20261005T182920-f1744250",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 1,
+      "start_s": 6.263592473,
+      "end_s": 19.222751252,
+      "original_start_s": 6.263592473,
+      "original_end_s": 19.222751252,
+      "duration_s": 12.959158779,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful gradual gear-carrier convergence and gripper refinement; apparent small motions are actual active correction.",
+      "confidence": 0.89,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "14ccf04e22d02315798b20a36a0544f7e5148769e53cd2e0bdd3a0751dd1035f",
+      "source_log_sha256": {
+        "states.jsonl": "0c40676e0496887216a0f8ff0e0bca48b9f4b58bc1eca58117d9ae1fe90d94e0",
+        "frames.jsonl": "60ac25a73674ddda4c9b5f19cd8a343262f607793253d434c06b8f11793e1d47"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 257,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050144431,
+          "p95_abs_offset_s": 0.044385024999999995,
+          "achieved_saved_fps": 14.447082870829522,
+          "repeated_frames": 71
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.049183083,
+          "p95_abs_offset_s": 0.04044875619999999,
+          "achieved_saved_fps": 15.151743536676936,
+          "repeated_frames": 62
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.050313858,
+          "p95_abs_offset_s": 0.0420788634,
+          "achieved_saved_fps": 15.096485064108093,
+          "repeated_frames": 63
+        }
+      }
+    },
+    {
+      "id": "20261005T182920-f1744250-hitl-002",
+      "source_id": "20261005T182920-f1744250",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 2,
+      "start_s": 20.086084585,
+      "end_s": 29.4,
+      "original_start_s": 20.086084585,
+      "original_end_s": 30.525402115,
+      "duration_s": 9.313915415,
+      "review_approved": true,
+      "visual_decision": "trim",
+      "reason": "Keep pin approach, transport and placement refinement through the final adjustment; remove only the visually and numerically stationary ending.",
+      "confidence": 0.91,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "14ccf04e22d02315798b20a36a0544f7e5148769e53cd2e0bdd3a0751dd1035f",
+      "source_log_sha256": {
+        "states.jsonl": "0c40676e0496887216a0f8ff0e0bca48b9f4b58bc1eca58117d9ae1fe90d94e0",
+        "frames.jsonl": "60ac25a73674ddda4c9b5f19cd8a343262f607793253d434c06b8f11793e1d47"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 183,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050121301,
+          "p95_abs_offset_s": 0.0447024893,
+          "achieved_saved_fps": 14.970166930117601,
+          "repeated_frames": 46
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.04939354,
+          "p95_abs_offset_s": 0.041290824200000006,
+          "achieved_saved_fps": 14.606003018272533,
+          "repeated_frames": 50
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049375439,
+          "p95_abs_offset_s": 0.044918477899999996,
+          "achieved_saved_fps": 15.567627993525997,
+          "repeated_frames": 40
+        }
+      }
+    },
+    {
+      "id": "20261005T183300-0718188f-hitl-000",
+      "source_id": "20261005T183300-0718188f",
+      "source_category": "review",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 3.605944004,
+      "end_s": 5.748624611,
+      "original_start_s": 0.0,
+      "original_end_s": 10.883979062,
+      "duration_s": 2.1426806070000004,
+      "review_approved": true,
+      "visual_decision": "trim",
+      "reason": "Keep the pin acquisition and initial transport only. The loose pin is clearly visible at 3.7\u20134.3 s, the jaws secure it by 4.9\u20135.5 s, and it moves with the gripper toward the carrier. Exclude the earlier retract and later unresolved insertion attempts.",
+      "confidence": 0.96,
+      "visual_review_file": "work/hitl-round1/review/review-category.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "bd780ee38230cc16638b00f5e1688d729ccba7f7f67463bb4a65481e10727317",
+      "source_log_sha256": {
+        "states.jsonl": "6d6abfb563ecaf1242e511d2b058396c0b2925b21c91e6978f0cf6b3a3546d95",
+        "frames.jsonl": "bf9be0fdb6c6b6f3bcd56b11404b17fe1ecaa72588bf4017d7d1f73c06638b4a"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "review",
+        "success": false,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 39,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.049201789,
+          "p95_abs_offset_s": 0.047147297,
+          "achieved_saved_fps": 15.41027843102169,
+          "repeated_frames": 8
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.032471323,
+          "p95_abs_offset_s": 0.0311163397,
+          "achieved_saved_fps": 14.549301345459252,
+          "repeated_frames": 10
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.041482886,
+          "p95_abs_offset_s": 0.040322147200000005,
+          "achieved_saved_fps": 14.665197262469578,
+          "repeated_frames": 9
+        }
+      }
+    },
+    {
+      "id": "20261005T183339-c6041eaf-hitl-000",
+      "source_id": "20261005T183339-c6041eaf",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 0.0,
+      "end_s": 6.552828194,
+      "original_start_s": 0.0,
+      "original_end_s": 6.552828194,
+      "duration_s": 6.552828194,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful gear approach and carrier alignment recovery from human takeover with continued final gripper adjustments.",
+      "confidence": 0.9,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "220a5ee2c8d3e4cadbe2963dbc86c1aa70ff056417433e0e41efe8051443aadb",
+      "source_log_sha256": {
+        "states.jsonl": "effa4750e5f60b8ab818551218e06f0f91405308668e9c4163f35fddec779f0d",
+        "frames.jsonl": "7aba775dd35c23972880f504d4702091091f0be8312fd443e21c436bdd425800"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 130,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.046478826,
+          "p95_abs_offset_s": 0.04024978955,
+          "achieved_saved_fps": 14.837645158931181,
+          "repeated_frames": 33
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.049768328,
+          "p95_abs_offset_s": 0.044975899349999994,
+          "achieved_saved_fps": 14.745159074252847,
+          "repeated_frames": 34
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.047385352,
+          "p95_abs_offset_s": 0.04234777735,
+          "achieved_saved_fps": 15.301319968106926,
+          "repeated_frames": 29
+        }
+      }
+    },
+    {
+      "id": "20261005T183339-c6041eaf-hitl-001",
+      "source_id": "20261005T183339-c6041eaf",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 1,
+      "start_s": 11.658268119,
+      "end_s": 22.45,
+      "original_start_s": 11.658268119,
+      "original_end_s": 23.688121208,
+      "duration_s": 10.791731880999999,
+      "review_approved": true,
+      "visual_decision": "trim",
+      "reason": "Keep clear pin approach/lift/return-to-carrier and settling; remove the final fully stationary tail.",
+      "confidence": 0.93,
+      "visual_review_file": "work/hitl-round1/review/kept-first-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "220a5ee2c8d3e4cadbe2963dbc86c1aa70ff056417433e0e41efe8051443aadb",
+      "source_log_sha256": {
+        "states.jsonl": "effa4750e5f60b8ab818551218e06f0f91405308668e9c4163f35fddec779f0d",
+        "frames.jsonl": "7aba775dd35c23972880f504d4702091091f0be8312fd443e21c436bdd425800"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 213,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.049952774,
+          "p95_abs_offset_s": 0.041210134399999994,
+          "achieved_saved_fps": 14.628027342941632,
+          "repeated_frames": 58
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.050410823,
+          "p95_abs_offset_s": 0.046147785999999996,
+          "achieved_saved_fps": 14.690499239869498,
+          "repeated_frames": 57
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049701483,
+          "p95_abs_offset_s": 0.0448546084,
+          "achieved_saved_fps": 14.846396334693885,
+          "repeated_frames": 55
+        }
+      }
+    },
+    {
+      "id": "20261005T183509-8f9cd80a-hitl-000",
+      "source_id": "20261005T183509-8f9cd80a",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 0.0,
+      "end_s": 25.873706548,
+      "original_start_s": 0.0,
+      "original_end_s": 25.873706548,
+      "duration_s": 25.873706548,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Human correction moves a held gear toward the carrier, includes alignment retries and jaw adjustment, then approaches and transfers the tabletop pin toward the carrier. Preserve the full correction; no visible reset or object drop justifies trimming.",
+      "confidence": 0.86,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "ff35eaf19f9545d8a41361f47e44cf065b44c86d9e6aae601639102f8948dbbe",
+      "source_log_sha256": {
+        "states.jsonl": "5a0d0fe195199512e7ede9d7441451646db68eef15bb4af4518b22b034ab8d6f",
+        "frames.jsonl": "1d5d449fde87242b5616524095af2757063d9cc022999607f8934e54e159f3a7"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 516,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050024537,
+          "p95_abs_offset_s": 0.044865367749999996,
+          "achieved_saved_fps": 14.619063282808538,
+          "repeated_frames": 139
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.049338279,
+          "p95_abs_offset_s": 0.04463817975,
+          "achieved_saved_fps": 15.396613686534442,
+          "repeated_frames": 119
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.04940374,
+          "p95_abs_offset_s": 0.0437277205,
+          "achieved_saved_fps": 14.61772856138893,
+          "repeated_frames": 138
+        }
+      }
+    },
+    {
+      "id": "20261005T183601-50c4ab1c-hitl-000",
+      "source_id": "20261005T183601-50c4ab1c",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 0.0,
+      "end_s": 5.393122192,
+      "original_start_s": 0.0,
+      "original_end_s": 5.393122192,
+      "duration_s": 5.393122192,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful local gear grasp recovery: begins with the gear on the table between the jaws, grasps/lifts it, and brings it toward the held carrier. Retain the whole human interval; this interval alone is not a full task completion.",
+      "confidence": 0.91,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "c1fd70185274ef36885a2663d5a0ce537420c3cc47d4a17b67ff9da284c93a3c",
+      "source_log_sha256": {
+        "states.jsonl": "829a3e59a09bb566216df67a6474abbd96e3083115ad14ddcad4cd2feaa0e6ee",
+        "frames.jsonl": "742fbc9a6dc97ed01395bfe95e75fc9b748524ea7e7325e37101c8752d6bae28"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 106,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.04799173,
+          "p95_abs_offset_s": 0.04321577275,
+          "achieved_saved_fps": 15.555714312552846,
+          "repeated_frames": 23
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.050434626,
+          "p95_abs_offset_s": 0.0442285045,
+          "achieved_saved_fps": 14.967836742947494,
+          "repeated_frames": 26
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.043960305,
+          "p95_abs_offset_s": 0.03900119925,
+          "achieved_saved_fps": 15.184207024747867,
+          "repeated_frames": 25
+        }
+      }
+    },
+    {
+      "id": "20261005T183601-50c4ab1c-hitl-001",
+      "source_id": "20261005T183601-50c4ab1c",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 1,
+      "start_s": 7.113122181,
+      "end_s": 25.338114944,
+      "original_start_s": 7.113122181,
+      "original_end_s": 25.338114944,
+      "duration_s": 18.224992763000003,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful alignment and pin transfer correction. Gear/carrier approach includes a retreat and renewed approach, followed by pin pickup/placement motion. Preserve retries as recovery context; no visually defensible trim boundary separates an unrelated action.",
+      "confidence": 0.85,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "c1fd70185274ef36885a2663d5a0ce537420c3cc47d4a17b67ff9da284c93a3c",
+      "source_log_sha256": {
+        "states.jsonl": "829a3e59a09bb566216df67a6474abbd96e3083115ad14ddcad4cd2feaa0e6ee",
+        "frames.jsonl": "742fbc9a6dc97ed01395bfe95e75fc9b748524ea7e7325e37101c8752d6bae28"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 362,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.05009398,
+          "p95_abs_offset_s": 0.04421082365,
+          "achieved_saved_fps": 14.549316131153097,
+          "repeated_frames": 98
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.04976175,
+          "p95_abs_offset_s": 0.043474403349999996,
+          "achieved_saved_fps": 14.764822077302687,
+          "repeated_frames": 95
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.048984786,
+          "p95_abs_offset_s": 0.0442883671,
+          "achieved_saved_fps": 15.039699042457741,
+          "repeated_frames": 90
+        }
+      }
+    },
+    {
+      "id": "20261005T183719-c142dc9f-hitl-001",
+      "source_id": "20261005T183719-c142dc9f",
+      "source_category": "review",
+      "selection": "human_correction",
+      "segment_index": 1,
+      "start_s": 10.960654327,
+      "end_s": 13.649148747,
+      "original_start_s": 10.515969767,
+      "original_end_s": 19.116476487,
+      "duration_s": 2.6884944199999996,
+      "review_approved": true,
+      "visual_decision": "trim",
+      "reason": "Keep pin acquisition through initial transport. The upright pin is on the tabletop near open tips at 11.2\u201311.8 s, captured between tips by 12.4\u201313.0 s, then visibly carried above the table at 13.6 s. Exclude the later pressing/insertion tail.",
+      "confidence": 0.96,
+      "visual_review_file": "work/hitl-round1/review/review-category.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "f4457dde00618584ad88c35d952bdf69253613f789d4f0d4330fd3ae56c97a82",
+      "source_log_sha256": {
+        "states.jsonl": "fb0a424693654fb4d3c8a8121ca7b0b37c4f45cb37e8eda0c67b7e811e4dfbfb",
+        "frames.jsonl": "0bccf8dca063d227e42a75ec5ce08b149518bedc830a122fb1f6a781ca99660b"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "review",
+        "success": false,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 51,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.035828996,
+          "p95_abs_offset_s": 0.030102925500000002,
+          "achieved_saved_fps": 17.9686752092723,
+          "repeated_frames": 6
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.050056713,
+          "p95_abs_offset_s": 0.047802449999999996,
+          "achieved_saved_fps": 15.664415316404732,
+          "repeated_frames": 11
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.050015351,
+          "p95_abs_offset_s": 0.048508079999999995,
+          "achieved_saved_fps": 15.305910128283672,
+          "repeated_frames": 12
+        }
+      }
+    },
+    {
+      "id": "20261005T184001-38796a31-hitl-000",
+      "source_id": "20261005T184001-38796a31",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 0.0,
+      "end_s": 4.913986825,
+      "original_start_s": 0.0,
+      "original_end_s": 4.913986825,
+      "duration_s": 4.913986825,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful gear-to-carrier alignment correction beginning with gear already held. Preserve full short interval; sampled views show continued alignment rather than an irrelevant stationary prefix or reset.",
+      "confidence": 0.87,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "0a9e4435ff8bf5e679e305f0cbd5910c822ddf6f03155cf402506cce9391a8b9",
+      "source_log_sha256": {
+        "states.jsonl": "69c4b5bbae355dd99813c79216e0bea58b6cb1b1f0924f4cafb0794dced9350e",
+        "frames.jsonl": "e736424c009fbc7ed21ce7088283a01b19dc5f0ae8cc88bf4df1024a5e5d89f2"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 97,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.047804281,
+          "p95_abs_offset_s": 0.0449904372,
+          "achieved_saved_fps": 15.120995139551649,
+          "repeated_frames": 23
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.048088177,
+          "p95_abs_offset_s": 0.0449053472,
+          "achieved_saved_fps": 15.539557121068095,
+          "repeated_frames": 21
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.041613288,
+          "p95_abs_offset_s": 0.03963250859999999,
+          "achieved_saved_fps": 14.573973443071997,
+          "repeated_frames": 25
+        }
+      }
+    },
+    {
+      "id": "20261005T184001-38796a31-hitl-001",
+      "source_id": "20261005T184001-38796a31",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 1,
+      "start_s": 7.490653475,
+      "end_s": 25.674965868,
+      "original_start_s": 7.490653475,
+      "original_end_s": 25.674965868,
+      "duration_s": 18.184312393,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful withdrawal, tabletop pin pickup and near-carrier refinement. Keep the full correction because later state changes and successive views show continued local refinement; pin seating is visually unresolved.",
+      "confidence": 0.8,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "0a9e4435ff8bf5e679e305f0cbd5910c822ddf6f03155cf402506cce9391a8b9",
+      "source_log_sha256": {
+        "states.jsonl": "69c4b5bbae355dd99813c79216e0bea58b6cb1b1f0924f4cafb0794dced9350e",
+        "frames.jsonl": "e736424c009fbc7ed21ce7088283a01b19dc5f0ae8cc88bf4df1024a5e5d89f2"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 362,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050081554,
+          "p95_abs_offset_s": 0.042536415099999995,
+          "achieved_saved_fps": 14.470130928605531,
+          "repeated_frames": 99
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.049643811,
+          "p95_abs_offset_s": 0.0443156105,
+          "achieved_saved_fps": 15.086403661738474,
+          "repeated_frames": 89
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049304412,
+          "p95_abs_offset_s": 0.0424301276,
+          "achieved_saved_fps": 14.939025291395462,
+          "repeated_frames": 92
+        }
+      }
+    },
+    {
+      "id": "20261005T184154-9a7b00ad-hitl-000",
+      "source_id": "20261005T184154-9a7b00ad",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 0.0,
+      "end_s": 6.105372279,
+      "original_start_s": 0.0,
+      "original_end_s": 6.105372279,
+      "duration_s": 6.105372279,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Short useful near-carrier correction: relative jaw positioning and aperture adjustment occur at the side target, followed by slight withdrawal/settling. Preserve the short interval; sampled near-static ending is insufficient evidence for a precise idle-tail trim.",
+      "confidence": 0.79,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "3e51edb75da4b92bed99d70d3785f21c8908ba0011b9e79fa0b6d26ad4bdd92d",
+      "source_log_sha256": {
+        "states.jsonl": "f5ee7cade45e0d5f6f67a1153e3179b9ec16ab5f906bd542ad94d05f7109bb77",
+        "frames.jsonl": "2fcf36204addc4f042b825a8d95840f40875a7095bbb7a6f552b638c3e87ae48"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 121,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.044453604,
+          "p95_abs_offset_s": 0.038595068,
+          "achieved_saved_fps": 15.119187186948745,
+          "repeated_frames": 29
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.050215497,
+          "p95_abs_offset_s": 0.043155292,
+          "achieved_saved_fps": 15.193173132308486,
+          "repeated_frames": 29
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.04945837,
+          "p95_abs_offset_s": 0.040047105,
+          "achieved_saved_fps": 15.104718564214384,
+          "repeated_frames": 30
+        }
+      }
+    },
+    {
+      "id": "20261005T184309-9948da49-hitl-000",
+      "source_id": "20261005T184309-9948da49",
+      "source_category": "kept",
+      "selection": "human_correction",
+      "segment_index": 0,
+      "start_s": 0.0,
+      "end_s": 9.537922157,
+      "original_start_s": 0.0,
+      "original_end_s": 9.537922157,
+      "duration_s": 9.537922157,
+      "review_approved": true,
+      "visual_decision": "keep",
+      "reason": "Useful pin grasp retry followed by transfer and near-carrier jaw adjustment. Retain the early retry because it provides recovery context from an initially unsuccessful grasp; no dropped pin or unrelated reset is visible.",
+      "confidence": 0.86,
+      "visual_review_file": "work/hitl-round1/review/kept-second-half.json",
+      "annotation_source": "Synchronized saved-camera pixel review plus ownership/timestamp audit",
+      "source_metadata_sha256": "759131d7df780b9af04ad051c2383d06da7a12c3b4921313d97f7206468be040",
+      "source_log_sha256": {
+        "states.jsonl": "aa68b189789cf7080f744da5dbb6f1d827b4677453c45d475c89ab29ee7640a0",
+        "frames.jsonl": "907831f60ddaf1eda1fde4a98baeae50a8b133a24c8931b0386cd956a07d89e2"
+      },
+      "checkpoint": "/mnt/pi05/inference/checkpoints/panthera_pi05_20261003_023500/pretrained_model",
+      "operator": "Zeb",
+      "scene": "desk-oct05",
+      "outcome": {
+        "label": "kept",
+        "success": true,
+        "quality": 5,
+        "notes": ""
+      },
+      "visual_task_success_certified": false,
+      "rl_replay_eligible": false,
+      "task_reward": null,
+      "expected_20hz_reference_rows": 189,
+      "camera_timing": {
+        "overhead": {
+          "max_abs_offset_s": 0.050414165,
+          "p95_abs_offset_s": 0.042690749,
+          "achieved_saved_fps": 14.726550670799558,
+          "repeated_frames": 50
+        },
+        "wrist_port2": {
+          "max_abs_offset_s": 0.050005047,
+          "p95_abs_offset_s": 0.04266813659999999,
+          "achieved_saved_fps": 14.425119882198887,
+          "repeated_frames": 53
+        },
+        "wrist_port3": {
+          "max_abs_offset_s": 0.049881664,
+          "p95_abs_offset_s": 0.0452257934,
+          "achieved_saved_fps": 14.713018758548502,
+          "repeated_frames": 49
+        }
+      }
+    }
+  ],
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified.",
+  "source_kind": "reviewed_human_correction_reference_annotations_only",
+  "rl_replay_eligible": false,
+  "faithful_rl_transition_count": 0,
+  "dataset_exported": false,
+  "training_launched": false,
+  "camera_alignment_tolerance_note": "Explicit round-specific bound justified by observed camera saves near 15 Hz and maximum offset 0.050833 s; global default 0.04 s remains unchanged. Planned 20 Hz nearest-frame grid would reuse measured frames, never synthesize images.",
+  "annotation_time_basis": "data_monotonic_ns active recording clock when present, otherwise original host monotonic clock",
+  "snapshot_path": "work/hitl-round1/review/snapshot.json",
+  "snapshot_sha256": "807ccab6104f46397e0a20f042a8dd409e22bc601f28f60ecfcb9dc348cf35e5",
+  "review_reports_sha256": {
+    "kept-first-half.json": "a23656f0cecfb689ee1b5c03c397d78db5b2899f8b1e41fe72d6f1be2f62edd2",
+    "kept-second-half.json": "79543e8d54874fa731da639f505df84572a6c1dae20e331e7a761679a9ffb893",
+    "review-category.json": "182f6fd94b00d8fb563b44b03005d9cff75fbe7a8e5d33a9ebc5d9844932945d"
+  },
+  "rl_ineligibility_reasons": [
+    "Human corrections are gravity-assisted guidance; measured-next-pose targets are imitation proxies, not executed policy position-waypoints.",
+    "These sources lack faithful decision-prefix records with genuine current and next-observation candidate sets.",
+    "Human-assisted terminal task outcomes cannot supply policy-prefix reward credit."
+  ],
+  "trim_uncertainty_note": "Control ownership boundaries come from recorded timestamps; semantic accuracy of visually selected trim points was not independently quantified."
+}
