@@ -162,6 +162,58 @@ def test_controller_parameters_use_limits(tmp_path):
         'wisco_ethercat_ros2_hw/SafeCommandController'
 
 
+@pytest.mark.parametrize('mode', ['arm', 'velocity', 'effort'])
+def test_legacy_pdos_match_fixed_firmware_layout(tmp_path, mode):
+    hw = make(tmp_path, [
+        {'name': 'a', 'bus_position': 0, 'model': 'x6_60', 'pdo_profile': 'legacy'},
+        {'name': 'b', 'bus_position': 1, 'model': 'x4_10'},
+    ], control_mode=mode)
+    cfg = hw.slave_config(hw.joints[0])
+    assert [p['index'] for p in cfg['rpdo']] == [0x1600]
+    assert [ch['index'] for ch in cfg['rpdo'][0]['channels']] == [
+        0x6040, 0x607a, 0x60ff, 0x6071, 0x6072, 0x6060, 0x5ffe]
+    assert [ch['index'] for ch in cfg['tpdo'][0]['channels']] == [
+        0x6041, 0x6064, 0x606c, 0x6077, 0x603f, 0x6061, 0x5ffe]
+    assert hw.arm_controller_parameters()['torque_offset_enabled'] == [False, True]
+    assert 'assign_activate' not in cfg
+    modern = hw.slave_config(hw.joints[1])
+    assert modern['rpdo'][0]['channels'][-1]['index'] == 0x2ffd
+    assert modern['tpdo'][0]['channels'][-1]['index'] == 0x2ffe
+
+
+def test_arm01_mixed_firmware_interfaces(tmp_path):
+    xacro = pytest.importorskip('xacro')
+    description = os.path.join(ROOT, 'urdf', 'arm01', 'arm01.ros2_control.xacro')
+    plain = xacro.process_file(description).toxml()
+    hw = HardwareConfig(MODELS, os.path.join(CONFIG, 'arms', 'arm01.yaml'), plain,
+                        template_file=TEMPLATE)
+    for mock in (False, True):
+        manifest = hw.write(str(tmp_path / str(mock)), use_mock_hardware=mock)
+        urdf = ET.fromstring(xacro.process_file(
+            description, mappings={'hardware_manifest': manifest}).toxml())
+        joints = urdf.find('ros2_control').findall('joint')
+        assert len(joints) == 7
+        for joint in joints:
+            names = [c.get('name') for c in joint.findall('command_interface')]
+            legacy = joint.get('name') in ('shoulder_roll', 'shoulder_yaw')
+            assert ('torque_offset' in names) == (not legacy)
+            assert {'position', 'effort', 'mode_of_operation', 'max_torque'} <= set(names)
+
+
+def test_commissioned_scales_are_applied_to_hardware(tmp_path):
+    hw = make(tmp_path, [{'name': 'a', 'bus_position': 0, 'model': 'x4_10',
+                          'counts_per_rev': 262144, 'rated_current_a': 7.8}],
+              control_mode='arm', calibration={'kt_output_nm_per_a': {'a': 1.0}})
+    hw.auto_state_transitions = False
+    cfg = hw.slave_config(hw.joints[0])
+    assert channel(cfg, 'tpdo', 0x6064)['factor'] == pytest.approx(2 * math.pi / 262144)
+    assert channel(cfg, 'tpdo', 0x6077)['factor'] == pytest.approx(0.0078)
+    assert cfg['auto_state_transitions'] is False
+    params = hw.arm_controller_parameters()
+    assert params['hold_on_startup'] and params['hold_on_timeout']
+    assert params['gravity_enabled'] is False
+
+
 def test_arm_controller_gets_weighed_link_masses(tmp_path):
     # the Python ArmModel applies link_masses_kg; the C++ gravity model must see them too
     hw = make(tmp_path, [{'name': 'a', 'bus_position': 0, 'model': 'x4_10'}])
@@ -185,6 +237,7 @@ def test_continuous_joint_limits_are_finite_in_parameters(tmp_path):
     ([{'name': 'fixed', 'bus_position': 0, 'model': 'x4_10'}], 'not a movable joint'),
     ([{'name': 'a', 'bus_position': 0, 'model': 'x9'}], 'unknown model'),
     ([{'name': 'a', 'bus_position': 0, 'model': 'x4_10', 'direction': 2}], 'direction'),
+    ([{'name': 'a', 'bus_position': 0, 'model': 'x4_10', 'pdo_profile': 'typo'}], 'pdo_profile'),
     ([{'name': 'a', 'bus_position': 0, 'model': 'x4_10'},
       {'name': 'a', 'bus_position': 1, 'model': 'x4_10'}], 'listed twice'),
     ([{'name': 'a', 'bus_position': 0, 'model': 'x4_10'},

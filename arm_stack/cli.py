@@ -165,6 +165,10 @@ def run_stage(name, args, arm, store, client, recorder=None, extra=None):
             recorder.event('stage_skipped', stage=name, reason=result.lines[0])
         return result
     calibration = store.latest()
+    if not args.sim and args.stage in ('float', 'gravity-check', 'friction', 'latency'):
+        if not calibration.get('link_inertials') or not (
+                calibration.get('gravity_validation') or {'passed': True}).get('passed'):
+            p.error('Run arm gravity --fit-masses successfully and restart the launch before this stage.')
     if args.sim and hasattr(client, 'reload_calibration'):
         client.reload_calibration(calibration)
     ctx = StageContext(arm=arm, client=client, calibration=calibration, model=build_model(arm, calibration),
@@ -304,10 +308,12 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog='arm', description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('stage', choices=[s for s, _ in STAGES] + ['gravity-check', 'float', 'all', 'rig', 'status',
-                                                               'export'])
+                                                               'export', 'commission'])
     p.add_argument('paths', nargs='*', help='export: kind and files')
     p.add_argument('--sim', action='store_true', help='run on the sim backend')
     p.add_argument('--quick', action='store_true', help='fewer poses and cycles (smoke runs)')
+    p.add_argument('--fit-masses', action='store_true', help='gravity: fit masses and centers of mass together')
+    p.add_argument('--soak-s', type=float, default=None, help='bringup: seconds to check position holding')
     p.add_argument('--arm', default='config/arms/arm01.yaml', help='joint config path or name (bench01)')
     p.add_argument('--serial', default=None, help='bench: serial of the actuator on the rig')
     p.add_argument('--model', default=None, help='bench: actuator model on the rig (x4_10, x4_36, x6_60)')
@@ -336,6 +342,13 @@ def main(argv=None) -> int:
                    help='the client reports no mocap (sim: the plate + indicator-cube chain)')
     p.add_argument('--indicators', action='store_true', help='repeat: measure with the dial-indicator cube')
     args = p.parse_args(argv)
+    if args.stage == 'commission':
+        from .calib.commission import run
+        try:
+            return run(args)
+        except (RuntimeError, ValueError, OSError) as error:
+            print('commission: %s' % error, file=sys.stderr)
+            return 1
 
     if args.stage == 'status':
         return cmd_status(args)
@@ -384,6 +397,12 @@ def main(argv=None) -> int:
             recorder = None
 
     extra = {}
+    if args.stage == 'gravity':
+        extra = {'fit_masses': args.fit_masses}
+    elif args.stage == 'bringup' and args.soak_s is not None:
+        if args.soak_s < 0:
+            p.error('--soak-s must be nonnegative')
+        extra = {'soak_s': args.soak_s}
     if args.stage == 'validate' and args.replay:
         from .log.recorder import command_array, load_session
         trajs = [command_array(load_session(path), 'q')['q'] for path in args.replay]

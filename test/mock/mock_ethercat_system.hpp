@@ -18,7 +18,8 @@
 //   auto_fault_reset     "true" / "false" (default false)
 // Joint parameters (ComponentInfo::parameters):
 //   counts_per_rev, effort_nm_per_permille, direction, zero_offset,
-//   max_torque_permille (0x6072), peak_effort_nm, inertia, initial_position
+//   max_torque_permille (0x6072), peak_effort_nm, inertia, initial_position,
+//   supports_torque_offset (0 omits the 0x60B2 interface and drive support)
 //
 // Per joint it exports state interfaces position, velocity, effort,
 // mode_of_operation (0x6061), status_word (0x6041), error_code (0x603F) and

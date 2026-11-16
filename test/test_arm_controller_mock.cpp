@@ -205,6 +205,90 @@ std::string window(const std::vector<double> & v, size_t at, size_t half = 4)
 
 class ArmMock : public ::testing::Test {};
 
+TEST_F(ArmMock, CommissioningStartupAndTimeoutHoldWithoutGravity)
+{
+  ControllerHarness h(arm_joints());
+  h.set_realtime(false);
+  h.run_bus(50);
+  auto params = arm_params(true, true);
+  params.emplace_back("hold_on_startup", true);
+  params.emplace_back("hold_on_timeout", true);
+  params.emplace_back("gravity_enabled", false);
+  ASSERT_TRUE(h.load(std::make_shared<ArmController>(), "arm_controller", params, "/command"));
+  h.cycle(100);
+  for (size_t i = 0; i < 2; ++i) {
+    EXPECT_EQ(h.hw().commands(i).mode_of_operation, cia402::kModeCsp);
+    EXPECT_DOUBLE_EQ(h.hw().commands(i).torque_offset, 0.0);
+    EXPECT_DOUBLE_EQ(h.hw().commands(i).effort, 0.0);
+  }
+  h.stream(command(kModeP, {0.25, -0.25}));
+  h.cycle(100);
+  h.stop_stream();
+  std::this_thread::sleep_for(std::chrono::milliseconds(60));
+  h.cycle(50);
+  EXPECT_EQ(h.hw().commands(0).mode_of_operation, cia402::kModeCsp);
+  EXPECT_DOUBLE_EQ(h.hw().commands(0).torque_offset, 0.0);
+  h.deactivate();
+}
+
+TEST_F(ArmMock, MixedFirmwareWithoutTorqueOffset)
+{
+  auto joints = arm_joints();
+  joints[0].supports_torque_offset = false;
+  for (const bool feedback : {false, true}) {
+    ControllerHarness h(joints);
+    h.set_realtime(false);
+    h.hw().set_load_model(gravity);
+    for (size_t i = 0; i < h.hw().size(); ++i) {
+      h.hw().slave(i).params().mode_switch_delay_cycles = 8;
+      h.hw().slave(i).params().holding_brake = true;
+    }
+    h.run_bus(50);
+    ASSERT_TRUE(all_enabled(h));
+    auto controller = std::make_shared<ArmController>();
+    auto params = arm_params(feedback, true);
+    params.emplace_back("torque_offset_enabled", std::vector<bool>{false, true});
+    ASSERT_TRUE(h.load(controller, "arm_controller", params, "/command"));
+    const auto claimed = controller->command_interface_configuration().names;
+    EXPECT_EQ(std::count(claimed.begin(), claimed.end(), "j1/torque_offset"), 0);
+    EXPECT_EQ(std::count(claimed.begin(), claimed.end(), "j2/torque_offset"), 1);
+
+    const std::vector<double> target = {0.2, -0.3};
+    // The initial watchdog fallback and active torque mode use 0x6071 on
+    // the legacy drive, including while its mode switch is delayed.
+    h.cycle(250);
+    EXPECT_EQ(h.hw().states(0).mode_of_operation, cia402::kModeCst);
+    EXPECT_LT(h.hw().commands(0).effort, -5.0);
+    for (const int mode : {kModeP, kModeT, kModeP}) {
+      h.stream(command(mode, target));
+      double previous_target = h.hw().commands(0).position;
+      for (int k = 0; k < 500; ++k) {
+        h.cycle();
+        EXPECT_TRUE(all_enabled(h));
+        EXPECT_LE(std::fabs(h.hw().commands(0).effort), kMaxTorque[0]);
+        EXPECT_TRUE(std::isnan(h.hw().commands(0).torque_offset));
+        if (mode == kModeP && k > 1) {
+          EXPECT_LE(std::fabs(h.hw().commands(0).position - previous_target), 0.0021);
+        }
+        previous_target = h.hw().commands(0).position;
+      }
+      EXPECT_NEAR(h.hw().joint_position(0), target[0], 0.06);
+      EXPECT_NEAR(h.hw().joint_position(1), target[1], 0.03);
+      EXPECT_EQ(h.hw().states(0).mode_of_operation,
+        mode == kModeP ? cia402::kModeCsp : cia402::kModeCst);
+      if (mode == kModeP) {
+        EXPECT_LT(h.hw().commands(1).torque_offset, -0.5);
+      }
+    }
+    // A smaller command clamp must also constrain the switching torque
+    // retained in 0x6071 while the legacy drive is still in CST.
+    h.stream(command(kModeP, target, {0.0, 0.0}, {1.0, 1.0}));
+    h.cycle(1);
+    EXPECT_LE(std::fabs(h.hw().commands(0).effort), 1.0);
+    h.deactivate();
+  }
+}
+
 // --------------------------------------------------------------------------
 // Enable sequencing: the controller is active before the first frame; the
 // drives walk SWITCH_ON_DISABLED -> READY -> SWITCHED_ON -> OPERATION_ENABLED

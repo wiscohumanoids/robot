@@ -47,6 +47,7 @@ MockEthercatSystem::CallbackReturn MockEthercatSystem::on_init(
     sp.rated_torque_nm = 1000.0 * nm_per_permille;
     sp.peak_torque_nm = param(p, "peak_effort_nm", sp.rated_torque_nm);
     sp.inertia = param(p, "inertia", sp.inertia);
+    sp.supports_torque_offset = param(p, "supports_torque_offset", 1.0) != 0.0;
     direction_[i] = static_cast<int>(param(p, "direction", 1.0));
     zero_offset_[i] = param(p, "zero_offset", 0.0);
     sp.initial_position = direction_[i] * (param(p, "initial_position", 0.0) + zero_offset_[i]);
@@ -89,7 +90,9 @@ std::vector<hardware_interface::CommandInterface> MockEthercatSystem::export_com
     out.emplace_back(j, "position", &c.position);
     out.emplace_back(j, "velocity", &c.velocity);
     out.emplace_back(j, "effort", &c.effort);
-    out.emplace_back(j, "torque_offset", &c.torque_offset);
+    if (slaves_[i].params().supports_torque_offset) {
+      out.emplace_back(j, "torque_offset", &c.torque_offset);
+    }
     out.emplace_back(j, "mode_of_operation", &c.mode_of_operation);
     out.emplace_back(j, "reset_fault", &c.reset_fault);
     out.emplace_back(j, "max_torque", &c.max_torque);

@@ -9,6 +9,7 @@ q = direction * counts / counts_per_rad - zero_offset reads q_jig in the jig.
 from __future__ import annotations
 
 import numpy as np
+import time
 
 from .common import DEG, StageContext, StageResult, safe_home
 
@@ -24,6 +25,8 @@ def jig_pose(ctx: StageContext) -> np.ndarray:
 
 def run(ctx: StageContext, reseats: int = 5) -> StageResult:
     client, arm = ctx.client, ctx.arm
+    if not ctx.sim and np.any(client.state().status & 4):
+        raise RuntimeError('Zeroing requires disabled drives. Restart arm01.launch.py with enable_motion:=false.')
     q_jig = jig_pose(ctx)
     units = getattr(client, 'units', None)
     direction = np.array([j.direction for j in arm.joints], float)
@@ -36,9 +39,14 @@ def run(ctx: StageContext, reseats: int = 5) -> StageResult:
             input('Re-seat %d/%d: put the arm in the zeroing jig (%s), then press Enter '
                   % (k + 1, reseats, ', '.join('%s %.1f deg' % (n, v / DEG) for n, v in zip(arm.names, q_jig))))
         reads = []
-        n_reads = 1000 if not ctx.sim else 50
+        n_reads = 100 if not ctx.sim else 50
         for _ in range(n_reads):
-            reads.append(client.state().raw_counts)
+            state = client.state()
+            if not ctx.sim:
+                if np.any(state.status & 4):
+                    raise RuntimeError('A drive became enabled during zeroing.')
+                time.sleep(0.01)
+            reads.append(state.raw_counts)
         counts = np.mean(reads, axis=0)
         samples.append(direction * counts / cpr - q_jig)
     samples = np.array(samples)

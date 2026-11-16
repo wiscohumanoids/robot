@@ -196,6 +196,7 @@ def load_arm(path: str = 'config/arms/arm01.yaml',
 CALIB_FIELDS = (
     'zero_offsets_rad', 'soft_limits_rad', 'kt_output_nm_per_a', 'link_inertials', 'friction',
     'latency_ms', 'joint_stiffness_nm_per_rad', 'kinematic_overlay', 'pace', 'validation',
+    'commissioning', 'gravity_validation',
 )
 
 

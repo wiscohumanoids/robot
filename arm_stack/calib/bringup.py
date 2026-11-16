@@ -13,6 +13,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..control.motion import hold_and_average, move_to
+from ..hw.client import Command
 from .common import DEG, StageContext, StageResult, safe_home
 
 TORQUE_CLAMP_FRACTION = 0.10
@@ -35,6 +36,8 @@ def gravity_test_pose(model, joint, home, rng, tries=400):
 
 
 def run(ctx: StageContext, soak_s: float = None) -> StageResult:
+    if not ctx.sim:
+        return hardware_check(ctx, 10.0 if soak_s is None else soak_s)
     client, model, arm = ctx.client, ctx.model, ctx.arm
     lines, flags = [], []
     s = client.state()
@@ -85,3 +88,43 @@ def run(ctx: StageContext, soak_s: float = None) -> StageResult:
     return StageResult('bringup', passed, {'joints': details, 'faults': faults, 'soak_s': soak,
                                            'start_t': s0.t}, {}, lines, flags,
                        joint_config_updates={'direction': mismatched})
+
+
+def hardware_check(ctx, soak_s):
+    """Check commissioned joints with bounded jogs from their present pose."""
+    client, model, arm = ctx.client, ctx.model, ctx.arm
+    state = client.state()
+    if not np.all((state.status & 0x6f) == 0x27):
+        raise RuntimeError('Drives are disabled or faulted. Commission first, then launch enable_motion:=true.')
+    if np.any(state.q < model.lower) or np.any(state.q > model.upper):
+        raise RuntimeError('A joint is outside its measured software limits. '
+                           'Reposition it with motor enabling disabled before bringup.')
+    lines = []
+    for j, name in enumerate(arm.names):
+        start = client.state().q.copy()
+        target = start.copy()
+        room = model.upper[j] - start[j]
+        step = min(3 * DEG, room) if room > 1 * DEG else -min(3 * DEG, start[j] - model.lower[j])
+        if abs(step) < 0.5 * DEG:
+            raise RuntimeError('%s has insufficient room for a small jog.' % name)
+        target[j] += step
+        input('%s will jog %+.2f deg at 0.1 rad/s. Support the arm and press Enter: '
+              % (name, step / DEG))
+        after = move_to(client, target, max_speed=0.1, gravity_ff=False)
+        if not np.all((after.status & 0x6f) == 0x27):
+            raise RuntimeError('A drive lost operation-enabled state during the jog.')
+        followed = abs(after.q[j] - target[j]) < 1 * DEG
+        move_to(client, start, max_speed=0.1, gravity_ff=False)
+        answer = input('Did only %s move in the expected physical direction and return? [yes/no] ' % name)
+        if not followed or answer.strip().lower() != 'yes':
+            return StageResult('bringup', False, {}, {}, lines + ['%s jog failed; inspect mapping/scale.' % name])
+        lines.append('%s: physical direction confirmed, tracking within 1 degree' % name)
+    initial = client.state().q.copy()
+    for _ in range(max(1, int(soak_s / client.cmd_dt))):
+        client.send(Command(mode='P', q=initial, gravity_ff=False))
+        state = client.step(client.cmd_dt)
+        if not np.all((state.status & 0x6f) == 0x27):
+            raise RuntimeError('A drive lost operation-enabled state during the hold check.')
+        if np.max(np.abs(state.q - initial)) > 2 * DEG:
+            raise RuntimeError('Position hold drift exceeded 2 degrees.')
+    return StageResult('bringup', True, {'soak_s': soak_s}, {}, lines + ['Position hold passed.'])

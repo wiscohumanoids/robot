@@ -56,6 +56,7 @@ def _setup(context):
         urdf_file = os.path.join(pkg_share, urdf_file)
     template_file = os.path.join(pkg_share, 'config', 'drive_pdo_template.yaml')
     use_mock = _truthy(arg('use_mock_hardware'))
+    enable_motion = _truthy(arg('enable_motion'))
     update_rate = float(arg('update_rate'))
     joint_state_rate = float(arg('joint_state_rate'))
     command_timeout = float(arg('command_timeout'))
@@ -69,6 +70,27 @@ def _setup(context):
         template_file=template_file,
     )
 
+    if config.control_mode == 'arm' and enable_motion and not use_mock:
+        import math
+        calibration = config.calibration
+        limits = calibration.get('soft_limits_rad') or {}
+        if not calibration.get('version') or not all(
+                n in (calibration.get('zero_offsets_rad') or {}) and
+                math.isfinite(float(calibration['zero_offsets_rad'][n])) and
+                limits.get(n) and len(limits[n]) == 2 and
+                all(v is not None and math.isfinite(float(v)) for v in limits[n]) and
+                limits[n][0] < limits[n][1]
+                for n in [j.name for j in config.joints]):
+            raise RuntimeError('Run arm commission --write-config with ROS stopped first. '
+                               'Powered arm mode needs measured zeros and limits.')
+        import hashlib
+        with open(arg('joints_file'), 'rb') as joint_file:
+            joint_hash = hashlib.sha256(joint_file.read()).hexdigest()[:16]
+        if calibration.get('joint_config_hash') != joint_hash:
+            raise RuntimeError('Joint configuration changed since calibration. '
+                               'Run arm commission --write-config again with ROS stopped.')
+    if config.control_mode == 'arm':
+        config.auto_state_transitions = enable_motion
     out_dir = tempfile.mkdtemp(prefix='wisco_hw_')
     manifest = config.write(out_dir, use_mock_hardware=use_mock, control_frequency=update_rate)
     robot_description = _expand_urdf(urdf_file, manifest)
@@ -81,6 +103,7 @@ def _setup(context):
                                          arm_config=table,
                                          calibration_file=arg('calibration_file') or None)
         if config.control_mode == 'arm':
+            params[config.controller_name()]['ros__parameters']['drive_feedback'] = not use_mock
             # the ArmController builds its Pinocchio gravity model from this
             params[config.controller_name()]['ros__parameters']['robot_description'] =                 robot_description
         yaml.safe_dump(params, f, sort_keys=False)
@@ -173,6 +196,8 @@ def generate_launch_description():
                                           'stops the joints'),
         DeclareLaunchArgument('use_mock_hardware', default_value='false',
                               description='Run the drives on mock_components instead of EtherCAT'),
+        DeclareLaunchArgument('enable_motion', default_value='false',
+                              description='Explicitly enable motors after passive commissioning'),
         DeclareLaunchArgument('demo', default_value='false',
                               description='Also start the demo command script for the mode'),
     ]

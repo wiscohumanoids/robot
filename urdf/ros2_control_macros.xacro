@@ -47,10 +47,12 @@
     <xacro:if value="${idx &lt; len(hw_joints)}">
       <xacro:property name="j" value="${hw_joints[idx]}"/>
       <joint name="${j['name']}">
-        <xacro:command_interfaces names="${command_interfaces}"/>
+        <xacro:command_interfaces names="${j.get('command_interfaces', command_interfaces)}"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
+        <state_interface name="status_word"/>
+        <state_interface name="mode_of_operation"/>
         <ec_module name="drive_${j['position']}">
           <plugin>ethercat_generic_plugins/EcCiA402Drive</plugin>
           <param name="alias">0</param>
@@ -70,7 +72,7 @@
   <xacro:macro name="mock_hardware_joints" params="idx">
     <xacro:if value="${idx &lt; len(hw_joints)}">
       <joint name="${hw_joints[idx]['name']}">
-        <xacro:command_interfaces names="${command_interfaces}"/>
+        <xacro:command_interfaces names="${hw_joints[idx].get('command_interfaces', command_interfaces)}"/>
         <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
         <state_interface name="velocity"/>
         <state_interface name="effort"/>

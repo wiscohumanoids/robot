@@ -19,4 +19,11 @@ for c in candidates:
 
 from arm_stack.cli import main  # noqa: E402
 
-sys.exit(main())
+try:
+    sys.exit(main())
+except (RuntimeError, ValueError) as error:
+    print('arm: %s' % error, file=sys.stderr)
+    sys.exit(1)
+except KeyboardInterrupt:
+    print('\narm: interrupted', file=sys.stderr)
+    sys.exit(130)

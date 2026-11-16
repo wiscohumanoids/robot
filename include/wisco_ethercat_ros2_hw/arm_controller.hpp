@@ -22,6 +22,10 @@
 //
 // Interfaces per joint: command position, effort, torque_offset,
 // mode_of_operation; state position, velocity, effort.
+// torque_offset_enabled (bool array, default all true) selects the joints
+// with a 0x60B2 interface. Legacy joints hold in CSP without feedforward,
+// and apply torque through 0x6071 in CST. During CST -> CSP they keep the
+// measured switching torque in 0x6071 until the drive changes mode.
 //
 // drive_feedback (parameter, default false) also claims the state interfaces
 // status_word (0x6041) and mode_of_operation (0x6061 display) per joint:
@@ -109,9 +113,16 @@ private:
   std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Float64MultiArray>> state_pub_;
   std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::msg::Float64MultiArray>> rt_state_;
 
-  std::vector<Ref> cmd_pos_, cmd_eff_, cmd_off_, cmd_mode_, cmd_max_;
+  std::vector<Ref> cmd_pos_, cmd_eff_, cmd_mode_, cmd_max_;
+  std::vector<bool> torque_offset_enabled_;
+  std::vector<hardware_interface::LoanedCommandInterface *> cmd_off_;
   std::vector<StateRef> st_pos_, st_vel_, st_eff_, st_status_, st_mode_;
   bool drive_feedback_ = false;
+  bool hold_on_startup_ = false;
+  bool hold_on_timeout_ = false;
+  bool gravity_enabled_ = true;
+  bool holding_ = false;
+  std::vector<double> q_hold_;
   // write_max_torque (parameter, default false): also claims <joint>/max_torque
   // (0x6072) and writes the command's torque clamp there, so the drive's CSP
   // loop cannot exceed it. Needs 0x6072 mapped as a command interface.

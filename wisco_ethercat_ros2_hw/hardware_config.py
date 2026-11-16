@@ -72,6 +72,10 @@ class HardwareJoint:
         self.name = row['name']
         self.bus_position = int(row['bus_position'])
         self.model_name = row['model']
+        self.pdo_profile = row.get('pdo_profile', '26042402')
+        if self.pdo_profile not in ('legacy', '26042402'):
+            raise ConfigError('joint %r: pdo_profile must be legacy or 26042402' % self.name)
+        self.supports_torque_offset = self.pdo_profile != 'legacy'
         self.direction = int(row.get('direction', 1))
         self.model = model
         self.zero_offset = calibration.get(self.name)
@@ -129,11 +133,14 @@ class HardwareConfig:
         models = load_yaml(models_file)
         table = load_yaml(joints_file)
         calibration = load_yaml(calibration_file) if calibration_file else {}
+        self.calibration = calibration
+        self.auto_state_transitions = True
 
         self.defaults = models.get('defaults', {})
         self.models = models.get('models', {})
         self.template = load_yaml(template_file) if template_file else None
         self.calibration_version = calibration.get('version')
+        self.kt_calibration = calibration.get('kt_output_nm_per_a') or {}
         zero_offsets = calibration.get('zero_offsets_rad') or {}
 
         self.control_mode = control_mode or table.get('control_mode', 'velocity')
@@ -187,7 +194,15 @@ class HardwareConfig:
                 raise ConfigError('bus_position %d is used by more than one joint' % position)
             seen_names.add(name)
             seen_positions.add(position)
-            joints.append(HardwareJoint(row, self.models[row['model']],
+            model = dict(self.models[row['model']])
+            model['counts_per_rev'] = row.get('counts_per_rev') or model['counts_per_rev']
+            kt = self.kt_calibration.get(name)
+            if kt is not None:
+                rated = row.get('rated_current_a') or model['rated_current_a']
+                if not math.isfinite(float(kt)) or float(kt) <= 0:
+                    raise ConfigError('joint %r: calibrated torque constant must be positive' % name)
+                model['effort_nm_per_permille'] = float(kt) * float(rated) / 1000
+            joints.append(HardwareJoint(row, model,
                                         zero_offsets, self.urdf_joints[name]))
 
         expected = set(range(len(joints)))
@@ -222,8 +237,9 @@ class HardwareConfig:
         cfg = copy.deepcopy(self.template)
         cfg['vendor_id'] = int(self.defaults.get('vendor_id', 0))
         cfg['product_id'] = int(self.defaults.get('product_id', 0))
+        cfg['auto_state_transitions'] = self.auto_state_transitions
         dc = int(self.defaults.get('dc_assign_activate', 0))
-        if dc:
+        if dc and joint.pdo_profile != 'legacy':
             cfg['assign_activate'] = dc
         cfg['sdo'] = [{'index': 0x6060, 'sub_index': 0, 'type': 'int8',
                        'value': self.mode_of_operation}]
@@ -231,7 +247,14 @@ class HardwareConfig:
         pos_factor, pos_offset = joint.position_state()
         cmd_pos_factor, cmd_pos_offset = joint.position_command()
         arm = self.control_mode == 'arm'
-        if arm:
+        if joint.pdo_profile == 'legacy':
+            # Firmware 5.12 has fixed base PDOs, with 0x5FFE padding in both
+            # directions and no 0x1603 / 0x60B2 torque-offset objects.
+            for pdo in cfg['rpdo'] + cfg['tpdo']:
+                for channel in pdo['channels']:
+                    if channel['index'] in (0x2ffd, 0x2ffe):
+                        channel['index'] = 0x5ffe
+        if arm and joint.supports_torque_offset:
             # 0x60B2 torque offset (CSP feedforward). The drive carries it in its
             # optional RxPDO 0x1603 (0x60B0, 0x60B1, 0x60B2: the vendor's CSP
             # mapping, firmware 26042402+), assigned next to 0x1600, both at their
@@ -298,6 +321,8 @@ class HardwareConfig:
                 'name': joint.name,
                 'position': joint.bus_position,
                 'slave_config': path,
+                'command_interfaces': [name for name in self.command_interfaces
+                                       if name != 'torque_offset' or joint.supports_torque_offset],
             })
         manifest = {
             'use_mock_hardware': bool(use_mock_hardware),
@@ -335,6 +360,12 @@ class HardwareConfig:
                             for g, j in zip(gains, self.joints)],
             'watchdog_s': 0.05,
             'write_max_torque': True,
+            'drive_feedback': True,
+            'hold_on_startup': True,
+            'hold_on_timeout': True,
+            'gravity_enabled': bool(self.calibration.get('link_inertials')) and
+                (self.calibration.get('gravity_validation') or {'passed': True}).get('passed', False),
+            'torque_offset_enabled': [j.supports_torque_offset for j in self.joints],
             'calibration_file': calibration_file or '',
         }
         # Weighed link masses: the Python model (sim, calibration) applies them

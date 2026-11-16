@@ -72,7 +72,30 @@ def residuals(model, Q, T):
     return np.array([tau - model.gravity(q) for q, tau in zip(Q, T)])
 
 
-def run(ctx: StageContext, n_fit: int = None, n_test: int = 10) -> StageResult:
+def fit_static_parameters(model, Q, T, scale):
+    """Regularized static mass/first-moment fit with positive mass bounds."""
+    from scipy.optimize import lsq_linear
+    rows = []
+    for q in Q:
+        moments, masses = model.gravity_first_moment_regressor(q)
+        rows.append(np.column_stack([masses, moments]) / scale[:, None])
+    A = np.vstack(rows)
+    b = np.concatenate([t / scale for t in T])
+    prior = np.concatenate([model.masses(), model.first_moments()])
+    lam = PRIOR_WEIGHT * np.trace(A.T @ A) / A.shape[1]
+    augmented = np.vstack([A, np.sqrt(lam) * np.eye(len(prior))])
+    rhs = np.concatenate([b, np.sqrt(lam) * prior])
+    lower = np.concatenate([0.05 * model.masses(), np.full(3 * model.n, -np.inf)])
+    upper = np.concatenate([5 * model.masses(), np.full(3 * model.n, np.inf)])
+    fit = lsq_linear(augmented, rhs, bounds=(lower, upper))
+    if not fit.success:
+        raise RuntimeError('Static gravity parameter fit did not converge.')
+    _, singular, vt = np.linalg.svd(A, full_matrices=False)
+    rank = int(np.sum(singular > singular[0] * 1e-6))
+    return fit.x[:model.n], fit.x[model.n:], singular, vt[:rank]
+
+
+def run(ctx: StageContext, n_fit: int = None, n_test: int = 10, fit_masses: bool = False) -> StageResult:
     client, arm = ctx.client, ctx.arm
     model = ctx.model.copy()
     n_fit = n_fit or (min(16, 4 + 4 * model.n) if ctx.quick else 32)   # 3 params per link
@@ -94,8 +117,15 @@ def run(ctx: StageContext, n_fit: int = None, n_test: int = 10) -> StageResult:
     masses = model.masses()
     prior = model.first_moments()
     before = np.abs(residuals(model, Qt, Tt)).max(axis=0)
-    h, sv = fit_first_moments(model, Qf, Tf, masses, prior, scale=np.maximum(peak_g, 0.1))
-    model.set_first_moments(h)
+    if fit_masses:
+        masses, h, sv, basis = fit_static_parameters(model, Qf, Tf, np.maximum(peak_g, 0.1))
+        fitted = {link: {'mass_kg': float(masses[k]), 'com_m': (h[3*k:3*k+3] / masses[k]).tolist()}
+                  for k, link in enumerate(model.link_names())}
+        model.apply_calibration({'link_inertials': fitted})
+    else:
+        h, sv = fit_first_moments(model, Qf, Tf, masses, prior, scale=np.maximum(peak_g, 0.1))
+        basis = fit_first_moments.row_space
+        model.set_first_moments(h)
     after = residuals(model, Qt, Tt)
     worst = np.abs(after).max(axis=0)
     # a joint that carries almost no gravity cannot be judged below the drive's
@@ -111,8 +141,11 @@ def run(ctx: StageContext, n_fit: int = None, n_test: int = 10) -> StageResult:
     links = model.link_names()
     # only the identifiable part of the change says anything about the hardware;
     # the rest is the ridge prior at work
-    V = fit_first_moments.row_space
-    dh_id = V.T @ (V @ (h - prior))
+    V = basis
+    dh_id = h - prior if fit_masses else V.T @ (V @ (h - prior))
+    if fit_masses:
+        lines.append('Masses and centers of mass were fitted jointly. Static data identifies '
+                     'effective parameter combinations; individual link masses may be ambiguous.')
     for k, link in enumerate(links):
         com = h[3 * k:3 * k + 3] / masses[k]
         shift = float(np.linalg.norm(dh_id[3 * k:3 * k + 3]) / masses[k])
@@ -131,4 +164,6 @@ def run(ctx: StageContext, n_fit: int = None, n_test: int = 10) -> StageResult:
                        {'residual_frac': frac.tolist(), 'residual_nm': worst.tolist(),
                         'before_nm': before.tolist(), 'rank': rank, 'cond': cond,
                         'fit_poses': [q.tolist() for q in Qf], 'test_poses': [q.tolist() for q in Qt]},
-                       {'link_inertials': inertials}, lines, flags)
+                       {'link_inertials': inertials,
+                        'gravity_validation': {'passed': passed, 'fit_masses': fit_masses,
+                                               'max_residual_nm': worst.tolist()}}, lines, flags)

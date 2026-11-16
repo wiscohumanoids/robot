@@ -59,6 +59,7 @@ joints:
   - name: shoulder_roll       # J2, ROM 0..+190 deg
     bus_position: 1
     model: x6_60
+    pdo_profile: legacy  # firmware 5.12: base PDOs, 0x5FFE padding, no torque offset
     direction: 1
     gear_ratio: 19.612  # datasheet
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)
@@ -70,6 +71,7 @@ joints:
   - name: shoulder_yaw        # J3, ROM -90..+90 deg
     bus_position: 2
     model: x4_36
+    pdo_profile: legacy  # firmware 5.12
     direction: 1
     gear_ratio: 36  # datasheet
     counts_per_rev: 131072  # 0x6064 per output rev (verify: arm indicator)

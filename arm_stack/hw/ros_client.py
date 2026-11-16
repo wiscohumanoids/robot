@@ -54,12 +54,13 @@ def encode_command(cmd: Command, n: int) -> list:
 
 def decode_state(data, n: int):
     d = np.asarray(data, float)
-    if len(d) != STATE_HEADER + 5 * n:
+    if len(d) not in (STATE_HEADER + 5 * n, STATE_HEADER + 7 * n):
         raise ValueError('state has %d values, expected %d' % (len(d), STATE_HEADER + 5 * n))
     b = lambda k: d[STATE_HEADER + k * n:STATE_HEADER + (k + 1) * n]  # noqa: E731
     return {'t': d[0], 'mode': 'T' if d[1] > 0.5 else 'P', 'fallback': d[2] > 0.5,
             'limit_hit': d[3] > 0.5, 'clamped': d[4] > 0.5, 'q': b(0), 'qd': b(1), 'tau': b(2),
-            'tau_out': b(3), 'q_target': b(4)}
+            'tau_out': b(3), 'q_target': b(4),
+            'status': b(5) if len(d) == STATE_HEADER + 7 * n else np.full(n, np.nan)}
 
 
 class RosArmClient(ArmClient):
@@ -85,6 +86,7 @@ class RosArmClient(ArmClient):
         self.pub = self.node.create_publisher(Float64MultiArray, '/%s/command' % controller, 10)
         self._lock = threading.Lock()
         self._state = None
+        self._received_at = 0.0
         self._cond = threading.Condition(self._lock)
         self.node.create_subscription(Float64MultiArray, '/%s/state' % controller, self._on_state, qos)
         self.executor = SingleThreadedExecutor()
@@ -95,7 +97,29 @@ class RosArmClient(ArmClient):
         self._mocap = None
         self._last_cmd = None
         if not self._wait_state(5.0):
+            self.close()
             raise RuntimeError('no /%s/state within 5 s: is the arm launched (arm01.launch.py)?' % controller)
+        from rcl_interfaces.srv import GetParameters
+        from ..config import load_yaml
+        service = self.node.create_client(GetParameters, '/%s/get_parameters' % controller)
+        try:
+            if not service.wait_for_service(timeout_sec=3.0):
+                raise RuntimeError('controller parameters unavailable')
+            request = GetParameters.Request(names=['calibration_file'])
+            future = service.call_async(request)
+            done = threading.Event()
+            future.add_done_callback(lambda _: done.set())
+            if not done.wait(3.0):
+                raise RuntimeError('controller parameters timed out')
+            path = future.result().values[0].string_value
+            live = load_yaml(path) if path else {}
+            if (live.get('version') or 0) != (calibration.get('version') or 0):
+                raise RuntimeError('Calibration changed. Restart arm01.launch.py to load the latest file.')
+        except Exception:
+            self.close()
+            raise
+        finally:
+            self.node.destroy_client(service)
 
     def _on_state(self, msg):
         try:
@@ -104,6 +128,7 @@ class RosArmClient(ArmClient):
             return
         with self._cond:
             self._state = st
+            self._received_at = time.monotonic()
             self._cond.notify_all()
 
     def _wait_state(self, timeout):
@@ -112,15 +137,22 @@ class RosArmClient(ArmClient):
 
     def state(self) -> JointState:
         with self._lock:
+            if time.monotonic() - self._received_at > 0.2:
+                raise RuntimeError('controller feedback is stale (over 200 ms)')
             st = dict(self._state)
         counts = self.units.rad_to_counts(st['q'])
         permille = self.units.nm_to_permille(st['tau'])
-        status = np.full(self.n, 0x1237 if not st['fallback'] else 0x0237)
+        status = st['status'].copy()
+        if not np.all(np.isfinite(status)):
+            raise RuntimeError('real drive status is unavailable; rebuild and restart the arm controller')
+        status = status.astype(np.uint16)
         return JointState(t=float(st['t']), q=st['q'].copy(), qd=st['qd'].copy(), tau=st['tau'].copy(),
                           raw_counts=counts, raw_permille=permille, status=status, mode=st['mode'],
                           fallback=bool(st['fallback']), tau_cmd=st['tau_out'].copy())
 
     def send(self, cmd: Command) -> None:
+        if not np.all((self.state().status & 0x6f) == 0x27):
+            raise RuntimeError('A drive is disabled or faulted; motion commands stopped.')
         msg = self._msg_type()
         msg.data = encode_command(cmd, self.n)
         self.pub.publish(msg)

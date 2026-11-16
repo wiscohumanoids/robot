@@ -43,6 +43,7 @@ struct JointSpec
   int direction = 1;
   double zero_offset = 0.0;
   double counts_per_rev = 131072.0;
+  bool supports_torque_offset = true;
 };
 
 class ControllerHarness
@@ -69,6 +70,7 @@ public:
       c.parameters["direction"] = std::to_string(j.direction);
       c.parameters["zero_offset"] = std::to_string(j.zero_offset);
       c.parameters["counts_per_rev"] = std::to_string(j.counts_per_rev);
+      c.parameters["supports_torque_offset"] = j.supports_torque_offset ? "1" : "0";
       info.joints.push_back(c);
     }
     if (hw_.on_init(info) != hardware_interface::CallbackReturn::SUCCESS) {

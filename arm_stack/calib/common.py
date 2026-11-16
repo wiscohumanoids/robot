@@ -60,12 +60,14 @@ def safe_home(model: ArmModel) -> np.ndarray:
     arm01's q = 0 is the arm stretched out forward, its worst gravity load, so its home is
     the hanging CAD capture pose."""
     margin = 3 * DEG
+    margin = np.minimum(margin, 0.2 * (model.upper - model.lower))
     home = getattr(model, 'home', None)
     base = np.zeros(model.n) if home is None else home
     return np.clip(base, model.lower + margin, model.upper - margin)
 
 
 def random_poses(model: ArmModel, count: int, rng, margin=10 * DEG, spread=1.0) -> np.ndarray:
+    margin = np.minimum(margin, 0.2 * (model.upper - model.lower))
     lo = model.lower + margin
     hi = model.upper - margin
     mid = 0.5 * (lo + hi)

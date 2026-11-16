@@ -24,7 +24,9 @@ PACKAGE = 'wisco_ethercat_ros2_hw'
 
 
 def latest_calibration(share):
-    files = glob.glob(os.path.join(share, 'config', 'calib', 'arm01', '*_v*.yaml'))
+    config_dir = os.path.dirname(os.path.dirname(os.path.realpath(
+        os.path.join(share, 'config', 'arms', 'arm01.yaml'))))
+    files = glob.glob(os.path.join(config_dir, 'calib', 'arm01', '*_v*.yaml'))
     files.sort(key=lambda p: int(re.search(r'_v(\d+)\.yaml$', p).group(1)))
     return files[-1] if files else ''
 
@@ -40,6 +42,7 @@ def generate_launch_description():
         'joint_state_rate': '250',
         'command_timeout': '0.05',
         'use_mock_hardware': 'false',
+        'enable_motion': 'false',
     }
     args = [DeclareLaunchArgument(k, default_value=v) for k, v in passthrough.items()]
     include = IncludeLaunchDescription(

@@ -38,7 +38,11 @@ controller_interface::CallbackReturn ArmController::on_init()
     auto_declare<double>("soft_margin", 0.05);
     auto_declare<double>("blend_s", 0.02);
     auto_declare<bool>("drive_feedback", false);
+    auto_declare<bool>("hold_on_startup", false);
+    auto_declare<bool>("hold_on_timeout", false);
+    auto_declare<bool>("gravity_enabled", true);
     auto_declare<bool>("write_max_torque", false);
+    auto_declare<std::vector<bool>>("torque_offset_enabled", std::vector<bool>{});
     auto_declare<std::string>("calibration_file", "");
     auto_declare<std::string>("robot_description", "");
     auto_declare<std::vector<std::string>>("link_mass_names", std::vector<std::string>{});
@@ -88,7 +92,23 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
   cfg_.soft_margin = node->get_parameter("soft_margin").as_double();
   blend_s_ = node->get_parameter("blend_s").as_double();
   drive_feedback_ = node->get_parameter("drive_feedback").as_bool();
+  hold_on_startup_ = node->get_parameter("hold_on_startup").as_bool();
+  hold_on_timeout_ = node->get_parameter("hold_on_timeout").as_bool();
+  gravity_enabled_ = node->get_parameter("gravity_enabled").as_bool();
   write_max_torque_ = node->get_parameter("write_max_torque").as_bool();
+  torque_offset_enabled_ = node->get_parameter("torque_offset_enabled").as_bool_array();
+  if (torque_offset_enabled_.empty()) {torque_offset_enabled_.assign(n, true);}
+  if (torque_offset_enabled_.size() != n) {
+    RCLCPP_ERROR(logger, "'torque_offset_enabled' needs %zu entries, got %zu", n,
+      torque_offset_enabled_.size());
+    return controller_interface::CallbackReturn::ERROR;
+  }
+  for (size_t i = 0; i < n; ++i) {
+    if (!torque_offset_enabled_[i]) {
+      RCLCPP_WARN(logger, "%s: legacy PDOs; CSP uses the drive position loop without torque "
+        "feedforward, CST uses 0x6071", joints_[i].c_str());
+    }
+  }
 
   std::string urdf = node->get_parameter("robot_description").as_string();
   if (urdf.empty()) {
@@ -113,6 +133,7 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
   }
 
   q_.assign(n, 0.0);
+  q_hold_.assign(n, 0.0);
   qd_.assign(n, 0.0);
   tau_meas_.assign(n, 0.0);
   g_.assign(n, 0.0);
@@ -166,7 +187,7 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
     "~/state", rclcpp::SystemDefaultsQoS());
   rt_state_ = std::make_unique<realtime_tools::RealtimePublisher<std_msgs::msg::Float64MultiArray>>(
     state_pub_);
-  rt_state_->msg_.data.assign(kStateHeader + kStateBlocks * n, 0.0);
+  rt_state_->msg_.data.assign(kStateHeader + (kStateBlocks + 2) * n, 0.0);
 
   RCLCPP_INFO(logger, "%zu joints, watchdog %.0f ms; Mode P (CSP) / Mode T (CST)%s", n,
     cfg_.watchdog_s * 1e3, drive_feedback_ ? "; drive feedback (0x6041, 0x6061)" : "");
@@ -178,7 +199,11 @@ controller_interface::InterfaceConfiguration ArmController::command_interface_co
   controller_interface::InterfaceConfiguration config;
   config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
   for (const char * iface : {"position", "effort", "torque_offset", "mode_of_operation"}) {
-    for (const auto & j : joints_) {config.names.push_back(j + "/" + iface);}
+    for (size_t i = 0; i < joints_.size(); ++i) {
+      if (std::string(iface) != "torque_offset" || torque_offset_enabled_[i]) {
+        config.names.push_back(joints_[i] + "/" + iface);
+      }
+    }
   }
   if (write_max_torque_) {
     for (const auto & j : joints_) {config.names.push_back(j + "/max_torque");}
@@ -208,11 +233,22 @@ controller_interface::CallbackReturn ArmController::on_activate(const rclcpp_lif
   bool ok =
     controller_interface::get_ordered_interfaces(command_interfaces_, joints_, "position", cmd_pos_) &&
     controller_interface::get_ordered_interfaces(command_interfaces_, joints_, "effort", cmd_eff_) &&
-    controller_interface::get_ordered_interfaces(command_interfaces_, joints_, "torque_offset", cmd_off_) &&
     controller_interface::get_ordered_interfaces(command_interfaces_, joints_, "mode_of_operation", cmd_mode_) &&
     controller_interface::get_ordered_interfaces(state_interfaces_, joints_, "position", st_pos_) &&
     controller_interface::get_ordered_interfaces(state_interfaces_, joints_, "velocity", st_vel_) &&
     controller_interface::get_ordered_interfaces(state_interfaces_, joints_, "effort", st_eff_);
+  cmd_off_.assign(joints_.size(), nullptr);
+  for (size_t i = 0; i < joints_.size(); ++i) {
+    if (!torque_offset_enabled_[i]) {continue;}
+    const auto name = joints_[i] + "/torque_offset";
+    const auto iface = std::find_if(command_interfaces_.begin(), command_interfaces_.end(),
+      [&](const auto & candidate) {return candidate.get_name() == name;});
+    if (iface == command_interfaces_.end()) {
+      ok = false;
+      break;
+    }
+    cmd_off_[i] = &*iface;
+  }
   if (ok && write_max_torque_) {
     ok = controller_interface::get_ordered_interfaces(command_interfaces_, joints_, "max_torque", cmd_max_);
   }
@@ -233,11 +269,12 @@ controller_interface::CallbackReturn ArmController::on_activate(const rclcpp_lif
     q_target_prev_[i] = st_pos_[i].get().get_value();
     cmd_pos_[i].get().set_value(q_target_prev_[i]);
     cmd_eff_[i].get().set_value(0.0);
-    cmd_off_[i].get().set_value(0.0);
+    if (cmd_off_[i]) {cmd_off_[i]->set_value(0.0);}
     cmd_mode_[i].get().set_value(static_cast<double>(arm::kCsp));
     if (write_max_torque_) {cmd_max_[i].get().set_value(cfg_.max_torque[i]);}
   }
   last_mode_ = arm::kModeP;
+  holding_ = false;
   since_switch_ = 0.0;
   for (size_t i = 0; i < joints_.size(); ++i) {
     q_switch_[i] = q_target_prev_[i];
@@ -255,7 +292,7 @@ controller_interface::CallbackReturn ArmController::on_deactivate(const rclcpp_l
   for (size_t i = 0; i < cmd_pos_.size(); ++i) {
     cmd_pos_[i].get().set_value(st_pos_[i].get().get_value());
     cmd_eff_[i].get().set_value(0.0);
-    cmd_off_[i].get().set_value(0.0);
+    if (cmd_off_[i]) {cmd_off_[i]->set_value(0.0);}
     cmd_mode_[i].get().set_value(static_cast<double>(arm::kCsp));
   }
   command_buffer_.writeFromNonRT(std::shared_ptr<Command>());
@@ -302,8 +339,16 @@ controller_interface::return_type ArmController::update(
       gravity_->set_payload(payload_[0], payload_[1], payload_[2], payload_[3]);
     }
   }
-  gravity_->gravity(q_, g_);
+  if (gravity_enabled_) {gravity_->gravity(q_, g_);} else {std::fill(g_.begin(), g_.end(), 0.0);}
   arm::compute(cfg_, cmd && all_enabled ? cmd->law : kNone, q_, qd_, g_, out_);
+  const bool hold = out_.fallback && (hold_on_timeout_ || (hold_on_startup_ && !cmd));
+  if (hold) {
+    if (!holding_) {q_hold_ = q_;}
+    out_.mode = arm::kModeP;
+    out_.q_target = q_hold_;
+    std::fill(out_.tau.begin(), out_.tau.end(), 0.0);
+  }
+  holding_ = hold;
 
   if (out_.mode != last_mode_) {
     since_switch_ = 0.0;
@@ -352,28 +397,33 @@ controller_interface::return_type ArmController::update(
     // torque is applied whichever mode the drive runs this cycle.
     cmd_mode_[i].get().set_value(static_cast<double>(requested));
     cmd_pos_[i].get().set_value(target);
+    double cap = cfg_.max_torque[i];
+    if (cmd && !out_.fallback && i < cmd->law.torque_clamp.size() &&
+      std::isfinite(cmd->law.torque_clamp[i]))
+    {
+      cap = std::min(cap, std::fabs(cmd->law.torque_clamp[i]));
+    }
     if (write_max_torque_) {
-      // 0x6072 caps the drive's TOTAL torque, so in CSP the drive's own
-      // position loop is held to the command's clamp too (a limit search
-      // pushing into a hard stop). The fallback uses the configured max.
-      double cap = cfg_.max_torque[i];
-      if (cmd && !out_.fallback && i < cmd->law.torque_clamp.size() &&
-        std::isfinite(cmd->law.torque_clamp[i]))
-      {
-        cap = std::min(cap, std::fabs(cmd->law.torque_clamp[i]));
-      }
+      // 0x6072 also caps the drive's own CSP position loop, e.g. during a
+      // limit search pushing into a hard stop.
       // 0x6072 = 0 is NOT zero torque on the RMD-X: the drive falls back to its
       // stall-current limit. Never let a zero (or tiny, rounding to 0 per mille)
       // clamp reach the drive: floor it at 1% of the configured max.
-      cap = std::max(cap, kMinTorqueCapFraction * cfg_.max_torque[i]);
-      cmd_max_[i].get().set_value(cap);
+      cmd_max_[i].get().set_value(std::max(cap, kMinTorqueCapFraction * cfg_.max_torque[i]));
     }
-    if (requested == arm::kCsp || pending) {
-      cmd_off_[i].get().set_value(tau);
+    if (!cmd_off_[i]) {
+      // 0x6071 is ignored in CSP. Keep the measured switching torque there
+      // during a delayed CST -> CSP transition, then the drive's position
+      // loop takes over. No torque-offset object is needed on legacy drives.
+      const double effort = mode_p ? std::clamp(tau_switch_[i], -cap, cap) : tau;
+      cmd_eff_[i].get().set_value(effort);
+      out_.tau[i] = mode_p ? 0.0 : tau;
+    } else if (requested == arm::kCsp || pending) {
+      cmd_off_[i]->set_value(tau);
       cmd_eff_[i].get().set_value(0.0);
     } else {
       cmd_eff_[i].get().set_value(tau);
-      cmd_off_[i].get().set_value(0.0);
+      cmd_off_[i]->set_value(0.0);
     }
   }
 
@@ -390,6 +440,10 @@ controller_interface::return_type ArmController::update(
       d[kStateHeader + 2 * n + i] = tau_meas_[i];
       d[kStateHeader + 3 * n + i] = out_.tau[i];
       d[kStateHeader + 4 * n + i] = out_.mode == arm::kModeP ? q_target_prev_[i] : q_[i];
+      d[kStateHeader + 5 * n + i] = drive_feedback_ ? st_status_[i].get().get_value() :
+        std::numeric_limits<double>::quiet_NaN();
+      d[kStateHeader + 6 * n + i] = drive_feedback_ ? st_mode_[i].get().get_value() :
+        std::numeric_limits<double>::quiet_NaN();
     }
     rt_state_->unlockAndPublish();
   }
