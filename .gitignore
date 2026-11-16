@@ -1,3 +1,7 @@
+# Root ignore rules for the whole repo. Imported components keep their own, more specific
+# .gitignore as well: hardware/estop/ (ESP-IDF sdkconfig holds the Wi-Fi password),
+# manipulation/panthera_teleop/ (recorded episodes, vendor SDK checkout), manipulation/panthera_sim/.
+
 # ============================================================================
 # Secrets and credentials (never commit)
 # ============================================================================
@@ -19,7 +23,7 @@ id_ed25519*
 *.pdf
 *.PDF
 *.eml
-*.msg
+# (no *.msg rule: that would also hide ROS message definitions)
 *.doc
 *.docx
 *.xls
@@ -108,3 +112,6 @@ MUJOCO_LOG.TXT
 .idea/
 *.swp
 .claude/settings.local.json
+
+# docs/academy/build.js also writes a publishing fragment; only index.html (the standalone page) is kept
+docs/academy/artifact.html
