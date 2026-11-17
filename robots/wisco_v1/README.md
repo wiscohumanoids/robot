@@ -120,4 +120,7 @@ Details and what is needed back: `hardware_observations.md`.
 Modelled as two plain joints at the real pivots. Ankle: pitch then roll, the roll axis 17.5 mm below the pitch axis,
 the pitch axis 61.5 mm above the floor. Waist: yaw, then roll and pitch through one universal joint 174 mm above the
 pelvis origin. Joint torque and speed limits for these four joints are the two-motor equivalents at the zero pose;
-`linkage.py` turns a joint torque into each motor's torque.
+`linkage.py` turns a joint torque into each motor's torque (and back: `joint_angles` solves the joints from the motor
+angles). In training, every physics step applies each ankle motor's own limits through the rods (`ankle_actuator.py`).
+On the robot, `ParallelLinkageController` (`ros2_ws/src/wisco_ethercat_ros2_hw`, "Parallel joints") does the same
+translation in real time, so the policy keeps commanding plain pitch and roll joints.

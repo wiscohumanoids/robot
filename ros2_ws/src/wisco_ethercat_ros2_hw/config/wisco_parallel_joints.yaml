@@ -1,0 +1,41 @@
+# ParallelLinkageController for Wisco V1's three two-motor mechanisms (include/.../parallel_linkage_controller.hpp).
+# Load it in the controller manager next to the leg controller, which then commands
+#   parallel_joints/<joint>/position (and velocity, effort) for left_ankle_pitch, left_ankle_roll, right_ankle_pitch,
+#   right_ankle_roll, torso_roll, torso_pitch
+# and reads their state from parallel_joints/<joint>/position, velocity, effort.
+#
+# Gains: the trained policy's joint-space kp / kd (robots/wisco_v1/model/robot_numbers.yaml, control.gains).
+# Limits: robots/wisco_v1/robot.xml (ankle pitch's lower end is the linkage's reach).
+# Motor names: the joint table rows for these drives (one row per motor). Before first use, commission each motor
+# so it reads 0 with the joint at its zero pose (foot flat, torso upright), and set motor_directions so the reading
+# grows with the crank angle in linkage.json; the controller refuses to activate on readings it cannot solve.
+parallel_joints:
+  ros__parameters:
+    type: wisco_ethercat_ros2_hw/ParallelLinkageController
+    linkage_file: robots/wisco_v1/linkage.json        # read as given: use an absolute path (relative = the node's
+                                                       # working directory) until a Wisco bringup launch fills it in
+    mechanisms: [left_ankle, right_ankle, waist]
+    command_mode: pd_in_drive                          # MyActuator mode 5; torque = host PD over CST
+    motor_command_interfaces: [position, velocity, effort, kp, kd]
+    limit_margin: 0.05
+    left_ankle:
+      motors: [left_ankle_motor_a, left_ankle_motor_b]
+      motor_directions: [1.0, 1.0]
+      kp: [35.0, 35.0]
+      kd: [2.14, 0.88]
+      position_min: [-0.546, -0.261799]
+      position_max: [0.785398, 0.261799]
+    right_ankle:
+      motors: [right_ankle_motor_a, right_ankle_motor_b]
+      motor_directions: [1.0, 1.0]
+      kp: [35.0, 35.0]
+      kd: [2.14, 0.88]
+      position_min: [-0.546, -0.261799]
+      position_max: [0.785398, 0.261799]
+    waist:
+      motors: [waist_motor_a, waist_motor_b]
+      motor_directions: [1.0, 1.0]
+      kp: [100.0, 100.0]                               # torso_roll, torso_pitch
+      kd: [11.89, 10.06]
+      position_min: [-0.523599, -0.523599]
+      position_max: [0.523599, 0.523599]

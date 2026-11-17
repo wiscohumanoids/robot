@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fast DDS profile for the robot's two computers (written by robot_network.sh apply; @LINK_IP@ is this computer's
+     address on the robot cable). ROS 2 traffic between the computers uses only that cable, never Wi-Fi; traffic
+     inside one computer uses shared memory. Loaded through FASTRTPS_DEFAULT_PROFILES_FILE. -->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>robot_link_udp</transport_id>
+      <type>UDPv4</type>
+      <interfaceWhiteList>
+        <address>@LINK_IP@</address>
+        <address>127.0.0.1</address>
+      </interfaceWhiteList>
+    </transport_descriptor>
+    <transport_descriptor>
+      <transport_id>local_shm</transport_id>
+      <type>SHM</type>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="robot_link" is_default_profile="true">
+    <rtps>
+      <useBuiltinTransports>false</useBuiltinTransports>
+      <userTransports>
+        <transport_id>robot_link_udp</transport_id>
+        <transport_id>local_shm</transport_id>
+      </userTransports>
+    </rtps>
+  </participant>
+</profiles>

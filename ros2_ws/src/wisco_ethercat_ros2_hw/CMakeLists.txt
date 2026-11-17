@@ -30,6 +30,8 @@ find_package(std_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(urdf REQUIRED)
 
 # --- SafeCommandController: the command controller the launch file loads ---
 add_library(wisco_ethercat_ros2_hw_controllers SHARED src/safe_command_controller.cpp)
@@ -52,8 +54,30 @@ ament_target_dependencies(wisco_ethercat_ros2_hw_arm_controller
   std_msgs)
 target_link_libraries(wisco_ethercat_ros2_hw_arm_controller pinocchio::pinocchio yaml-cpp)
 
+# --- ParallelLinkageController: "PR mode" for the two-motor joints (ankles, waist): joints <-> motors ---
+add_library(wisco_ethercat_ros2_hw_linkage_controller SHARED src/parallel_linkage_controller.cpp)
+target_compile_features(wisco_ethercat_ros2_hw_linkage_controller PUBLIC cxx_std_17)
+target_include_directories(wisco_ethercat_ros2_hw_linkage_controller PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+ament_target_dependencies(wisco_ethercat_ros2_hw_linkage_controller
+  controller_interface hardware_interface pluginlib rclcpp rclcpp_lifecycle realtime_tools std_msgs)
+target_link_libraries(wisco_ethercat_ros2_hw_linkage_controller yaml-cpp)
+
+# --- JointTargetController: a policy's joint targets (topic) -> drives, with timeout, ramp-in and limits ---
+add_library(wisco_ethercat_ros2_hw_joint_target_controller SHARED src/joint_target_controller.cpp)
+target_compile_features(wisco_ethercat_ros2_hw_joint_target_controller PUBLIC cxx_std_17)
+target_include_directories(wisco_ethercat_ros2_hw_joint_target_controller PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+ament_target_dependencies(wisco_ethercat_ros2_hw_joint_target_controller
+  controller_interface hardware_interface pluginlib rclcpp rclcpp_lifecycle realtime_tools sensor_msgs
+  diagnostic_msgs urdf)
+target_link_libraries(wisco_ethercat_ros2_hw_joint_target_controller yaml-cpp)
+
 pluginlib_export_plugin_description_file(controller_interface safe_command_controller_plugin.xml)
 install(TARGETS wisco_ethercat_ros2_hw_controllers wisco_ethercat_ros2_hw_arm_controller
+  wisco_ethercat_ros2_hw_linkage_controller wisco_ethercat_ros2_hw_joint_target_controller
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -118,6 +142,30 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_arm_law test/test_arm_law.cpp)
   target_include_directories(test_arm_law PRIVATE include)
+
+  # Parallel joints (ankles, waist): C++ conversion against the Python reference's golden file
+  ament_add_gtest(test_parallel_linkage test/test_parallel_linkage.cpp)
+  target_include_directories(test_parallel_linkage PRIVATE include)
+  target_compile_features(test_parallel_linkage PRIVATE cxx_std_17)
+  target_link_libraries(test_parallel_linkage yaml-cpp)
+  target_compile_definitions(test_parallel_linkage PRIVATE
+    LINKAGE_JSON="${CMAKE_CURRENT_SOURCE_DIR}/../../../robots/wisco_v1/linkage.json"
+    LINKAGE_GOLDEN="${CMAKE_CURRENT_SOURCE_DIR}/test/data/linkage_parity.json")
+
+  ament_add_gtest(test_joint_target_controller test/test_joint_target_controller.cpp)
+  target_link_libraries(test_joint_target_controller wisco_ethercat_ros2_hw_joint_target_controller)
+  ament_target_dependencies(test_joint_target_controller
+    controller_interface hardware_interface rclcpp rclcpp_lifecycle sensor_msgs)
+  target_compile_definitions(test_joint_target_controller PRIVATE
+    MANIFEST="${CMAKE_CURRENT_SOURCE_DIR}/../../../models/locomotion/wisco_v1_velocity_arms_free/manifest.yaml"
+    WISCO_URDF="${CMAKE_CURRENT_SOURCE_DIR}/../../../robots/wisco_v1/robot.urdf")
+
+  ament_add_gtest(test_parallel_linkage_controller test/test_parallel_linkage_controller.cpp)
+  target_link_libraries(test_parallel_linkage_controller wisco_ethercat_ros2_hw_linkage_controller)
+  ament_target_dependencies(test_parallel_linkage_controller
+    controller_interface hardware_interface rclcpp rclcpp_lifecycle std_msgs)
+  target_compile_definitions(test_parallel_linkage_controller PRIVATE
+    LINKAGE_JSON="${CMAKE_CURRENT_SOURCE_DIR}/../../../robots/wisco_v1/linkage.json")
 
   # Mock RMD-X drives on a mock EtherCAT ring (test/mock/), so the CiA402
   # state machine and the RT core run before the drives arrive.

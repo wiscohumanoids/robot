@@ -32,6 +32,7 @@ controllers keep the joints safe if those targets stop arriving.
 |---|---|
 | Drive configuration, controllers, mock EtherCAT, commissioning, current sensing, motion capture | `ros2_ws/src/wisco_ethercat_ros2_hw/README.md` |
 | IMU board (HiPNUC EVAL_HI05) on the RK3588: driver, board setup, axis and mount check | `ros2_ws/src/wisco_hipnuc_imu/README.md` |
+| The robot's internal network (Jetson ↔ RK3588): ROS 2 on the cable only, clock sync | `infra/robot_network/README.md` |
 | RK3588 real-time setup: PREEMPT_RT kernel, core isolation, cyclictest, the `update_rate` ramp | `infra/rk3588/README.md` |
 | Sim-to-real for walking: leg actuator identification (PACE), the steps to first steps | `training/sim2real/README.md` |
 | arm01 calibration and identification (PACE) | `robots/arm01/README.md` |
