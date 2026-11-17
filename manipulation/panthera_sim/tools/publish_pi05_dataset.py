@@ -133,7 +133,7 @@ training episodes only. Dataset-wide statistics here are supplied for general
 LeRobot compatibility. Full-model pi0.5 fine-tuning must explicitly unfreeze the
 vision encoder and VLM and omit PEFT/LoRA.
 
-Source project: https://github.com/zebulontaylor/RobotArmTraining
+Source project: https://github.com/wiscohumanoids/robot (manipulation/panthera_sim)
 Dataset: https://huggingface.co/datasets/{repo_id}
 """)
     paths = sorted(p for p in stage.rglob("*") if p.is_file() and ".cache" not in p.parts
