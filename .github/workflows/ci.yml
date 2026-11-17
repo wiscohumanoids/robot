@@ -15,7 +15,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pytest pyyaml "numpy<2" opencv-python-headless pin scipy "mujoco==3.11.0" "pyarrow<26"   # pyarrow 26 needs NumPy 2; the ROS image is on NumPy 1.26
+      # Pinocchio 3+ (the arm toolkit's API) is only on pip with NumPy 2, so this job runs NumPy 2; the ros job below
+      # covers the ROS image's NumPy 1.26. mcap, fastapi, httpx and uvicorn let the logging and perception-link tests run.
+      - run: pip install pytest pyyaml opencv-python-headless "pin>=3" scipy "mujoco==3.11.0" pyarrow mcap fastapi httpx uvicorn
       - name: Generated docs are up to date
         run: python tools/gen_docs.py --check
       - name: Contract, consistency and unit tests
