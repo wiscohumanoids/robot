@@ -98,9 +98,11 @@ measurements come back, the less retraining later.
 - **Found (CAD):** EVAL_HI05 board, 34 × 24 × 3 mm, on the IMU mount at the back of the pelvis, upright, chip facing
   backward, at (−0.0518, −0.0003, 0.0345) m. Board x → robot right (−y), y → down (−z), z → forward (+x): URDF rpy
   (−π/2, 0, −π/2), quaternion wxyz (0.5, −0.5, 0.5, −0.5), in `robot.urdf` (`imu_link`) and `robot.xml` (`imu` site).
-  Training reads the IMU in pelvis axes (an `imu_policy` site at the same point); on the robot the IMU driver applies
-  this fixed board-to-pelvis rotation.
-- **Needed back:** confirm the axes printed on the board match the CAD part axes.
+  Training reads the IMU in pelvis axes (an `imu_policy` site at the same point); on the robot the IMU driver
+  (`ros2_ws/src/wisco_hipnuc_imu`, `mount_wxyz` in its config) applies this fixed board-to-pelvis rotation.
+- **Needed back:** confirm the axes printed on the board match the CAD part axes:
+  `ros2 run wisco_hipnuc_imu imu_check --mounted` with the robot hung level or standing; it passes when gravity lands on
+  +z after the rotation, and otherwise prints which board axis points up.
 
 ## Head camera
 - **Found:** no lidar. The camera is a ZED X (the stack's `sensors:=stereo` setup) at the CAD `head_camera` frame,

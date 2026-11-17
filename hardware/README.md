@@ -10,7 +10,7 @@ numbers live in [`robots/`](../robots/README.md); the `ros2_control` hardware in
  Jetson Thor or Jetson Orin NX (central computer)       RK3588 (Rockchip, real-time computer)
    walking policy, perception, SLAM, planner,    ROS 2    EtherCAT master (IgH) + ros2_control:
    behavior tree, Nav2, manipulation policy     ───────►  ethercat_driver_ros2, joint controllers,
-   targets at 50–100 Hz                          (DDS)     e-stop receiver
+   targets at 50–100 Hz                          (DDS)     e-stop receiver, IMU driver (HiPNUC, USB) → /imu
                                                             │ EtherCAT ring (1 kHz with PREEMPT_RT)
                                                             ▼
                                                   MyActuator RMD-X drives (CiA 402)
@@ -31,6 +31,7 @@ controllers keep the joints safe if those targets stop arriving.
 | Topic | Where |
 |---|---|
 | Drive configuration, controllers, mock EtherCAT, commissioning, current sensing, motion capture | `ros2_ws/src/wisco_ethercat_ros2_hw/README.md` |
+| IMU board (HiPNUC EVAL_HI05) on the RK3588: driver, board setup, axis and mount check | `ros2_ws/src/wisco_hipnuc_imu/README.md` |
 | RK3588 real-time setup: PREEMPT_RT kernel, core isolation, cyclictest, the `update_rate` ramp | `infra/rk3588/README.md` |
 | Sim-to-real for walking: leg actuator identification (PACE), the steps to first steps | `training/sim2real/README.md` |
 | arm01 calibration and identification (PACE) | `robots/arm01/README.md` |

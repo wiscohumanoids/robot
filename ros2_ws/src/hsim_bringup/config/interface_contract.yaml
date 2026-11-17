@@ -8,7 +8,7 @@ version: 1   # phase-1 entries (the robot core) are frozen: see docs/interface_c
 topics:
   /clock:                    {type: rosgraph_msgs/msg/Clock,          owner: [sim, mujoco_ros2_control_node], rate_hz: 200,  phase: 1}
   /joint_states:             {type: sensor_msgs/msg/JointState,       owner: [sim, joint_state_broadcaster], rate_hz: 200,  phase: 1}
-  /imu:                      {type: sensor_msgs/msg/Imu,              owner: [sim, imu_sensor_broadcaster], rate_hz: 200,  phase: 1}
+  /imu:                      {type: sensor_msgs/msg/Imu,              owner: [sim, imu_sensor_broadcaster, imu], rate_hz: 200,  phase: 1}   # imu: the robot's IMU driver (wisco_hipnuc_imu)
   /sim/ground_truth/odom:    {type: nav_msgs/msg/Odometry,            owner: [sim, mujoco_ros2_control_node], rate_hz: 200,  phase: 1}   # PRIVILEGED
   /sim/viewer/image_raw:     {type: sensor_msgs/msg/Image,            owner: sim,              rate_hz: null, phase: 1, required: false}
   /cmd_vel_teleop:           {type: geometry_msgs/msg/TwistStamped,   owner: teleop,           rate_hz: null, phase: 1, required: false}

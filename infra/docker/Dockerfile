@@ -40,11 +40,11 @@ RUN pip3 install --no-cache-dir --break-system-packages "anthropic>=2.6,<3" "pyd
 # ros2_control and the arm controllers: controller manager and controllers, Pinocchio dynamics, yaml-cpp,
 # SciPy for the calibration toolkit, the mock hardware components used without drives, and the upstream MuJoCo
 # hardware plugin (mujoco_ros2_control) for the sim stack's backend:=ros2_control, and the VRPN motion-capture
-# client (vrpn_mocap) for the arm calibrations.
+# client (vrpn_mocap) for the arm calibrations. pyserial for the IMU driver (wisco_hipnuc_imu).
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ros-jazzy-ros2-control ros-jazzy-ros2-controllers ros-jazzy-mujoco-ros2-control ros-jazzy-vrpn-mocap \
       ros-jazzy-pinocchio ros-jazzy-realtime-tools \
-      libyaml-cpp-dev python3-scipy \
+      libyaml-cpp-dev python3-scipy python3-serial \
     && rm -rf /var/lib/apt/lists/*
 
 # Source ROS and the workspace (once built) in every shell

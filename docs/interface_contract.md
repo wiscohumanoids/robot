@@ -31,7 +31,7 @@ without ROS.
 | `/clock` | `rosgraph_msgs/msg/Clock` | `sim`, `mujoco_ros2_control_node` | 200 Hz | 1 | yes |
 | `/cmd_vel` | `geometry_msgs/msg/TwistStamped` | `twist_mux` | - | 1 | yes |
 | `/cmd_vel_teleop` | `geometry_msgs/msg/TwistStamped` | `teleop` | - | 1 | no |
-| `/imu` | `sensor_msgs/msg/Imu` | `sim`, `imu_sensor_broadcaster` | 200 Hz | 1 | yes |
+| `/imu` | `sensor_msgs/msg/Imu` | `sim`, `imu_sensor_broadcaster`, `imu` | 200 Hz | 1 | yes |
 | `/joint_states` | `sensor_msgs/msg/JointState` | `sim`, `joint_state_broadcaster` | 200 Hz | 1 | yes |
 | `/joint_targets_controller/commands` | `std_msgs/msg/Float64MultiArray` | `joint_target_bridge` | - | 1 | no |
 | `/locomotion/joint_targets` | `sensor_msgs/msg/JointState` | `locomotion` | 50 Hz | 1 | yes |
