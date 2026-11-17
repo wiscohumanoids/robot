@@ -15,6 +15,8 @@ parallel_joints:
     linkage_file: robots/wisco_v1/linkage.json        # read as given: use an absolute path (relative = the node's
                                                        # working directory) until a Wisco bringup launch fills it in
     mechanisms: [left_ankle, right_ankle, waist]
+    # pd_in_drive drops the ankles' large gain coupling (README, "Parallel joints": walks at 0.38 instead of 0.55 m/s
+    # on simulated drives); torque mode is exact but needs the host loop fast and steady
     command_mode: pd_in_drive                          # MyActuator mode 5; torque = host PD over CST
     motor_command_interfaces: [position, velocity, effort, kp, kd]
     limit_margin: 0.05

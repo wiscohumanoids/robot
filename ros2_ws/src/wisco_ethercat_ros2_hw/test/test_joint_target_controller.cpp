@@ -17,6 +17,7 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_srvs/srv/trigger.hpp"
 #include "wisco_ethercat_ros2_hw/joint_target_controller.hpp"
 
 using wisco_ethercat_ros2_hw::JointTargetController;
@@ -168,9 +169,8 @@ TEST(JointTargetController, TimeoutDampsThenRampsBackIn)
   r.send({"left_knee", "left_ankle_pitch"}, {1.0, 0.3});
   r.tick(0.2);
   ASSERT_EQ(r.c->phase(), Phase::kTrack);
-  std::this_thread::sleep_for(std::chrono::milliseconds(80));    // targets stop (timeout 50 ms)
   r.bus.knee_meas = 0.9;
-  r.tick();
+  r.tick(0.08);                                           // 80 ms of control loop with no new targets (timeout 50 ms)
   EXPECT_EQ(r.c->phase(), Phase::kSafe);
   EXPECT_DOUBLE_EQ(r.bus.knee_kp, 0.0);                   // limp ...
   EXPECT_DOUBLE_EQ(r.bus.knee_kd, 8.0);                   // ... and damped
@@ -187,9 +187,8 @@ TEST(JointTargetController, TimeoutCanHoldInstead)
   Rig r(params("hold"));
   r.send({"left_knee", "left_ankle_pitch"}, {1.0, 0.3});
   r.tick(0.2);
-  std::this_thread::sleep_for(std::chrono::milliseconds(80));
   r.bus.knee_meas = 0.95;
-  r.tick();
+  r.tick(0.08);
   EXPECT_EQ(r.c->phase(), Phase::kSafe);
   EXPECT_NEAR(r.bus.knee_pos, 0.95, 1e-12);
   EXPECT_DOUBLE_EQ(r.bus.knee_kp, 120.0);
@@ -204,6 +203,33 @@ TEST(JointTargetController, LimitsComeFromTheUrdf)
   EXPECT_LT(r.bus.knee_pos, 9.0);
   EXPECT_GT(r.bus.ankle_cmd, -9.0);
   EXPECT_EQ(r.c->clamped(), 2u);
+}
+
+TEST(JointTargetController, HoldServiceRearmsAtTheMeasuredPose)
+{
+  // the robot is moved by something else (a world reset): the controller must hold where it now is, not pull it
+  // back to the old targets, and ramp in again only from messages sent after the request
+  Rig r(params());
+  r.send({"left_knee", "left_ankle_pitch"}, {1.0, 0.3});
+  r.tick(0.2);
+  ASSERT_EQ(r.c->phase(), Phase::kTrack);
+  auto client = r.pub_node->create_client<std_srvs::srv::Trigger>("/leg_targets/hold");
+  ASSERT_TRUE(client->wait_for_service(std::chrono::seconds(2)));
+  auto fut = client->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>());
+  for (int i = 0; i < 50 && fut.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready; ++i) {
+    r.ex.spin_some(std::chrono::milliseconds(5));
+  }
+  ASSERT_TRUE(fut.get()->success);
+  r.bus.knee_meas = 0.5;                                  // the world was reset: the knee is somewhere else now
+  r.bus.ankle_meas = -0.1;
+  r.tick();
+  EXPECT_EQ(r.c->phase(), Phase::kHold);                  // the last message is older than the request
+  EXPECT_DOUBLE_EQ(r.bus.knee_pos, 0.5);
+  EXPECT_DOUBLE_EQ(r.bus.ankle_cmd, -0.1);
+  r.send({"left_knee", "left_ankle_pitch"}, {1.0, 0.3});  // new targets: ramp from the new pose
+  r.tick(0.05);
+  EXPECT_EQ(r.c->phase(), Phase::kRamp);
+  EXPECT_NEAR(r.bus.knee_pos, 0.5 + 0.5 * (1.0 - 0.5), 1e-9);
 }
 
 int main(int argc, char ** argv)

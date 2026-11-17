@@ -25,6 +25,7 @@
   <depend>yaml-cpp</depend>
   <depend>sensor_msgs</depend>
   <depend>urdf</depend>
+  <depend>std_srvs</depend>
 
   <exec_depend>arm01_description</exec_depend>
   <exec_depend>controller_manager</exec_depend>

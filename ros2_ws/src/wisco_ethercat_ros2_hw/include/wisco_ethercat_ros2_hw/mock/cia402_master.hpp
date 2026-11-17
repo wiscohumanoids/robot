@@ -1,6 +1,7 @@
 // The master side of one CiA402 drive, mirroring what the upstream
 // ethercat_generic_plugins/EcCiA402Drive plugin (ICube ethercat_driver_ros2)
-// does every cycle in processData(). Test-only.
+// does every cycle in processData(). Used by the controller tests (test/mock/) and the simulated robot
+// (hsim_virtual_robot).
 //
 // ethercat_driver_ros2 is neither in the workspace nor installed, so its
 // CiA402 logic cannot be linked into the tests. This is a transcription of
@@ -10,13 +11,18 @@
 //     (0x06 -> 0x07 -> 0x0F), fault reset 0x80 on a rising edge of the
 //     `reset_fault` command interface, or always with auto_fault_reset,
 //   * 0x607A: overridden with the actual position whenever 0x6061 is not
-//     CSP, so a drive that is not in CSP is always handed a hold target,
+//     CSP, so a drive that is not in CSP is always handed a hold target.
+//     Exception added here (mit_position_passthrough): mode 5 uses 0x607A
+//     too. Upstream has no such exception, so on the robot EcCiA402Drive
+//     needs the same one, or every mode-5 drive would only ever hold,
 //   * 0x6060: the mode_of_operation command interface, else the configured
 //     mode,
 //   * RPDO channels with a NaN command (never written) send their default,
 //   * value = factor * raw + offset on read, raw = factor * value + offset on
 //     write, cast to the channel's integer type (saturated here; upstream
 //     casts, so out-of-range values are undefined behaviour there),
+//   * mode 5 gains: kp / kd command interfaces -> 0x2000 / 0x2001 (raw =
+//     factor * value; unwritten = 0, a limp drive),
 //   * RPDO channels are processed before TPDO channels (PDO order), so the
 //     control word and the 0x607A override act on the previous cycle's
 //     status word, mode display and position.
@@ -28,8 +34,8 @@
 #include <cstdint>
 #include <limits>
 
-#include "cia402.hpp"
-#include "rmdx_mock_slave.hpp"
+#include "wisco_ethercat_ros2_hw/mock/cia402.hpp"
+#include "wisco_ethercat_ros2_hw/mock/rmdx_mock_slave.hpp"
 
 namespace wisco_ethercat_ros2_hw
 {
@@ -48,6 +54,8 @@ struct DriveScaling
   double velocity_command_factor = 1.0;
   double effort_state_factor = 1.0;     // Nm per per-mille
   double effort_command_factor = 1.0;   // per-mille per Nm
+  double kp_command_factor = 1000.0;    // 0x2000 raw per Nm/rad (mode 5; RmdxParams::kp_per_raw)
+  double kd_command_factor = 1000.0;    // 0x2001 raw per Nm s/rad
 
   static DriveScaling from_joint(
     double counts_per_rev, double nm_per_permille, int direction, double zero_offset)
@@ -76,6 +84,8 @@ struct DriveCommands
   double mode_of_operation = std::numeric_limits<double>::quiet_NaN();
   double reset_fault = std::numeric_limits<double>::quiet_NaN();
   double max_torque = std::numeric_limits<double>::quiet_NaN();   // 0x6072 in N m, when mapped
+  double kp = std::numeric_limits<double>::quiet_NaN();           // mode 5 stiffness, Nm/rad (0x2000)
+  double kd = std::numeric_limits<double>::quiet_NaN();           // mode 5 damping, Nm s/rad (0x2001)
 };
 
 struct DriveStates
@@ -96,6 +106,7 @@ public:
   bool auto_fault_reset = false;
   int8_t mode_of_operation = cia402::kModeCsp;   // ec_module param, 0x6060 default
   int16_t max_torque_permille = 1000;            // 0x6072 default from the slave config
+  bool mit_position_passthrough = true;          // 0x607A follows the command in mode 5 too (see above)
   DriveScaling scaling;
 
   // One processData() pass over every channel. received is null when the
@@ -120,7 +131,8 @@ public:
     }
     // 0x607A: hold the actual position unless the drive is in CSP
     {
-      const bool override_cmd = mode_display_ != cia402::kModeCsp;
+      const bool override_cmd = mode_display_ != cia402::kModeCsp &&
+        !(mit_position_passthrough && mode_display_ == cia402::kModeMit);
       if (override_cmd || !std::isfinite(cmd.position)) {
         if (mode_display_ != cia402::kModeNone) {
           rx_.target_position = write_raw<int32_t>(
@@ -139,6 +151,8 @@ public:
       write_raw<int16_t>(scaling.effort_command_factor * cmd.torque_offset) : 0;
     rx_.max_torque = std::isfinite(cmd.max_torque) ?
       write_raw<int16_t>(std::fabs(scaling.effort_command_factor * cmd.max_torque)) : max_torque_permille;
+    rx_.kp = std::isfinite(cmd.kp) ? write_raw<int32_t>(scaling.kp_command_factor * std::max(cmd.kp, 0.0)) : 0;
+    rx_.kd = std::isfinite(cmd.kd) ? write_raw<int32_t>(scaling.kd_command_factor * std::max(cmd.kd, 0.0)) : 0;
     rx_.mode_of_operation = std::isfinite(cmd.mode_of_operation) ?
       write_raw<int8_t>(cmd.mode_of_operation) : mode_of_operation;
 

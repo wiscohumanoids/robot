@@ -6,6 +6,10 @@ Reads <env>/env.yaml and writes <env>/build/:
   world.mjb     G1 training world with the room attached (prefix "room/"), compiled to
                 MuJoCo's self-contained binary format; keyframe "init_state" = G1 standing at
                 the spawn pose + every loose object where the room file puts it
+  world_ros2_control/world.xml (+ assets/)  the same world for the sim stack's backend:=ros2_control (robot names
+                without the "robot/" prefix, an IMU added; same qpos layout as world.mjb), as MJCF with a copy of every
+                mesh and texture it uses: the upstream plugin bundles its own MuJoCo version, and a compiled .mjb only
+                loads in the version that wrote it
   map.pgm/.yaml 2D occupancy map in Nav2 map_server format: footprints of every solid
                 shape that overlaps the robot's height band; bounds may be "auto"
   objects.yaml  named objects: position, size, top height
@@ -20,6 +24,7 @@ import argparse
 import math
 import os
 import struct
+import sys
 import zlib
 from pathlib import Path
 
@@ -49,9 +54,16 @@ def load_room(path: Path) -> mujoco.MjSpec:
     return mujoco.MjSpec.from_string(text.replace(THIRD_PARTY_TOKEN, str(third_party)))
 
 
-def compose(env: dict, env_dir: Path) -> mujoco.MjModel:
-    """The robot's training world with the room attached, the robot spawned where the env says."""
-    spec = mujoco.MjSpec.from_file(str(ROOT / env["robot_world"]))
+def compose(env: dict, env_dir: Path, robot_spec: mujoco.MjSpec | None = None) -> mujoco.MjModel:
+    """The robot's training world with the room attached, the robot spawned where the env says, compiled."""
+    return compose_spec(env, env_dir, robot_spec).compile()
+
+
+def compose_spec(env: dict, env_dir: Path, robot_spec: mujoco.MjSpec | None = None) -> mujoco.MjSpec:
+    """compose() before compiling. `robot_spec` replaces the training world (the ros2_control backend's plugin-ready
+    version of it, ros2_control_spec()).
+    """
+    spec = robot_spec if robot_spec is not None else mujoco.MjSpec.from_file(str(ROOT / env["robot_world"]))
     room = load_room(env_dir / env["room"])
 
     # Remember the G1 standing keyframe, then drop it: its qpos only covers the robot.
@@ -72,6 +84,13 @@ def compose(env: dict, env_dir: Path) -> mujoco.MjModel:
             if g.group == 0:
                 g.rgba = [0.0, 0.0, 0.0, 0.0]
                 g.material = ""
+    # room asset paths absolute (RoboCasa's already are), so the room's own meshdir/texturedir no longer apply
+    room_dir = (env_dir / env["room"]).parent
+    for kind, base in (("meshes", room.meshdir), ("textures", room.texturedir), ("hfields", room.meshdir)):
+        for el in getattr(room, kind):
+            if el.file and not os.path.isabs(el.file):
+                el.file = str((room_dir / (base or "") / el.file).resolve())
+    room.meshdir = room.texturedir = ""
     frame = spec.worldbody.add_frame()
     spec.attach(room, prefix=ROOM_PREFIX, frame=frame)
 
@@ -89,7 +108,55 @@ def compose(env: dict, env_dir: Path) -> mujoco.MjModel:
     qpos[0], qpos[1] = sp["x"], sp["y"]
     qpos[3:7] = [math.cos(yaw / 2), 0.0, 0.0, math.sin(yaw / 2)]
     spec.add_key(name=KEY, qpos=qpos.tolist(), ctrl=robot_ctrl.tolist())
-    return spec.compile()
+    return spec
+
+
+def ros2_control_spec(robot_world: Path) -> mujoco.MjSpec:
+    """The training world as the ros2_control backend runs it (mujoco_ros2_control): the same model with the "robot/"
+    name prefix removed and an IMU added (hsim_sim/ros2_control_backend.py). Same qpos layout as world.mjb.
+    """
+    sys.path.insert(0, str(ROOT / "ros2_ws/src/hsim_sim"))
+    from hsim_sim.ros2_control_backend import convert
+    return convert(str(robot_world))[0]
+
+
+def write_portable(spec: mujoco.MjSpec, model: mujoco.MjModel, out_dir: Path) -> Path:
+    """Write `spec` as out_dir/world.xml with every mesh, texture and height field it reads copied into out_dir/assets
+    (unique names, relative paths), so any MuJoCo version on any machine loads it. Every body's mass and inertia are
+    written explicitly from `model` (the spec compiled in memory): one XML has one <compiler>, and attached rooms
+    bring their own inertia rules (RoboCasa counts only collision geoms, inertiagrouprange 0 0)."""
+    import hashlib
+    import shutil
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    (out_dir / "assets").mkdir(parents=True)
+    dirs = {"meshes": spec.meshdir, "textures": spec.texturedir, "hfields": spec.meshdir}
+    copied: dict[str, str] = {}
+    for kind, base in dirs.items():
+        for el in getattr(spec, kind):
+            if not el.file:
+                continue
+            src = el.file if os.path.isabs(el.file) else os.path.join(base or "", el.file)
+            if src not in copied:
+                name = f"{hashlib.sha1(src.encode()).hexdigest()[:10]}_{os.path.basename(src)}"
+                shutil.copy2(src, out_dir / "assets" / name)
+                copied[src] = str(out_dir / "assets" / name)
+            el.file = copied[src]
+    spec.meshdir = spec.texturedir = ""
+    for i in range(1, model.nbody):
+        body = spec.body(model.body(i).name)
+        if body is None:
+            raise RuntimeError(f"body {i} has no unique name; cannot pin its inertia")
+        body.explicitinertial = True
+        body.mass = float(model.body_mass[i])
+        body.ipos = model.body_ipos[i].tolist()
+        body.iquat = model.body_iquat[i].tolist()
+        body.inertia = model.body_inertia[i].tolist()
+    # absolute while compiling (to_xml compiles), relative to world.xml in the written file
+    xml = out_dir / "world.xml"
+    xml.write_text(spec.to_xml().replace(f'"{out_dir}/assets/', '"assets/'))
+    mujoco.MjModel.from_xml_path(str(xml))          # loads from its own folder, or fails here
+    return xml
 
 
 def solid_footprints(m: mujoco.MjModel, d: mujoco.MjData, hmin: float, hmax: float):
@@ -299,6 +366,13 @@ def main():
         env["spawn"] = {**sp, "x": round(x, 3), "y": round(y, 3)}
         m = compose(env, env_dir)
     mujoco.mj_saveModel(m, str(out / "world.mjb"), None)
+    # the same world for sim_stack backend:=ros2_control (the robot run by its own controllers)
+    rc_spec = compose_spec(env, env_dir, ros2_control_spec(ROOT / env["robot_world"]))
+    mrc = rc_spec.compile()
+    if mrc.nq != m.nq or mrc.nu != m.nu:
+        raise RuntimeError(f"world_ros2_control differs from world.mjb (nq {mrc.nq}/{m.nq}, nu {mrc.nu}/{m.nu})")
+    (out / "world_ros2_control.mjb").unlink(missing_ok=True)       # earlier builds wrote a version-locked .mjb
+    write_portable(rc_spec, mrc, out / "world_ros2_control")
     write_pgm(out / "map.pgm", grid)
     (out / "map.yaml").write_text(yaml.safe_dump({
         "image": "map.pgm", "mode": "trinary", "resolution": env["map"]["resolution"],

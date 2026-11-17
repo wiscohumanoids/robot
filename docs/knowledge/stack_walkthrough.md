@@ -75,10 +75,16 @@ boundary until the policy's new targets arrive, so a slow laptop slows the world
 `stereo_camera.py` renders the head camera; `sensors.py` adds sensor noise; `/sim/ground_truth/*` exists only for
 graders and labeled stubs.
 
-**Through ros2_control in simulation** (`backend:=ros2_control`): `hsim_sim/joint_target_bridge.py` turns the named
-targets into the forward position controller's command, and the upstream `mujoco_ros2_control` plugin runs the same
-trained scene as hardware (files from `hsim_sim/ros2_control_backend.py`). Same PD law, no lockstep: the control path
-the robot uses.
+**Through ros2_control in simulation** (`backend:=ros2_control`): the robot's own receivers
+(`JointTargetController` `leg_targets` and `arm_targets`, as on the RK3588: hold, ramp-in, limits, timeout) take
+`/locomotion/joint_targets`, and the upstream `mujoco_ros2_control` plugin runs the same world, kitchens included, as
+hardware (files from `hsim_sim/ros2_control_backend.py`, `hsim_sim/backend_supervisor.py` for the standing start).
+Same PD law, no lockstep: the control path the robot uses.
+
+**Down to the EtherCAT drives in simulation** (`backend:=ethercat_sim`): the robot computer's full chain, the receivers
+sending position + kp + kd and `ParallelLinkageController` turning ankle and waist pitch/roll into two motors each,
+on simulated MyActuator drives (`hsim_mujoco_plugins`' `VirtualRobotSystem`: CiA402 state machine, mode 5 PD in the
+drive, one bus cycle of delay each way) with MuJoCo as the robot (files from `hsim_sim/ethercat_sim_backend.py`).
 
 **On hardware**, the same `/locomotion/joint_targets` go to `ros2_control` on the RK3588
 (`ros2_ws/src/wisco_ethercat_ros2_hw/`): legs, waist and head as MyActuator mode-5 targets with the trained kp and kd,
@@ -125,6 +131,7 @@ balance. The arm pipelines (teleop, datasets, ACT / pi0.5 training) are in `mani
   logic, the actuator fit and the pi0.5 trainer's checks.
 - `tools/ros.sh test [stub|sim] [env] [robot] [backend]`: brings the stack up in the container, checks the live graph
   against the contract (`hsim_bringup/contract_check.py`) and drives the robot (`drive_check.py`);
-  `tools/ros.sh test sim "" wisco ros2_control` runs it through the ros2_control backend.
+  `tools/ros.sh test sim "" wisco ros2_control` runs it through the ros2_control backend
+  (`... ethercat_sim` through the simulated drives).
 - `tools/ros.sh autotest [name] [robot]`: navigation, behavior-tree and reach checks graded on simulator ground truth
   (`tools/autonomy_test.sh`, `tools/eval/`).

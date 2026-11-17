@@ -1,7 +1,8 @@
-"""The ros2_control backend files: prefix removal, IMU sensors, URDF, controllers and standing targets, on a small
+"""The ros2_control backend files: prefix removal, IMU sensors, URDF, the robot's controllers and plugins, on a small
 mjlab-style model (a floating base and two position-actuated hinges, every name prefixed "robot/").
 """
 
+import math
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -75,16 +76,53 @@ def test_urdf(files):
     assert kinds == {'hip': 'revolute', 'knee': 'continuous'}
 
 
-def test_controllers_and_targets(files):
-    """Controllers list the same joints (no YAML aliases); standing targets are the keyframe ctrl in joint order."""
+def test_controllers_and_plugins(files):
+    """The robot's own controllers (JointTargetController per joint group, positions only, model limits; no YAML
+    aliases), the broadcasters, and the ground-truth plugin."""
     text = open(files['controllers']).read()
     assert '&id' not in text and '*id' not in text
     c = yaml.safe_load(text)
     assert c['controller_manager']['ros__parameters']['update_rate'] == 250
-    assert c['joint_targets_controller']['ros__parameters']['joints'] == ['hip', 'knee']
-    assert c['joint_targets_controller']['ros__parameters']['interface_name'] == 'position'
-    j = yaml.safe_load(open(files['joints']))
-    assert j == {'joints': ['hip', 'knee'], 'standing': [0.2, 0.4]}
+    legs = c['leg_targets']['ros__parameters']
+    assert legs['type'] == 'wisco_ethercat_ros2_hw/JointTargetController'
+    assert legs['joints'] == ['hip', 'knee'] and legs['topic'] == '/locomotion/joint_targets'
+    assert 'gain_interfaces' not in legs and legs['timeout_action'] == 'hold'    # gains live in the MuJoCo model
+    assert legs['position_min'][0] == pytest.approx(-math.radians(1.0))       # hip range -1..1 (MJCF degrees)
+    assert legs['position_max'][1] == 10.0                                    # knee: unlimited
+    assert 'arm_targets' not in c                                                 # no arm joints in this model
+    assert files['controllers_to_spawn'] == ['joint_state_broadcaster', 'imu_sensor_broadcaster', 'leg_targets']
+    p = yaml.safe_load(open(files['plugins']))['/**']['ros__parameters']['mujoco_plugins']['ground_truth']
+    assert p['type'] == 'hsim_mujoco_plugins/GroundTruthPlugin' and p['state_topic'] == '/sim/ground_truth/state'
+
+
+def test_arm_joints_get_their_own_controller():
+    """Arm joints (shoulder, elbow, forearm, wrist) go to arm_targets, the rest to leg_targets."""
+    joints = [('left_hip_pitch', 0), ('left_shoulder_pitch', 1), ('torso_yaw', 2), ('right_wrist_roll', 3)]
+    assert rcb.groups(joints) == {'leg_targets': ['left_hip_pitch', 'torso_yaw'],
+                                  'arm_targets': ['left_shoulder_pitch', 'right_wrist_roll']}
+
+
+def test_compiled_env_world_is_used_as_is(files, tmp_path):
+    """An env's world_ros2_control.mjb (already converted) is loaded directly; an unconverted .mjb is refused."""
+    m = mujoco.MjModel.from_xml_path(files['scene'])
+    good = tmp_path / 'world_ros2_control.mjb'
+    mujoco.mj_saveModel(m, str(good), None)
+    out = rcb.build(str(good), str(tmp_path / 'env'))
+    assert out['world'] == str(good) and 'scene' not in out
+    assert ET.parse(out['urdf']).getroot().find('ros2_control/hardware/param[@name="mujoco_model"]').text == str(good)
+    raw = tmp_path / 'raw.mjb'
+    mujoco.mj_saveModel(mujoco.MjModel.from_xml_string(SCENE), str(raw), None)
+    with pytest.raises(ValueError, match='not a plugin-ready world'):
+        rcb.build(str(raw), str(tmp_path / 'raw'))
+
+
+def test_floating_base_is_the_robots_not_a_loose_object(files):
+    """A world with a loose object before the robot: odometry still follows the robot's base."""
+    world = SCENE.replace('<worldbody>', '<worldbody><body name="cup" pos="1 0 1"><freejoint name="cup_free"/>'
+                          '<geom type="sphere" size="0.02"/></body>')
+    world = world.replace('qpos="0 0 1 1 0 0 0 0.2 0.4"', 'qpos="1 0 1 1 0 0 0 0 0 1 1 0 0 0 0.2 0.4"')
+    m = mujoco.MjModel.from_xml_string(world)
+    assert rcb.free_joint(m) == 'robot/floating_base'
 
 
 def test_rejects_non_position_actuator(tmp_path):

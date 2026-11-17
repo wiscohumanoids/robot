@@ -21,11 +21,21 @@ sensors:=stereo        ZED X-style stereo camera (110 deg, depth to 12 m) -> dep
                        only), plus color + depth images for perception and RTAB-Map (no lidar)
                        Both modes publish /camera/head/{color,depth}/image_raw (+ camera_info, points).
 backend:=sim           the MuJoCo sim node (hsim_sim/mujoco_sim): realistic sensors, lockstep with the policy
-backend:=ros2_control  the robot's control path instead: the upstream mujoco_ros2_control plugin runs the same trained
-                       scene under controller_manager (joint_state_broadcaster, imu_sensor_broadcaster, a forward
-                       position controller at update_rate:=200 Hz) and the policy's targets reach it through
-                       joint_target_bridge, as they reach the drives on the robot. No lockstep, no exteroceptive
-                       sensors (no env, cameras or lidar) and no Mac viewer stream; IMU and joint states are noise-free.
+backend:=ros2_control  the robot run by its own controllers instead: MuJoCo inside the controller manager (the
+                       upstream mujoco_ros2_control plugin, update_rate:=200 Hz) with the robot's controllers on top:
+                       JointTargetController `leg_targets` and `arm_targets` (wisco_ethercat_ros2_hw) take the policy's
+                       /locomotion/joint_targets with hold, ramp-in, joint limits and a timeout, as on the RK3588, and
+                       MuJoCo's position actuators apply the trained PD (MyActuator mode 5's law). Works with env:= (the
+                       env's world_ros2_control/ from tools/env_build.py) and with the stereo camera, SLAM and
+                       perception (GroundTruthPlugin feeds the simulated camera and the Mac viewer). No lockstep with
+                       the policy (as on the robot), no lidar, no battery model; IMU and joint states are noise-free.
+backend:=ethercat_sim  one layer further down: the robot's EtherCAT hardware simulated (hsim_mujoco_plugins'
+                       VirtualRobotSystem: a CiA402 drive per motor in MyActuator mode 5, the master's EcCiA402Drive
+                       logic, MuJoCo as the robot), under the robot computer's controller chain: leg_targets /
+                       arm_targets send position + kp + kd to the drives, the ankles and waist roll/pitch through
+                       ParallelLinkageController to two motors each (rod geometry), /joint_states from
+                       ChainedJointStateBroadcaster. One bus cycle of delay each way, as on the robot. Same worlds,
+                       sensors and limits as backend:=ros2_control; the drive states on /drive_states/*.
 Options: viewer:=false, foxglove:=true, render_hz:=10
 """
 
@@ -72,23 +82,47 @@ def spawn_pose(env, build_dir='build'):
     return float(sp.get('x', 0.0)), float(sp.get('y', 0.0)), math.radians(float(sp.get('yaw_deg', 0.0)))
 
 
-def ros2_control_nodes(prof, update_rate):
-    """The ros2_control backend: plugin-ready scene, URDF and controllers written for the profile's trained world,
-    then ros2_control_node, the spawners and the target bridge (which also serves the description).
+def ros2_control_nodes(world, update_rate, viewer, backend, prof):
+    """A controller-manager backend for `world` (the profile's training scene, or an env's world_ros2_control/):
+    the backend's files (hsim_sim/ros2_control_backend.py or ethercat_sim_backend.py), the controller manager with
+    MuJoCo inside, the spawners, and the supervisor (description, standing start, /sim/reset).
     """
-    from hsim_sim.ros2_control_backend import build
-    files = build(prof['world'], tempfile.mkdtemp(prefix='hsim_ros2_control_'), update_rate)
+    # the controller manager finds the plugins through this environment; a shell opened before the workspace was
+    # built cannot see them, and a plugin would then fail with only a logged error
+    for pkg in ('hsim_mujoco_plugins', 'mujoco_ros2_control', 'wisco_ethercat_ros2_hw'):
+        try:
+            get_package_share_directory(pkg)
+        except Exception:
+            raise RuntimeError(f'package {pkg} not found in this shell: build the workspace, then '
+                               'source /hsim/ros2_ws/install/setup.bash (or open a new tools/ros.sh shell)')
+    out = tempfile.mkdtemp(prefix=f'hsim_{backend}_')
+    viewer_rate = 50.0 if viewer else 0.0
+    if backend == 'ethercat_sim':
+        from hsim_sim.ethercat_sim_backend import build
+        files = build(world, out, update_rate, ethercat=prof.get('ethercat_sim'), viewer_rate=viewer_rate)
+        # the robot computer's controller manager; the hardware plugin publishes /clock
+        manager = Node(package='controller_manager', executable='ros2_control_node', output='screen',
+                       parameters=[{'use_sim_time': True}, files['controllers']],
+                       remappings=[('/imu_sensor_broadcaster/imu', '/imu')])
+    else:
+        from hsim_sim.ros2_control_backend import build
+        files = build(world, out, update_rate, viewer_rate=viewer_rate)
+        manager = Node(package='mujoco_ros2_control', executable='ros2_control_node', output='screen',
+                       parameters=[{'use_sim_time': True}, files['controllers'], files['plugins']],
+                       remappings=[('/imu_sensor_broadcaster/imu', '/imu')])
     controllers = files['controllers']
+    spawn = files['controllers_to_spawn']
+    targets = [c for c in spawn if c.endswith('_targets')]
+    # one spawner, in order: a chained controller (leg_targets on parallel_joints) needs the one below it active
+    spawner = Node(package='controller_manager', executable='spawner', output='screen',
+                   arguments=[*spawn, '--param-file', controllers, '--controller-manager-timeout', '60'])
     return [
-        Node(package='mujoco_ros2_control', executable='ros2_control_node', output='screen',
-             parameters=[{'use_sim_time': True}, controllers],
-             remappings=[('/imu_sensor_broadcaster/imu', '/imu')]),
-        *[Node(package='controller_manager', executable='spawner', output='screen',
-               arguments=[c, '--param-file', controllers, '--controller-manager-timeout', '60'])
-          for c in ('joint_state_broadcaster', 'imu_sensor_broadcaster', 'joint_targets_controller')],
-        Node(package='hsim_sim', executable='joint_target_bridge', name='joint_target_bridge', output='screen',
-             parameters=[{'joints_file': files['joints'], 'robot_description_file': files['urdf'],
-                          'use_sim_time': True}]),
+        manager,
+        spawner,
+        Node(package='hsim_sim', executable='backend_supervisor', name='backend_supervisor', output='screen',
+             parameters=[{'robot_description_file': files['urdf'], 'controllers': spawn,
+                          'hold_controllers': targets, 'use_sim_time': True,
+                          'plugin_node': files.get('plugin_node', '/mujoco_ros2_control_node')}]),
     ]
 
 
@@ -113,22 +147,25 @@ def robot_nodes(context):
                   'use_sim_time': False}            # the sim is the clock source
     nodes = []
     backend = arg(context, 'backend')
-    if backend not in ('sim', 'ros2_control'):
-        raise RuntimeError(f'backend:={backend}: sim or ros2_control')
-    ros2_control = backend == 'ros2_control'
-    if ros2_control:
-        if env:
-            raise RuntimeError('backend:=ros2_control runs the bare training world: leave env empty')
-        nodes += ros2_control_nodes(prof, float(arg(context, 'update_rate')))
+    if backend not in ('sim', 'ros2_control', 'ethercat_sim'):
+        raise RuntimeError(f'backend:={backend}: sim, ros2_control or ethercat_sim')
+    ros2_control = backend != 'sim'                 # both controller-manager backends
+    if ros2_control and not stereo:
+        raise RuntimeError(f'backend:={backend} has no simulated lidar: use sensors:=stereo')
 
     if env:
         build = os.path.join(ENVS, env, bdir)
         world, map_yaml = os.path.join(build, 'world.mjb'), os.path.join(build, 'map.yaml')
-        for f in (world, map_yaml):
+        rc_world = os.path.join(build, 'world_ros2_control', 'world.xml')
+        needed = [world, map_yaml] + ([rc_world] if ros2_control else [])
+        for f in needed:
             if not os.path.exists(f):
                 raise RuntimeError(f'{f} missing: run tools/env_build.py assets/envs/{env} --robot {prof["name"]} on the Mac first')
-        nodes.append(Node(package='hsim_sim', executable='mujoco_sim', name='sim', output='screen',
-                          parameters=[{'scene': world, **sim_params}]))
+        if ros2_control:
+            nodes += ros2_control_nodes(rc_world, float(arg(context, 'update_rate')), viewer, backend, prof)
+        else:
+            nodes.append(Node(package='hsim_sim', executable='mujoco_sim', name='sim', output='screen',
+                              parameters=[{'scene': world, **sim_params}]))
         if arg(context, 'map_server') == 'true':
             nodes += [
                 Node(package='nav2_map_server', executable='map_server', name='map_server', output='screen',
@@ -137,7 +174,9 @@ def robot_nodes(context):
                      name='lifecycle_manager_map', output='screen',
                      parameters=[{'autostart': True, 'node_names': ['map_server'], 'use_sim_time': True}]),
             ]
-    elif not ros2_control:
+    elif ros2_control:
+        nodes += ros2_control_nodes(prof['world'], float(arg(context, 'update_rate')), viewer, backend, prof)
+    else:
         nodes.append(Node(package='hsim_sim', executable='mujoco_sim', name='sim', output='screen',
                           parameters=[{'scene': prof['world'], **sim_params}]))
 
@@ -251,9 +290,10 @@ def generate_launch_description():
                               description='stream state to the Mac viewer and accept its key commands'),
         DeclareLaunchArgument('render_hz', default_value='0.0', description='camera image for Foxglove, 0 = off'),
         DeclareLaunchArgument('foxglove', default_value='false'),
-        DeclareLaunchArgument('backend', default_value='sim', description='sim | ros2_control (see the docstring)'),
+        DeclareLaunchArgument('backend', default_value='sim',
+                              description='sim | ros2_control | ethercat_sim (see the docstring)'),
         DeclareLaunchArgument('update_rate', default_value='200',
-                              description='backend:=ros2_control: controller_manager rate, Hz'),
+                              description='backend:=ros2_control / ethercat_sim: controller_manager (bus) rate, Hz'),
 
         OpaqueFunction(function=robot_nodes),
         Node(package='twist_mux', executable='twist_mux', name='twist_mux', output='screen',

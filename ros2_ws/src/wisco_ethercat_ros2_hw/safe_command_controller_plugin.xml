@@ -44,5 +44,14 @@
     </description>
   </class>
 </library>
+<library path="wisco_ethercat_ros2_hw_joint_state_broadcaster">
+  <class name="wisco_ethercat_ros2_hw/ChainedJointStateBroadcaster"
+         type="wisco_ethercat_ros2_hw::ChainedJointStateBroadcaster"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      /joint_states in the URDF's joints, reading the two-motor joints (ankles, waist) from ParallelLinkageController.
+    </description>
+  </class>
+</library>
 
 </class_libraries>

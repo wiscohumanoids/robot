@@ -1,14 +1,26 @@
-// A MyActuator RMD-X EtherCAT drive as a CiA402 slave, for tests. Test-only.
+// A MyActuator RMD-X EtherCAT drive as a CiA402 slave: for the controller tests (test/mock/) and for the simulated
+// robot (hsim_virtual_robot), where MuJoCo is the joint.
 //
 // It owns the drive side of the bus: the 0x6040/0x6041 state machine, the
-// 0x6060/0x6061 mode, a CSP position loop and CST torque path, the 0x6072
-// torque cap, fault detection (following error, process-data watchdog,
-// injected faults) and a one-joint model that produces 0x6064/0x606C/0x6077.
+// 0x6060/0x6061 mode, a CSP position loop, CSV, the CST torque path and
+// MyActuator mode 5 (position + kp + kd + velocity + torque feedforward, the
+// PD computed in the drive), the 0x6072 torque cap, fault detection
+// (following error, process-data watchdog, injected faults) and a one-joint
+// model that produces 0x6064/0x606C/0x6077.
 //
 // Timing follows a DC-synchronous slave: cycle() returns the inputs latched
 // at the previous cycle (what the frame picks up), then applies the new
 // outputs and steps the joint by dt. So the master sees every reaction one
 // cycle late, as on the bus.
+//
+// External physics (RmdxParams::external_physics, for a simulator): the drive
+// has no joint model. cycle() is then only the bus side (state machine, mode,
+// supervision; it latches the inputs from measure(), the state at the sync
+// instant), and servo() is the drive's current loop: called at every
+// physics step with the joint's measured position and velocity, it returns the
+// motor torque for the simulator to apply. The servo loop thus runs at the
+// physics rate and the bus at the controller rate, as on the robot (where the
+// drive's loop runs far faster than the bus).
 //
 // Everything here is the CiA402 profile plus guesses where the RMD-X manual
 // is silent; the guesses are the fields of RmdxParams marked "guess".
@@ -18,7 +30,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "cia402.hpp"
+#include "wisco_ethercat_ros2_hw/mock/cia402.hpp"
 
 namespace wisco_ethercat_ros2_hw
 {
@@ -35,6 +47,8 @@ struct RxPdo
   int16_t torque_offset = 0;     // 0x60B2, per mille
   int16_t max_torque = 1000;     // 0x6072, per mille
   int8_t mode_of_operation = 0;  // 0x6060
+  int32_t kp = 0;                // 0x2000, mode 5 stiffness, raw (RmdxParams::kp_per_raw)
+  int32_t kd = 0;                // 0x2001, mode 5 damping, raw (RmdxParams::kd_per_raw)
 };
 
 // TxPDO 0x1A00 (drive -> master).
@@ -66,6 +80,9 @@ struct RmdxParams
   double csp_velocity_feedforward = 1.0;  // gain on d(0x607A)/dt in the CSP loop (guess)
   double velocity_feedforward_filter_s = 0.003;  // its low-pass; 0x607A moves in whole counts (guess)
   double csv_kv = 5.0;                // Nm s/rad
+  // mode 5: tau = kp (0x607A - q) + kd (0x60FF - qd) + 0x6071, with kp, kd from 0x2000 / 0x2001
+  double kp_per_raw = 0.001;          // Nm/rad per raw unit of 0x2000 (guess: the encoding is undocumented)
+  double kd_per_raw = 0.001;          // Nm s/rad per raw unit of 0x2001 (guess)
   // quick-stop / fault-reaction ramp: the CSP loop holding where it started
   double stopped_velocity = 0.02;     // rad/s, "stopped" for the ramps
 
@@ -84,6 +101,7 @@ struct RmdxParams
   bool torque_offset_in_cst = true;   // CiA402 adds 0x60B2 to 0x6071 in CST too (unconfirmed on RMD-X)
   bool holding_brake = false;         // power-off brake holds the joint when not enabled (guess:
                                       // depends on the RMD-X variant and its brake output config)
+  bool external_physics = false;      // a simulator owns the joint: servo() instead of the joint model
 };
 
 class RmdxMockSlave
@@ -95,6 +113,12 @@ public:
   // last outputs and the process-data watchdog runs). Returns the inputs
   // latched before this cycle's outputs were applied.
   TxPdo cycle(const RxPdo * rx);
+
+  // External physics only. measure(): the joint's state now (rad, rad/s, drive frame), which the next cycle()
+  // latches; call it right before cycle(). servo(): one servo step at the measured state; returns the motor torque
+  // (Nm, capped by 0x6072 and the peak torque) for the simulator to apply until the next call.
+  void measure(double position, double velocity) {q_ = position; qd_ = velocity;}
+  double servo(double position, double velocity);
 
   // ---- fault injection ----
   // Raise a fault now. persistent: the cause stays until clear_fault_cause(),
@@ -108,7 +132,7 @@ public:
   // turns into a following error at once.
   void inject_position_jump(double rad) {encoder_offset_ += rad;}
 
-  // ---- environment ----
+  // ---- environment (internal joint model only) ----
   // External torque on the joint (gravity of the links it carries), Nm, as
   // the holding torque: the motor must produce +load to stay still.
   void set_load_torque(double nm) {load_ = nm;}
@@ -134,6 +158,7 @@ private:
   void apply_control_word(uint16_t cw);
   void update_mode(int8_t requested);
   double drive_torque();
+  void update_target_velocity();
   double braking_torque();
   bool stopped() const;
   void step_joint(double tau_motor);

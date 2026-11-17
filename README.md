@@ -88,8 +88,9 @@ The stack is built so the parts most often changed can be swapped from the comma
 | Backend | What runs | What it tests | State |
 |---|---|---|---|
 | MuJoCo simulation node (`hsim_sim`) | joint targets go straight into MuJoCo, which applies the PD and the physics | everything above the controllers | ✅ default |
-| `ros2_control` + MuJoCo plugin (upstream `mujoco_ros2_control`, `backend:=ros2_control`) | controller_manager, broadcasters and a forward position controller, with the trained scene as the hardware; MuJoCo's position actuators apply the trained kp / kd at the physics step, the law the drives run in mode 5 | the control path without lockstep, as on the robot | ✅ G1 and Wisco walk on it |
-| `ros2_control` + mock EtherCAT drives | the controllers and the drive protocol against simulated MyActuator drives | drive state machine, units, watchdogs | ✅ in `wisco_ethercat_ros2_hw` tests |
+| `ros2_control` + MuJoCo plugin (upstream `mujoco_ros2_control`, `backend:=ros2_control`) | the robot's own receivers (`JointTargetController` for legs and arms: hold, ramp-in, limits, timeout) under a real controller manager, with the world (kitchens included) as the hardware; MuJoCo's position actuators apply the trained kp / kd at the physics step, the law the drives run in mode 5 | the robot's control path under full autonomy, without lockstep | ✅ walks to targets in a kitchen with SLAM and perception |
+| `ros2_control` + simulated EtherCAT drives on MuJoCo (`backend:=ethercat_sim`) | the robot computer's controller chain (`JointTargetController` → `ParallelLinkageController` for the ankles and waist) on a simulated drive per motor (CiA402 state machine, mode 5 PD in the drive, one bus cycle each way), MuJoCo as the robot, kitchens included | the robot's control path down to the PDOs, the two-motor joints included | ✅ walks; found the ankles' mode-5 gains too far off the trained PD (`hsim_sim/README.md`) |
+| `ros2_control` + mock EtherCAT drives (tests) | the controllers and the drive protocol against the same simulated drives on a toy joint | drive state machine, units, watchdogs, faults | ✅ in `wisco_ethercat_ros2_hw` tests |
 | `ros2_control` + EtherCAT | the controllers on real MyActuator drives (`ethercat_driver_ros2`) | the robot | 🟡 arm01 on the bench |
 
 ## Quick start (laptop with Docker)

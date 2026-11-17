@@ -36,7 +36,7 @@ jobs:
         run: docker build -t hsim/ros-jazzy:dev infra/docker
       # Wisco V1 (the default robot) has no lidar: its stereo camera renders a built environment, so the test room
       # is built first (the same tools/env_build.py the Mac uses; previews skipped). The G1 also runs in the bare world.
-      - name: colcon build + stack smoke tests (stub; Wisco V1 in the test room; G1 in the bare world)
+      - name: colcon build + stack smoke tests (stub; Wisco V1 in the test room; G1 in the bare world; Wisco on the ros2_control and ethercat_sim backends)
         run: |
           docker run --rm --shm-size=1g -e MUJOCO_GL=osmesa -e ROS_DOMAIN_ID=42 \
             -e ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST \
@@ -45,8 +45,10 @@ jobs:
               colcon build --symlink-install --event-handlers console_cohesion+ &&
               source install/setup.bash &&
               (cd /hsim && python3 tools/env_build.py assets/envs/test/table_room --robot wisco --no-render) &&
-              colcon test --packages-select wisco_ethercat_ros2_hw --event-handlers console_cohesion+ &&
+              colcon test --packages-select wisco_ethercat_ros2_hw hsim_mujoco_plugins --event-handlers console_cohesion+ &&
               colcon test-result --verbose &&
               STACK=stub /hsim/tools/stack_smoke_test.sh &&
               STACK=sim ENV=test/table_room /hsim/tools/stack_smoke_test.sh &&
-              STACK=sim ROBOT=g1 /hsim/tools/stack_smoke_test.sh'
+              STACK=sim ROBOT=g1 /hsim/tools/stack_smoke_test.sh &&
+              STACK=sim BACKEND=ros2_control ENV=test/table_room /hsim/tools/stack_smoke_test.sh &&
+              STACK=sim BACKEND=ethercat_sim ENV=test/table_room /hsim/tools/stack_smoke_test.sh'

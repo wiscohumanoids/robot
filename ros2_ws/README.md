@@ -19,5 +19,6 @@ One package per layer of the stack. Each owns the topics and TF edges listed for
 | `hsim_bringup` | launch files, robot profiles, interface contract, live checks |
 | `hsim_interfaces` | custom messages, actions, services |
 | `wisco_ethercat_ros2_hw` | ros2_control hardware interface for MyActuator drives on EtherCAT, `SafeCommandController`, `ArmController`, mock EtherCAT, arm calibration toolkit |
+| `hsim_mujoco_plugins` | MuJoCo plugins for the ros2_control simulation backends: the world's ground-truth state for `mujoco_ros2_control` (`backend:=ros2_control`), and `VirtualRobotSystem`, the robot's EtherCAT hardware simulated (`backend:=ethercat_sim`) |
 | `wisco_hipnuc_imu` | driver for the robot's HiPNUC IMU board on the RK3588: serial packets → `/imu` in pelvis axes, plus a bench and mount check |
 | `arm01_description` | arm01's URDF, meshes, joint configs, calibration store (a link to `robots/arm01/`) |

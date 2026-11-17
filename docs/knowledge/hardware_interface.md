@@ -168,8 +168,8 @@ Each layer assumes the one above it can fail.
 | Drive configuration | generated at launch from one joint table, the actuator model table and the calibration file (`hardware_config.py`) |
 | Legs, waist, head | MyActuator mode 5 with the trained kp / kd (`robots/wisco_v1/README.md`, "Drive modes and gains"; not wired yet). The two-motor ankles and waist go through `ParallelLinkageController` ("PR mode": joints ↔ motors through the rods) |
 | Arms | `ArmController` at the cycle rate (100 Hz by default, 1 kHz once timing is verified on the RK3588): CSP + gravity torque offset (0x60B2), or CST with host PD; tested on the arm01 test arm |
-| No drives | `use_mock_hardware:=true` (GenericSystem), or the mock EtherCAT bus in `test/mock/` (a simulated RMD-X drive with the CiA 402 state machine, run under the real controllers in tests) |
-| Simulation | MuJoCo applies the same PD at the physics step: in the sim node, or under ros2_control with the upstream `mujoco_ros2_control` plugin (`sim_stack.launch.py backend:=ros2_control`, files from `hsim_sim/ros2_control_backend.py`) |
+| No drives | `use_mock_hardware:=true` (GenericSystem), or the mock EtherCAT bus in `test/mock/` (simulated RMD-X drives, `include/wisco_ethercat_ros2_hw/mock/`: the CiA 402 state machine, CSP/CSV/CST and mode 5, run under the real controllers in tests) |
+| Simulation | MuJoCo applies the same PD at the physics step: in the sim node, or under ros2_control with the upstream `mujoco_ros2_control` plugin (`sim_stack.launch.py backend:=ros2_control`, files from `hsim_sim/ros2_control_backend.py`); or the whole chain down to the PDOs on simulated drives with MuJoCo as the robot (`backend:=ethercat_sim`, `hsim_mujoco_plugins`' `VirtualRobotSystem`), two-motor joints included |
 | Hardware e-stop | `hardware/estop/` |
 
 Sources: ros2_control documentation (writing a hardware component; `SystemInterface`), ICube `ethercat_driver_ros2`
