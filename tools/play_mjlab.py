@@ -45,6 +45,7 @@ def register_tasks():
 
 def build_env(task: str, motion_file: str | None, cmd: tuple[float, float, float] | None, device: str,
               render: bool, width: int, height: int):
+  """The task's play environment, with a fixed command or motion file."""
   from mjlab.envs import ManagerBasedRlEnv
   from mjlab.tasks.registry import load_env_cfg
   from mjlab.tasks.tracking.mdp import MotionCommandCfg
@@ -74,7 +75,9 @@ def build_env(task: str, motion_file: str | None, cmd: tuple[float, float, float
 
 
 class OnnxPolicy:
+  """An exported ONNX policy (with the time step input for tracking policies)."""
   def __init__(self, path: str):
+    """Load the ONNX file on CPU."""
     import onnxruntime as ort
     self.sess = ort.InferenceSession(str(Path(path).expanduser()), providers=["CPUExecutionProvider"])
     self.inputs = [i.name for i in self.sess.get_inputs()]
@@ -87,6 +90,7 @@ class OnnxPolicy:
 
 
 def main():
+  """Play an exported policy in its training environment, in the viewer or to a video."""
   ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
   ap.add_argument("--task", required=True)
   ap.add_argument("--policy", required=True, help="exported .onnx (or 'zero' to just show the scene)")

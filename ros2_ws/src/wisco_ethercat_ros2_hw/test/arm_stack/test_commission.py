@@ -1,3 +1,4 @@
+"""Passive commissioning, autocal and the motion monitor, on fake encoders and a simulated arm."""
 import argparse
 from contextlib import nullcontext
 import math

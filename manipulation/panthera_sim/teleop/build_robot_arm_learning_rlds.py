@@ -35,6 +35,7 @@ class RobotArmLearningPanthera(tfds.core.GeneratorBasedBuilder):
         split_seed: int = 20260920,
         **kwargs,
     ):
+        """RLDS builder over rendered teleop episodes."""
         self.rendered_dir = Path(rendered_dir).resolve()
         self.instruction = instruction
         if not 0.0 < val_fraction < 1.0:
@@ -44,6 +45,7 @@ class RobotArmLearningPanthera(tfds.core.GeneratorBasedBuilder):
         super().__init__(*args, **kwargs)
 
     def _info(self) -> tfds.core.DatasetInfo:
+        """RLDS feature schema."""
         step = tfds.features.FeaturesDict({
             "observation": tfds.features.FeaturesDict({
                 "image": tfds.features.Image(shape=(256, 256, 3), encoding_format="jpeg"),
@@ -71,6 +73,7 @@ class RobotArmLearningPanthera(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager):
+        """One training split of every rendered episode."""
         del dl_manager
         episodes = sorted(
             path for path in self.rendered_dir.glob("episode_*")
@@ -96,6 +99,7 @@ class RobotArmLearningPanthera(tfds.core.GeneratorBasedBuilder):
         }
 
     def _generate_examples(self, episodes):
+        """One RLDS episode per rendered episode."""
         for episode in episodes:
             with np.load(episode / "trajectory.npz") as data:
                 ee_pos = np.asarray(data["ee_pos"], dtype=np.float32)
@@ -147,6 +151,7 @@ class RobotArmLearningPanthera(tfds.core.GeneratorBasedBuilder):
 
 
 def main() -> None:
+    """Build the RLDS dataset."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rendered-dir", type=Path,
                         default=Path("data/robot_arm_learning_rendered"))

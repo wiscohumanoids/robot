@@ -112,6 +112,7 @@ def parse_lock(text: Optional[str], names: Sequence[str]) -> np.ndarray:
 
 
 def _per_joint(v, n, name) -> np.ndarray:
+    """Broadcast one value or check one value per joint."""
     a = np.asarray(v, float).ravel()
     if a.size == 1:
         return np.full(n, float(a[0]))
@@ -133,6 +134,7 @@ def configured_friction_gains(arm) -> np.ndarray:
 
 @dataclass
 class FloatConfig:
+    """Hand-guiding settings per joint: friction help, damping, locks, clamps, payload, walls and speed limits."""
     friction_gain: np.ndarray     # per joint, fraction of the model Coulomb (clipped < 1)
     coulomb: np.ndarray           # Nm, the calibrated friction model
     damping: np.ndarray           # Nm s/rad on floating joints (RT kd)
@@ -179,9 +181,11 @@ class FloatConfig:
 
     @property
     def n(self) -> int:
+        """Number of joints."""
         return len(self.lock)
 
     def summary(self) -> Dict:
+        """The settings as plain values, for logs and reports."""
         return {'friction_gain': self.friction_gain.tolist(), 'coulomb_nm': self.coulomb.tolist(),
                 'damping': self.damping.tolist(), 'lock': self.lock.astype(int).tolist(),
                 'torque_clamp': self.torque_clamp.tolist(), 'payload': None if self.payload is None
@@ -194,6 +198,7 @@ class FloatController:
     integrator and the latched safety damping."""
 
     def __init__(self, cfg: FloatConfig, q0: np.ndarray):
+        """Start holding the locked joints at `q0`."""
         self.cfg = cfg
         self.lock_q = np.asarray(q0, float).copy()
         self.lock_i = np.zeros(cfg.n)
@@ -202,9 +207,11 @@ class FloatController:
         self.events: List[Dict] = []
 
     def _event(self, t, name, **kw):
+        """Record an event."""
         self.events.append({'t': float(t), 'event': name, **kw})
 
     def command(self, s: JointState, dt: float) -> Command:
+        """One cycle: gravity compensation, friction help that fades in with speed, damping, walls and locks."""
         c = self.cfg
         q, qd = np.asarray(s.q, float), np.asarray(s.qd, float)
         free = ~c.lock
@@ -251,6 +258,7 @@ class FloatController:
 
 @dataclass
 class FloatResult:
+    """How a hand-guiding session ended: reason, duration, start and end pose."""
     reason: str                               # 'duration', 'interrupt', 'stop'
     seconds: float
     q_start: np.ndarray
@@ -264,10 +272,12 @@ class FloatResult:
 
     @property
     def damping_triggered(self) -> bool:
+        """Whether the safety damping engaged."""
         return any(e['event'] == 'float_damping_on' for e in self.events)
 
 
 def _send_hold(client: ArmClient, q, cfg: FloatConfig):
+    """Command a position hold at `q`."""
     client.send(Command(mode='P', q=np.asarray(q, float).copy(), qd=np.zeros(cfg.n),
                         torque_clamp=cfg.torque_clamp.copy(), payload=cfg.payload))
 

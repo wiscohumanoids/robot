@@ -67,6 +67,7 @@ def strip_robot(root: ET.Element, prefixes: tuple[str, ...]):
 
 
 def main():
+    """Export one RoboCasa kitchen (layout, style, task) as an environment."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--layout", type=int, required=True)
     ap.add_argument("--style", type=int, required=True)

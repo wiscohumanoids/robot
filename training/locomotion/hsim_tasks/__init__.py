@@ -1,7 +1,6 @@
 """hsim training tasks for mjlab 1.6.0 (registered on import).
 
-  Hsim-G1-Velocity-Flat-ArmsFree   G1 velocity arms-free: legs+waist policy, scripted arms, arms-free recipe
-                             (docs/runs/2026-11-10_overnight_plan.md)
+  Hsim-G1-Velocity-Flat-ArmsFree   G1 velocity arms-free: legs+waist policy, scripted arms (g1_velocity_arms_free.py)
 
 mjlab's own `train` / `play` only import tasks inside the mjlab package, so use the launchers
 next to this file (train.py, play.py): they import this package, then run mjlab's unchanged CLI.

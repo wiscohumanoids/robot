@@ -1,3 +1,4 @@
+"""ACT pipeline: physics clock, dataset export, deployment metadata and rollout scoring."""
 import json
 import tempfile
 import unittest
@@ -11,6 +12,7 @@ from sim.panthera_env import PantheraSim
 
 
 class PipelineTest(unittest.TestCase):
+    """Rate handling, exports and checkpoint contracts of the ACT pipeline."""
     def test_fractional_physics_rate_does_not_drift(self):
         clock = PhysicsClock(30, .002)
         counts = [clock.next_steps() for _ in range(300)]

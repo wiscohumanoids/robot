@@ -11,6 +11,7 @@ from infra.rl.resources import assess_resources
 
 
 def main():
+    """Check GPU, disk and packages before an EXPO run."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--minimum-free-gib", type=float, default=2.0)

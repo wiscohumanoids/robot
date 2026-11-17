@@ -1,12 +1,14 @@
-"""Custom MDP terms for the arms-free locomotion recipe (docs/runs/2026-11-10_overnight_plan.md).
+"""Custom MDP terms for the G1 arms-free locomotion recipe that mjlab 1.6.0 lacks.
 
 - TurnInPlaceVelocityCommandCfg: mjlab's UniformVelocityCommand plus a fraction of pure-yaw
   commands (zero linear velocity, |yaw| in a range), so turning in place gets practiced
-  (decision 0004: the all-joints policy undershot / ignored small turns).
+  (velocity policies otherwise undershoot or ignore small turns), plus slow-command practice.
 - random_arm_targets: the arms are not policy actions. This event term stands in for the
   ROS controls stack: it writes arm joint position targets every env step, moving smoothly
-  to a new random goal every 1-3 s (30 % of goals = the default pose, 70 % = uniform within
-  60 % of each joint's soft range around default), at a random move duration.
+  to a new random goal every 1-3 s (30 % of goals = the default pose, the rest within the
+  body-safe offsets of arm_ranges.py), at a random move duration.
+- difficulty_curriculum, body_self_collision_cost, policy_bodies_angular_momentum_penalty,
+  track_yaw_rate, stand_still: curriculum and reward terms used by g1_velocity_arms_free.py.
 """
 from __future__ import annotations
 
@@ -26,17 +28,20 @@ if TYPE_CHECKING:
 
 
 class TurnInPlaceVelocityCommand(UniformVelocityCommand):
+  """mjlab's velocity command plus pure turns in place and slow-command practice."""
   cfg: TurnInPlaceVelocityCommandCfg
 
   def __init__(self, cfg: TurnInPlaceVelocityCommandCfg, env: ManagerBasedRlEnv):
+    """Track which environments have a pure turn."""
     super().__init__(cfg, env)
     self.is_turn_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
   def _resample_command(self, env_ids: torch.Tensor) -> None:
+    """Resample, then turn a fraction of the new commands into pure yaw (never standing ones)."""
     super()._resample_command(env_ids)
     r = torch.empty(len(env_ids), device=self.device)
     turn = r.uniform_(0.0, 1.0) < self.cfg.rel_turn_envs
-    if getattr(self.cfg, "keep_standing", False):   # J1k: standing resamples stay standing (turns no longer take ~30 % of them)
+    if getattr(self.cfg, "keep_standing", False):   # standing resamples stay standing
       turn &= ~self.is_standing_env[env_ids]
     self.is_turn_env[env_ids] = turn
     ids = env_ids[turn]
@@ -58,7 +63,7 @@ class TurnInPlaceVelocityCommand(UniformVelocityCommand):
     self._small_commands(env_ids[~turn])
 
   def _small_commands(self, env_ids: torch.Tensor) -> None:
-    """J1i: a fraction of resamples get one small command (slow walk, slow sidestep or slow in-place turn) so the
+    """A fraction of resamples get one small command (slow walk, slow sidestep or slow in-place turn) so the
     policy practises the slow end it otherwise ignores (deadband)."""
     frac = getattr(self.cfg, "rel_small_envs", 0.0)
     if frac <= 0.0 or len(env_ids) == 0:
@@ -86,19 +91,21 @@ class TurnInPlaceVelocityCommand(UniformVelocityCommand):
 
 @dataclass(kw_only=True)
 class TurnInPlaceVelocityCommandCfg(UniformVelocityCommandCfg):
+  """Config for TurnInPlaceVelocityCommand."""
   rel_turn_envs: float = 0.2
   """Fraction of resamples that are pure yaw (zero linear velocity)."""
   turn_yaw_range: tuple[float, float] = (0.3, 1.5)
   """|yaw rate| range for pure-yaw commands, rad/s."""
   rel_small_envs: float = 0.0
-  """J1i: fraction of the other (non-turn, non-standing) resamples that get one small command."""
+  """Fraction of the other (non-turn, non-standing) resamples that get one small command."""
   small_lin_x_range: tuple[float, float] = (0.1, 0.35)
   small_lin_y_range: tuple[float, float] = (0.1, 0.3)
   small_yaw_range: tuple[float, float] = (0.15, 0.5)
   keep_standing: bool = False
-  """J1k: pure-yaw resamples never replace a standing one."""
+  """Pure-yaw resamples never replace a standing one."""
 
   def build(self, env: ManagerBasedRlEnv) -> TurnInPlaceVelocityCommand:
+    """Create the command term."""
     return TurnInPlaceVelocityCommand(self, env)
 
 
@@ -117,6 +124,7 @@ class random_arm_targets:
   """
 
   def __init__(self, cfg, env: ManagerBasedRlEnv):
+    """Resolve the arm joints, safe offsets and timing."""
     p = cfg.params
     asset_cfg: SceneEntityCfg = p["asset_cfg"]
     self._asset: Entity = env.scene[asset_cfg.name]
@@ -141,14 +149,17 @@ class random_arm_targets:
     self._next = torch.zeros(n, device=env.device)       # time until next goal
 
   def _default(self, env_ids):
+    """Default arm angles."""
     return self._asset.data.default_joint_pos[env_ids][:, self._ids]
 
   def _current(self):
+    """Current targets: smoothstep from start to goal."""
     a = torch.clamp(self._t / self._T, 0.0, 1.0)[:, None]
     a = a * a * (3.0 - 2.0 * a)                          # smoothstep
     return self._start + a * (self._goal - self._start)
 
   def _new_goals(self, env_ids: torch.Tensor):
+    """New goals for `env_ids`: the default pose or within the safe offsets."""
     m = len(env_ids)
     if m == 0:
       return
@@ -172,9 +183,11 @@ class random_arm_targets:
     self._next[env_ids] = torch.empty(m, device=self._dev).uniform_(*self._resample)
 
   def _write(self):
+    """Write the current targets."""
     self._asset.set_joint_position_target(self._current(), joint_ids=self._ids)
 
   def reset(self, env_ids: torch.Tensor | slice | None = None) -> None:
+    """Back to the default pose."""
     # Called after the scene reset cleared all joint targets: hold the default pose.
     if env_ids is None or isinstance(env_ids, slice):
       env_ids = torch.arange(self._start.shape[0], device=self._dev)
@@ -196,7 +209,7 @@ class random_arm_targets:
 
 
 class difficulty_curriculum:
-  """Performance-gated curriculum (coordinator spec, 2026-11-10; same design as helper A's Wisco one).
+  """Performance-gated curriculum (the same design as the Wisco V1 task's).
 
   Two levels in [0, 1], updated on episode resets from a window of finished episodes:
     up   (+step) if mean episode length > up_len_frac * max  AND  linear tracking reward per
@@ -208,7 +221,7 @@ class difficulty_curriculum:
      (std_lin_start, std_ang_start) to (std_lin_end, std_ang_end). Going down lowers L2 first.
   Logged every reset as Curriculum/difficulty/<key> (level, level2, std_lin, std_ang, ...).
 
-  J1c: up also needs angular tracking per second > up_ang_frac * its weight, and at least
+  Up also needs angular tracking per second > up_ang_frac * its weight, and at least
   dwell_iters training iterations (x steps_per_iter env steps) since the last raise (L or L2).
   params: up_len_frac, up_track_frac, up_ang_frac, down_len_frac, step, window_episodes,
           dwell_iters, steps_per_iter,
@@ -218,6 +231,7 @@ class difficulty_curriculum:
   """
 
   def __init__(self, cfg, env):
+    """Levels from the start level; parameters from the config."""
     self._env = env
     self.p = dict(cfg.params)
     start = float(self.p.get("start_level", 0.0) or 0.0)    # resumed runs: continue from this level
@@ -233,11 +247,13 @@ class difficulty_curriculum:
 
   # -- parameters driven by the levels -------------------------------------------------------
   def stds(self):
+    """Tracking stds for the current L2."""
     p, a = self.p, self.level2
     return (p["std_lin_start"] + a * (p["std_lin_end"] - p["std_lin_start"]),
             p["std_ang_start"] + a * (p["std_ang_end"] - p["std_ang_start"]))
 
   def apply(self):
+    """Push the levels into the arm, payload, push and reward terms."""
     env, p, L = self._env, self.p, self.level
     em, rm = env.event_manager, env.reward_manager
     names = set(em.active_terms) if isinstance(em.active_terms, list) else {
@@ -263,6 +279,7 @@ class difficulty_curriculum:
     self.apply()
 
   def state(self):
+    """Levels and derived values, for logging."""
     p, L = self.p, self.level
     s_lin, s_ang = self.stds()
     return {
@@ -278,6 +295,7 @@ class difficulty_curriculum:
 
   # -- mjlab hooks ----------------------------------------------------------------------------
   def reset(self, env_ids=None):
+    """Levels persist across resets."""
     pass
 
   def __call__(self, env, env_ids, **kwargs):
@@ -292,7 +310,7 @@ class difficulty_curriculum:
       ids = env_ids[done]
       lens = lens[done]
       p = self.p
-      # J1f: gate on fixed-std copies of the tracking rewards when given, so tightening the training stds (L2)
+      # Gate on fixed-std copies of the tracking rewards when given, so tightening the training stds (L2)
       # doesn't lower the gate score by itself
       lin_t, ang_t = p.get("lin_gate_term", p["lin_reward_term"]), p.get("ang_gate_term", p["ang_reward_term"])
       lin_sum = env.reward_manager._episode_sums[lin_t][ids]
@@ -335,7 +353,7 @@ class difficulty_curriculum:
 
 def body_self_collision_cost(env, sensor_names: tuple[str, ...], force_threshold: float = 10.0) -> torch.Tensor:
   """Like mjlab's self_collision_cost, but over several contact sensors (OR across sensors and
-  primaries per physics substep, count substeps). J1c: the sensors only pair leg links with the
+  primaries per physics substep, count substeps). The sensors only pair leg links with the
   torso, the other leg and the pelvis, so contacts involving the scripted arms are never penalized."""
   hit = None
   for name in sensor_names:
@@ -388,7 +406,7 @@ def bodies_angular_momentum(env, asset_cfg) -> torch.Tensor:
 
 
 def policy_bodies_angular_momentum_penalty(env, asset_cfg) -> torch.Tensor:
-  """J1d: like mjlab's angular_momentum_penalty (|L|^2) but only over the policy-controlled bodies
+  """Like mjlab's angular_momentum_penalty (|L|^2) but only over the policy-controlled bodies
   (pelvis, legs, waist, torso link), so the scripted arms and hand payload don't count."""
   L = bodies_angular_momentum(env, asset_cfg)
   sq = torch.sum(L * L, dim=-1)
@@ -409,7 +427,7 @@ def track_yaw_rate(env, std: float, command_name: str, asset_cfg: SceneEntityCfg
 
 def stand_still(env, command_name: str, sensor_name: str, command_threshold: float = 0.05, foot_weight: float = 0.5,
                 asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-  """J1k: penalty while told to stand (|v| + |w| command < threshold): body drift |v_xy| + 0.5 |w_z| plus foot_weight
+  """Penalty while told to stand (|v| + |w| command < threshold): body drift |v_xy| + 0.5 |w_z| plus foot_weight
   per foot off the ground. Tracking's exp kernel (std 0.25) barely notices 5 cm/s of drift or a shuffle step; in the
   kitchen the robot then wobbles and steps around in place while waiting."""
   asset = env.scene[asset_cfg.name]

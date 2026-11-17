@@ -9,6 +9,7 @@ MEMORY = {'robot': {'x': 0, 'y': 0, 'yaw_deg': 0}, 'objects': [
 
 
 def plan(*steps):
+    """A plan made of (skill, target) steps."""
     return {'understood': True, 'reasoning': '', 'reply': '', 'skills': [
         {'name': n, 'target': t, 'hints': [], 'text': ''} for n, t in steps]}
 

@@ -18,7 +18,7 @@ Viewer (macOS needs mjpython; tools/play.sh handles it):
 
 Headless test (scripted commands, prints how well it tracked them):
     python tools/sim2sim_play.py --headless
-    python tools/sim2sim_play.py --headless --script deadband   # small commands (decision 0004)
+    python tools/sim2sim_play.py --headless --script deadband   # small commands
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ CMD_LIMITS = np.array([[-1.0, 1.5], [-0.5, 0.5], [-0.7, 0.7]])  # vx, vy, wz (wi
 CMD_STEP = np.array([0.1, 0.1, 0.1])
 
 # Headless test: (seconds, (vx, vy, wz), label). Turn/sidestep commands are above the
-# policy's learned deadband (see docs/decisions/0004-small-command-deadband.md).
+# policy's learned deadband.
 SCRIPT = [
     (2.0, (0.0, 0.0, 0.0), "stand"),
     (4.0, (0.5, 0.0, 0.0), "forward 0.5"),
@@ -59,7 +59,7 @@ SCRIPT = [
     (2.0, (0.0, 0.0, 0.0), "stand"),
 ]
 
-# Small commands the all-joints policy ignored (decision 0004). "responds" = measured >= 50 % of command.
+# Small commands the all-joints policy ignored. "responds" = measured >= 50 % of command.
 DEADBAND_SCRIPT = [
     (2.0, (0.0, 0.0, 0.0), "stand"),
     (4.0, (0.0, 0.0, 0.3), "turn 0.3"),
@@ -79,25 +79,33 @@ SCRIPTS = {"standard": SCRIPT, "deadband": DEADBAND_SCRIPT}
 
 @dataclass
 class Policy:
+    """A deployed policy folder: ONNX session and manifest contract."""
     session: ort.InferenceSession
     input_name: str
     c: Contract
 
     @property
     def joint_names(self):            # every joint the observation reads
+        """Every joint the observation reads."""
         return self.c.obs_joint_names
 
     @property
     def decimation(self):
+        """Physics steps per policy step."""
         return self.c.decimation
 
     @property
     def sim_dt(self):
+        """Physics timestep."""
         return self.c.sim_dt
 
     @classmethod
     def load(cls, folder: Path) -> "Policy":
+        """Load and check a policy folder (observation size must match the manifest)."""
         c = load_contract(folder)
+        if c.kind != 'velocity':
+            raise SystemExit(f'{folder} is a {c.kind} policy; this player runs walking policies '
+                             '(play tracking policies with tools/play_mjlab.py or in the ROS stack)')
         sess = ort.InferenceSession(str(folder / "policy.onnx"), providers=["CPUExecutionProvider"])
         n_in = sess.get_inputs()[0].shape[-1]
         if isinstance(n_in, int) and n_in != c.obs_dim:
@@ -112,6 +120,7 @@ class Robot:
     """Reads mjlab-equivalent observations from MuJoCo and applies policy actions."""
 
     def __init__(self, model: mujoco.MjModel, policy: Policy, arms: str = "default"):
+        """Bind the policy to the scene (timesteps must match)."""
         self.m, self.p, self.arms = model, policy, arms
         if abs(model.opt.timestep - policy.sim_dt) > 1e-9:
             raise ValueError(f"scene timestep {model.opt.timestep} != policy sim_dt {policy.sim_dt}")
@@ -149,6 +158,7 @@ class Robot:
         self.last_action = np.zeros(len(policy.c.act_joint_names))
 
     def reset(self, d: mujoco.MjData):
+        """Reset to the policy's keyframe and the held arms to their defaults."""
         mujoco.mj_resetDataKeyframe(self.m, d, self.key)
         mujoco.mj_forward(self.m, d)
         self.last_action[:] = 0.0
@@ -175,6 +185,7 @@ class Robot:
         return cur
 
     def observation(self, d: mujoco.MjData, command: np.ndarray) -> np.ndarray:
+        """The observation vector, exactly as the ROS node builds it."""
         # projected gravity: world gravity direction (0,0,-1) rotated into the pelvis frame
         g_b = np.zeros(3)
         q_inv = np.zeros(4)
@@ -202,10 +213,12 @@ class Robot:
         return ms
 
     def fallen(self, d: mujoco.MjData) -> bool:
+        """Whether the pelvis is below the fall height."""
         return d.xpos[self.pelvis][2] < FALLEN_HEIGHT
 
 
 def run_headless(robot: Robot, d: mujoco.MjData, script=SCRIPT, deadband=False) -> int:
+    """Run the command script without a window and print measured against commanded velocity."""
     robot.reset(d)
     period = robot.p.sim_dt * robot.p.decimation
     print(f"{'segment':20s} {'cmd vx vy wz':>18s} {'measured vx vy wz':>22s}  min height")
@@ -246,6 +259,7 @@ def run_headless(robot: Robot, d: mujoco.MjData, script=SCRIPT, deadband=False) 
 
 
 def run_viewer(robot: Robot, d: mujoco.MjData):
+    """Run in the MuJoCo viewer with keyboard commands."""
     import mujoco.viewer
 
     cmd = np.zeros(3)
@@ -289,6 +303,7 @@ def run_viewer(robot: Robot, d: mujoco.MjData):
 
 
 def main():
+    """Play a deployed policy in plain MuJoCo (no ROS), headless or in the viewer."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--policy", type=Path, default=DEFAULT_POLICY, help="folder with policy.onnx + manifest.yaml")
     ap.add_argument("--env", help="environment, e.g. test/table_room (built with tools/env_build.py)")

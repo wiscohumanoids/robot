@@ -1,9 +1,9 @@
 """PACE replay backends: simulate logged commands with candidate actuator params.
 
-The fit (spec stage 9) is over armature, friction (Coulomb + viscous),
-encoder bias and delay per joint, with link inertials held at their stage 5
+The fit is over armature, friction (Coulomb + viscous),
+encoder bias and delay per joint, with link inertials held at their `arm gravity`
 values. Drive CSP gains are fitted too when the joint config does not give
-them (spec risk: CSP gains may not be readable over SDO).
+them (the CSP gains may not be readable over SDO).
 
 Two backends:
 
@@ -60,6 +60,7 @@ class JointReplayBackend:
 
     def __init__(self, model, logs: List[JointLog], gravity_ff: bool = True, substeps: int = 1,
                  hold_gains=None, hold_armature=None, stiffness=None, torque_limit=None):
+        """Replay logged chirps through a simulated joint, the others held under their position loops."""
         self.model = model
         self.logs = logs
         self.gravity_ff = gravity_ff
@@ -158,6 +159,7 @@ class JointReplayBackend:
 
 
     def _simulate_coupled(self, k: int, P: np.ndarray) -> np.ndarray:
+        """Simulate log `k` for every parameter row in `P`; returns the predicted joint positions."""
         log = self.logs[k]
         j = log.joint
         arm, fc, fv, bias, delay, kp, kd = [P[:, i] for i in range(7)]

@@ -5,8 +5,9 @@ coloured blocks in MuJoCo. You can teleoperate it or script it to record demonst
 datasets, train ACT (then optionally fine-tune it with RL) or fine-tune pi0.5, and evaluate the policies in closed
 loop. Where it fits in the manipulation stack: [`../README.md`](../README.md).
 
-Run everything from this folder. `pip install -r requirements.txt` covers the simulator and teleop; training also
-needs `lerobot==0.4.4` and torch (`uv pip install lerobot==0.4.4 mujoco` in a Python 3.10 environment).
+Run everything from this folder. `pip install -r requirements.txt` covers the simulator and teleop. Training,
+export and evaluation use their own Python 3.10 environment from `requirements-train.txt` (`.venv-act`: run them as
+`.venv-act/bin/python <script>`; `rollout_act.py` and `train_act_rl.py` switch to it on their own).
 
 ## Layout
 
@@ -103,7 +104,8 @@ python train_act_rl.py --checkpoint outputs/act/<name>/best --output outputs/act
 ```
 
 **pi0.5** (full fine-tune, no LoRA; needs a large GPU, about 96 GB at batch 8):
-`tools/train_pi05_full.py`, evaluated with `tools/evaluate_pi05.py`; `tools/publish_pi05_dataset.py` uploads a dataset
+`../finetune.sh pi05 panthera_sim <LeRobot flags>` (or `tools/train_pi05_full.py`, the same trainer with this arm's
+profile), evaluated with `tools/evaluate_pi05.py`; `tools/publish_pi05_dataset.py` uploads a dataset
 to the Hugging Face Hub and `tools/pi05_checkpoint_backup.py` keeps the latest checkpoint backed up.
 
 **ACT reference benchmark**: `python tools/prepare_act_reference.py` then `python train_act.py --reference-act` trains on

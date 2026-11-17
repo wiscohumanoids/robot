@@ -7,6 +7,7 @@ Jetson Orin NX) are described in [`hardware/README.md`](../hardware/README.md).
 |---|---|
 | [`docker/`](docker/README.md) | the ROS 2 Jazzy development image; `tools/ros.sh` starts it with the repo mounted at `/hsim` |
 | [`aws/gpu_vm/`](aws/gpu_vm/README.md) | the GPU training machine: requirements and `setup.sh` |
+| [`rk3588/`](rk3588/README.md) | the robot's real-time computer: PREEMPT_RT kernel, core isolation, IRQ pinning, cyclictest, the `update_rate` ramp |
 | [`vm_jobs/`](vm_jobs/README.md) | the job queue on the GPU machine: training runs, servers and pipeline steps, with status, resume and reports |
 
 ## Machines

@@ -27,6 +27,7 @@ R_OPT = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]], float)      # optical axes
 
 
 def quat_to_mat(x, y, z, w):                                        # same as world_model.py
+    """Rotation matrix from a quaternion (x, y, z, w); the same as world_model.py."""
     return np.array([
         [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
@@ -71,7 +72,9 @@ def test_rot_to_quat_roundtrip():
 
 
 class FakeImg:
+    """Stand-in for sensor_msgs/Image with the fields image_to_numpy reads."""
     def __init__(self, a, enc):
+        """Wrap array `a` with encoding `enc`."""
         self.height, self.width = a.shape[:2]
         self.encoding = enc
         self.step = a.shape[1] * a.itemsize * (a.shape[2] if a.ndim == 3 else 1)
@@ -86,6 +89,7 @@ def test_image_to_numpy():
 
 
 def free_port():
+    """An unused local TCP port."""
     s = socket.socket(); s.bind(("127.0.0.1", 0)); p = s.getsockname()[1]; s.close(); return p
 
 

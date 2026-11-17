@@ -9,6 +9,7 @@ from huggingface_hub import HfApi, hf_hub_download
 
 
 def main(root, update_existing=False):
+    """Publish a verified processed dataset."""
     verification = json.loads((root / "verification.json").read_text())
     assert verification["passed"]
     assert json.loads((root / "processing/full_rate_verification.json").read_text())["passed"]

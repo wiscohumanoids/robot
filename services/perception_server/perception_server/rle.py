@@ -19,6 +19,7 @@ def encode(mask: np.ndarray) -> dict:
 
 
 def decode(rle: dict) -> np.ndarray:
+    """Boolean mask from run-length encoding."""
     h, w = rle["size"]
     flat = np.zeros(h * w, dtype=bool)
     pos, val = 0, False
@@ -31,4 +32,5 @@ def decode(rle: dict) -> np.ndarray:
 
 
 def area(rle: dict) -> int:
+    """Pixel count of a run-length mask."""
     return int(sum(rle["counts"][1::2]))

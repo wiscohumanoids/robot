@@ -30,7 +30,9 @@ controllers keep the joints safe if those targets stop arriving.
 
 | Topic | Where |
 |---|---|
-| Drive configuration, controllers, mock EtherCAT, commissioning, current sensing, real-time setup | `ros2_ws/src/wisco_ethercat_ros2_hw/README.md` |
+| Drive configuration, controllers, mock EtherCAT, commissioning, current sensing, motion capture | `ros2_ws/src/wisco_ethercat_ros2_hw/README.md` |
+| RK3588 real-time setup: PREEMPT_RT kernel, core isolation, cyclictest, the `update_rate` ramp | `infra/rk3588/README.md` |
+| Sim-to-real for walking: leg actuator identification (PACE), the steps to first steps | `training/sim2real/README.md` |
 | arm01 calibration and identification (PACE) | `robots/arm01/README.md` |
 | Wisco V1 hardware observations from simulation (masses, ankle motor sizing, calibration, IMU, drive gains and delay, supply voltage) | `robots/wisco_v1/hardware_observations.md` |
 | Simulated current draw of Wisco V1 walking | `robots/wisco_v1/reports/current_draw/REPORT.md` |

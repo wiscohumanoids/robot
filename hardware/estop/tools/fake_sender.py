@@ -20,12 +20,14 @@ import tty
 
 
 def log(msg):
+    """Print `msg` with a millisecond timestamp."""
     t = time.time()
     print(time.strftime("[%H:%M:%S", time.localtime(t)) + f".{int(t * 1000) % 1000:03d}] {msg}",
           flush=True)
 
 
 def main():
+    """Pretend to be the ESP32 transmitter: send ALIVE heartbeats, and STOP on demand, to a receiver."""
     p = argparse.ArgumentParser(description="Fake ESP32 E-stop transmitter")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=4242)

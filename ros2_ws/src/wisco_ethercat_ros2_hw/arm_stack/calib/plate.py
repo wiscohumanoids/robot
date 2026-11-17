@@ -66,6 +66,7 @@ PRIORITY = ('plate', 'tip', 'dzero', 'compliance', 'overlay', 'backlash')
 
 @dataclass
 class Plate:
+    """The divot plate: seat positions, tolerance, held-out divots, allowed probe angle, rough pose."""
     divots: np.ndarray            # (N, 3) divot seats in the plate frame, m
     tolerance_mm: float
     held_out: List[int]
@@ -76,10 +77,12 @@ class Plate:
 
     @property
     def fit_divots(self) -> List[int]:
+        """Divots used for fitting (not held out)."""
         return [k for k in range(len(self.divots)) if k not in self.held_out]
 
     @staticmethod
     def from_config(raw: dict) -> Optional['Plate']:
+        """Plate geometry from the joint config, or None when the config has none."""
         cfg = raw.get('plate') or {}
         if not cfg.get('divots_m'):
             return None
@@ -96,6 +99,7 @@ class Plate:
 
 @dataclass
 class PlateSample:
+    """One seated probe: encoder angles, joint torques, which divot, and whether the test mass was on."""
     q: np.ndarray                 # encoder angles (motor side), rad
     tau: np.ndarray               # measured joint torque, Nm
     divot: int
@@ -108,6 +112,7 @@ class PlateFit(kinfit.KinematicModel):
     compliance[n] (rad/Nm, absolute), backlash[n] (rad, absolute)."""
 
     def __init__(self, model, divots: np.ndarray):
+        """Parameter layout for zero offsets, joint overlay, plate pose and probe tip."""
         j = kinfit.joint_blocks(model.joint_names)
         super().__init__(model, model.tool_frame, [
             ('dzero',) + j['dzero'], ('overlay',) + j['overlay'],
@@ -117,18 +122,22 @@ class PlateFit(kinfit.KinematicModel):
         self.divots = np.asarray(divots, float)
 
     def tips(self, x, samples: Sequence[PlateSample]) -> np.ndarray:
+        """Predicted probe tip positions for `samples` under parameters `x`."""
         self.set_geometry(x)
         t = x[self.sl['tip']]
         return np.array([self.frame_pose(self.link_angles(x, s.q, s.tau)).act(t) for s in samples])
 
     def plate(self, x, plate0: pin.SE3) -> pin.SE3:
+        """Plate pose under parameters `x`."""
         return plate0 * kinfit.se3(x[self.sl['plate']])
 
     def targets(self, x, samples, plate0) -> np.ndarray:
+        """Divot positions in the base frame."""
         P = self.plate(x, plate0)
         return np.array([P.act(self.divots[s.divot]) for s in samples])
 
     def residuals(self, x, samples, plate0):
+        """Tip minus divot for every sample."""
         return (self.tips(x, samples) - self.targets(x, samples, plate0)).ravel()
 
 
@@ -153,6 +162,7 @@ def sim_plate_pose(ctx: StageContext, plate: Plate) -> pin.SE3:
 
 def collect(ctx: StageContext, plate: Plate, divots: Sequence[int], per_divot: int,
             loaded: bool = False) -> List[PlateSample]:
+    """Hand-guide the probe into each divot in several configurations (with the test mass if `loaded`)."""
     client = ctx.client
     out = []
     if loaded:
@@ -261,6 +271,7 @@ def pair_errors(fit: PlateFit, x, samples, held_out) -> List[dict]:
 
 def run(ctx: StageContext, per_divot: int = None, loaded_per_divot: int = None,
         held_per_divot: int = None, plate: Optional[Plate] = None, tol: float = SELECT_TOL) -> StageResult:
+    """`arm plate`: fit kinematics from divot seatings (no mocap), checked on held-out divots."""
     plate = plate or Plate.from_config(ctx.arm.raw)
     if plate is None:
         return StageResult('plate', False, {}, {}, ['no plate geometry: add plate.divots_m to the joint config'])

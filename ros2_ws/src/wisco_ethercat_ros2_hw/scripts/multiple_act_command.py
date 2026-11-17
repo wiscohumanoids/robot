@@ -26,7 +26,9 @@ PACKAGE = 'wisco_ethercat_ros2_hw'
 
 class MultiActuatorTorqueController(Node):
 
+    """Effort-mode demo: a feed-forward torque wave per joint, sized to break its stiction, capped at max_command."""
     def __init__(self):
+        """Load the joint table and model limits, subscribe to joint states and create the command publisher."""
         super().__init__('multi_actuator_torque_controller')
         config_dir = os.path.join(get_package_share_directory(PACKAGE), 'config')
         self.declare_parameter('controller', 'effort_controller')
@@ -69,6 +71,7 @@ class MultiActuatorTorqueController(Node):
             '%s (%s)' % (j, self.profiles[j]['model']) for j in self.joints))
 
     def joint_state_callback(self, msg):
+        """Low-pass the joint speeds and publish the next torque of the wave."""
         now = self.get_clock().now()
         t = (now - self.start_time).nanoseconds / 1e9
         for i, name in enumerate(msg.name):
@@ -99,11 +102,13 @@ class MultiActuatorTorqueController(Node):
             self.get_logger().info('\n'.join(lines))
 
     def stop(self):
+        """Send zero torque a few times."""
         for _ in range(3):
             self.pub.publish(Float64MultiArray(data=[0.0] * len(self.joints)))
 
 
 def main(args=None):
+    """Run the demo until Ctrl-C, then send zero torque."""
     rclpy.init(args=args)
     node = None
     try:

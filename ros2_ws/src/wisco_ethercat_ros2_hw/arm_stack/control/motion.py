@@ -16,6 +16,7 @@ from ..hw.client import ArmClient, Command, JointState
 
 @dataclass
 class Trace:
+    """Recorded commands and states of a motion, for stage analysis."""
     t: List[float] = field(default_factory=list)
     q_cmd: List[np.ndarray] = field(default_factory=list)
     qd_cmd: List[np.ndarray] = field(default_factory=list)
@@ -25,6 +26,7 @@ class Trace:
     permille: List[np.ndarray] = field(default_factory=list)
 
     def add(self, s: JointState, q_cmd, qd_cmd):
+        """Append one state and the command sent with it."""
         self.t.append(s.t)
         self.q_cmd.append(np.array(q_cmd, float))
         self.qd_cmd.append(np.array(qd_cmd, float))
@@ -34,10 +36,12 @@ class Trace:
         self.permille.append(s.raw_permille.copy())
 
     def arrays(self):
+        """The trace as numpy arrays."""
         return {k: np.array(getattr(self, k)) for k in ('t', 'q_cmd', 'qd_cmd', 'q', 'qd', 'tau', 'permille')}
 
 
 def min_jerk(q0, q1, duration, dt):
+    """Minimum-jerk position and velocity samples from `q0` to `q1` over `duration` at step `dt`."""
     q0 = np.asarray(q0, float)
     q1 = np.asarray(q1, float)
     n = max(2, int(np.ceil(duration / dt)))
@@ -51,6 +55,7 @@ def stream(client: ArmClient, qs, qds, mode='P', trace: Optional[Trace] = None, 
            tau_ff=None, torque_clamp=None, gravity_ff=True, ignore_soft_limits=False,
            friction_ff_gain=1.0,
            stop: Optional[Callable[[JointState], bool]] = None) -> JointState:
+    """Send a sequence of position/velocity targets one cycle at a time; stops early when `stop` returns True."""
     s = client.state()
     for q, qd in zip(qs, qds):
         client.send(Command(mode=mode, q=q, qd=qd, kp=kp, kd=kd, tau_ff=tau_ff,
@@ -67,6 +72,7 @@ def stream(client: ArmClient, qs, qds, mode='P', trace: Optional[Trace] = None, 
 
 def move_to(client: ArmClient, q_goal, max_speed=0.5, min_time=0.5, settle=0.3, mode='P',
             trace=None, **kw) -> JointState:
+    """Minimum-jerk move to `q_goal` at most `max_speed`, then settle."""
     s = client.state()
     dist = np.max(np.abs(np.asarray(q_goal) - s.q))
     duration = max(min_time, 1.875 * dist / max_speed)   # min-jerk peak speed = 1.875 * avg
@@ -124,6 +130,7 @@ def chirp_profile(amplitude, f0, f1, duration, dt, max_vel=None):
 
 def chirp(client: ArmClient, joint: int, center, amplitude, f0, f1, duration, trace=None,
           max_vel=None, **kw):
+    """Move joint `joint` to `center`, then sweep it with a chirp from `f0` to `f1` Hz."""
     s = client.state()
     q = s.q.copy()
     q[joint] = center

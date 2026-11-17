@@ -33,6 +33,7 @@ JOINT_NAMES = [f"joint{i}" for i in range(1, 7)] + ["gripper_open_m"]
 
 
 def features(height: int, width: int) -> dict:
+    """LeRobot feature schema: state, action and two camera images."""
     return {
         "observation.state": {
             "dtype": "float32",
@@ -58,6 +59,7 @@ def features(height: int, width: int) -> dict:
 
 
 def episode_paths(root: Path) -> list[Path]:
+    """Rendered episodes under `root`."""
     return sorted(
         path for path in root.glob("episode_*")
         if (path / "trajectory.npz").is_file()
@@ -65,6 +67,7 @@ def episode_paths(root: Path) -> list[Path]:
 
 
 def main() -> None:
+    """Build the LeRobot dataset from rendered teleop episodes."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)

@@ -12,6 +12,7 @@ from ..config import CalibrationStore, load_arm, load_yaml
 
 
 def run(args):
+    """`arm telemetry`: print joint positions and drive status, from SDO reads or cyclic feedback."""
     arm = load_arm(args.arm)
     if args.cyclic or args.log_angles or args.diagnose_encoders:
         return cyclic(arm, args.duration, args.calib_root, args.log_angles, args.diagnose_encoders, args.manual_shoulders)
@@ -42,6 +43,7 @@ def run(args):
 
 
 def capture_angles(arm, client, output, calibration, manual_shoulders=False):
+    """Record labelled poses from live feedback to a CSV, relative to the first."""
     manual = ('shoulder_roll', 'shoulder_yaw') if manual_shoulders else ()
     if any(name not in arm.names for name in manual):
         raise ValueError('Manual shoulder logging requires shoulder_roll and shoulder_yaw.')
@@ -132,6 +134,7 @@ def diagnose_encoders(arm, client):
 
 
 def cyclic(arm, duration, calib_root=None, log_angles=None, diagnose=False, manual_shoulders=False):
+    """Start cyclic feedback with motors disabled and stream positions and drive status (or log poses)."""
     if arm.control_mode != 'arm':
         raise ValueError('Cyclic telemetry requires an arm-mode joint configuration.')
     EncoderReader().require_idle(arm)

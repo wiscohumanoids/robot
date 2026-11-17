@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "ads7128.hpp"
@@ -67,26 +68,31 @@ constexpr SensorChannel kSensors[] = {
 
 }  // namespace
 
-/// Polls the ACS758 current sensors through an ADS7128 on I2C and printf()s amperes.
+/// Polls the ACS758 current sensors through an ADS7128 on I2C and publishes amperes per rail on /power/currents
+/// (diagnostic_msgs/DiagnosticArray: one status per rail, value "current_a", plus "raw_counts").
 ///
 /// Parameters:
 ///   i2c_device       (string, "/dev/i2c-1")  i2c-dev node the ADC is on
 ///   i2c_address      (int,    16)            7-bit address (0x10 = ADDR pin unconnected)
 ///   poll_period_ms   (int,    100)           time between sweeps of all 7 channels
-///   print_raw_counts (bool,   false)         also print the raw ADC code per channel
+///   print            (bool,   false)         also print one line per sweep to stdout
+///   print_raw_counts (bool,   false)         include the raw ADC code in printed lines (for zero calibration)
 ///
 /// Raw single-conversion samples only: there is deliberately no averaging or
 /// filtering, in software or in the ADC.
 class CurrentSensorNode : public rclcpp::Node
 {
 public:
+  // Open the ADC and start the polling timer.
   explicit CurrentSensorNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : Node("current_sensor_node", options)
   {
     const auto i2c_device = this->declare_parameter<std::string>("i2c_device", "/dev/i2c-1");
     const auto i2c_address = this->declare_parameter<int64_t>("i2c_address", 0x10);
     const auto poll_period_ms = this->declare_parameter<int64_t>("poll_period_ms", 100);
+    print_ = this->declare_parameter<bool>("print", false);
     print_raw_ = this->declare_parameter<bool>("print_raw_counts", false);
+    pub_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/power/currents", 10);
 
     if (i2c_address < 0x08 || i2c_address > 0x77) {
       throw std::invalid_argument("i2c_address must be a valid 7-bit address (0x08..0x77)");
@@ -109,39 +115,59 @@ public:
   }
 
 private:
+  // Read every channel, publish the current per rail, and optionally print it.
   void poll()
   {
     const double t =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - start_).count();
-    std::printf("[%9.3f]", t);
+    if (print_) {std::printf("[%9.3f]", t);}
 
+    diagnostic_msgs::msg::DiagnosticArray msg;
+    msg.header.stamp = this->now();
     for (const auto & sensor : kSensors) {
+      diagnostic_msgs::msg::DiagnosticStatus status;
+      status.name = sensor.name;
+      status.hardware_id = "ads7128_ain" + std::to_string(sensor.adc_channel);
       uint16_t counts = 0;
       if (!adc_.read_raw(sensor.adc_channel, counts)) {
-        std::printf(" %s=ERR", sensor.name);
+        if (print_) {std::printf(" %s=ERR", sensor.name);}
         RCLCPP_ERROR_THROTTLE(
           this->get_logger(), *this->get_clock(), 2000, "ADS7128 read failed on %s (AIN%d): %s",
           sensor.name, static_cast<int>(sensor.adc_channel), adc_.last_error().c_str());
+        status.level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+        status.message = "read failed: " + adc_.last_error();
+        msg.status.push_back(status);
         continue;
       }
       const double amps = (static_cast<double>(counts) - sensor.zero_counts) * kAmpsPerCount;
-      if (print_raw_) {
+      status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+      status.values.resize(2);
+      status.values[0].key = "current_a";
+      status.values[0].value = std::to_string(amps);
+      status.values[1].key = "raw_counts";
+      status.values[1].value = std::to_string(counts);
+      msg.status.push_back(status);
+      if (print_ && print_raw_) {
         std::printf(" %s=%+8.3fA(%4u)", sensor.name, amps, static_cast<unsigned>(counts));
-      } else {
+      } else if (print_) {
         std::printf(" %s=%+8.3fA", sensor.name, amps);
       }
     }
-    std::printf("\n");
+    if (print_) {std::printf("\n");}
+    pub_->publish(msg);
   }
 
   Ads7128 adc_;
+  bool print_{false};
   bool print_raw_{false};
+  rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr pub_;
   std::chrono::steady_clock::time_point start_{std::chrono::steady_clock::now()};
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
 }  // namespace wisco
 
+// Entry point: spin the current sensor node.
 int main(int argc, char * argv[])
 {
   // Under `ros2 launch` stdout is a pipe and would otherwise be block-buffered,

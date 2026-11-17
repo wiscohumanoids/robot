@@ -5,21 +5,26 @@ from collections import deque
 
 
 def data_timestamp(row):
+    """Data time of a row (falls back to its wall time)."""
     return row.get('data_monotonic_ns', row['monotonic_ns'])
 
 
 def data_origin(metadata):
+    """Data time an episode started at."""
     return metadata.get('start_data_monotonic_ns', metadata['start_monotonic_ns'])
 
 
 class RolloutStore(EpisodeStore):
+    """Episode store for human-in-the-loop rollouts: who controlled each step, and when control changed hands."""
     def submit(self, kind, payload):
+        """Queue an event; camera frames only travel with measured samples."""
         # Cameras stay live for inference and preview. Selected snapshots travel
         # with measured states so asynchronous camera events cannot leak holds.
         if kind != 'frame':
             super().submit(kind, payload)
 
     def collect(self, payload):
+        """Record one sample with its control source (human, policy or hold)."""
         source = payload['control_source']
         if source not in ('human', 'policy', 'hold'):
             raise ValueError('Invalid control ownership')
@@ -93,6 +98,7 @@ class RolloutStore(EpisodeStore):
             self.last_frames[name] = (frame_stamp, frame['sequence'])
 
     def handle(self, kind, payload):
+        """Handle rollout begin, samples and end."""
         if kind == 'rollout_begin':
             if self.active:
                 raise RuntimeError('A rollout is already recording')
@@ -129,6 +135,7 @@ class RolloutStore(EpisodeStore):
                 self.collect(payload)
 
     def finish(self, *args, **kwargs):
+        """Finish the active rollout with its data duration."""
         if self.active:
             self.active['metadata']['data_duration_s'] = self.clock_ns / 1e9
             self.active['metadata']['end_data_monotonic_ns'] = self.active['start_ns'] + self.clock_ns

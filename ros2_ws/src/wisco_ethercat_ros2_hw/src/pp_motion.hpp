@@ -23,7 +23,9 @@ struct Feedback
   int32_t actual;
   int mode;
   uint16_t error;
+  // Statusword says Operation Enabled.
   bool enabled() const { return (status & 0x6f) == 0x27; }
+  // Statusword says Switch On Disabled.
   bool disabled() const { return (status & 0x4f) == 0x40; }
 };
 
@@ -48,6 +50,7 @@ struct Motion
     }
   }
 
+  // Advance the step sequence with new feedback (throws on a fault or a loss of PP mode).
   void update(const Feedback & f, Clock::time_point now)
   {
     if (f.error || (f.status & 0x2008) || f.mode != 1) {

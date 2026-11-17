@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# J3: train the Wisco V1 walking policy (arms-free recipe: legs + waist, 15 actions) on the GPU VM.
+# Train the Wisco V1 walking policy (arms-free recipe: legs + waist, 15 actions) on the GPU VM.
 # Runs from ~/robot/training/locomotion with its .venv (mjlab 1.6.0, GPU torch).
 #   training/locomotion/wisco_v1/vm/train_velocity.sh [--log-root DIR] [extra mjlab train flags...]
 # Defaults: --log-root ~/hsim_runs/wisco_v1_velocity_arms_free, 4096 envs, 20000 iterations (stop when good; checkpoints every 50),

@@ -3,7 +3,7 @@
   <name>hsim_behavior</name>
   <version>0.1.0</version>
   <description>Task behavior tree (BehaviorTree.CPP v4): runs skill plans from the planner, checks safety every tick</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>

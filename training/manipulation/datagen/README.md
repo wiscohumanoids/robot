@@ -1,7 +1,7 @@
-# Manipulation data generation (F1): G1 + Dex1-1 at a RoboCasa counter
+# Manipulation data generation: G1 + Dex1-1 at a RoboCasa counter
 
 Standing, fixed-pelvis tabletop pick-and-place (v1: cups onto plates), scripted expert demos multiplied by
-MimicGen-style generation. Output: raw episodes for F2 (conversion to LeRobot v2 / GR00T).
+MimicGen-style generation. Output: raw episodes for ../groot/ (conversion to LeRobot v2 / GR00T).
 
 ```
 assets/robots/g1_dex1/                  official Unitree G1 + Dex1-1 (unitree_ros, BSD-3) + built MJCF g1_dex1.xml

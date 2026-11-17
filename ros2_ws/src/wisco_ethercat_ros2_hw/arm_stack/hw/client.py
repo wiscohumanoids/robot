@@ -1,7 +1,7 @@
 """The API every procedure talks to. The sim backend and the ROS 2 client both
 implement it, so `arm <stage>` runs the same code with or without --sim.
 
-Modes (spec: Hardware assumptions):
+Modes:
   'P'  CSP: the drive closes the position loop; we send q target and a torque
        feedforward (0x60B2) of gravity + friction. Stiff and safe.
   'T'  CST: the host law tau = Kp(q_d - q) + Kd(qd_d - qd) + g(q) + f(qd) + tau_ff
@@ -21,6 +21,7 @@ import numpy as np
 
 @dataclass
 class JointState:
+    """One feedback sample: calibrated angles, speeds and torques, raw drive values, status and mode."""
     t: float                      # monotonic seconds
     q: np.ndarray                 # rad, calibrated
     qd: np.ndarray                # rad/s
@@ -36,6 +37,7 @@ class JointState:
 
 @dataclass
 class Command:
+    """One command to the arm controller: mode, targets, gains, feed-forward, clamps and flags."""
     mode: str = 'P'
     q: Optional[np.ndarray] = None
     qd: Optional[np.ndarray] = None
@@ -44,7 +46,7 @@ class Command:
     tau_ff: Optional[np.ndarray] = None
     gravity_ff: bool = True       # add model gravity (+ friction) in the RT loop
     torque_clamp: Optional[np.ndarray] = None   # Nm, per joint (0x6072 equivalent)
-    # Stage 3 only: let Mode P targets pass the soft limits to find the hard
+    # `arm limits` only: let Mode P targets pass the soft limits to find the hard
     # stops (the torque clamp still applies). Logged as an event.
     ignore_soft_limits: bool = False
     # scales the friction model in the feedforward (mocap-repeat tunes it)
@@ -57,7 +59,7 @@ class Command:
 
 @dataclass
 class Payload:
-    """A mass hung from a link, for the lever (stage 4) and stiffness tests."""
+    """A mass hung from a link, for the lever (`arm kt`) and stiffness tests."""
     link: str
     mass_kg: float
     offset_m: Sequence[float] = field(default_factory=lambda: (0.0, 0.0, 0.0))
@@ -72,10 +74,12 @@ class ArmClient(abc.ABC):
     names: Sequence[str]
 
     @abc.abstractmethod
-    def state(self) -> JointState: ...
+    def state(self) -> JointState:
+        """Latest feedback."""
 
     @abc.abstractmethod
-    def send(self, cmd: Command) -> None: ...
+    def send(self, cmd: Command) -> None:
+        """Send a command."""
 
     @abc.abstractmethod
     def step(self, seconds: float = 0.0) -> JointState:
@@ -92,9 +96,11 @@ class ArmClient(abc.ABC):
 
     # Optional capabilities; the sim implements all of them.
     def set_payload(self, payload: Optional[Payload]) -> None:
+        """Mount a payload (simulation only)."""
         raise NotImplementedError('payloads are mounted by hand on hardware')
 
     def place_in_jig(self, q_jig: np.ndarray) -> None:
+        """Seat the arm in the jig (simulation only)."""
         raise NotImplementedError('put the arm in the zeroing jig by hand on hardware')
 
     def mocap(self):
@@ -116,7 +122,9 @@ class ArmClient(abc.ABC):
         raise NotImplementedError('CSP gains are not settable over SDO on this drive (unconfirmed)')
 
     def time_since_power_on(self) -> float:
+        """Seconds since the drives were powered (NaN when unknown)."""
         return float('nan')
 
     def close(self) -> None:
+        """Release resources."""
         pass

@@ -58,6 +58,7 @@ def test_drift_sees_trend_not_noise():
 
 @pytest.fixture
 def sim():
+    """arm01 and a simulated arm with an empty calibration."""
     from arm_stack.config import empty_calibration, load_arm
     from arm_stack.sim.arm_sim import SimArm
     arm = load_arm()

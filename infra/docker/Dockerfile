@@ -38,9 +38,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip3 install --no-cache-dir --break-system-packages "anthropic>=2.6,<3" "pydantic>=2.7,<3" "numpy<2"
 
 # ros2_control and the arm controllers: controller manager and controllers, Pinocchio dynamics, yaml-cpp,
-# SciPy for the calibration toolkit, and the mock hardware components used without drives.
+# SciPy for the calibration toolkit, the mock hardware components used without drives, and the upstream MuJoCo
+# hardware plugin (mujoco_ros2_control) for the sim stack's backend:=ros2_control, and the VRPN motion-capture
+# client (vrpn_mocap) for the arm calibrations.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+      ros-jazzy-ros2-control ros-jazzy-ros2-controllers ros-jazzy-mujoco-ros2-control ros-jazzy-vrpn-mocap \
       ros-jazzy-pinocchio ros-jazzy-realtime-tools \
       libyaml-cpp-dev python3-scipy \
     && rm -rf /var/lib/apt/lists/*

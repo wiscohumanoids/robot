@@ -15,6 +15,7 @@ from tools.export_scripted_dataset import save_prepared_episode
 
 
 class ScriptedExportTest(unittest.TestCase):
+    """Scripted dataset export keeps the rendered JPEG bytes."""
     def test_prepared_save_matches_upstream_and_preserves_jpeg_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -1,4 +1,4 @@
-"""`arm export pace` and `arm export lerobot` (spec: Logging and data formats).
+"""`arm export pace` and `arm export lerobot`.
 
 pace     command and feedback arrays plus sample rate, sweep range and
          amplitude: the inputs RP1's PACE recorder stores. Written as .npz with
@@ -6,7 +6,7 @@ pace     command and feedback arrays plus sample rate, sweep range and
 lerobot  teleop sessions to LeRobot format (v2.x layout: meta/info.json,
          meta/episodes.jsonl, meta/tasks.jsonl, data/chunk-000/*.parquet and a
          dataset card naming the calibration version) for the
-         WiscoHumanoidsLab Hugging Face org. Uploading is left to
+         team's Hugging Face namespace (HF_NAMESPACE). Uploading is left to
          `huggingface-cli upload`, run by a person.
 """
 
@@ -35,6 +35,7 @@ def _aligned(session: Session):
 
 
 def export_pace(session_path: str, out_path: str) -> str:
+    """Turn a recorded chirp session into PACE input arrays; returns the output path."""
     s = load_session(session_path)
     t_ns, q_cmd, q, qd, tau = _aligned(s)
     dt = float(np.median(np.diff(t_ns))) * 1e-9
@@ -53,8 +54,9 @@ def export_pace(session_path: str, out_path: str) -> str:
     return out_path
 
 
-def export_lerobot(session_paths: List[str], out_dir: str, repo_id: str = 'WiscoHumanoidsLab/arm01-teleop',
+def export_lerobot(session_paths: List[str], out_dir: str, repo_id: str = 'local/arm01-teleop',
                    fps: int = 50, task: str = 'teleop') -> str:
+    """Turn recorded teleop sessions into a LeRobot dataset (Parquet); returns the output folder."""
     try:
         import pyarrow as pa
         import pyarrow.parquet as pq

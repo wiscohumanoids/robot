@@ -15,6 +15,7 @@ from ..config import CalibrationStore, load_arm
 
 
 class EncoderReader:
+    """Passive encoder access through the `ethercat` command-line tool (SDO uploads) with the master idle."""
     method = 'passive_sdo'
 
     @contextmanager
@@ -28,12 +29,14 @@ class EncoderReader:
             yield self
 
     def command(self, *args):
+        """Run `ethercat <args>` and return its output (raises on failure)."""
         result = subprocess.run(['ethercat', *args], capture_output=True, text=True, timeout=5)
         if result.returncode:
             raise RuntimeError(result.stderr.strip() or 'EtherCAT command failed')
         return result.stdout
 
     def require_idle_master(self, arm):
+        """Refuse unless the master is inactive and sees exactly the joint table's drive count."""
         master = self.command('master')
         if not re.search(r'Active:\s+no\b', master):
             raise RuntimeError('Stop ros2 launch before commissioning; the master is active.')
@@ -42,6 +45,7 @@ class EncoderReader:
             raise RuntimeError('Expected exactly %d responding drives.' % arm.n)
 
     def disable_for_verification(self, arm):
+        """Disable any enabled drive (after checking the master is idle) before passive capture."""
         self.require_idle_master(arm)
         for joint in arm.joints:
             if self.upload(joint.bus_position, 'uint16', '0x6041') & 4:
@@ -56,16 +60,19 @@ class EncoderReader:
         self.require_idle(arm)
 
     def require_idle(self, arm):
+        """Refuse unless the master is idle and every drive is disabled."""
         self.require_idle_master(arm)
         for joint in arm.joints:
             if self.upload(joint.bus_position, 'uint16', '0x6041') & 4:
                 raise RuntimeError('%s is enabled. Disable the drives before commissioning.' % joint.name)
 
     def upload(self, position, kind, index):
+        """SDO upload of one object."""
         output = self.command('upload', '-p', str(position), '-t', kind, index, '0')
         return int(output.split()[-1])
 
     def capture(self, arm, joint):
+        """Average 20 SDO reads of 0x6064 for one joint, refusing if the reading moves."""
         self.require_idle(arm)
         values = []
         for _ in range(20):
@@ -92,12 +99,15 @@ class EncoderReader:
 
 
 class CyclicPositions:
+    """Encoder capture from cyclic feedback of a running arm launch (motors disabled)."""
     method = 'passive_cyclic'
 
     def __init__(self, client):
+        """Read through `client`."""
         self.client = client
 
     def capture_all(self, arm):
+        """Average several cyclic samples of every joint, refusing if the arm is moving."""
         samples = []
         for sample in range(12):
             if sample:
@@ -117,10 +127,12 @@ class CyclicPositions:
         return np.mean(samples, axis=0)
 
     def capture(self, arm, joint):
+        """One joint's averaged position."""
         return self.capture_all(arm)[arm.names.index(joint.name)]
 
 
 def angle(prompt):
+    """Prompt until the operator types a finite angle in degrees; returns radians."""
     while True:
         try:
             value = float(input(prompt))
@@ -132,6 +144,7 @@ def angle(prompt):
 
 
 def fit_encoder(count_a, angle_a, count_b, angle_b):
+    """Direction, counts per radian and zero count from two (count, angle) readings at least 5 degrees apart."""
     if abs(angle_b - angle_a) < math.radians(5):
         raise ValueError('The two reference angles must differ by at least 5 degrees.')
     slope = (count_b - count_a) / (angle_b - angle_a)
@@ -144,6 +157,7 @@ def fit_encoder(count_a, angle_a, count_b, angle_b):
 
 
 def atomic_text(path, text):
+    """Write `text` to `path` through a temporary file and an atomic rename."""
     path = Path(path)
     with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, delete=False) as stream:
         temporary = Path(stream.name)
@@ -159,6 +173,8 @@ def atomic_text(path, text):
 
 
 def run(args, reader=None):
+    """`arm commission --write-config`: measure direction, encoder scale, zero and usable limits per joint by hand.
+    """
     if not args.write_config:
         raise RuntimeError('Use arm commission --write-config to save measured encoder scales and directions.')
     if args.sim:

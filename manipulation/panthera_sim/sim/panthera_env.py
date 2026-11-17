@@ -68,8 +68,10 @@ _OBJECT_MIN_SEP = 0.09
 
 
 class PantheraSim:
+    """The Panthera arm on a table with blocks: reset, step, poses, IK and grasp detection."""
     def __init__(self, scene: pathlib.Path = DEFAULT_SCENE, ee_site: str = "grip_site",
                  *, dynamics: str = CONTACT_DYNAMICS):
+        """Load the scene with the chosen dynamics version; resolve joints, actuators, sites and pads."""
         if dynamics not in DYNAMICS_MODES:
             raise ValueError(f"Unknown simulation dynamics: {dynamics!r}")
         self.dynamics = dynamics
@@ -211,21 +213,26 @@ class PantheraSim:
 
     @property
     def q(self) -> np.ndarray:
+        """Arm joint angles."""
         return self.data.qpos[self.arm_qadr].copy()
 
     @property
     def dq(self) -> np.ndarray:
+        """Arm joint speeds."""
         return self.data.qvel[self.arm_dofadr].copy()
 
     def ee_pos(self) -> np.ndarray:
+        """End-effector position."""
         return self.data.site_xpos[self.ee_site].copy()
 
     def ee_quat(self) -> np.ndarray:
+        """End-effector orientation (w, x, y, z)."""
         q = np.zeros(4)
         mujoco.mju_mat2Quat(q, self.data.site_xmat[self.ee_site])
         return q
 
     def ee_pose(self) -> tuple[np.ndarray, np.ndarray]:
+        """End-effector position and orientation."""
         return self.ee_pos(), self.ee_quat()
 
     # ---------- IK ----------
@@ -456,6 +463,7 @@ class PantheraSim:
 
     @property
     def grasped(self) -> bool:
+        """Whether any block is grasped."""
         return bool(self.grasp_flags().any())
 
     def set_gripper(self, opening: float) -> None:
@@ -463,6 +471,7 @@ class PantheraSim:
         self.data.ctrl[self.grip_act] = float(np.clip(opening, 0, 1)) * GRIPPER_OPEN
 
     def _release_grasps(self) -> None:
+        """Deactivate every grasp weld (weld-v1 dynamics)."""
         for eid in self._grasp_eq:
             if eid >= 0:
                 self.data.eq_active[eid] = False
@@ -524,6 +533,7 @@ class PantheraSim:
                 self.data.eq_active[eid] = True
 
     def step(self, n: int = 1) -> None:
+        """Advance `n` physics steps, interpolating the arm command across them (contact-v2)."""
         if n < 0 or int(n) != n:
             raise ValueError("Physics step count must be a nonnegative integer")
         if not n:
@@ -549,16 +559,19 @@ class PantheraSim:
 
     @property
     def dt(self) -> float:
+        """Physics timestep."""
         return float(self.model.opt.timestep)
 
 
 def quat_mul(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Hamilton product of two quaternions (w, x, y, z)."""
     out = np.zeros(4)
     mujoco.mju_mulQuat(out, a, b)
     return out
 
 
 def mat_to_quat(R: np.ndarray) -> np.ndarray:
+    """Quaternion (w, x, y, z) of a rotation matrix."""
     q = np.zeros(4)
     mujoco.mju_mat2Quat(q, np.ascontiguousarray(R, dtype=float).reshape(9))
     return q

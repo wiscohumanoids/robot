@@ -1,4 +1,4 @@
-"""Stage 1, `arm bringup`: slaves in OP, DC locked, directions match the URDF.
+"""`arm bringup`: slaves in OP, DC locked, directions match the URDF.
 
 Direction cannot be seen from the drive alone: a reversed actuator flips its
 torque and its encoder together, so the host's own readings stay consistent.
@@ -36,6 +36,9 @@ def gravity_test_pose(model, joint, home, rng, tries=400):
 
 
 def run(ctx: StageContext, soak_s: float = None) -> StageResult:
+    """`arm bringup`: jog each joint a little and check direction and holding (hardware) or the simulated
+    equivalent.
+    """
     if not ctx.sim:
         return hardware_check(ctx, 10.0 if soak_s is None else soak_s)
     client, model, arm = ctx.client, ctx.model, ctx.arm

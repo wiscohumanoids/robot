@@ -9,7 +9,7 @@ Other jobs: state + last log lines.
 
 Run on the VM with the mjlab venv (needs matplotlib, mjlab):
   cd ~/robot && MUJOCO_GL=egl training/locomotion/.venv/bin/python infra/vm_jobs/morning_report.py
-      [--jobs infra/vm_jobs/jobs.yaml] [--only J1,J3] [--no-video] [--steps 500]
+      [--jobs infra/vm_jobs/jobs.yaml] [--only wisco_velocity,g1_velocity_arms_free] [--no-video] [--steps 500]
 """
 import argparse
 import datetime as dt
@@ -27,6 +27,7 @@ import vmjobs  # noqa: E402  (config + state helpers)
 
 
 def curves_from_stdout(log):
+    """Iteration, mean reward and episode length parsed from a run's stdout log."""
     text = vmjobs.tail_text(log, nbytes=1 << 31)
     its, rew, eplen = [], [], []
     for blk in text.split("Learning iteration ")[1:]:
@@ -39,6 +40,7 @@ def curves_from_stdout(log):
 
 
 def curves_from_tb(run_dir):
+    """The same curves from TensorBoard event files (empty without tensorboard)."""
     try:
         from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
     except ImportError:
@@ -53,6 +55,7 @@ def curves_from_tb(run_dir):
 
 
 def plot(its, rew, eplen, out, title):
+    """Save a reward / episode-length plot for one job."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -63,6 +66,7 @@ def plot(its, rew, eplen, out, title):
 
 
 def main():
+    """Write a report of every job: status, curves, plots and (optionally) a video of the newest checkpoint."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--jobs", default=str(vmjobs.DEFAULT_JOBS))
     ap.add_argument("--only", default="")

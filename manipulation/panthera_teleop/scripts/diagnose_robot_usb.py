@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def attr(path, name):
+    """A sysfs attribute, or None."""
     try:
         return (path / name).read_text().strip()
     except OSError:
@@ -37,6 +38,7 @@ def max_power(path):
 
 
 class Control(ctypes.Structure):
+    """USB control transfer request (usbdevfs)."""
     _fields_ = [('request_type', ctypes.c_uint8), ('request', ctypes.c_uint8),
                 ('value', ctypes.c_uint16), ('index', ctypes.c_uint16),
                 ('length', ctypes.c_uint16), ('timeout', ctypes.c_uint32),
@@ -63,6 +65,7 @@ def hub_status(path):
 
 
 def main():
+    """Print the robot board's USB path, power and hub status."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--hub-status', action='store_true',
                         help='Read live hub GET_STATUS (normally requires sudo)')

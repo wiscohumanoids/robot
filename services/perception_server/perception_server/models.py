@@ -19,10 +19,12 @@ from . import rle
 
 
 def _norm(s: str) -> str:
+    """Lowercase, underscores to spaces, single spaces."""
     return " ".join(s.lower().replace("_", " ").split())
 
 
 def map_phrase(phrase: str, labels: list[str]) -> str | None:
+    """The prompt label a detector phrase refers to, or None."""
     p = _norm(phrase)
     if not p:
         return None
@@ -42,6 +44,7 @@ def map_phrase(phrase: str, labels: list[str]) -> str | None:
 
 
 def nms(boxes: np.ndarray, scores: np.ndarray, iou: float) -> list[int]:
+    """Indices kept by non-maximum suppression at IoU `iou`."""
     order = np.argsort(-scores)
     keep = []
     while order.size:
@@ -60,6 +63,7 @@ def nms(boxes: np.ndarray, scores: np.ndarray, iou: float) -> list[int]:
 
 
 def iou_xyxy(a, b) -> float:
+    """Intersection over union of two xyxy boxes."""
     x1, y1, x2, y2 = max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])
     inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)
     u = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
@@ -87,7 +91,7 @@ _FAMILY_RANK = {n: (i, j) for i, fam in enumerate(FAMILIES) for j, n in enumerat
 
 def _clash(a, b):
     """Names sharing a word ("oven" / "toaster oven", "stove" / "stovetop") must not share a prompt: Grounding DINO
-    then returns the shorter sub-phrase for the longer object and the label maps wrongly (bench 2026-11-10)."""
+    then returns the shorter sub-phrase for the longer object and the label maps wrongly (seen on the kitchen benchmark)."""
     wa, wb = set(_norm(a).split()), set(_norm(b).split())
     na, nb = _norm(a).replace(" ", ""), _norm(b).replace(" ", "")
     return bool(wa & wb) or na in nb or nb in na
@@ -114,12 +118,15 @@ def order_prompts(names):
 
 
 class FakeBackend:
+    """Detector stand-in that returns the ground truth sent in the request (for plumbing tests)."""
     name = "fake"
 
     def info(self) -> dict:
+        """Backend name."""
         return {"backend": self.name}
 
     def detect(self, rgb, labels, gt=None, **_):
+        """Detections for the requested labels from the request's ground truth."""
         t0 = time.perf_counter()
         want = {_norm(l) for l in labels}
         out = []
@@ -140,11 +147,13 @@ class FakeBackend:
 
 
 class GroundedSam2Backend:
+    """Grounding DINO (one or several models, ensembled) for boxes, then SAM 2.1 for masks."""
     name = "grounded_sam2"
 
     def __init__(self, dino_id="IDEA-Research/grounding-dino-base,IDEA-Research/grounding-dino-tiny",
                  sam_id="facebook/sam2.1-hiera-base-plus",
                  device="cuda", chunk=12, dtype="fp16", max_batch=4):
+        """Load the detector(s) and the segmenter on `device`."""
         import torch
         from transformers import (AutoModelForZeroShotObjectDetection, AutoProcessor, Sam2Model,
                                   Sam2Processor)
@@ -168,6 +177,7 @@ class GroundedSam2Backend:
         self.sam = self.sam.to(device).eval()
 
     def info(self) -> dict:
+        """Backend name, models, device and peak GPU memory."""
         t = self.torch
         mem = t.cuda.max_memory_allocated() / 1e9 if self.device.startswith("cuda") else 0.0
         return {"backend": self.name, "dino": self.dino_id, "sam": self.sam_id, "device": self.device,
@@ -176,6 +186,7 @@ class GroundedSam2Backend:
     def detect(self, rgb, labels, box_threshold=0.30, text_threshold=0.25, nms_iou=0.6, max_dets=40, segment=True,
                priority=None, cross_label_iou=0.8, priority_mode=None, distractors=None, distractor_iou=0.6,
                chunk=None, distractor_mode="separate", **_):
+        """Boxes for the labels (in prompt chunks, with priority passes), NMS, then masks."""
         torch = self.torch
         from PIL import Image
         img = Image.fromarray(rgb)
@@ -185,7 +196,7 @@ class GroundedSam2Backend:
         uniq = [l for l in dict.fromkeys(l for l in labels if l.strip()) if l not in prio]
         # priority names (what the planner is looking for right now) get a short pass of their own (more sensitive).
         # "contrast": with absorber names that soak up generic regions a lone name would be forced onto
-        # (a single-name prompt hallucinates the object almost anywhere: bench 2026-11-10).
+        # (a single-name prompt hallucinates the object almost anywhere on the kitchen benchmark).
         if mode == "solo":
             pchunks = [[p] for p in prio]
         elif mode == "contrast":

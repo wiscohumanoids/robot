@@ -39,15 +39,20 @@ PACKAGE = 'wisco_ethercat_ros2_hw'
 
 
 def _truthy(value):
+    """Whether a launch argument means true."""
     return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
 
 
 def _expand_urdf(urdf_file, manifest=''):
+    """Run xacro with the hardware manifest."""
     doc = xacro.process_file(urdf_file, mappings={'hardware_manifest': manifest})
     return doc.toprettyxml(indent='  ')
 
 
 def _setup(context):
+    """Generate the drive configs, hardware manifest and controller parameters, check the calibration, and return
+    the nodes.
+    """
     pkg_share = get_package_share_directory(PACKAGE)
     arg = lambda name: LaunchConfiguration(name).perform(context)  # noqa: E731
 
@@ -174,6 +179,7 @@ def _setup(context):
 
 
 def generate_launch_description():
+    """Declare the launch arguments and defer node creation to `_setup`."""
     pkg_share = get_package_share_directory(PACKAGE)
     config_dir = os.path.join(pkg_share, 'config')
     args = [

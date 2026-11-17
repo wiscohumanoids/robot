@@ -31,6 +31,7 @@ CAMERA_PITCH = math.radians(25.0)
 
 
 def to_time(t):
+    """ROS Time from seconds."""
     sec, nsec = divmod(int(round(t * 1e9)), 1_000_000_000)
     return Time(sec=sec, nanosec=nsec)
 
@@ -48,7 +49,11 @@ def box_std(gray, k=7):
 
 
 class StereoCamera(Node):
+    """Node `stereo_camera`: renders colour and stereo-like depth from the head camera of the simulated robot."""
     def __init__(self):
+        """Declare the camera model parameters, load the world, set up the renderer, publishers and the render
+        timer.
+        """
         super().__init__('stereo_camera')
         for name, default in (('world', ''), ('rate_hz', 5.0), ('width', 640), ('height', 320),
                               ('hfov_deg', 110.0), ('baseline', 0.12), ('disparity_noise_px', 0.15),
@@ -104,6 +109,9 @@ class StereoCamera(Node):
                                f'noise at 3 m ~{100 * 9 * self.sig_d / (self.fx * self.baseline):.0f} cm')
 
     def tick(self):
+        """Render one colour frame and a depth image with stereo error, dropout and texture-less holes, and publish
+        both.
+        """
         if self.state is None:
             return
         t = self.state[0]
@@ -145,6 +153,7 @@ class StereoCamera(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = StereoCamera()
     try:

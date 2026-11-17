@@ -1,8 +1,8 @@
-"""Stage 7, `arm latency`: command-to-motion delay.
+"""`arm latency`: command-to-motion delay.
 
 Per joint:
 
-  * a chirp in Mode P (the spec's measure): the cross-correlation lag between
+  * a chirp in Mode P: the cross-correlation lag between
     commanded and measured position. It includes the drive's own servo lag,
     so it is reported with a fitted second-order servo model, not used alone;
   * the transport delay on the torque channel: a torque chirp in Mode T and
@@ -29,6 +29,7 @@ FLAG_MS = 3.0
 
 
 def xcorr_lag(cmd, meas, dt, max_lag_s=0.05):
+    """Lag (s) that maximizes the cross-correlation of commanded and measured signals, up to `max_lag_s`."""
     a = cmd - cmd.mean()
     b = meas - meas.mean()
     max_lag = int(max_lag_s / dt)
@@ -44,6 +45,7 @@ def xcorr_lag(cmd, meas, dt, max_lag_s=0.05):
 
 
 def frequency_response(cmd, meas, dt, f_lo, f_hi):
+    """Windowed FFT estimate of the command-to-measurement response between `f_lo` and `f_hi`."""
     n = len(cmd)
     win = np.hanning(n)
     U = np.fft.rfft((cmd - cmd.mean()) * win)
@@ -95,6 +97,7 @@ def torque_channel_delay(ctx, j, center_q, duration=2.0, f0=1.0, f1=40.0):
 
 
 def run(ctx: StageContext) -> StageResult:
+    """`arm latency`: chirps per joint; reports servo lag (Mode P) and the transport delay on the torque channel."""
     client, model, arm = ctx.client, ctx.model, ctx.arm
     home = safe_home(model)
     dt = client.cmd_dt

@@ -1,3 +1,4 @@
+"""Package setup: installs the viewer teleop and bridge nodes."""
 from setuptools import setup
 
 setup(

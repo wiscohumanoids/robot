@@ -1,3 +1,4 @@
+"""Package setup: installs the policy node, the stub and their launch/config files."""
 from glob import glob
 from setuptools import setup
 

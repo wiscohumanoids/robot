@@ -26,6 +26,7 @@ from teleop.episode import Episode
 
 
 class DemoFailure(RuntimeError):
+    """A scripted demonstration that did not end in a valid stack."""
     pass
 
 
@@ -43,7 +44,9 @@ def grasp_rotation(sim, index):
 
 
 class Planner:
+    """Scripted IK demonstration: approach, grasp, lift, place, release, retreat for each block."""
     def __init__(self, seed: int, blocks: int = 3, arm_start: str = "random"):
+        """Scene, random layout and arm start for `seed`."""
         self.blocks = blocks
         self.arm_start = arm_start
         self.scene = ROOT / "sim/panthera" / ("scene_two_blocks.xml" if blocks == 2 else "scene.xml")
@@ -61,6 +64,7 @@ class Planner:
         self.qctrl = self.sim.q
 
     def tick(self, target, quat, grip):
+        """One 30 Hz tick: bounded IK toward the target, then step physics and record."""
         sim = self.sim
         q, pe, re = sim.ik(target, quat, q_init=self.qctrl, iters=35,
                            max_joint_step=.08, posture_gain=0.)
@@ -82,6 +86,7 @@ class Planner:
         self.target, self.quat, self.grip = np.array(target), np.array(quat), grip
 
     def move(self, name, target, quat=None, grip=None, duration=None):
+        """Move to a target (and gripper state) over a duration as one named stage."""
         self.stages.append(dict(name=name, start=len(self.episode)))
         target = np.array(target)
         quat = self.quat.copy() if quat is None else np.array(quat)
@@ -104,9 +109,11 @@ class Planner:
             raise DemoFailure(f'{name}: tracking error {np.linalg.norm(self.sim.ee_pos()-target):.4f}')
 
     def hold(self, name, seconds, grip=None):
+        """Hold the current target for `seconds`."""
         self.move(name, self.target, grip=grip, duration=seconds)
 
     def run(self):
+        """Run the whole demonstration and check the final stack."""
         sim = self.sim
         # Fixed starts do not depend on object yaw or the episode RNG.
         for _ in range(1 if self.arm_start == 'fixed' else 100):
@@ -180,6 +187,7 @@ class Planner:
 
 
 def attempt(seed, blocks=3, arm_start="random"):
+    """Run one seed; returns the episode and metrics, or the failure reason."""
     planner = Planner(seed, blocks=blocks, arm_start=arm_start)
     try:
         metrics = planner.run()
@@ -192,6 +200,7 @@ def attempt(seed, blocks=3, arm_start="random"):
 
 
 def main():
+    """Collect scripted demonstrations in parallel (resumable)."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT/'data/scripted_stack')
     parser.add_argument('--blocks', type=int, choices=(2, 3), default=3)

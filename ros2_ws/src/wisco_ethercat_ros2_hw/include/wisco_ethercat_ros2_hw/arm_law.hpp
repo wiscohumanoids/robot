@@ -1,4 +1,4 @@
-// The arm's RT control law (spec: Hardware assumptions, Software architecture).
+// The arm's RT control law.
 //
 // Header-only and free of ROS so it can be unit tested. It mirrors
 // arm_stack/control/law.py, which the sim backend runs, so procedures see the
@@ -64,11 +64,13 @@ struct LawOutput
   bool fallback = true;
 };
 
+// Friction feed-forward for joint `i` at speed `v` (Coulomb smoothed near zero plus viscous).
 inline double friction(const LawConfig & c, size_t i, double v)
 {
   return c.coulomb[i] * std::tanh(v / 0.02) + c.viscous[i] * v;
 }
 
+// v[i], or 0 when `v` is shorter.
 inline double or_zero(const std::vector<double> & v, size_t i)
 {
   return (i < v.size() && std::isfinite(v[i])) ? v[i] : 0.0;

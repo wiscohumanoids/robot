@@ -8,6 +8,7 @@ from ..units import Units
 
 
 def run(args, reader=None):
+    """`arm reference`: record the resting encoder pose as the relative zero; nothing is enabled or moved."""
     if args.sim:
         raise ValueError('arm reference reads physical encoders; it does not use the simulator.')
     arm = load_arm(args.arm)

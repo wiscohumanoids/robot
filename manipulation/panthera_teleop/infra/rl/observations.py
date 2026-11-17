@@ -8,7 +8,9 @@ from .contracts import CAMERAS
 
 
 class ObservationEncoder:
+    """Flat observation vector: normalized state plus pooled camera images."""
     def __init__(self, state_normalizer, pool_size=16):
+        """State normalizer and image pooling size."""
         if type(pool_size) is not int or pool_size < 1 or 256 % pool_size:
             raise ValueError('pool_size must divide the 256 pixel image size')
         self.state_normalizer = state_normalizer
@@ -16,6 +18,7 @@ class ObservationEncoder:
         self.obs_dim = 14 + len(CAMERAS) * 3 * pool_size * pool_size
 
     def encode(self, observation, root=None):
+        """Encode one observation."""
         state = np.asarray(observation.get('state'), dtype=np.float32)
         if state.shape != (14,):
             raise ValueError('Observation requires native 14D measured state')

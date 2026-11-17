@@ -87,6 +87,7 @@ def scene_text(summary: dict | None) -> str:
 
 
 def user_message(command: str, summary: dict | None, history: list[dict]) -> str:
+    """The user turn for Claude: the request, the scene summary, and every failed attempt so far."""
     parts = [f'Request: "{command}"', '', scene_text(summary)]
     for h in history:
         parts += ['', f"Previous attempt: {json.dumps(h['skills'])}", f"It failed: {h['failure']}"]
@@ -94,6 +95,7 @@ def user_message(command: str, summary: dict | None, history: list[dict]) -> str
 
 
 def known_labels(summary: dict | None) -> set[str]:
+    """Labels of every remembered object."""
     return {o['label'].lower() for o in (summary or {}).get('objects', [])}
 
 

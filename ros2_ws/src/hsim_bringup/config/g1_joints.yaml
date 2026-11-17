@@ -1,6 +1,6 @@
 # Unitree G1 (29 DOF) joint order and default standing pose, exactly as in mjlab's
 # asset_zoo/robots/unitree_g1/xmls/g1.xml and KNEES_BENT_KEYFRAME (mjlab 1.6.0).
-# Used by the Phase 1 stubs. The real locomotion node reads the policy manifest instead
+# Used by the stubs. The real locomotion node reads the policy manifest instead
 # and checks it matches this list.
 /**:
   ros__parameters:

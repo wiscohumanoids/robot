@@ -1,4 +1,4 @@
-"""`arm mocap-repeat`: repeatability, measured and pushed down (spec: Mocap path).
+"""`arm mocap-repeat`: repeatability, measured and pushed down.
 
 Calibration fixes accuracy, not repeatability. This stage:
 
@@ -80,6 +80,7 @@ class Trial:
     """Settings of one repeatability run."""
 
     def __init__(self, kp_scale=1.0, kd_scale=1.0, friction_ff_gain=1.0, approach=1, settle_s=0.5):
+        """One repeatability setting: drive gain scales, friction feed-forward, approach direction, settle time."""
         self.kp_scale = kp_scale
         self.kd_scale = kd_scale
         self.friction_ff_gain = friction_ff_gain
@@ -87,6 +88,7 @@ class Trial:
         self.settle_s = settle_s
 
     def as_dict(self):
+        """As a dict."""
         return dict(self.__dict__)
 
 
@@ -198,6 +200,7 @@ def iso_measure(ctx, source, cycles: int, rng, warm_s: float = None, poses=None)
 
 
 def _apply_gains(ctx, trial: Trial) -> bool:
+    """Scale the drives' own loop gains for a trial; False when the client cannot."""
     n = ctx.arm.n
     try:
         ctx.client.set_drive_gains(np.full(n, trial.kp_scale), np.full(n, trial.kd_scale))
@@ -260,6 +263,7 @@ LEVERS = {
 
 
 def run(ctx: StageContext, trials: int = None, warm_s: float = None) -> StageResult:
+    """`arm mocap-repeat`: ISO 9283 pose repeatability measured with mocap over the trial settings."""
     mocap = ctx.client.mocap()
     if mocap is None:
         return StageResult('mocap-repeat', False, {}, {}, ['no mocap source on this client'])

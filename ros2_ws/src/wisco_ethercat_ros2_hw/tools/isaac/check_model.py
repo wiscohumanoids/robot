@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare the Isaac Lab arm01 articulation against Pinocchio (ArmModel).
 
-Spec: "Load the URDF into Pinocchio and Isaac Lab; check joint axes,
+Goal: "Load the URDF into Pinocchio and Isaac Lab; check joint axes,
 directions, limits, and masses against CAD". tools/check_model_pinocchio.py
 checks the URDF itself; this loads the USD made by tools/isaac/import_urdf.py
 and prints every place Isaac Lab disagrees with the Pinocchio reference:
@@ -41,6 +41,7 @@ FK_TOL = 1e-4            # m
 
 
 def _np(x):
+    """Tensor or array to numpy."""
     return x.detach().cpu().numpy() if hasattr(x, 'detach') else np.asarray(x)
 
 
@@ -63,6 +64,7 @@ def usd_joint_axes(stage, root):
 
 
 def main():
+    """Load the arm USD in Isaac Lab and report every joint, limit and mass that disagrees with the Pinocchio model."""
     from arm_stack.pace.isaac_cfg import DRIVEN_JOINTS, URDF_PATH, USD_PATH, arm01_articulation_cfg
 
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])

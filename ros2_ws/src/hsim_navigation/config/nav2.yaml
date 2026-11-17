@@ -1,5 +1,5 @@
 # Nav2 for the walking G1. Base: nav2_bringup's Jazzy defaults, adapted.
-# Key constraint: the all-joints walking policy ignores small commands (decision 0004), so the
+# Key constraint: the all-joints walking policy ignores small commands (a learned deadband), so the
 # controller never asks for < 0.3 m/s while moving and turns in place at >= 0.8 rad/s.
 
 bt_navigator:
@@ -54,7 +54,7 @@ controller_server:
       rotate_to_heading_min_angle: 0.6
       # High on purpose: RPP limits acceleration relative to the robot's MEASURED turn rate.
       # A standing robot would only ever be asked for 0.1 rad/s, which the walking policy
-      # ignores (deadband, decision 0004) -> deadlock. The velocity smoother still ramps commands.
+      # ignores (deadband) -> deadlock. The velocity smoother still ramps commands.
       max_angular_accel: 20.0
       min_approach_linear_velocity: 0.3      # deadband: never creep slower than this
       approach_velocity_scaling_dist: 0.6

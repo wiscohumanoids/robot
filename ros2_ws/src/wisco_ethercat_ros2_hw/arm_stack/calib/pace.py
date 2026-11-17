@@ -1,10 +1,10 @@
-"""Stage 9, `arm pace`: actuator system ID by replay (PACE).
+"""`arm pace`: actuator system ID by replay (PACE).
 
 Each joint runs a chirp in Mode P (others held). The logged commands are
 replayed in a simulator with candidate actuator parameters, and CMA-ES
 minimizes the position error. Per joint: armature, Coulomb friction, viscous
 friction, encoder bias, delay, and the drive's CSP gains when the joint
-config does not give them. Link inertials stay at their stage 5 values (the
+config does not give them. Link inertials stay at their `arm gravity` values (the
 current calibration's model).
 
 With the drive gains known, the replay also simulates the held joints under
@@ -15,7 +15,7 @@ transmission compliance in the replay too.
 
 Pass: every joint's fit converges (cost drop > 90%, RMS error under 10% of
 the chirp amplitude), and the fitted delay (median over joints) is within
-one sim step of the stage 7 latency.
+one sim step of the measured latency.
 """
 
 from __future__ import annotations
@@ -35,11 +35,13 @@ class _Map:
     """[0, 1]^k <-> physical params, log scale where it helps, fixed dims dropped."""
 
     def __init__(self, lo, hi):
+        """Bounds per parameter; parameters with lo == hi are fixed, the listed ones are searched in log scale."""
         self.lo, self.hi = np.asarray(lo, float), np.asarray(hi, float)
         self.free = np.where(self.hi > self.lo)[0]
         self.log = np.array([PARAMS[i] in LOG_SCALE for i in range(len(PARAMS))])
 
     def to_phys(self, X):
+        """Map normalized search points to physical parameter values."""
         X = np.atleast_2d(X)
         P = np.repeat(self.lo[None, :], len(X), axis=0)
         for c, i in enumerate(self.free):
@@ -56,6 +58,7 @@ F1 = 12.0
 
 
 def record_chirps(ctx, amplitude_deg=8.0, duration=None, f0=0.2, f1=F1):
+    """Log a position chirp on every joint, holding the others, below each joint's servo resonance."""
     client, model = ctx.client, ctx.model
     duration = duration or (3.0 if ctx.quick else 8.0)
     home = safe_home(model)
@@ -90,6 +93,7 @@ def record_chirps(ctx, amplitude_deg=8.0, duration=None, f0=0.2, f1=F1):
 
 
 def decimate(log: JointLog, k: int) -> JointLog:
+    """Keep every k-th sample of a joint log."""
     if k <= 1:
         return log
     return JointLog(log.joint, log.dt * k, log.q_cmd[::k], log.qd_cmd[::k], log.q_meas[::k], log.q_hold,
@@ -168,13 +172,14 @@ def fit(model, arm, logs, generations=60, popsize=14, seed=0, backend='joint', d
 
 
 def run(ctx: StageContext, backend: str = 'joint') -> StageResult:
+    """`arm pace`: fit armature, friction, damping, bias and delay per joint by replaying the logged chirps."""
     arm = ctx.arm
     logs = record_chirps(ctx)
     k = 2
     gains = ctx.client.drive_gains()
     stiff = stiffness_prior(ctx)
     # a chirp capped well below the bus rate cannot see a few ms of delay, which then
-    # trades off against armature: pin it to the stage 7 latency on those joints
+    # trades off against armature: pin it to the measured latency (`arm latency`) on those joints
     latency = ctx.calibration.get('latency_ms')
     low_band = [l.freq[1] < 0.8 * F1 for l in logs]
     # (unless no chirp reaches the band: then the delay check needs every joint's fit)
@@ -213,7 +218,7 @@ def run(ctx: StageContext, backend: str = 'joint') -> StageResult:
         lines.append('%-15s armature %.4f, Fc %.3f, Fv %.3f, bias %+.3f deg, delay %.2f ms%s, kp %.0f kd %.2f, '
                      'chirp to %.1f Hz, rms %.3f deg (%.1f%% of amp)%s' % (
                          name, p['armature'], p['coulomb'], p['viscous'], p['encoder_bias'] / DEG,
-                         p['delay_s'] * 1e3, ' (stage 7)' if fixed[idx] is not None else '',
+                         p['delay_s'] * 1e3, ' (measured)' if fixed[idx] is not None else '',
                          p['drive_kp'], p['drive_kd'], log.freq[1], f['rms_rad'] / DEG,
                          100 * f['rms_rad'] / amp,
                          '' if good else ('  <-- did not converge' if not f['converged'] else '  <-- FAIL (rms)')))
@@ -221,13 +226,13 @@ def run(ctx: StageContext, backend: str = 'joint') -> StageResult:
         delays = [f['params']['delay_s'] for f in fits]
     delay = float(np.median(delays))
     if latency is None:
-        flags.append('no stage 7 latency in the calibration; run `arm latency` first')
+        flags.append('no measured latency in the calibration; run `arm latency` first')
         ok = False
     else:
         diff = abs(delay - latency * 1e-3)
         within = diff <= sim_dt
         ok &= within
-        lines.append('fitted delay %.2f ms vs stage 7 latency %.2f ms: %s one sim step (%.1f ms)' % (
+        lines.append('fitted delay %.2f ms vs measured latency %.2f ms: %s one sim step (%.1f ms)' % (
             delay * 1e3, latency, 'within' if within else 'NOT within', sim_dt * 1e3))
     writes['delay_steps'] = int(round(delay / sim_dt))
     writes['delay_ms'] = delay * 1e3

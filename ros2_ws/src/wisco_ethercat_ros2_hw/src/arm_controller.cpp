@@ -1,3 +1,7 @@
+// ArmController: the arm's real-time control law as a ros2_control controller (Mode P: CSP target plus
+// gravity/friction torque offset; Mode T: CST host PD plus feed-forward), with clamps, soft limits and a
+// watchdog. Interfaces and parameters are documented in arm_controller.hpp.
+
 #include "wisco_ethercat_ros2_hw/arm_controller.hpp"
 
 #include <algorithm>
@@ -17,12 +21,14 @@ namespace wisco_ethercat_ros2_hw
 ArmController::ArmController() = default;
 ArmController::~ArmController() = default;
 
+// Monotonic time in ns (watchdog clock).
 int64_t ArmController::steady_now_ns()
 {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
+// Declare every parameter.
 controller_interface::CallbackReturn ArmController::on_init()
 {
   try {
@@ -60,6 +66,7 @@ controller_interface::CallbackReturn ArmController::on_init()
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// Read the parameters, build the gravity model and the law, create the command and state topics.
 controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_lifecycle::State &)
 {
   auto node = get_node();
@@ -246,6 +253,7 @@ controller_interface::CallbackReturn ArmController::on_configure(const rclcpp_li
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// Command interfaces claimed per joint (position, torque offset or effort, mode, torque limit).
 controller_interface::InterfaceConfiguration ArmController::command_interface_configuration() const
 {
   controller_interface::InterfaceConfiguration config;
@@ -263,6 +271,7 @@ controller_interface::InterfaceConfiguration ArmController::command_interface_co
   return config;
 }
 
+// State interfaces read per joint (position, velocity, effort, and drive status when available).
 controller_interface::InterfaceConfiguration ArmController::state_interface_configuration() const
 {
   controller_interface::InterfaceConfiguration config;
@@ -278,6 +287,7 @@ controller_interface::InterfaceConfiguration ArmController::state_interface_conf
   return config;
 }
 
+// Start holding the current position (or gravity compensation), with no stale command.
 controller_interface::CallbackReturn ArmController::on_activate(const rclcpp_lifecycle::State &)
 {
   cmd_pos_.clear(); cmd_eff_.clear(); cmd_off_.clear(); cmd_mode_.clear(); cmd_max_.clear();
@@ -338,6 +348,7 @@ controller_interface::CallbackReturn ArmController::on_activate(const rclcpp_lif
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// Leave the drives holding position with zero torque offset.
 controller_interface::CallbackReturn ArmController::on_deactivate(const rclcpp_lifecycle::State &)
 {
   // Hold position in CSP with no feedforward.
@@ -351,6 +362,7 @@ controller_interface::CallbackReturn ArmController::on_deactivate(const rclcpp_l
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// One cycle: read state, run the law on the latest command (or the watchdog fallback), write the drive interfaces, publish state.
 controller_interface::return_type ArmController::update(
   const rclcpp::Time &, const rclcpp::Duration & period)
 {

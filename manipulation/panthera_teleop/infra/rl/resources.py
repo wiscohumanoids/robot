@@ -22,6 +22,7 @@ class ResourceError(RuntimeError):
 
 
 def _query(fields: str, kind: str = "gpu") -> list[list[str]]:
+    """Rows from nvidia-smi."""
     try:
         result = subprocess.run(
             ["nvidia-smi", f"--query-{kind}={fields}", "--format=csv,noheader,nounits"],
@@ -33,6 +34,7 @@ def _query(fields: str, kind: str = "gpu") -> list[list[str]]:
 
 
 def _selected_gpu(device: str) -> dict:
+    """The GPU a device string refers to."""
     if device == "cuda":
         ordinal = 0
     elif device.startswith("cuda:") and device[5:].isdigit():

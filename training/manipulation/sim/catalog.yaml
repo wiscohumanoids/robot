@@ -1,4 +1,4 @@
-# Manipulation scenes and object sets (F1). Object paths are relative to the RoboCasa object library
+# Manipulation scenes and object sets. Object paths are relative to the RoboCasa object library
 # (~/hsim_third_party/robocasa/robocasa/models/assets/objects on the Mac). Scenes are compiled on the Mac
 # into self-contained .mjb files (kitchen + robot + all objects of a version), so the VM needs no RoboCasa.
 

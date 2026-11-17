@@ -33,9 +33,10 @@ package): its model, joint config, calibration procedures and results.
 | `src/safe_command_controller.cpp`, `include/.../safety_logic.hpp` | `SafeCommandController` and its unit-tested safety functions |
 | `src/arm_controller.cpp`, `src/gravity_model.cpp`, `include/.../arm_law.hpp` | `ArmController`: the arm's real-time control law |
 | `src/pp_test.cpp`, `src/pp_motion.hpp`, `config/pp_test.yaml` | `pp_test`: profile-position check of one drive or the whole bus, straight on the IgH master (see below); built only where the EtherCAT libraries are installed |
-| `src/current_sensor_node.cpp`, `src/ads7128.hpp` | power-rail current readout (ADS7128 I2C ADC + ACS758 sensors); not yet built or published |
+| `src/current_sensor_node.cpp`, `src/ads7128.hpp` | power-rail current readout (ADS7128 I2C ADC + ACS758 sensors) on `/power/currents` |
 | `arm_stack/` | Python toolkit: commissioning and calibration stages, the same control law, a simulated arm, PACE system identification, IK, MCAP logging and export; `scripts/arm` is its CLI |
-| `scripts/` | `bringup_check.py` (wiring and direction check), `check_urdf.py` (URDF vs actuator limits), two demo scripts |
+| `scripts/` | `bringup_check.py` (wiring and direction check), `check_urdf.py` (URDF vs actuator limits), `mocap_check.py` (mocap stream rate, gaps and noise), two demo scripts |
+| `launch/mocap.launch.py` | motion capture into ROS 2 (upstream `vrpn_mocap`): each rigid body on `/vrpn_mocap/<body>/pose` |
 | `tools/` | model checks, IK benchmark, workspace map, Isaac Lab USD import, parity golden-file writer (reports go to `build/analysis/`, not kept in the repo) |
 | `test/` | C++ tests (safety logic, control law, mock drives, controllers against the mock bus, C++/Python gravity parity) and Python tests |
 
@@ -140,12 +141,34 @@ To run without sudo, give the EtherCAT device to your user:
 5. Only then raise the bring-up limits in the model table or per joint. The full calibration chain for an arm is in
    `robots/arm01/README.md`.
 
+## Motion capture
+
+The arm calibrations that use mocap (`arm mocap-calib`, `mocap-repeat`, `validate`) read a
+`geometry_msgs/PoseStamped` topic, set as `mocap.topic` in the arm's joint config. The upstream
+[`vrpn_mocap`](https://index.ros.org/p/vrpn_mocap/) client provides it from any system that streams VRPN (OptiTrack
+Motive, Vicon, Qualisys):
+
+```bash
+# MOCAP_HOST (the mocap computer) in the repo .env; VRPN streaming enabled in the mocap software
+ros2 launch wisco_ethercat_ros2_hw mocap.launch.py
+ros2 run wisco_ethercat_ros2_hw mocap_check.py /vrpn_mocap/arm01_flange/pose --rate 240   # rigid body held still
+```
+
+Then set `mocap.topic: /vrpn_mocap/arm01_flange/pose` and `length_bar_error_m` (from a length-bar test in the mocap
+software) in `robots/arm01/config/arm01.yaml`. The same stream gives the walking robot's true base pose for
+sim-to-real checks (`training/sim2real/README.md`).
+
 ## Real-time setup (toward 1 kHz)
 
-- PREEMPT_RT kernel; run `ros2_control_node` with real-time priority (`rtprio` and `memlock` limits for the user).
-- Isolate a core for the control loop (`isolcpus=`, `nohz_full=`) and pin the EtherCAT NIC's interrupts to it.
-- Start at the default `update_rate:=100` and raise it only after checking sustained loop timing and bus stability on
-  the target machine; the launch uses the same value for the EtherCAT cycle, so the two cannot drift apart.
+[`infra/rk3588/`](../../../infra/rk3588/README.md) sets up the RK3588 and checks it (`setup_rt.sh`): PREEMPT_RT
+kernel, cores 6-7 isolated, `rtprio`/`memlock` limits, NIC interrupts on the control core, a cyclictest report, and
+the `update_rate` ramp (100 → 250 → 500 → 1000 Hz, each step checked for EtherCAT lost frames, working-counter changes
+and controller overruns). The launch uses the same value for the EtherCAT cycle, so the two cannot drift apart.
+
+| Measured on the RK3588 | Result |
+|---|---|
+| cyclictest, 1 ms period, cores 6-7, under load (`setup_rt.sh latency`) | not measured yet |
+| highest `update_rate` passing `setup_rt.sh rate-check` | not measured yet (runs at the default 100 Hz) |
 - Keep `joint_state_rate` at 50–250 Hz: the controllers read state interfaces directly, and a 1 kHz JointState stream
   only loads DDS.
 - Distributed clocks are on (`dc_assign_activate: 0x0300` in the model table); check it against the drive's ESI.
@@ -205,11 +228,13 @@ watchdog). The hardware e-stop, which cuts motor power independent of all softwa
 
 ## Current sensing
 
-`src/current_sensor_node.cpp` reads seven ACS758 hall-effect current sensors through an ADS7128 ADC on I2C
-(`/dev/i2c-1`, address 0x10): main bus, the 24 V buck converter, all actuators, and four actuator rails. Parameters:
-`i2c_device`, `i2c_address`, `poll_period_ms` (100), `print_raw_counts`. It prints amperes per rail; zero offsets are
-set in `kSensors` (measure each channel unloaded with `print_raw_counts:=true`). Next steps: add it to the build,
-publish the readings on a ROS topic, and compare them with the simulated current draw in `robots/wisco_v1/reports/`.
+`ros2 run wisco_ethercat_ros2_hw current_sensor_node` reads seven ACS758 hall-effect current sensors through an ADS7128
+ADC on I2C (`/dev/i2c-1`, address 0x10): main bus, the 24 V buck converter, all actuators, and four actuator rails. It
+publishes `/power/currents` (`diagnostic_msgs/DiagnosticArray`, one status per rail with `current_a` and `raw_counts`)
+every `poll_period_ms` (100). Parameters: `i2c_device`, `i2c_address`, `poll_period_ms`, `print` (also print a line
+per sweep) and `print_raw_counts`. Zero offsets are set in `kSensors`: measure each channel unloaded with
+`print:=true print_raw_counts:=true`. The rail names in `kSensors` are placeholders until they are matched to the power
+distribution board; compare the readings with the simulated current draw in `robots/wisco_v1/reports/`.
 
 ## Open items (need the bench)
 

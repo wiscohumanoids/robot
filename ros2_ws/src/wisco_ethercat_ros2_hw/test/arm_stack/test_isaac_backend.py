@@ -30,6 +30,7 @@ class FakeModel:
     """Duck-typed ArmModel: diagonal inertia, optional constant gravity."""
 
     def __init__(self, inertia=None, g=None):
+        """Stand-in arm model with given inertia and gravity per joint."""
         self.joint_names = NAMES
         self.I = np.asarray(inertia if inertia is not None else np.linspace(0.08, 0.02, N), float)
         self.g = np.zeros(N) if g is None else np.asarray(g, float)
@@ -37,27 +38,34 @@ class FakeModel:
         self.viscous = np.zeros(N)
 
     def mass_matrix(self, q):
+        """Diagonal inertia."""
         return np.diag(self.I)
 
     def gravity(self, q):
+        """Fixed gravity torque."""
         return self.g.copy()
 
 
 class _Cfg:
+    """Stand-in for Isaac Lab config classes: stores keyword fields, supports replace()."""
     def __init__(self, *args, **kw):
+        """Store the fields."""
         self.args = args
         self.__dict__.update(kw)
 
     def replace(self, **kw):
+        """Copy with fields replaced."""
         out = _Cfg(**self.__dict__)
         out.__dict__.update(kw)
         return out
 
 
 class FakeArticulation:
+    """Stand-in Isaac Lab articulation with independent joints and PD drives."""
     ORDER = [NAMES[i] for i in (3, 0, 6, 1, 5, 2, 4)]      # not the config order, like PhysX's BFS order
 
     def __init__(self, cfg, num_envs, inertia, gravity):
+        """Joints in a different order than the config, like PhysX."""
         self.cfg = cfg
         self.joint_names = list(self.ORDER)
         self.num_joints = N
@@ -71,44 +79,57 @@ class FakeArticulation:
         self.steps = 0
 
     def find_joints(self, names, preserve_order=False):
+        """Indices and names."""
         return [self.joint_names.index(n) for n in names], list(names)
 
     @staticmethod
     def _c(joint_ids):
+        """Column selector."""
         return slice(None) if joint_ids is None else list(joint_ids)
 
     def write_joint_stiffness_to_sim(self, v, joint_ids=None, env_ids=None):
+        """Set stiffness."""
         self.stiffness[:, self._c(joint_ids)] = v
 
     def write_joint_damping_to_sim(self, v, joint_ids=None, env_ids=None):
+        """Set damping."""
         self.damping[:, self._c(joint_ids)] = v
 
     def write_joint_armature_to_sim(self, v, joint_ids=None, env_ids=None):
+        """Set armature."""
         self.armature[:, self._c(joint_ids)] = v
 
     def write_joint_state_to_sim(self, pos, vel, joint_ids=None, env_ids=None):
+        """Set position and velocity."""
         self.data.joint_pos[:, self._c(joint_ids)] = pos
         self.data.joint_vel[:, self._c(joint_ids)] = vel
 
     def set_joint_position_target(self, v, joint_ids=None, env_ids=None):
+        """Set position targets."""
         self.pos_target[:, self._c(joint_ids)] = v
 
     def set_joint_velocity_target(self, v, joint_ids=None, env_ids=None):
+        """Set velocity targets."""
         self.vel_target[:, self._c(joint_ids)] = v
 
     def set_joint_effort_target(self, v, joint_ids=None, env_ids=None):
+        """Set effort targets."""
         self.effort_target[:, self._c(joint_ids)] = v
 
     def reset(self, env_ids=None):
+        """Not needed by the fake."""
         pass
 
     def write_data_to_sim(self):
+        """Not needed by the fake."""
         pass
 
     def update(self, dt):
+        """Not needed by the fake."""
         pass
 
     def physics_step(self, h):
+        """Integrate one step of the PD-driven joints."""
         # symplectic Euler, as JointReplayBackend; the drive is a PD on the targets
         d = self.data
         tau = (self.stiffness * (self.pos_target - d.joint_pos) + self.damping * (self.vel_target - d.joint_vel)
@@ -183,12 +204,14 @@ def fake_isaaclab(monkeypatch):
 
 @pytest.fixture
 def usd(tmp_path):
+    """A placeholder USD file."""
     p = tmp_path / 'arm01.usd'
     p.write_text('#usda 1.0\n')
     return str(p)
 
 
 def chirp_log(j=2, T=600, amp=0.15, hold=None):
+    """A synthetic chirp log on joint `j`."""
     t = np.arange(T) * DT
     f = 0.5 + 6.0 * t / t[-1]
     q_cmd = 0.3 + amp * np.sin(2 * np.pi * np.cumsum(f) * DT)
@@ -200,6 +223,7 @@ def chirp_log(j=2, T=600, amp=0.15, hold=None):
 
 
 def population(n, seed=0):
+    """Random parameter rows for `n` candidates."""
     rng = np.random.default_rng(seed)
     P = np.zeros((n, len(PARAMS)))
     c = {p: i for i, p in enumerate(PARAMS)}

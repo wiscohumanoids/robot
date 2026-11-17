@@ -12,8 +12,15 @@ from rclpy.node import Node
 from geometry_msgs.msg import TwistStamped
 from nav_msgs.msg import Odometry
 
-def yaw(q): return math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
-def wrap(a): return (a + math.pi) % (2 * math.pi) - math.pi
+def yaw(q):
+    """Yaw of a ROS quaternion."""
+    return math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+
+
+def wrap(a):
+    """Angle wrapped to [-pi, pi)."""
+    return (a + math.pi) % (2 * math.pi) - math.pi
+
 
 rclpy.init(); n = Node('teleop')
 pub = n.create_publisher(TwistStamped, '/cmd_vel_teleop', 10)
@@ -22,6 +29,7 @@ n.create_subscription(Odometry, '/odometry/filtered', lambda m: st.__setitem__('
 n.create_subscription(Odometry, '/sim/ground_truth/odom', lambda m: st.__setitem__('true', m), 10)
 
 def spin(sec, cmd=None):
+    """Spin for `sec`, publishing `cmd` at 50 Hz when given."""
     end, nxt = time.monotonic() + sec, 0
     while time.monotonic() < end:
         if cmd and time.monotonic() >= nxt:

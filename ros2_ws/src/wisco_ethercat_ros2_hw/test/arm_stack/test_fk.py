@@ -36,21 +36,25 @@ DRIVEN_LINKS = ['link1', 'link2', 'link3', 'link4', 'link5', 'link6', 'link7']
 
 
 def unit(v):
+    """Unit vector."""
     v = np.asarray(v, float)
     return v / np.linalg.norm(v)
 
 
 def angle(u, v):
+    """Angle between two directions (sign ignored)."""
     return math.acos(min(1.0, abs(float(unit(u) @ unit(v)))))
 
 
 def line_distance(p, point, direction):
+    """Distance from point `p` to the line through `point` along `direction`."""
     d = unit(direction)
     off = np.asarray(p, float) - point
     return float(np.linalg.norm(off - d * (off @ d)))
 
 
 def placement_error(M, T):
+    """Position and rotation error between a pin.SE3 and a 4x4 transform."""
     T = np.asarray(T, float)
     return (float(np.linalg.norm(M.translation - T[:3, 3])),
             float(np.linalg.norm(pin.log3(M.rotation.T @ T[:3, :3]))))
@@ -65,15 +69,18 @@ def full():
 
 @pytest.fixture(scope='module')
 def arm():
+    """arm01 joint config."""
     return load_arm('arm01')
 
 
 @pytest.fixture()
 def model(arm):
+    """arm01 model."""
     return ArmModel(arm.urdf, arm.names)
 
 
 def full_q(m, **values):
+    """Neutral configuration with the named joints set."""
     q = pin.neutral(m)
     for name, v in values.items():
         q[m.joints[m.getJointId(name)].idx_q] = v
@@ -81,6 +88,7 @@ def full_q(m, **values):
 
 
 def _mimics(path):
+    """Mimic joints of a URDF: name -> (leader, multiplier, offset)."""
     out = {}
     for j in ET.parse(path).getroot().findall('joint'):
         m = j.find('mimic')
@@ -107,11 +115,13 @@ def test_parallelogram_mimics_are_the_crank_and_rod():
 
 
 def joint_axis_world(d, j):
+    """World axis of joint `j`."""
     S = np.array(d.joints[j].S).reshape(6, -1)
     return d.oMi[j].rotation @ S[3:, 0]
 
 
 def kinematics(m, q):
+    """Pinocchio data after forward kinematics and frame placements at `q`."""
     d = m.createData()
     pin.forwardKinematics(m, d, q)
     pin.updateFramePlacements(m, d)
@@ -119,6 +129,7 @@ def kinematics(m, q):
 
 
 def random_poses(model, count, seed):
+    """Random configurations inside the limits."""
     rng = np.random.default_rng(seed)
     return [rng.uniform(model.lower, model.upper) for _ in range(count)]
 
@@ -187,10 +198,12 @@ def four_bar():
 
 
 def capture_full(full):
+    """Kinematics at the CAD capture pose."""
     return kinematics(full, full_q(full, **CAPTURE))
 
 
 def in_link5(full, d, point):
+    """Point expressed through link5."""
     return d.oMf[full.getFrameId('link5')].act(point)
 
 
@@ -258,6 +271,7 @@ def test_mimic_tree_keeps_the_loop_nearly_closed(full):
 
 # --------------------------------------------------------------------------- flange and tool0
 def _importer():
+    """Load robots/arm01/cad/import_full_assembly.py as a module."""
     spec = importlib.util.spec_from_file_location(
         'import_full_assembly', os.path.join(ARM01, 'cad', 'import_full_assembly.py'))
     mod = importlib.util.module_from_spec(spec)
@@ -294,6 +308,7 @@ def test_tool0_is_rigid_on_the_flange(model):
 
 # =========================================================================== 2. self-consistency
 def overlay_model(arm, overlay):
+    """Arm model with a kinematic overlay applied."""
     m = ArmModel(arm.urdf, arm.names)
     m.apply_overlay(overlay)
     return m
@@ -319,6 +334,7 @@ def test_jacobian_matches_finite_differences(model, arm, frame):
 
 
 def subtree(m, root):
+    """Joint ids in the subtree rooted at `root`."""
     out = {root}
     for j in range(root + 1, m.njoints):
         if m.parents[j] in out:
@@ -368,10 +384,12 @@ def test_overlay_rotation_pivots_on_the_joint_origin(model, arm):
 
 # --------------------------------------------------------------------------- independent FK
 def _floats(text, default):
+    """Floats from a space-separated attribute."""
     return np.array([float(v) for v in (text or default).split()])
 
 
 def _rpy(r, p, y):
+    """URDF fixed-axis roll, pitch, yaw rotation matrix."""
     cr, sr, cp, sp, cy, sy = math.cos(r), math.sin(r), math.cos(p), math.sin(p), math.cos(y), math.sin(y)
     Rx = np.array([[1, 0, 0], [0, cr, -sr], [0, sr, cr]])
     Ry = np.array([[cp, 0, sp], [0, 1, 0], [-sp, 0, cp]])
@@ -380,6 +398,7 @@ def _rpy(r, p, y):
 
 
 def _hat(w):
+    """Skew-symmetric matrix."""
     return np.array([[0, -w[2], w[1]], [w[2], 0, -w[0]], [-w[1], w[0], 0]])
 
 
@@ -398,6 +417,7 @@ class ProductOfExponentials:
     and S the joint screws in base_link at the zero pose."""
 
     def __init__(self, path):
+        """Independent product-of-exponentials model read straight from the URDF."""
         root = ET.parse(path).getroot()
         self.joint = {}
         for j in root.findall('joint'):
@@ -424,6 +444,7 @@ class ProductOfExponentials:
                 self.screw[n] = (w, -np.cross(w, Mc[:3, 3]))
 
     def _zero(self, link):
+        """Zero-pose transform of `link`."""
         if link not in self.M:
             if link not in self.by_child:
                 self.M[link] = np.eye(4)            # root
@@ -433,6 +454,7 @@ class ProductOfExponentials:
         return self.M[link]
 
     def chain(self, link):
+        """Joints from `link` back to the root."""
         out = []
         while link in self.by_child:
             n = self.by_child[link]
@@ -441,6 +463,7 @@ class ProductOfExponentials:
         return out[::-1]
 
     def fk(self, q: dict, link):
+        """Pose of `link` for joint values `q` (mimic joints follow their leaders)."""
         T = np.eye(4)
         for n in self.chain(link):
             if n not in self.screw:

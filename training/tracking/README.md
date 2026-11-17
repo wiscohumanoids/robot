@@ -1,8 +1,11 @@
 # training/tracking (GPU VM)
 
 Motion tracking (BeyondMimic-style, mjlab's tracking task): one policy reproduces one LAFAN1 human motion clip, whole
-body. Runs in the `training/locomotion/` uv environment. Not used by the ROS stack yet: the walking policy is what
-drives `/cmd_vel`, and a tracking policy plays one fixed motion rather than following commands.
+body. Runs in the `training/locomotion/` uv environment. A tracking policy plays one fixed motion rather than following
+`/cmd_vel`. Export a run with `tools/vm.sh pull-policy <run> <id>` (manifest v3, `kind: tracking`) and run it in the
+ROS stack with `policy:=/hsim/models/locomotion/<id>`: the locomotion node aligns the clip to where the robot stands,
+plays it once, then holds the last frame (`loop:=true` repeats it). Its observation is checked against mjlab's to
+float precision.
 
 | Path | What |
 |---|---|

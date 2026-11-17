@@ -1,4 +1,4 @@
-"""Convert raw manipulation episodes (F1's format, docs/runs/2026-11-10_overnight_plan.md) into a
+"""Convert raw manipulation episodes (sim/episode_io.py format) into a
 GR00T-flavoured LeRobot v2 dataset.
 
 Raw input: <raw_dir>/episode_XXXXXX.npz + episode_XXXXXX.json (20 Hz)
@@ -34,6 +34,7 @@ JOINT_NAMES_ARM = ["shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow", "
 
 
 def concat(ep, layout):
+    """Concatenate the layout's fields into one array per step."""
     cols = []
     for _, key, dim in layout:
         x = np.asarray(ep[key], np.float32)
@@ -42,6 +43,7 @@ def concat(ep, layout):
 
 
 def layout_meta(layout):
+    """Start and end index of each field."""
     out, i = {}, 0
     for name, _, dim in layout:
         out[name] = {"start": i, "end": i + dim}
@@ -50,6 +52,7 @@ def layout_meta(layout):
 
 
 def names(layout):
+    """Per-dimension names for the layout."""
     out = []
     for name, _, dim in layout:
         if name.endswith("_arm"):
@@ -62,6 +65,7 @@ def names(layout):
 
 
 def write_video(frames, path, fps):
+    """Write frames to an MP4 with ffmpeg."""
     path.parent.mkdir(parents=True, exist_ok=True)
     T, H, W, _ = frames.shape
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
@@ -71,6 +75,7 @@ def write_video(frames, path, fps):
 
 
 def main():
+    """Convert raw episodes into a GR00T LeRobot v2 dataset."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", required=True)
     ap.add_argument("--out", required=True)

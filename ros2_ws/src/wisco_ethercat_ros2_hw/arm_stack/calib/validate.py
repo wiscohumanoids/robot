@@ -1,4 +1,4 @@
-"""`arm validate`: release gate (spec: Validation and repeatability).
+"""`arm validate`: release gate.
 
 The arm is released for data collection only after all four tests pass warm;
 the report is saved beside the calibration file (the CLI does that).
@@ -9,9 +9,9 @@ the report is saved beside the calibration file (the CLI does that).
                  Without mocap: three dial indicators on a cube on the flange
                  (hw/indicator_cube.py), one pose per fixture setup; the sim
                  uses it automatically, hardware asks first.
-  Pivot          stage 8 rerun at the end of the warm session: spread < 3 mm
+  Pivot          `arm pivot` rerun at the end of the warm session: spread < 3 mm
                  and within 1 mm of the cold result.
-  Hold           slow up/down sweeps through 10 poses not used in the stage 5
+  Hold           slow up/down sweeps through 10 poses not used in the `arm gravity`
                  fit (residual < 5% of peak gravity torque per joint), then
                  gravity comp only (Mode T, no stiffness) in each: drift < 2 deg in 5 s.
   Replay         3 recorded teleop trajectories in Mode P, each twice: RMS joint
@@ -62,6 +62,7 @@ def synthetic_teleop(model, rng, duration=8.0, dt=0.001, count=3) -> List[np.nda
 
 
 def replay(ctx, traj: np.ndarray, dt: float):
+    """Replay a recorded trajectory and return the tracking error."""
     client = ctx.client
     move_to(client, traj[0], max_speed=0.5, settle=0.5)
     stride = max(1, int(round(client.cmd_dt / dt)))
@@ -74,6 +75,7 @@ def replay(ctx, traj: np.ndarray, dt: float):
 
 
 def hold_test(ctx, n_poses, exclude: Sequence[np.ndarray]):
+    """Hold random poses away from `exclude` and measure drift."""
     model = ctx.model
     rng = np.random.default_rng(2024)
     peak_g = model.peak_gravity_torque()
@@ -123,6 +125,7 @@ def repeatability_source(ctx: StageContext):
 
 def run(ctx: StageContext, replay_trajectories: Optional[List[np.ndarray]] = None,
         replay_dt: float = 0.001, warm_s: float = None) -> StageResult:
+    """`arm validate`: release gate: holding, replay tracking and repeatability against thresholds."""
     lines, flags = [], []
     results = {}
     client = ctx.client

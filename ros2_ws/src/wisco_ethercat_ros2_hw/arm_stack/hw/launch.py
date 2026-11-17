@@ -11,7 +11,9 @@ import yaml
 
 
 class ArmLaunch:
+    """Runs arm01.launch.py as a child process for commands that manage their own launch (autocal)."""
     def __init__(self, arm, calibration_file, log_path, *, enable_motion=True):
+        """Start the launch with the given joint table and calibration, logging its output to `log_path`."""
         self.stream = open(log_path, 'w')
         try:
             command = [
@@ -28,10 +30,12 @@ class ArmLaunch:
         self.log_path = Path(log_path)
 
     def check_running(self):
+        """Raise with the log tail if the launch exited."""
         if self.process.poll() is not None:
             raise RuntimeError('Arm launch exited.\n' + self.log_path.read_text()[-4000:])
 
     def connect(self, arm, seed):
+        """Connect a ROS client once the controller publishes state (fails if the launch died)."""
         from .ros_client import RosArmClient
         self.check_running()
         # The seven drives can take 6–8 s each to enter OP before controllers spawn.
@@ -43,6 +47,7 @@ class ArmLaunch:
             raise
 
     def close(self):
+        """Stop the launch: SIGINT, then SIGTERM, then SIGKILL."""
         for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGKILL):
             if self.process.poll() is not None:
                 break

@@ -35,6 +35,7 @@ TRAINING_STATE_NAME = "training_state.pt"
 
 
 def seed_everything(seed: int) -> None:
+    """Seed Python, NumPy and torch."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -81,6 +82,7 @@ def save_checkpoint(
 
 
 def restore_rng_state(state: dict) -> None:
+    """Restore saved random states (resume)."""
     random.setstate(state["python_rng"])
     np.random.set_state(state["numpy_rng"])
     torch.set_rng_state(state["torch_rng"])
@@ -149,6 +151,7 @@ def evaluate_inference(policy, loader, preprocessor, postprocessor=None, action_
 
 
 def prune_checkpoints(root: Path, keep: int) -> None:
+    """Keep only the newest `keep` periodic checkpoints."""
     checkpoints = sorted(root.glob("step_*"))
     for path in checkpoints[:-keep]:
         shutil.rmtree(path)
@@ -163,6 +166,7 @@ def rollout_score(rates: dict, objective="stack") -> tuple:
 
 
 def main() -> None:
+    """Train ACT on a LeRobot dataset (or the reference benchmark), with validation and rollout evaluation."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference-act", action="store_true", help="published ALOHA transfer-cube HDF5 benchmark with upstream defaults")
     parser.add_argument("--grad-clip", type=float, default=10., help="0 disables gradient clipping")

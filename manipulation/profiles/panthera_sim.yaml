@@ -1,0 +1,22 @@
+# Arm profile: one simulated Panthera-HT arm stacking blocks (manipulation/panthera_sim). See README.md for the format.
+name: panthera_sim
+description: one Panthera-HT 6-DoF arm + parallel gripper in MuJoCo, stacking three coloured blocks
+robot_type: panthera_ht_sim
+fps: 30
+state_dim: 7                     # six joint angles + gripper command
+action_dim: 7                    # next 30 Hz joint target + gripper
+cameras: [observation.images.shoulder, observation.images.wrist]
+image_size: 256
+task: stack the three colored cubes
+simulation: true                 # checkpoints record the simulator dynamics version (sim/dynamics.py)
+methods: [act, pi05]
+pi05:
+  # Held-out episodes; normalization statistics are recomputed on the training episodes only
+  train_episodes: [0, 900]
+  val_episodes: [900, 1000]
+  normalization: train_episodes
+deployment:                      # written into every pi0.5 checkpoint's deployment.json
+  action_representation: absolute
+  action_alignment: next_uniform_sample
+  state_gripper: command
+  success_hold_seconds: 1.0

@@ -1,4 +1,4 @@
-"""Stage 3, `arm limits`: find the hard stops, set soft limits 3 deg inside.
+"""`arm limits`: find the hard stops, set soft limits 3 deg inside.
 
 Each joint moves slowly toward each URDF limit and on past it in Mode P, with
 gravity feedforward and 0x6072 clamped to the model gravity torque plus a
@@ -31,6 +31,7 @@ def path_gravity(model, home, j, end, samples=25):
 
 
 def find_stop(ctx, j, direction, home, clamp, reference=None):
+    """Drive joint `j` slowly toward a stop until it stalls; returns where it stopped."""
     client, model = ctx.client, ctx.model
     speed = SPEED * (2 if ctx.quick else 1)
     if reference is None:
@@ -74,6 +75,9 @@ def find_stop(ctx, j, direction, home, clamp, reference=None):
 
 
 def run(ctx: StageContext) -> StageResult:
+    """`arm limits`: find each joint's stops and set soft limits 3 degrees inside them (URDF range without hard
+    stops).
+    """
     client, model, arm = ctx.client, ctx.model, ctx.arm
     home = safe_home(model)
     peak = np.array([j.peak_torque_nm for j in arm.joints])
@@ -85,7 +89,7 @@ def run(ctx: StageContext) -> StageResult:
         found = []
         for direction in (-1, +1):
             end = (model.upper[j] + SEARCH_BEYOND) if direction > 0 else (model.lower[j] - SEARCH_BEYOND)
-            # model gravity anywhere on the way, plus a margin (spec: 0x6072 = gravity + margin)
+            # model gravity anywhere on the way, plus a margin
             g = path_gravity(model, home, j, end)
             clamp = g + 0.08 * peak
             max_t = np.array([jt.max_torque_nm for jt in arm.joints])

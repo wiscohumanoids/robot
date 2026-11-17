@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 
 def canonical_hash(value):
+    """Stable hash of a JSON value."""
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
                                     allow_nan=False).encode()).hexdigest()
 
@@ -205,6 +206,7 @@ def cache_candidates(sessions, checkpoint, output, seed=0, *, runtime_factory=No
 
 
 def main():
+    """Cache base-policy candidates for recorded EXPO sessions."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--session', action='append', required=True, help='Local EXPO session directory; repeat for more')
     parser.add_argument('--checkpoint', help='Existing local immutable pi0.5 checkpoint')

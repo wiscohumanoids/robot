@@ -1,6 +1,6 @@
 # hsim_navigation — localization + Nav2 for a walking humanoid (any robot profile)
 
-`launch/navigation.launch.py mapping:=map|slam|rtabmap` (started by `hsim_bringup/autonomy.launch.py`).
+`launch/navigation.launch.py mapping:=map|slam|rtabmap` (started by `hsim_bringup/launch/autonomy.launch.py`).
 
 | Config | Notes |
 |---|---|

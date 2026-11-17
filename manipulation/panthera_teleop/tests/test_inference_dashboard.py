@@ -19,7 +19,9 @@ import inference_dashboard as dashboard
 
 
 class FakeHardware:
+    """Hardware stand-in with simple limits."""
     def __init__(self):
+        """Limits, config and state."""
         self.lower = np.full(14, -1.)
         self.upper = np.full(14, 1.)
         self.config = dict(control_hz=150)
@@ -29,23 +31,29 @@ class FakeHardware:
         self.closed = threading.Event()
 
     def open(self):
+        """Not needed by the fake."""
         pass
 
     def read(self):
+        """Current position."""
         return self.position.copy(), {}, {}
 
     def images(self):
+        """No images."""
         return {}
 
     def command(self, target):
+        """Jump to the target and record it."""
         self.position = target.copy()
         self.commands.append(target.copy())
 
     def close(self):
+        """Mark closed."""
         self.closed.set()
 
 
 def wait_for(predicate, timeout=2):
+    """Wait until `predicate` holds (fails after `timeout`)."""
     deadline = time.monotonic() + timeout
     while not predicate():
         if time.monotonic() > deadline:
@@ -54,6 +62,7 @@ def wait_for(predicate, timeout=2):
 
 
 def fake_request(base, path, body=None, timeout=3):
+    """Fake inference server replies."""
     if path == '/health':
         return dict(status='ready', contract=dashboard.CONTRACT, checkpoint='saved')
     return dict(sequence=body['sequence'], fps=20, checkpoint='saved', mock=False,
@@ -61,23 +70,30 @@ def fake_request(base, path, body=None, timeout=3):
 
 
 class RecoveryHardware(FakeHardware):
+    """Hardware stand-in configured for neutral return."""
     def __init__(self):
+        """Arms away from neutral."""
         super().__init__()
         self.position[:] = .2
         self.config['neutral_return'] = json.loads(
             (dashboard.ROOT / 'config/recording.json').read_text())['neutral_return']
 
     def validate_reset_path(self, *_):
+        """Recovery must never reset the arms."""
         raise RuntimeError('Recovery must not reset')
 
 
 class HangingCloseHardware(RecoveryHardware):
+    """Hardware whose close() hangs."""
     def close(self):
+        """Hang, to test the supervisor timeout."""
         time.sleep(30)
 
 
 class SupervisorTests(unittest.TestCase):
+    """Session supervision and recovery."""
     def create(self, hardware=RecoveryHardware):
+        """A supervisor on the given hardware."""
         supervisor = dashboard.SessionSupervisor('unused', hardware, fake_request)
         self.addCleanup(supervisor.shutdown)
         return supervisor
@@ -154,6 +170,7 @@ class SupervisorTests(unittest.TestCase):
 
 
 class StepTests(unittest.TestCase):
+    """Stepping and blending action chunks."""
     def test_blend_crossfades_aligned_tail_and_preserves_bounds(self):
         old = np.full((40, 14), .2)
         new = np.full((50, 14), -.2)
@@ -210,7 +227,9 @@ class StepTests(unittest.TestCase):
 
 
 class CollectionResetTests(unittest.TestCase):
+    """Returning to neutral between rollouts."""
     def setUp(self):
+        """Neutral-return settings and limits."""
         self.settings = json.loads((dashboard.ROOT / 'config/recording.json').read_text())['neutral_return']
         self.lower = np.full(14, -3.)
         self.upper = np.full(14, 3.)
@@ -245,7 +264,9 @@ class CollectionResetTests(unittest.TestCase):
 
 
 class ControllerTests(unittest.TestCase):
+    """The inference controller."""
     def setUp(self):
+        """A controller on fake hardware."""
         self.hardware = FakeHardware()
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -254,17 +275,20 @@ class ControllerTests(unittest.TestCase):
         self.addCleanup(self.stop)
 
     def stop(self):
+        """Shut the controller down."""
         self.controller.shutdown()
         if self.controller.worker:
             self.controller.worker.join(2)
 
     def request(self, base, path, body=None, timeout=3):
+        """Fake inference server replies."""
         if path == '/health':
             return dict(status='ready', contract=dashboard.CONTRACT, checkpoint='saved')
         return dict(sequence=body['sequence'], fps=20, checkpoint='saved', mock=False,
                     actions=[[.01] * 14] * 50)
 
     def connect(self):
+        """Connect and wait until holding."""
         self.controller.connect()
         wait_for(lambda: self.controller.snapshot()['mode'] == 'holding')
 
@@ -557,6 +581,7 @@ class ControllerTests(unittest.TestCase):
 
 
 class CollectionResetTimingTests(unittest.TestCase):
+    """Hold behaviour before the reset starts."""
     def test_first_tick_before_reset_creation_retains_hold(self):
         settings = json.loads((dashboard.ROOT / 'config/recording.json').read_text())['neutral_return']
         lower, upper = np.full(14, -4.), np.full(14, 4.)
@@ -570,6 +595,7 @@ class CollectionResetTimingTests(unittest.TestCase):
 
 
 class WebTests(unittest.TestCase):
+    """Dashboard web security."""
     def test_mutations_require_token_and_trusted_origin(self):
         controller = dashboard.Controller('unused')
         server = dashboard.make_server(controller, 0)

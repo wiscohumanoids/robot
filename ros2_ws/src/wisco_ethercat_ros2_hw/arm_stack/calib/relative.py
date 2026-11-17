@@ -50,6 +50,7 @@ def fit_local(center, radius, q, tau, test_q, test_tau, resolution):
 
 
 def measure(client, q, radius, resolution, speed):
+    """Holding torque at `q`, approached from both sides so friction cancels."""
     passes = []
     for sign in (-1, 1):
         move_to(client, q + sign*0.1*radius, max_speed=speed, settle=0.3, gravity_ff=False)
@@ -67,6 +68,9 @@ def measure(client, q, radius, resolution, speed):
 
 
 def calibrate(arm, seed, center, client):
+    """Sweep each joint in its local envelope, measure holding torques, and fit and validate the local gravity
+    model.
+    """
     lower = np.array([seed['soft_limits_rad'][n][0] for n in arm.names])
     upper = np.array([seed['soft_limits_rad'][n][1] for n in arm.names])
     radius = (upper-lower)/2
@@ -113,6 +117,7 @@ def calibrate(arm, seed, center, client):
 
 
 def record_sweep(arm, center, lower, upper, client):
+    """Record a relative sweep of every joint to a CSV in the current folder."""
     radius = (upper-lower)/2
     monitor = MotionMonitor(client, arm, SimpleNamespace(lower=lower, upper=upper),
                             command_margin=0.05*radius, check_tracking=False)
@@ -142,6 +147,9 @@ def record_sweep(arm, center, lower, upper, client):
 
 
 def run(args):
+    """Relative `arm autocal`: capture the start, confirm the envelope, run the local calibration, save a passing
+    result.
+    """
     if args.sim:
         raise ValueError('Use the relative calibration tests offline; this command reads the physical reference.')
     if args.force or args.quick:

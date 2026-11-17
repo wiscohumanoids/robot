@@ -43,6 +43,7 @@ SHOULDER_LOOKAT = (0.44, 0.0, 0.12)
 
 
 def shoulder_camera(model: mujoco.MjModel) -> mujoco.MjvCamera:
+    """The fixed shoulder camera."""
     cam = mujoco.MjvCamera()
     mujoco.mjv_defaultFreeCamera(model, cam)
     cam.azimuth = SHOULDER_AZIMUTH
@@ -53,6 +54,7 @@ def shoulder_camera(model: mujoco.MjModel) -> mujoco.MjvCamera:
 
 
 def wrist_camera(model: mujoco.MjModel) -> mujoco.MjvCamera:
+    """The wrist camera of the scene."""
     camera_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "wrist")
     if camera_id < 0:
         raise SystemExit("scene has no 'wrist' camera; run `python sim/make_mjcf.py`")
@@ -63,6 +65,7 @@ def wrist_camera(model: mujoco.MjModel) -> mujoco.MjvCamera:
 
 
 def recording_times(source, sim_dt: float) -> tuple[np.ndarray, str]:
+    """Simulation time of every recorded row, and how it was obtained."""
     if "sim_time" in source:
         t = np.asarray(source["sim_time"], dtype=np.float64)
         method = "recorded_simulation_time"
@@ -88,6 +91,7 @@ def sample_indices(t: np.ndarray, hz: float) -> np.ndarray:
 
 
 def interpolate(t, values, sample_t, quaternion=False):
+    """Values resampled at `sample_t` (quaternions with SLERP)."""
     values = np.asarray(values)
     if quaternion:
         values = values / np.linalg.norm(values, axis=-1, keepdims=True)
@@ -134,6 +138,7 @@ def reconstruct_fingers(source, t, sim):
 
 
 def cache_valid(output: Path, signature: dict, settings: dict) -> bool:
+    """Whether a rendered episode still matches its source and settings."""
     try:
         saved = json.loads((output / "source.json").read_text())
         if saved["source_signature"] != signature or saved["render_signature"] != settings:
@@ -149,6 +154,7 @@ def cache_valid(output: Path, signature: dict, settings: dict) -> bool:
 
 def render_episode(path: Path, output: Path, sim: PantheraSim,
                    renderers, cameras, hz: float, quality: int, settings=None) -> int:
+    """Resample one take at `hz` and render both cameras; returns the frame count."""
     signature = source_signature(path)
     mode = recorded_dynamics(json.loads((path / "meta.json").read_text()))
     # Only legacy finger reconstruction simulates here; recorded poses render
@@ -215,6 +221,7 @@ def render_episode(path: Path, output: Path, sim: PantheraSim,
 
 
 def main() -> None:
+    """Render every take for dataset building (cached by fingerprint)."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)

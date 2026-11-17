@@ -17,6 +17,7 @@ DEG = math.pi / 180.0
 
 @dataclass
 class StageContext:
+    """What a stage gets: joint config, client, current calibration, model, and run flags."""
     arm: ArmConfig
     client: ArmClient
     calibration: Dict[str, Any]
@@ -28,12 +29,14 @@ class StageContext:
     motion_speed: float = 0.4         # position-move speed cap for calibration
 
     def note(self, text: str):
+        """Log a note to the session recording."""
         if self.log is not None:
             self.log.event('note', text=text)
 
 
 @dataclass
 class StageResult:
+    """What a stage returns: pass/fail, metrics, the calibration fields to write, report lines and flags."""
     stage: str
     passed: bool
     metrics: Dict[str, Any]
@@ -44,6 +47,7 @@ class StageResult:
     skipped: bool = False            # not applicable to this arm (counts as passed)
 
     def report(self) -> str:
+        """The printable report: PASS/FAIL/SKIP, the lines, then the flags."""
         head = '%s: %s' % (self.stage, 'SKIP' if self.skipped else ('PASS' if self.passed else 'FAIL'))
         out = [head] + ['  ' + l for l in self.lines]
         if self.flags:
@@ -52,6 +56,7 @@ class StageResult:
 
 
 def skipped(stage: str, why: str) -> StageResult:
+    """A skipped (passing) result with the reason."""
     return StageResult(stage, True, {'skipped': True, 'reason': why}, {}, [why], skipped=True)
 
 
@@ -68,6 +73,7 @@ def safe_home(model: ArmModel) -> np.ndarray:
 
 
 def random_poses(model: ArmModel, count: int, rng, margin=10 * DEG, spread=1.0) -> np.ndarray:
+    """`count` random configurations inside the limits less `margin`, scaled about the middle by `spread`."""
     margin = np.minimum(margin, 0.2 * (model.upper - model.lower))
     lo = model.lower + margin
     hi = model.upper - margin
@@ -77,6 +83,7 @@ def random_poses(model: ArmModel, count: int, rng, margin=10 * DEG, spread=1.0) 
 
 
 def r_squared(y, yhat) -> float:
+    """Coefficient of determination of `yhat` against `y` (0 when `y` is constant)."""
     y = np.asarray(y)
     ss_res = np.sum((y - yhat) ** 2)
     ss_tot = np.sum((y - y.mean()) ** 2)

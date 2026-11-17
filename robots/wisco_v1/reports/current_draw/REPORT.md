@@ -2,7 +2,7 @@
 
 Generated 2026-11-12 by `robots/wisco_v1/tools/current_estimate.py` (policy `models/locomotion/wisco_v1_velocity_arms_free`, plain MuJoCo, flat empty floor). Re-run the script to regenerate.
 
-**Speed range.** All tests stay inside what this walking policy (checkpoint J3h model_4650) was trained on: forward up to **1.0 m/s**, backward 0.4 m/s, sidestep, and turning in place. 1.0 m/s is the design walking speed of this policy; faster walking would need a policy trained for it (and the ankle findings below get worse).
+**Speed range.** All tests stay inside what this walking policy (models/locomotion/wisco_v1_velocity_arms_free) was trained on: forward up to **1.0 m/s**, backward 0.4 m/s, sidestep, and turning in place. 1.0 m/s is the design walking speed of this policy; faster walking would need a policy trained for it (and the ankle findings below get worse).
 
 **Read this first.** These are simulation estimates built from datasheet numbers, before any bench data. Use the averages for battery/energy planning with about +/-25 % uncertainty and the 10 ms / 100 ms peaks (plus margin) for driver, fuse, connector and BMS sizing. Section 6 lists what is assumed and how to firm it up.
 

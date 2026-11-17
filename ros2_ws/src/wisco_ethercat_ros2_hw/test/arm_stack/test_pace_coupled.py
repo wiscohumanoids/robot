@@ -18,6 +18,7 @@ from arm_stack.pace.backend import JointLog, JointReplayBackend  # noqa: E402
 
 
 def _setup(j=1, T=400, dt=0.004, f1=6.0):
+    """Model, held pose and a synthetic chirp on joint `j`, for the coupled replay tests."""
     arm = load_arm()
     model = build_model(arm, empty_calibration(arm))
     hold = safe_home(model)

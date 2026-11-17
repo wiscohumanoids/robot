@@ -17,7 +17,9 @@ from infra.rl.replay import (grouped_split, validate_replay, save_replay, load_r
 
 
 class ActionContractTests(unittest.TestCase):
+    """Action normalization contract."""
     def normalizer(self):
+        """A normalizer with distinct bounds per dimension."""
         low = np.arange(14, dtype=np.float32) - 20
         high = low + np.arange(1, 15, dtype=np.float32)
         return ActionNormalizer(low, high), low, high
@@ -56,10 +58,13 @@ class ActionContractTests(unittest.TestCase):
 
 
 class ObservationContractTests(unittest.TestCase):
+    """Observation encoding contract."""
     def encoder(self):
+        """An encoder with unit normalization."""
         return ObservationEncoder(ActionNormalizer(np.full(14, -1.), np.full(14, 1.)))
 
     def observation(self):
+        """A valid observation."""
         return {'state': np.linspace(-.8, .8, 14), 'images': {
             'wrist_port3': np.full((256, 256, 3), 255, dtype=np.uint8),
             'overhead': np.zeros((256, 256, 3), dtype=np.uint8),
@@ -93,6 +98,7 @@ class ObservationContractTests(unittest.TestCase):
 
 
 class SourceSplitTests(unittest.TestCase):
+    """Train/validation splits never share a source episode."""
     def test_corrections_from_same_original_episode_never_leak_between_splits(self):
         sources = ['original-a'] * 3 + ['original-b'] * 2 + ['original-c'] * 4 + ['original-d']
         train, evaluation = grouped_split(sources, eval_fraction=.4, seed=12)
@@ -106,7 +112,9 @@ class SourceSplitTests(unittest.TestCase):
 
 
 class ReplayProvenanceTests(unittest.TestCase):
+    """Replay files carry and check model identities."""
     def fixture(self):
+        """A small valid replay."""
         spec = ReplaySpec(gamma=.5, C=3, N=2, obs_dim=8,
                           checkpoint_id='immutable-model-sha', processor_id='processor-sha')
         arrays = {'obs': np.zeros((3, 8), np.float32),

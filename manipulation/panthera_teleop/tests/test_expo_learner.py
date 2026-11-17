@@ -24,6 +24,7 @@ from infra.rl.models import scaled_tanh_log_prob, SquashedGaussianEditor
 
 
 class NumericalAlgorithmTests(unittest.TestCase):
+    """Bootstrap targets and selection against hand calculations."""
     def test_chunk_bootstrap_matches_hand_calculation_and_has_no_entropy_term(self):
         # gamma=.5, C=3, rewards 1,2,4 => return 1+1+1=3.
         target = chunk_bellman_target(torch.tensor([3., 3.]),
@@ -99,7 +100,9 @@ class NumericalAlgorithmTests(unittest.TestCase):
 
 
 class LearnerIntegrationTests(unittest.TestCase):
+    """Learner updates on small batches."""
     def make_learner(self):
+        """A small seeded learner."""
         torch.manual_seed(901)
         return EXPOLearner(EXPOConfig(
             obs_dim=8, action_dim=14, chunk_size=2, hidden_dim=16,
@@ -107,6 +110,7 @@ class LearnerIntegrationTests(unittest.TestCase):
             utd_ratio=1), device='cpu')
 
     def batch(self):
+        """A small random batch."""
         generator = torch.Generator().manual_seed(50)
         return {
             'obs': torch.randn(4, 8, generator=generator),
@@ -226,6 +230,7 @@ class LearnerIntegrationTests(unittest.TestCase):
         torch.testing.assert_close(batch['editor_train_valid'], untouched, atol=0, rtol=0)
 
     def bounded_learner(self):
+        """A learner with bounds on the gripper dimensions."""
         cfg = self.make_learner().config
         lower, upper = [None] * 14, [None] * 14
         for index in (6, 13):

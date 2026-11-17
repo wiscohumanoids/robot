@@ -18,7 +18,13 @@ CMD_TIMEOUT_S = 0.5
 
 
 class LocomotionStub(Node):
+    """Node `locomotion` without a policy: publishes the default pose as joint targets and a status that reports
+    commands.
+    """
     def __init__(self):
+        """Read the joint names and default pose parameters, create the publishers and the /cmd_vel subscription,
+        start the timers.
+        """
         super().__init__('locomotion')
         self.declare_parameter('joint_names', Parameter.Type.STRING_ARRAY)
         self.declare_parameter('default_joint_pos', Parameter.Type.DOUBLE_ARRAY)
@@ -35,10 +41,12 @@ class LocomotionStub(Node):
         self.get_logger().info('STUB locomotion: holds default pose, ignores commands')
 
     def on_cmd(self, msg: TwistStamped):
+        """Store the latest command and its time."""
         self.cmd = msg.twist
         self.cmd_time = self.get_clock().now()
 
     def tick(self):
+        """Publish the default pose on /locomotion/joint_targets."""
         msg = JointState()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.name = self.joint_names
@@ -46,12 +54,13 @@ class LocomotionStub(Node):
         self.pub_targets.publish(msg)
 
     def publish_status(self):
+        """Publish /locomotion/status: stub mode, and whether a velocity command arrived recently."""
         age = None
         if self.cmd_time is not None:
             age = (self.get_clock().now() - self.cmd_time).nanoseconds * 1e-9
         active = age is not None and age < CMD_TIMEOUT_S
         st = DiagnosticStatus(
-            level=DiagnosticStatus.OK, name='locomotion', hardware_id='g1',
+            level=DiagnosticStatus.OK, name='locomotion', hardware_id='robot',
             message='stub: holding default pose')
         st.values = [
             KeyValue(key='mode', value='stub'),
@@ -66,6 +75,7 @@ class LocomotionStub(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = LocomotionStub()
     try:

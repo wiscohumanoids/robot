@@ -64,16 +64,19 @@ def _description_dirs() -> List[str]:
 
 
 def load_yaml(path: str) -> Dict[str, Any]:
+    """YAML file as a dict (empty when the file is empty)."""
     with open(path) as f:
         return yaml.safe_load(f) or {}
 
 
 def file_hash(path: str) -> str:
+    """First 16 hex digits of a file's SHA-256."""
     with open(path, 'rb') as f:
         return hashlib.sha256(f.read()).hexdigest()[:16]
 
 
 def git_sha() -> Optional[str]:
+    """Short git commit of the package source, or None outside a checkout."""
     try:
         out = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=PACKAGE_ROOT,
                              capture_output=True, text=True, timeout=5)
@@ -85,6 +88,7 @@ def git_sha() -> Optional[str]:
 # --------------------------------------------------------------------------- joint config
 @dataclass
 class JointSpec:
+    """One row of the joint table, merged with its actuator model defaults."""
     name: str
     bus_position: int
     model: str
@@ -103,6 +107,7 @@ class JointSpec:
 
 @dataclass
 class ArmConfig:
+    """A loaded joint table: the arm, its URDF, control mode, bus cycle and joints."""
     arm: str
     path: str
     urdf: str
@@ -114,17 +119,21 @@ class ArmConfig:
 
     @property
     def names(self) -> List[str]:
+        """Joint names in table order."""
         return [j.name for j in self.joints]
 
     @property
     def n(self) -> int:
+        """Number of joints."""
         return len(self.joints)
 
     @property
     def dt(self) -> float:
+        """Bus cycle, s."""
         return self.cycle_us * 1e-6
 
     def hash(self) -> str:
+        """Hash of the joint table file (calibrations record it)."""
         return file_hash(self.path)
 
     @property
@@ -225,6 +234,7 @@ CALIB_FIELDS = (
 
 
 def empty_calibration(arm: ArmConfig) -> Dict[str, Any]:
+    """A calibration with every field present and unset, for a new arm."""
     names = arm.names
     return {
         'version': 0,
@@ -262,13 +272,16 @@ class CalibrationStore:
             self.dir = os.path.join(self.dir, re.sub(r'[^A-Za-z0-9_.-]', '_', str(serial)))
 
     def versions(self) -> List[str]:
+        """Calibration files, oldest first."""
         return calibration_versions(self.dir)
 
     def latest_path(self) -> Optional[str]:
+        """Newest calibration file, or None."""
         v = self.versions()
         return v[-1] if v else None
 
     def latest(self) -> Dict[str, Any]:
+        """Newest calibration (empty when none)."""
         path = self.latest_path()
         return load_yaml(path) if path else empty_calibration(self.arm)
 
@@ -318,6 +331,7 @@ class CalibrationStore:
 
 
 def calibration_hash(path: Optional[str]) -> Optional[str]:
+    """Hash of a calibration file, or None."""
     return file_hash(path) if path else None
 
 

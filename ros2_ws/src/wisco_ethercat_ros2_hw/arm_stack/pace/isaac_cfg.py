@@ -1,4 +1,4 @@
-"""Isaac Lab asset config for arm01 (spec stage 9: PACE replay in Isaac Lab).
+"""Isaac Lab asset config for arm01 (PACE replay in Isaac Lab).
 
 Written against the Isaac Lab 2.x API (isaaclab 0.4x: `isaaclab.assets`,
 `isaaclab.actuators`, `isaaclab.sim`). Nothing here imports isaaclab at module
@@ -77,6 +77,7 @@ def prepare_urdf_for_isaac(src: str = URDF_PATH, dst: str = PREPARED_URDF, repo:
 
 
 def urdf_joint_limits(path: str = URDF_PATH) -> Dict[str, Dict[str, float]]:
+    """Limits of every non-mimic joint in the URDF."""
     out = {}
     for joint in ET.parse(path).getroot().findall('joint'):
         lim = joint.find('limit')
@@ -87,6 +88,7 @@ def urdf_joint_limits(path: str = URDF_PATH) -> Dict[str, Dict[str, float]]:
 
 
 def config_gains(path: str = ARM_CONFIG) -> Dict[str, Dict[str, float]]:
+    """Per-joint gains from the joint config."""
     import yaml
     with open(path) as f:
         raw = yaml.safe_load(f)

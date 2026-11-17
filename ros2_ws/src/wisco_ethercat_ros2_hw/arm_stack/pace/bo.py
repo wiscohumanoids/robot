@@ -18,14 +18,17 @@ class Space:
     """Named box dimensions; ('choice', [a, b]) dimensions are rounded to an index."""
 
     def __init__(self, dims: Dict[str, Tuple]):
+        """Named parameter dimensions."""
         self.names = list(dims)
         self.dims = dims
 
     @property
     def d(self) -> int:
+        """Number of dimensions."""
         return len(self.names)
 
     def to_params(self, u: np.ndarray) -> Dict[str, float]:
+        """Map a unit-cube point to named parameter values."""
         out = {}
         for x, name in zip(u, self.names):
             spec = self.dims[name]
@@ -41,15 +44,18 @@ class Space:
 
 
 def _kernel(A, B, length):
+    """Squared-exponential kernel matrix."""
     d = (A[:, None, :] - B[None, :, :]) / length
     return np.exp(-0.5 * np.sum(d * d, axis=2))
 
 
 def _norm_cdf(z):
+    """Standard normal CDF."""
     return 0.5 * (1 + np.vectorize(math.erf)(z / math.sqrt(2)))
 
 
 def _norm_pdf(z):
+    """Standard normal PDF."""
     return np.exp(-0.5 * z * z) / math.sqrt(2 * math.pi)
 
 
@@ -58,6 +64,7 @@ class GPBO:
 
     def __init__(self, space: Space, n_init: int = 5, length: float = 0.3, noise: float = 0.05,
                  seed: int = 0):
+        """Gaussian-process Bayesian optimizer over `space`."""
         self.space = space
         self.n_init = n_init
         self.length = length
@@ -67,6 +74,7 @@ class GPBO:
         self.y: List[float] = []
 
     def _posterior(self, X):
+        """GP posterior mean and standard deviation at points `X`."""
         U = np.array(self.U)
         y = np.array(self.y)
         mu0, sd0 = y.mean(), y.std() or 1.0
@@ -81,6 +89,9 @@ class GPBO:
         return mu * sd0 + mu0, np.sqrt(var) * sd0
 
     def ask(self) -> np.ndarray:
+        """Next point: random during the initial design, then the best expected improvement among sampled
+        candidates.
+        """
         if len(self.U) < self.n_init:
             return self.rng.uniform(0, 1, self.space.d)
         X = self.rng.uniform(0, 1, (4000, self.space.d))
@@ -93,9 +104,11 @@ class GPBO:
         return X[int(np.argmax(ei))]
 
     def tell(self, u: Sequence[float], y: float) -> None:
+        """Add an observation."""
         self.U.append(np.asarray(u, float))
         self.y.append(float(y))
 
     def best(self):
+        """Best point and value so far."""
         i = int(np.argmin(self.y))
         return self.U[i], self.y[i]

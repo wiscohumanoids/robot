@@ -26,6 +26,7 @@ def png_b64(rgb):
 
 
 def resize_nearest(rgb, w, h):
+    """Nearest-neighbour resize of an RGB array to (w, h); returns the input when it already has that size."""
     H, W, _ = rgb.shape
     if (W, H) == (w, h):
         return rgb
@@ -35,17 +36,21 @@ def resize_nearest(rgb, w, h):
 
 
 class VlaClient:
+    """Minimal HTTP client for services/vla_server (health and act)."""
     def __init__(self, url, timeout=10.0):
+        """Server URL and timeout."""
         self.url = url.rstrip('/')
         self.timeout = timeout
 
     def _call(self, path, payload=None):
+        """GET `path` (POST when `payload` is given, as JSON) and return the decoded JSON reply."""
         data = None if payload is None else json.dumps(payload).encode()
         req = urllib.request.Request(self.url + path, data=data, headers={'Content-Type': 'application/json'})
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
             return json.loads(r.read())
 
     def health(self):
+        """Server health."""
         return self._call('/health')
 
     def act(self, instruction, ego_rgb, state):

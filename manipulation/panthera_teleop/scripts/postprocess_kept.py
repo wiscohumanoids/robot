@@ -26,22 +26,26 @@ NAMES = NAMES[:6] + ["left.gripper_rad"] + NAMES[6:] + ["right.gripper_rad"]
 
 
 def read_rows(path):
+    """JSON lines of a file."""
     with path.open() as stream:
         return [json.loads(line) for line in stream if line.strip()]
 
 
 def write_json(path, value):
+    """Write JSON (creating folders)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
 
 
 def write_rows(path, rows):
+    """Write rows as JSON lines."""
     with path.open("w") as stream:
         for row in rows:
             stream.write(json.dumps(row, allow_nan=False) + "\n")
 
 
 def sha256(path):
+    """SHA-256 of a file."""
     h = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
@@ -50,6 +54,7 @@ def sha256(path):
 
 
 def vector(sample, field="position_rad", gripper_field="position"):
+    """State vector of a sample (both arms and grippers)."""
     result = np.asarray([value for arm in ARMS for value in
                        sample["arms"][arm][field] + [sample["arms"][arm]["gripper"][gripper_field]]],
                       dtype=np.float32)
@@ -59,12 +64,14 @@ def vector(sample, field="position_rad", gripper_field="position"):
 
 
 def nearest_index(times, timestamp):
+    """Index of the sample time nearest `timestamp`."""
     right = int(np.searchsorted(times, timestamp))
     choices = [max(0, right - 1), min(len(times) - 1, right)]
     return min(choices, key=lambda i: abs(int(times[i]) - timestamp))
 
 
 def prepare_image(path, roi, size):
+    """Crop and resize a camera image."""
     with Image.open(path) as source:
         image = source.convert("RGB")
         assert image.size == (640, 480), (path, image.size)
@@ -76,7 +83,9 @@ def prepare_image(path, roi, size):
 
 
 class JpegLeRobotDataset(LeRobotDataset):
+    """LeRobot dataset that stores images as JPEG."""
     def _save_image(self, image, fpath, compress_level=1):
+        """Save an image as JPEG."""
         # Native LeRobot temporary paths end in .png; explicit format overrides
         # that suffix. The temporary files are deleted by save_episode. Parquet
         # embeds JPEG bytes, and statistics are computed from those same bytes.
@@ -84,6 +93,7 @@ class JpegLeRobotDataset(LeRobotDataset):
 
 
 def source_path(root, annotation):
+    """Folder of an annotated episode."""
     category = annotation.get('source_category')
     if category is not None and category not in ('kept', 'review', 'discarded'):
         raise ValueError('Invalid source category')
@@ -97,6 +107,7 @@ def source_path(root, annotation):
 
 
 def validate_hitl_selection(metadata, annotation, states):
+    """Check a human-in-the-loop selection only uses human-controlled steps."""
     if metadata['context']['mode'] == 'independent_gravity_assist':
         return
     if metadata['context']['mode'] != 'human_in_the_loop':
@@ -116,6 +127,7 @@ def validate_hitl_selection(metadata, annotation, states):
 
 
 def export(args):
+    """Export annotated episodes into a LeRobot dataset."""
     spec = json.loads(args.annotations.read_text())
     output = args.output.resolve()
     trimmed_root = args.trimmed_output.resolve()

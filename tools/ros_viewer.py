@@ -46,6 +46,7 @@ LAYOUTS = ["corner", "side by side", "robot's view", "off"]
 
 
 def load_world(env, scene, build_dir="build"):
+    """The environment's built world (or a scene file)."""
     if env:
         scene = ROOT / "assets/envs" / env / build_dir / "world.mjb"
         if not scene.exists():
@@ -69,6 +70,7 @@ def panel_rect(layout, vp):
 
 
 def main():
+    """Native MuJoCo window that mirrors the running ROS sim and sends keyboard commands."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--env", help="environment, e.g. test/table_room (must match the sim's env:=)")
     ap.add_argument("--scene", type=Path, default=None, help="world without --env (default: the robot's training world)")

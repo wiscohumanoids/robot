@@ -3,7 +3,7 @@
   <name>hsim_manipulation</name>
   <version>0.1.0</version>
   <description>Manipulation skill: runs the VLA policy (services/vla_server, GR00T) at 20 Hz on the arms while the robot stands. Action server /skills/manipulate.</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>

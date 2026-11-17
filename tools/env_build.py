@@ -50,6 +50,7 @@ def load_room(path: Path) -> mujoco.MjSpec:
 
 
 def compose(env: dict, env_dir: Path) -> mujoco.MjModel:
+    """The robot's training world with the room attached, the robot spawned where the env says."""
     spec = mujoco.MjSpec.from_file(str(ROOT / env["robot_world"]))
     room = load_room(env_dir / env["room"])
 
@@ -116,6 +117,7 @@ def solid_footprints(m: mujoco.MjModel, d: mujoco.MjData, hmin: float, hmax: flo
 
 
 def convex_hull(pts: np.ndarray) -> np.ndarray:
+    """Convex hull of 2D points (monotone chain)."""
     pts = sorted(map(tuple, np.round(pts, 6)))
     def half(points):
         h = []
@@ -130,6 +132,7 @@ def convex_hull(pts: np.ndarray) -> np.ndarray:
 
 
 def auto_bounds(polys, margin=0.3):
+    """Map bounds around all footprints plus a margin."""
     allp = np.vstack(polys)
     lo, hi = allp.min(0) - margin, allp.max(0) + margin
     return {"xmin": round(float(lo[0]), 2), "xmax": round(float(hi[0]), 2),
@@ -196,11 +199,13 @@ def safe_spawn(grid: np.ndarray, bounds: dict, res: float, x: float, y: float, c
 
 
 def write_pgm(path: Path, img: np.ndarray):
+    """Write a binary PGM."""
     h, w = img.shape
     path.write_bytes(f"P5\n{w} {h}\n255\n".encode() + img.tobytes())
 
 
 def write_png(path: Path, rgb: np.ndarray):
+    """Write an RGB array as a PNG without extra dependencies."""
     h, w, _ = rgb.shape
     raw = b"".join(b"\x00" + rgb[r].tobytes() for r in range(h))
     def chunk(tag, data):
@@ -210,6 +215,7 @@ def write_png(path: Path, rgb: np.ndarray):
 
 
 def objects(m: mujoco.MjModel, env: dict):
+    """Named objects with their world position and size, for objects.yaml."""
     d = mujoco.MjData(m)
     mujoco.mj_resetDataKeyframe(m, d, mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, KEY))
     mujoco.mj_forward(m, d)
@@ -247,6 +253,7 @@ def objects(m: mujoco.MjModel, env: dict):
 
 
 def render(m: mujoco.MjModel, cfg: dict, out_dir: Path):
+    """Top-down and perspective previews."""
     d = mujoco.MjData(m)
     mujoco.mj_resetDataKeyframe(m, d, mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_KEY, KEY))
     mujoco.mj_forward(m, d)
@@ -264,6 +271,7 @@ def render(m: mujoco.MjModel, cfg: dict, out_dir: Path):
 
 
 def main():
+    """Build an environment for a robot profile: world.mjb, Nav2 map, objects.yaml, previews."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("env_dir", type=Path)
     ap.add_argument("--no-render", action="store_true")

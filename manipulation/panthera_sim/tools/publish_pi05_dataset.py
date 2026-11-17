@@ -13,11 +13,13 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REPO = "FoxNerdSaysMoo/panthera-ik-three-block-stack-30hz"
+# Hub namespace (account or org) from HF_NAMESPACE in the repo .env; no account names in the code.
+DEFAULT_REPO = f"{os.environ.get('HF_NAMESPACE', 'local')}/panthera-ik-three-block-stack-30hz"
 CAMERAS = ("observation.images.shoulder", "observation.images.wrist")
 
 
 def digest(path):
+    """SHA-256 of a file."""
     h = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(8 * 1024**2), b""):
@@ -26,6 +28,7 @@ def digest(path):
 
 
 def validate(root):
+    """Check the dataset before publishing; returns its info and an audit."""
     import numpy as np
     import pyarrow.parquet as pq
 
@@ -61,6 +64,7 @@ def validate(root):
 
 
 def stage_dataset(source, stage, repo_id):
+    """Copy the dataset into a staging folder with a dataset card."""
     info, audit = validate(source)
     stage.mkdir(parents=True, exist_ok=True)
     for relative in [Path("meta/info.json"), Path("meta/stats.json"), Path("meta/tasks.parquet"),
@@ -142,6 +146,7 @@ Dataset: https://huggingface.co/datasets/{repo_id}
 
 
 def main():
+    """Stage the dataset and optionally push it to the Hugging Face Hub."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=ROOT / "outputs/lerobot/panthera_scripted_stack_30hz")
     parser.add_argument("--stage", type=Path, default=ROOT / "outputs/hf/panthera-ik-three-block-stack-30hz")

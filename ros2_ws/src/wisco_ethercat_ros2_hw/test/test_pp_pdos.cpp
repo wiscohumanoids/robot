@@ -1,3 +1,6 @@
+// Tests that the profile-position PDO configuration packs and unpacks through ethercat_driver_ros2's
+// generic slave exactly as the drive expects.
+
 #include <gtest/gtest.h>
 #include <ethercat_generic_plugins/generic_ec_slave.hpp>
 #include <array>

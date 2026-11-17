@@ -24,6 +24,7 @@ from panthera_env import PantheraSim  # noqa: E402
 
 
 def replay(path: Path) -> None:
+    """Replay a recorded take in the viewer."""
     with np.load(path / "data.npz") as source:
         data = {key: np.asarray(source[key]) for key in source.files}
     meta_path = path / "meta.json"
@@ -68,6 +69,7 @@ def replay(path: Path) -> None:
 
 
 def main() -> None:
+    """Command line for `replay`."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("episode", type=Path)
     args = parser.parse_args()

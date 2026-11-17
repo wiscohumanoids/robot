@@ -1,3 +1,4 @@
+"""Detecting an operator taking over a gripper."""
 import json
 from pathlib import Path
 import sys
@@ -8,7 +9,9 @@ from takeover_hold import TakeoverHold
 
 
 class GripperTakeoverTests(unittest.TestCase):
+    """Takeover detection."""
     def setUp(self):
+        """A takeover hold with the recording settings."""
         config = json.loads((Path(__file__).resolve().parents[1]/'config/recording.json').read_text())
         self.hold = TakeoverHold({s: [0.]*6 for s in ('left', 'right')},
                                  config['neutral_return'], config, 0.)

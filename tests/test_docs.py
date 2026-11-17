@@ -17,6 +17,7 @@ SKIP_DIRS = ('.venv', 'node_modules', 'ros2_ws/build', 'ros2_ws/install', 'ros2_
 
 
 def _markdown():
+    """Every tracked or new markdown file in the repo, except skipped folders."""
     out = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '*.md'],
                          cwd=ROOT, capture_output=True, text=True).stdout.split('\n')
     return [ROOT / f for f in out if f and not f.startswith(SKIP_DIRS) and (ROOT / f).exists()]
@@ -29,6 +30,7 @@ def _slug(heading):
 
 
 def _anchors(path):
+    """Heading anchors of a markdown file."""
     text = re.sub(r'```.*?```', '', path.read_text(errors='ignore'), flags=re.S)
     return {_slug(m.group(1)) for m in re.finditer(r'^#+\s+(.*)$', text, flags=re.M)}
 

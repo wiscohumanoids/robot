@@ -20,7 +20,9 @@ SCRIPT = [
 calls = []
 
 class FakeMessages:
+    """Stand-in for the Claude messages API that returns scripted plans."""
     def create(self, **kw):
+        """Record the request and return the next scripted plan."""
         calls.append(kw['messages'][0]['content'])
         plan = SCRIPT[min(len(calls) - 1, len(SCRIPT) - 1)]
         return types.SimpleNamespace(stop_reason='end_turn', content=[types.SimpleNamespace(type='text', text=json.dumps(plan))])

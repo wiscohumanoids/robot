@@ -38,6 +38,7 @@ IMAGE_SHAPE = (256, 256, 3)
 
 
 def reexec_in_act_venv() -> None:
+    """Re-run this script with the .venv-act interpreter when it exists and is not the current one."""
     python = REPO_ROOT / ".venv-act" / "bin" / "python"
     if not python.is_file() or Path(sys.prefix).resolve() == python.parents[1].resolve():
         return
@@ -50,6 +51,7 @@ def reexec_in_act_venv() -> None:
 
 @dataclass
 class EpisodeStats:
+    """Per-episode return and task milestones."""
     episode_return: float = 0.0
     length: int = 0
     grasp_events: int = 0
@@ -118,6 +120,7 @@ class PantheraStackEnv:
         demo_snapshots: dict[str, np.ndarray] | None,
         demo_reset_probability: float,
     ):
+        """One stacking environment with cameras, shaped reward and optional demo-snapshot starts."""
         import mujoco
 
         sys.path.insert(0, str(REPO_ROOT / "sim"))
@@ -158,9 +161,11 @@ class PantheraStackEnv:
         self.reset()
 
     def _grasped(self) -> bool:
+        """Whether a block is grasped."""
         return self.sim.grasped
 
     def reset(self, seed: int | None = None, demo_probability: float | None = None) -> None:
+        """Random layout, or a mid-task snapshot from the demonstrations."""
         if seed is not None:
             self.rng = np.random.default_rng(seed)
         if demo_probability is not None:
@@ -203,6 +208,7 @@ class PantheraStackEnv:
         )
 
     def observation(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """State and the two camera images."""
         images = []
         for renderer, camera in zip(self.renderers, self.cameras):
             renderer.update_scene(self.sim.data, camera)
@@ -213,6 +219,7 @@ class PantheraStackEnv:
         return state, images[0], images[1]
 
     def critic_state(self) -> np.ndarray:
+        """Privileged state for the critic: blocks, end effector, joints."""
         positions, _ = self.sim.object_poses()
         ee = self.sim.ee_pos()
         lo, hi = self.sim.arm_range[:, 0], self.sim.arm_range[:, 1]
@@ -242,6 +249,7 @@ class PantheraStackEnv:
         ]).astype(np.float32)
 
     def step(self, physical_action: np.ndarray) -> tuple[float, bool, dict, EpisodeStats | None]:
+        """Apply one action, step physics, and return reward, done and finished-episode stats."""
         action = np.asarray(physical_action, dtype=np.float64)
         q_target = np.clip(action[:6], self.sim.arm_range[:, 0], self.sim.arm_range[:, 1])
         if self.max_joint_step is not None:
@@ -285,6 +293,7 @@ class PantheraStackEnv:
         return reward, done, info, finished
 
     def close(self) -> None:
+        """Close the renderers."""
         for renderer in self.renderers:
             renderer.close()
 
@@ -380,6 +389,7 @@ class LocalEnvBatch:
                  gamma: float, action_delta_coef: float, action_acceleration_coef: float,
                  demo_snapshots: dict[str, np.ndarray] | None,
                  demo_reset_probability: float):
+        """Environments stepped in this process."""
         self.envs = [
             PantheraStackEnv(
                 seed, episode_steps, hz, max_joint_step, gamma,
@@ -391,12 +401,14 @@ class LocalEnvBatch:
         self._critic = np.stack([env.critic_state() for env in self.envs])
 
     def observe(self):
+        """Observations of every environment."""
         observations = [env.observation() for env in self.envs]
         state, shoulder, wrist = zip(*observations)
         self._critic = np.stack([env.critic_state() for env in self.envs])
         return (np.stack(state), np.stack(shoulder), np.stack(wrist)), self._critic
 
     def step(self, actions: np.ndarray):
+        """Step every environment."""
         rewards = np.empty(len(self.envs), dtype=np.float32)
         dones = np.empty(len(self.envs), dtype=np.float32)
         completed: list[dict | None] = [None] * len(self.envs)
@@ -411,15 +423,18 @@ class LocalEnvBatch:
         return rewards, dones, completed
 
     def critic_states(self) -> np.ndarray:
+        """Critic states of the last observation."""
         return self._critic
 
     def reset_all(self, seeds: list[int] | None = None,
                   demo_probability: float | None = None) -> None:
+        """Reset every environment."""
         for index, env in enumerate(self.envs):
             env.reset(None if seeds is None else seeds[index], demo_probability)
         self._critic = np.stack([env.critic_state() for env in self.envs])
 
     def close(self) -> None:
+        """Close every environment."""
         for env in self.envs:
             env.close()
 
@@ -450,6 +465,7 @@ class ParallelEnvBatch:
         demo_snapshots: dict[str, np.ndarray] | None,
         demo_reset_probability: float,
     ):
+        """Environments split over worker processes, exchanging arrays through shared memory."""
         self.num_envs = len(seeds)
         self.handles: dict[str, shared_memory.SharedMemory] = {}
         self.arrays: dict[str, np.ndarray] = {}
@@ -501,6 +517,7 @@ class ParallelEnvBatch:
             raise
 
     def _receive_all(self, operation: str):
+        """Collect every worker's reply (raising a worker's error)."""
         payloads = []
         for connection, process in zip(self.connections, self.processes):
             try:
@@ -516,11 +533,13 @@ class ParallelEnvBatch:
         return payloads
 
     def _command(self, command):
+        """Send a command to every worker and wait for the replies."""
         for connection in self.connections:
             connection.send(command)
         return self._receive_all(command)
 
     def observe(self):
+        """Observations from shared memory."""
         self._command("observe")
         observations = (
             self.arrays["state"],
@@ -530,6 +549,7 @@ class ParallelEnvBatch:
         return observations, self.arrays["critic"]
 
     def step(self, actions: np.ndarray):
+        """Step every worker."""
         self.arrays["action"][:] = actions
         payloads = self._command("step")
         completed: list[dict | None] = [None] * self.num_envs
@@ -539,16 +559,19 @@ class ParallelEnvBatch:
         return self.arrays["reward"].copy(), self.arrays["done"].copy(), completed
 
     def critic_states(self) -> np.ndarray:
+        """Critic states from shared memory."""
         return self.arrays["critic"]
 
     def reset_all(self, seeds: list[int] | None = None,
                   demo_probability: float | None = None) -> None:
+        """Reset every worker's environments."""
         if seeds is None and demo_probability is None:
             self._command("reset")
         else:
             self._command(("reset", seeds, demo_probability))
 
     def close(self) -> None:
+        """Stop the workers and free shared memory."""
         for connection, process in zip(self.connections, self.processes):
             if process.is_alive():
                 try:
@@ -582,6 +605,7 @@ class ObservationNormalizer:
     """Vectorized equivalent of the LeRobot preprocessing used by rollout_act."""
 
     def __init__(self, stats: dict, device):
+        """Normalization statistics on `device`."""
         import torch
 
         self.device = device
@@ -598,6 +622,7 @@ class ObservationNormalizer:
             }
 
     def actor_batch(self, observations):
+        """Normalized actor inputs for a batch of observations."""
         import torch
 
         if (
@@ -626,6 +651,7 @@ class ObservationNormalizer:
         return state, images
 
     def unnormalize_action(self, action):
+        """Actions back in physical units."""
         stats = self.values["action"]
         return action * stats["std"] + stats["mean"]
 
@@ -641,6 +667,7 @@ class BatchedFeatureEnsembler:
 
     def __init__(self, num_envs: int, chunk_size: int, feature_dim: int,
                  coefficient: float, device):
+        """Temporal ensembling of overlapping decoder features, per environment."""
         import torch
 
         self.num_envs = num_envs
@@ -653,6 +680,7 @@ class BatchedFeatureEnsembler:
         self.reset()
 
     def reset(self, dones=None) -> None:
+        """Clear finished environments (or all)."""
         import torch
 
         if not hasattr(self, "pending") or dones is None:
@@ -692,6 +720,7 @@ class BatchedFeatureEnsembler:
 
 
 def explained_variance(target, prediction) -> float:
+    """Explained variance of the value prediction."""
     import torch
 
     variance = torch.var(target)
@@ -715,6 +744,7 @@ def save_checkpoint(
     env_steps: int,
     args,
 ) -> None:
+    """Save the fine-tuned policy, processors and optimizer state."""
     temp = destination.with_name(f".{destination.name}.tmp")
     if temp.exists():
         shutil.rmtree(temp)
@@ -751,6 +781,7 @@ def save_checkpoint(
 
 
 def main() -> None:
+    """PPO fine-tuning of an ACT checkpoint for three-block stacking."""
     reexec_in_act_venv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)

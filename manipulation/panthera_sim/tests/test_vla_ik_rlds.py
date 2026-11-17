@@ -17,6 +17,7 @@ from teleop.build_panthera_ik_rlds import (  # noqa: E402
 
 @pytest.fixture
 def ik_source(tmp_path):
+    """A tiny IK dataset folder."""
     root = tmp_path / "source"
     (root / "data").mkdir(parents=True)
     (root / "meta").mkdir()

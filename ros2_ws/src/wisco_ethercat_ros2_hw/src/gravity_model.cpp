@@ -1,3 +1,5 @@
+// GravityModel: Pinocchio gravity torques for the arm with the calibration applied (see gravity_model.hpp).
+
 #include "wisco_ethercat_ros2_hw/gravity_model.hpp"
 
 #include <algorithm>
@@ -16,6 +18,7 @@
 namespace wisco_ethercat_ros2_hw
 {
 
+// Build the model from the URDF and apply the calibration (masses, COMs, kinematic overlay).
 bool GravityModel::build(
   const std::string & urdf_xml, const std::vector<std::string> & joints,
   const std::string & calibration_file, const std::vector<std::string> & mass_links,
@@ -54,7 +57,7 @@ bool GravityModel::build(
   // child link of each driven joint, for the per-link calibration fields. As
   // ArmModel.link_names(): the joint's first body frame. Bodies merged in from
   // locked joints (the wrist crank and rod, on link5's joint) have no entry:
-  // their mass is part of link5's, which stage 5 fits as a whole.
+  // their mass is part of link5's, which `arm gravity` fits as a whole.
   std::map<std::string, pinocchio::JointIndex> link_joint;
   for (const auto id : jid_) {
     for (const auto & f : model_.frames) {
@@ -128,6 +131,7 @@ bool GravityModel::build(
   return true;
 }
 
+// Gravity torques at `q` for the driven joints.
 void GravityModel::gravity(const std::vector<double> & q, std::vector<double> & g)
 {
   for (size_t i = 0; i < jid_.size(); ++i) {q_[model_.joints[jid_[i]].idx_q()] = q[i];}
@@ -135,6 +139,7 @@ void GravityModel::gravity(const std::vector<double> & q, std::vector<double> & 
   for (size_t i = 0; i < vidx_.size(); ++i) {g[i] = tau[vidx_[i]];}
 }
 
+// Pose of a frame at `q`.
 bool GravityModel::frame_placement(
   const std::vector<double> & q, const std::string & frame, pinocchio::SE3 & out)
 {

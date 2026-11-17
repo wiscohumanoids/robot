@@ -1,4 +1,4 @@
-"""`arm mocap-calib`: kinematic calibration from a flange marker cluster (spec: Mocap path).
+"""`arm mocap-calib`: kinematic calibration from a flange marker cluster.
 
 1. Measure the mocap: 3 sigma of a still cluster, and the length-bar error,
    which caps the accuracy any fit can reach.
@@ -39,6 +39,7 @@ LOAD_KG = 1.0
 
 @dataclass
 class Sample:
+    """One mocap measurement: encoder angles, joint torques, marker pose, and whether the test mass was on."""
     q: np.ndarray             # encoder angles (motor side), rad
     tau: np.ndarray           # measured joint torque, Nm
     pose: pin.SE3             # marker cluster in the mocap frame
@@ -46,6 +47,7 @@ class Sample:
 
 
 def measure(ctx: StageContext, q_goal, mocap, loaded, settle=0.6, average=0.15) -> Sample:
+    """Move to `q_goal`, settle, and average joint state and marker pose into one Sample."""
     client = ctx.client
     move_to(client, q_goal, max_speed=0.8, settle=settle)
     n = max(1, int(average / client.cmd_dt))
@@ -68,6 +70,7 @@ class KinematicFit(kinfit.KinematicModel):
     marker_in_flange twist[6], compliance[n] (rad/Nm), backlash[n] (rad)."""
 
     def __init__(self, model, frame='flange'):
+        """Parameter layout for zero offsets, joint overlay, base and marker poses."""
         j = kinfit.joint_blocks(model.joint_names)
         super().__init__(model, frame, [
             ('dzero',) + j['dzero'], ('overlay',) + j['overlay'],
@@ -78,12 +81,14 @@ class KinematicFit(kinfit.KinematicModel):
     se3 = staticmethod(kinfit.se3)
 
     def predict(self, x, samples: List[Sample], base0: pin.SE3, marker0: pin.SE3):
+        """Predicted marker poses for `samples` under parameters `x`."""
         self.set_geometry(x)
         base = base0 * self.se3(x[self.sl['base']])
         marker = marker0 * self.se3(x[self.sl['marker']])
         return [base * self.frame_pose(self.link_angles(x, s.q, s.tau)) * marker for s in samples]
 
     def residuals(self, x, samples, base0, marker0):
+        """Position and weighted rotation residuals between predicted and measured marker poses."""
         r = []
         for s, M in zip(samples, self.predict(x, samples, base0, marker0)):
             r.append(M.translation - s.pose.translation)
@@ -116,10 +121,12 @@ def select_parameters(fit: KinematicFit, J: np.ndarray, tol: float = 2e-3):
 
 
 def solve(fit: KinematicFit, samples, base0, marker0, keep, x0=None):
+    """Fit the kinematic parameters."""
     return kinfit.solve(fit, (samples, base0, marker0), keep, x0)
 
 
 def per_pose_mm(fit, x, samples, base0, marker0) -> np.ndarray:
+    """Position error of each sample under parameters `x`, mm."""
     P = fit.predict(x, samples, base0, marker0)
     return np.array([np.linalg.norm(M.translation - s.pose.translation)
                      for M, s in zip(P, samples)]) * 1e3
@@ -140,6 +147,9 @@ def collect(ctx, poses, mocap, loaded_share=0.5) -> List[Sample]:
 
 
 def run(ctx: StageContext, n_fit: int = None, n_test: int = None, rounds: int = None) -> StageResult:
+    """`arm mocap-calib`: fit zero offsets, kinematic overlay and joint stiffness from mocap, validate on held-out
+    poses.
+    """
     mocap = ctx.client.mocap()
     if mocap is None:
         return StageResult('mocap-calib', False, {}, {}, ['no mocap source on this client'])

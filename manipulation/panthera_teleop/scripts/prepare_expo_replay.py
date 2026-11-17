@@ -38,12 +38,14 @@ def session_objective(manifest):
 
 
 def rows(path):
+    """JSON lines of a file (empty when missing)."""
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def write_new_json(path, value):
+    """Write JSON to a new file (never overwrites)."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('x') as stream:
@@ -109,6 +111,7 @@ def audit_existing(data_root):
 
 
 def verify_observation(observation, session):
+    """Check an observation and its images exist."""
     if not observation or not observation.get('observation_id'):
         raise ValueError('Observation identity is missing')
     for name, relative in observation.get('images', {}).items():
@@ -327,6 +330,7 @@ def prepare(ledger_root, normalization, output, candidate_cache=None, gamma=.99,
 
 
 def main():
+    """Audit EXPO sessions or build a replay buffer from them."""
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
     audit = sub.add_parser('audit')

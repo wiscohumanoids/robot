@@ -24,7 +24,7 @@ CONTROL_MODES = {
     # control_mode: (CiA402 mode of operation at start-up, ros2_control command interface)
     'velocity': (9, 'velocity'),
     'effort': (10, 'effort'),
-    # The arm stack's Mode P / Mode T (spec: Hardware assumptions): starts in
+    # The arm stack's Mode P / Mode T: starts in
     # CSP (8); the ArmController switches 0x6060 to CST (10) at runtime. Each
     # joint exports position (0x607A), effort (0x6071), torque_offset (0x60B2,
     # gravity + friction feedforward in CSP), mode_of_operation (0x6060) and
@@ -42,6 +42,7 @@ class ConfigError(ValueError):
 
 
 def load_yaml(path):
+    """YAML file as a dict (empty when the file is empty)."""
     with open(path, 'r') as f:
         return yaml.safe_load(f) or {}
 
@@ -69,6 +70,7 @@ class HardwareJoint:
     """One drive on the ring and the joint it moves."""
 
     def __init__(self, row, model, calibration, urdf_limits):
+        """One drive: joint table row merged with its actuator model, calibration and URDF limits, checked."""
         self.name = row['name']
         self.bus_position = int(row['bus_position'])
         self.model_name = row['model']
@@ -101,27 +103,34 @@ class HardwareJoint:
     # reading and  raw = factor * value + offset  when writing.
     @property
     def rad_per_count(self):
+        """Radians per encoder count."""
         return 2.0 * math.pi / float(self.model['counts_per_rev'])
 
     def position_state(self):
+        """Factor and offset from counts to joint radians."""
         return self.direction * self.rad_per_count, -self.zero_offset
 
     def position_command(self):
+        """Scale and offset that turn joint radians into drive counts."""
         # Inverse of position_state(), so the driver's "hold actual position"
         # default for 0x607A writes counts, not radians.
         factor = self.direction / self.rad_per_count
         return factor, factor * self.zero_offset
 
     def velocity_state(self):
+        """Factor from counts/s to rad/s."""
         return self.direction * self.rad_per_count
 
     def velocity_command(self):
+        """Factor from rad/s to counts/s."""
         return self.direction / self.rad_per_count
 
     def effort_state(self):
+        """Factor from per-mille to N*m."""
         return self.direction * float(self.model['effort_nm_per_permille'])
 
     def effort_command(self):
+        """Factor from N*m to per-mille."""
         return self.direction / float(self.model['effort_nm_per_permille'])
 
 
@@ -130,6 +139,7 @@ class HardwareConfig:
 
     def __init__(self, models_file, joints_file, urdf_xml, calibration_file=None,
                  control_mode=None, template_file=None):
+        """Load and check the joint table, actuator models, calibration and URDF for one bus."""
         models = load_yaml(models_file)
         table = load_yaml(joints_file)
         calibration = load_yaml(calibration_file) if calibration_file else {}
@@ -157,7 +167,7 @@ class HardwareConfig:
         self.urdf_joints = read_urdf_joints(urdf_xml)
         rows = table.get('joints') or []
         self.joints = self._build_joints(rows, zero_offsets)
-        # stage 3 (`arm limits`) writes soft limits into the calibration file;
+        # `arm limits` writes soft limits into the calibration file;
         # they win over the URDF unless the joint table overrides them
         soft = calibration.get('soft_limits_rad') or {}
         for joint, row in zip(sorted(self.joints, key=lambda j: j.bus_position),
@@ -188,6 +198,7 @@ class HardwareConfig:
                               % ', '.join(unknown_cal))
 
     def _build_joints(self, rows, zero_offsets):
+        """Build every joint row, rejecting missing fields and duplicate names or bus positions."""
         joints = []
         seen_names = set()
         seen_positions = set()
@@ -355,6 +366,7 @@ class HardwareConfig:
         return manifest_path
 
     def controller_name(self):
+        """Name of the command controller."""
         return '%s_controller' % self.command_interface
 
     def arm_controller_parameters(self, arm_config=None, calibration_file=None):
@@ -467,6 +479,7 @@ class HardwareConfig:
 
 
 def _finite(value, fallback):
+    """The value, or `fallback` when not finite."""
     return value if math.isfinite(value) else fallback
 
 

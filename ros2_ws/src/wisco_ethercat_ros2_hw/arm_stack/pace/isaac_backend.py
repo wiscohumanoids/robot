@@ -1,4 +1,4 @@
-"""Isaac Lab PACE replay backend (spec stage 9, full arm).
+"""Isaac Lab PACE replay backend (full arm).
 
 Same contract as JointReplayBackend: `simulate(k, P)` replays log k for a
 population P (pop x 7, PARAMS order) and returns the measured-position traces
@@ -28,7 +28,7 @@ feedforward) is computed on the log grid and goes through the same delay
 buffer as the command.
 
 The replay consumes the logged arrays as they are: JointLog objects (what
-stage 9 records) or the `arm export pace` npz files, whose `command` and
+`arm pace` records) or the `arm export pace` npz files, whose `command` and
 `position` arrays are joint-side radians, the units Isaac Lab uses. No
 conversion step.
 
@@ -61,6 +61,7 @@ INSTALL_HINT = (
 
 
 def isaaclab_available() -> bool:
+    """Whether Isaac Lab can be imported."""
     try:
         return importlib.util.find_spec('isaaclab') is not None
     except (ImportError, ValueError):
@@ -68,6 +69,7 @@ def isaaclab_available() -> bool:
 
 
 def require_isaaclab():
+    """Raise with an install hint without Isaac Lab."""
     if not isaaclab_available():
         raise ImportError(INSTALL_HINT)
 
@@ -83,6 +85,7 @@ class DelayBuffer:
     """
 
     def __init__(self, delay_steps: Sequence[float], width: int, fractional: bool = True):
+        """Per-joint delay line of (fractional) steps."""
         d = np.maximum(np.asarray(delay_steps, float), 0.0)
         if not fractional:
             d = np.round(d)
@@ -95,9 +98,11 @@ class DelayBuffer:
 
     @staticmethod
     def steps(delay_s: Sequence[float], sim_dt: float) -> np.ndarray:
+        """Delays in simulator steps."""
         return np.asarray(delay_s, float) / sim_dt
 
     def push(self, x):
+        """Push one sample."""
         x = np.asarray(x, float).reshape(self.width)
         if self.buf is None:
             self.buf = np.repeat(x[None, :], self.size, axis=0)
@@ -107,6 +112,7 @@ class DelayBuffer:
         self.buf[self.head] = x
 
     def read(self) -> np.ndarray:
+        """The delayed sample, interpolated between steps."""
         a = self.buf[(self.head - self.n0) % self.size]
         b = self.buf[(self.head - self.n0 - 1) % self.size]
         return (1.0 - self.frac)[:, None] * a + self.frac[:, None] * b
@@ -159,6 +165,7 @@ class ReplayPlan:
     """
 
     def __init__(self, model, log: JointLog, sim_dt: float, gravity_ff: bool = True):
+        """Commands of one log resampled to the simulator step."""
         self.log = log
         self.joint = log.joint
         sub = log.dt / sim_dt
@@ -223,6 +230,7 @@ def load_pace_npz(path: str, joint: Union[int, str, None] = None, names: Optiona
 
 
 def _from_sim(x) -> np.ndarray:
+    """Simulator tensor or array to a numpy float array."""
     if hasattr(x, 'detach'):
         x = x.detach().cpu().numpy()
     return np.asarray(x, float)
@@ -250,6 +258,7 @@ class IsaacLabBackend:
                  num_envs: int = 16, device: str = 'cuda:0', usd_path: Optional[str] = None,
                  hold_gains: Optional[Tuple[Sequence[float], Sequence[float]]] = None, gravity_ff: bool = True,
                  fractional_delay: bool = True, sync_inertials: bool = True, headless: bool = True):
+        """Replay logs in Isaac Lab with `num_envs` parallel candidates."""
         require_isaaclab()
         self.model = model
         self.logs = [load_pace_npz(l) if isinstance(l, str) else l for l in logs]
@@ -274,6 +283,7 @@ class IsaacLabBackend:
 
     # ------------------------------------------------------------------ sim setup
     def _build(self, usd_path, headless):
+        """Start the Isaac Lab app (if needed) and build the scene with the arm."""
         from isaaclab.app import AppLauncher
         self._app = None
         if not _app_running():
@@ -336,6 +346,7 @@ class IsaacLabBackend:
         return out
 
     def _run_batch(self, k: int, P: np.ndarray) -> np.ndarray:
+        """Replay log `k` for every parameter row in `P` in parallel; returns predicted positions."""
         plan, robot = self.plans[k], self.robot
         j, E, n = plan.joint, len(P), len(self.joint_names)
         tab = param_tables(P, j, self.hold_kp, self.hold_kd)
@@ -375,12 +386,14 @@ class IsaacLabBackend:
         return out
 
     def close(self):
+        """Close the Isaac Lab app if this backend started it."""
         if self._app is not None:
             self._app.close()
             self._app = None
 
 
 def _app_running() -> bool:
+    """Whether an Omniverse Kit app is already running."""
     try:
         import omni.kit.app
         return omni.kit.app.get_app() is not None

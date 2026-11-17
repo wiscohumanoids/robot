@@ -36,6 +36,7 @@ def latest_calibration(description_share):
 
 
 def generate_launch_description():
+    """Pass arm01's description, joint table and newest calibration to test_bench.launch.py."""
     share = get_package_share_directory(PACKAGE)
     description_share = get_package_share_directory(DESCRIPTION)
     passthrough = {

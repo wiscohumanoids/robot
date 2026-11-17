@@ -1,3 +1,4 @@
+"""Relative-reference calibration: local sweeps, the gravity fit and its safety checks, on a fake arm."""
 from contextlib import nullcontext
 from types import SimpleNamespace
 
@@ -29,9 +30,11 @@ def test_local_fit_identifies_cross_joint_torque_and_rejects_bad_validation():
 
 
 class FakeArm:
+    """Fake arm whose holding torque is an affine function of its angles."""
     cmd_dt = 0.05
 
     def __init__(self, n, stuck=False):
+        """Affine torque model; `stuck` makes the arm ignore commands."""
         self.q = np.zeros(n)
         self.t = 0.
         self.jac = np.eye(n)*2 + 0.3
@@ -39,16 +42,19 @@ class FakeArm:
         self.stuck = stuck
 
     def state(self):
+        """State with the torque from the affine model."""
         return JointState(t=self.t, q=self.q.copy(), qd=self.q*0,
                           tau=self.bias+self.jac@self.q, raw_counts=self.q*0,
                           raw_permille=self.q*0, status=np.full(len(self.q), 0x27))
 
     def send(self, command):
+        """Accept a Mode P command without gravity feed-forward."""
         assert command.mode == 'P' and not command.gravity_ff
         if not self.stuck:
             self.q = command.q.copy()
 
     def step(self, seconds):
+        """Advance time."""
         self.t += seconds
         return self.state()
 

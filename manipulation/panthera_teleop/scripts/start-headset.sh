@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Start the Quest controller stream UI.
 set -euo pipefail
 task_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 export PATH="$task_dir/work/platform-tools:$PATH"

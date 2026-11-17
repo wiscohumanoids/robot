@@ -34,6 +34,7 @@ ZERO = np.zeros(6)
 
 
 def compensation(robot, label='arm', states=None):
+    """Gravity and friction compensation torques for the arm's current state."""
     states = robot.get_current_state() if states is None else states
     positions = np.array([s.position for s in states], dtype=float)
     velocities = np.array([s.velocity for s in states], dtype=float)
@@ -54,6 +55,7 @@ def compensation(robot, label='arm', states=None):
 
 
 def stop_robots(robots):
+    """Stop every arm (zero torque and disable)."""
     # set_brake exists in the C++ source but is not exposed by this Python wheel.
     # Attempt every arm even if one board has disconnected.
     for side, robot in robots.items():
@@ -64,6 +66,7 @@ def stop_robots(robots):
 
 
 def feedback(robot, side, stale):
+    """Apply compensation and read back the arm and gripper state (marking stale data)."""
     states = robot.get_current_state()
     torque, positions = compensation(robot, side, states)
     gripper = robot.get_current_state_gripper()
@@ -103,6 +106,7 @@ def feedback(robot, side, stale):
 
 
 def simulated_sample(started):
+    """A simulated arm sample for demo mode."""
     age = time.monotonic()-started
     phase = age % 12
     q = 0.06*np.sin((phase-3)*2) if phase > 3 else 0.0
@@ -115,6 +119,7 @@ def simulated_sample(started):
 
 
 def validate_return_path(robot, initial, target, side):
+    """Check the straight-line return from `initial` to `target` stays above the table."""
     points = [np.asarray(robot.forward_kinematics(initial*(1-a)+target*a)['position'])
               for a in np.linspace(0, 1, 101)]
     floor = min(points[0][2], points[-1][2])-0.01
@@ -123,6 +128,7 @@ def validate_return_path(robot, initial, target, side):
 
 
 def main():
+    """Hand-guided recording with both arms in gravity compensation (or simulated in demo mode)."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run', action='store_true')
     parser.add_argument('--demo', action='store_true', help='Simulated arms; never open motor devices')

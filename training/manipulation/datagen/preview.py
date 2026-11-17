@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 
 
 def main():
+    """Grid video of a few raw episodes."""
     ap = argparse.ArgumentParser()
     ap.add_argument("raw")
     ap.add_argument("--n", type=int, default=6)

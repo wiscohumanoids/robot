@@ -1,3 +1,4 @@
+"""ACT validation: the zero-latent objective matches deployment and backpropagates."""
 import unittest
 from types import SimpleNamespace
 
@@ -7,6 +8,7 @@ from train_act import evaluate_inference, rollout_score, training_loss
 
 
 class InferenceValidationTest(unittest.TestCase):
+    """Validation loss and rollout scoring of ACT."""
     def test_zero_objective_matches_deployment_and_backpropagates(self):
         from lerobot.configs.types import FeatureType, PolicyFeature
         from lerobot.policies.act.configuration_act import ACTConfig

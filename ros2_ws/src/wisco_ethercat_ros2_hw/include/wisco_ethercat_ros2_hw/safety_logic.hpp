@@ -21,6 +21,7 @@ struct JointLimits
   double damping;       // Nm s/rad, effort mode only
 };
 
+// Clamp to [-limit, limit].
 inline double clamp_abs(double value, double limit)
 {
   return std::clamp(value, -limit, limit);

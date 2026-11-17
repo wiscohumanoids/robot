@@ -63,6 +63,7 @@ def merge_rects(cells, kind):
 
 
 def label_color(label, alpha):
+    """A stable colour per label."""
     h = (zlib.crc32(label.encode()) % 360) / 360.0
     r, g, b = colorsys.hsv_to_rgb(h, 0.65, 1.0)
     return (r, g, b, alpha)
@@ -76,10 +77,12 @@ def height_color(z):
 
 
 def yaw_quat(yaw):
+    """Quaternion (w, x, y, z) of a yaw."""
     return np.array([math.cos(yaw / 2), 0.0, 0.0, math.sin(yaw / 2)])
 
 
 def quat_mul(a, b):
+    """Hamilton product of two quaternions (w, x, y, z)."""
     w1, x1, y1, z1 = a
     w2, x2, y2, z2 = b
     return np.array([w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2, w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
@@ -87,7 +90,9 @@ def quat_mul(a, b):
 
 
 class PerceptionView:
+    """Renders what the robot believes: its map, scan, detections and object memory, over the world."""
     def __init__(self, model: mujoco.MjModel, max_width=1920, max_height=1200):
+        """Private copy of the world with the robot drawn plainly and room geoms dimmed."""
         m = self.m = model                      # a private copy: we recolor and hide geoms in it
         m.vis.global_.offwidth, m.vis.global_.offheight = max_width, max_height
         for g in range(m.ngeom):
@@ -126,6 +131,7 @@ class PerceptionView:
 
     # ------------------------------------------------------------------ data in
     def on_packet(self, data: bytes):
+        """Decode a packet from the viewer bridge (live state or map)."""
         try:
             if data[:4] == b"HPER":
                 self.live = json.loads(zlib.decompress(data[4:]))
@@ -140,6 +146,7 @@ class PerceptionView:
             pass
 
     def on_map(self, h, grid):
+        """Turn a new occupancy map into wall boxes (skipped when unchanged)."""
         w, hh, res, ox, oy = h["w"], h["h"], h["res"], h["ox"], h["oy"]
         cells = grid.reshape(hh, w)
         if self.cells is not None and np.array_equal(cells, self.cells) and self.map_origin == (ox, oy, res):
@@ -160,10 +167,12 @@ class PerceptionView:
 
     @property
     def connected(self):
+        """Whether live data arrived in the last second."""
         return time.monotonic() - self.live_t < 1.0
 
     # ------------------------------------------------------------------ drawing helpers
     def _geom(self, gtype, size, pos, rgba, mat=EYE, label=""):
+        """Add one decoration geom to the scene (None when the scene is full)."""
         scn = self.renderer.scene
         if scn.ngeom >= scn.maxgeom:
             return None
@@ -176,6 +185,7 @@ class PerceptionView:
         return g
 
     def _line(self, a, b, rgba, width=3.0):
+        """Add a line segment to the scene."""
         scn = self.renderer.scene
         if scn.ngeom >= scn.maxgeom:
             return

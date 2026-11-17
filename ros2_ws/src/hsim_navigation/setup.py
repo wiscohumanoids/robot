@@ -1,3 +1,4 @@
+"""Package setup: installs the navigation launch file and configs."""
 from glob import glob
 from setuptools import setup
 

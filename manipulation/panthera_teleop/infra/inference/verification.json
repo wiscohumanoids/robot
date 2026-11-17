@@ -1,6 +1,6 @@
 {
   "verified_date_local": "2026-10-03",
-  "aws_host": "3.83.15.102",
+  "aws_host": "$PANTHERA_SSH_HOST (see the repo .env)",
   "aws_service": "panthera-inference.service",
   "local_tunnel_service": "panthera-inference-tunnel.service",
   "aws_health_status": "waiting_for_training",

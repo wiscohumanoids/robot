@@ -27,8 +27,10 @@ using wisco_ethercat_ros2_hw::GravityModel;
 constexpr double kTorqueTol = 1e-9;   // Nm
 constexpr double kPoseTol = 1e-9;     // m, and rotation matrix entries
 
+// Path inside the package source.
 std::string source_path(const std::string & rel) {return std::string(WISCO_SOURCE_DIR) + "/" + rel;}
 
+// Whole file as text.
 std::string read_file(const std::string & path)
 {
   std::ifstream f(path);
@@ -37,6 +39,7 @@ std::string read_file(const std::string & path)
   return ss.str();
 }
 
+// YAML sequence as a vector.
 std::vector<double> vec(const YAML::Node & n)
 {
   std::vector<double> out;
@@ -47,6 +50,7 @@ std::vector<double> vec(const YAML::Node & n)
 class GravityParity : public ::testing::Test
 {
 protected:
+  // Load the parity reference data.
   void SetUp() override
   {
     golden_ = YAML::LoadFile(source_path("test/data/arm01_parity.json"));
@@ -67,6 +71,7 @@ protected:
     }
   }
 
+  // Build the C++ gravity model (nominal or calibrated) from the reference data.
   bool build(GravityModel & m, wisco_ethercat_ros2_hw::arm::LawConfig & cfg, bool calibrated)
   {
     cfg.coulomb.assign(joints_.size(), 0.0);

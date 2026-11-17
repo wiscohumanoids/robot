@@ -1,3 +1,6 @@
+// RmdxMockSlave: an RMD-X drive as a CiA 402 slave (state machine, CSP/CST, torque cap, one-joint
+// dynamics, injectable faults and lost frames).
+
 #include "rmdx_mock_slave.hpp"
 
 #include <algorithm>
@@ -30,11 +33,13 @@ RmdxMockSlave::RmdxMockSlave(const RmdxParams & params)
   latched_ = latch();
 }
 
+// Radians per encoder count.
 double RmdxMockSlave::rad_per_count() const
 {
   return 2.0 * M_PI / p_.counts_per_rev;
 }
 
+// Change CiA 402 state.
 void RmdxMockSlave::set_state(State s)
 {
   if (s == state_) {return;}
@@ -48,17 +53,20 @@ void RmdxMockSlave::set_state(State s)
   state_cycles_ = 0;
 }
 
+// Make the drive fault (persistent faults survive a reset until cleared).
 void RmdxMockSlave::inject_fault(uint16_t error_code, bool persistent)
 {
   fault_cause_active_ = persistent;
   raise_fault(error_code);
 }
 
+// Remove a persistent fault cause.
 void RmdxMockSlave::clear_fault_cause()
 {
   fault_cause_active_ = false;
 }
 
+// Enter Fault Reaction Active with an error code.
 void RmdxMockSlave::raise_fault(uint16_t code)
 {
   if (state_ == State::kFault || state_ == State::kFaultReactionActive) {return;}
@@ -66,6 +74,7 @@ void RmdxMockSlave::raise_fault(uint16_t code)
   set_state(State::kFaultReactionActive);
 }
 
+// CiA 402 state transitions for a controlword.
 void RmdxMockSlave::apply_control_word(uint16_t cw)
 {
   const bool reset_edge = (cw & cia402::kCwFaultReset) && !(last_cw_ & cia402::kCwFaultReset);
@@ -133,6 +142,7 @@ void RmdxMockSlave::apply_control_word(uint16_t cw)
   }
 }
 
+// Switch mode of operation when allowed.
 void RmdxMockSlave::update_mode(int8_t requested)
 {
   // Guess: a mode the drive does not support is ignored (0x6061 keeps the old one).
@@ -172,11 +182,13 @@ double RmdxMockSlave::braking_torque()
   return p_.csp_kp * (hold_ - qm) - p_.csp_kd * qd_;
 }
 
+// Whether the joint has come to rest.
 bool RmdxMockSlave::stopped() const
 {
   return state_cycles_ >= 2 && std::fabs(qd_) < p_.stopped_velocity;
 }
 
+// Motor torque for the current state and mode (CSP loop or CST), capped by 0x6072.
 double RmdxMockSlave::drive_torque()
 {
   const double nmpm = nm_per_permille();
@@ -237,6 +249,7 @@ double RmdxMockSlave::drive_torque()
   return std::clamp(tau, -cap, cap);
 }
 
+// Integrate the one-joint dynamics.
 void RmdxMockSlave::step_joint(double tau_motor)
 {
   tau_ = tau_motor;
@@ -251,6 +264,7 @@ void RmdxMockSlave::step_joint(double tau_motor)
   q_ += qd_ * p_.dt;
 }
 
+// TxPDO values for the current state.
 TxPdo RmdxMockSlave::latch() const
 {
   TxPdo tx;
@@ -273,6 +287,7 @@ TxPdo RmdxMockSlave::latch() const
   return tx;
 }
 
+// One bus cycle: apply the RxPDO (or a lost frame), step, and latch the reply.
 TxPdo RmdxMockSlave::cycle(const RxPdo * rx)
 {
   const TxPdo out = latched_;

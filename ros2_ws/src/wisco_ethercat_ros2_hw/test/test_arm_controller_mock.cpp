@@ -65,6 +65,7 @@ void gravity(const std::vector<double> & q, std::vector<double> & g)
   g[1] = -kG * kM2 * kL2c * c12;
 }
 
+// Model gravity at `q` (reference for the tests).
 std::vector<double> gravity_at(const std::vector<double> & q)
 {
   std::vector<double> g(2);
@@ -75,6 +76,7 @@ std::vector<double> gravity_at(const std::vector<double> & q)
 const std::vector<double> kKdFallback = {2.0, 0.6};
 const std::vector<double> kMaxTorque = {15.0, 3.0};
 
+// Two-joint arm for the tests.
 std::vector<JointSpec> arm_joints()
 {
   JointSpec j1;
@@ -94,6 +96,7 @@ std::vector<JointSpec> arm_joints()
   return {j1, j2};
 }
 
+// ArmController parameters for the two-joint arm.
 std::vector<rclcpp::Parameter> arm_params(bool drive_feedback, bool write_max_torque = false)
 {
   return {
@@ -134,6 +137,7 @@ std::vector<double> command(
 constexpr int kModeP = 0;
 constexpr int kModeT = 1;
 
+// Whether every drive is in Operation Enabled.
 bool all_enabled(ControllerHarness & h)
 {
   for (size_t i = 0; i < h.hw().size(); ++i) {
@@ -180,6 +184,7 @@ Arm make_arm(
   return a;
 }
 
+// Largest change between consecutive samples (and where).
 double max_step(const std::vector<double> & v, size_t * at = nullptr)
 {
   double m = 0.0;
@@ -192,6 +197,7 @@ double max_step(const std::vector<double> & v, size_t * at = nullptr)
   return m;
 }
 
+// Samples around index `at`, for failure messages.
 std::string window(const std::vector<double> & v, size_t at, size_t half = 4)
 {
   std::string s;
@@ -932,6 +938,7 @@ TEST_F(ArmMock, SafeCommandControllerRejectionsReachTheDrive)
   EXPECT_LE(std::fabs(h.hw().commands(0).effort), 0.5 * std::fabs(h.hw().states(0).velocity) + 1e-12);
 }
 
+// Entry point: run the tests with ROS initialised.
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

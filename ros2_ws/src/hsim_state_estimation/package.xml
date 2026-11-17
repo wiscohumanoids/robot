@@ -3,7 +3,7 @@
         <name>hsim_state_estimation</name>
         <version>0.1.0</version>
         <description>State estimation: leg odometry + robot_localization EKF (and a ground-truth stub for debugging)</description>
-        <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+        <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
         <license>MIT</license>
         <exec_depend>rclpy</exec_depend>
 <exec_depend>nav_msgs</exec_depend>

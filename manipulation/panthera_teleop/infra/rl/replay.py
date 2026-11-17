@@ -19,6 +19,7 @@ REWARD_SEMANTICS = {
 
 
 def _declares_legacy_task(metadata):
+    """Whether metadata names the legacy task."""
     contract = metadata.get('contract')
     return (metadata.get('task') == LEGACY_TASK or
             isinstance(contract, dict) and contract.get('task') == LEGACY_TASK)
@@ -37,6 +38,7 @@ def training_objective_from_metadata(metadata):
 
 
 def validate_replay(arrays, metadata, expected_spec=None):
+    """Check replay arrays and metadata against the contract."""
     if not isinstance(metadata, dict) or metadata.get('schema_version') != 1:
         raise ValueError('Unsupported replay metadata schema')
     if (metadata.get('kind') != 'faithful_policy_replay' or
@@ -146,6 +148,7 @@ def validate_replay(arrays, metadata, expected_spec=None):
 
 
 def save_replay(path, arrays, metadata):
+    """Save a validated replay (never overwrites)."""
     validate_replay(arrays, metadata)
     path = Path(path)
     if path.exists():
@@ -158,6 +161,7 @@ def save_replay(path, arrays, metadata):
 
 
 def load_replay(path, expected_spec=None):
+    """Load and validate a replay."""
     with np.load(path, allow_pickle=False) as archive:
         if '_metadata_json' not in archive:
             raise ValueError('Replay metadata is missing')

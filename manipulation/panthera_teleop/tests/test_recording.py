@@ -19,7 +19,9 @@ import urllib.error
 
 
 class EpisodeTests(unittest.TestCase):
+    """Episode recording."""
     def setUp(self):
+        """A store in a temporary folder."""
         self.temp = tempfile.TemporaryDirectory()
         self.config = json.loads((ROOT/'config/recording.json').read_text())
         self.config['minimum_free_bytes'] = 0
@@ -29,10 +31,12 @@ class EpisodeTests(unittest.TestCase):
         self.sequence = 0
 
     def tearDown(self):
+        """Close the store and remove the folder."""
         self.store.close('test_finished')
         self.temp.cleanup()
 
     def sample(self, q=0.0, velocity=0.0, dt=0.05):
+        """Submit one sample at angle `q`."""
         self.t += int(dt*1e9)
         self.sequence += 1
         sample = dict(monotonic_ns=self.t, unix_ns=time.time_ns(), sequence=self.sequence,
@@ -43,6 +47,7 @@ class EpisodeTests(unittest.TestCase):
         self.store.events.join()
 
     def trigger(self):
+        """Move enough to start an episode."""
         self.sample()
         for _ in range(5):
             self.sample(.03, .1)
@@ -50,6 +55,7 @@ class EpisodeTests(unittest.TestCase):
         return self.store.snapshot()['active']
 
     def decision(self, label, identifier):
+        """Label an episode and wait until written."""
         self.store.submit('decision', dict(label=label, episode_id=identifier))
         self.store.events.join()
 
@@ -127,7 +133,9 @@ class EpisodeTests(unittest.TestCase):
 
 
 class ControlTests(unittest.TestCase):
+    """Arm control helpers."""
     def fake(self):
+        """A fake robot with seven motors."""
         states = [SimpleNamespace(position=0.0, velocity=0.0, torque=0.0, time=1.0, fault=0, mode=0)
                   for _ in range(7)]
         motors = [SimpleNamespace(get_current_motor_state=lambda s=s:s, get_motor_id=lambda i=i:i+1)

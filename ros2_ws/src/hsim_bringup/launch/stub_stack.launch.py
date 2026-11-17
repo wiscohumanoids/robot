@@ -1,4 +1,4 @@
-"""Phase 1 stack with stubs: sim, locomotion, cmd_vel mux, state estimation, localization.
+"""The robot core with stubs (checks wiring and the contract, no physics): sim, locomotion, cmd_vel mux, state estimation, localization.
 
     ros2 launch hsim_bringup stub_stack.launch.py [foxglove:=true]
 
@@ -17,6 +17,8 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Start the stub nodes (sim, locomotion, state estimation, localization), twist_mux, and optionally Foxglove.
+    """
     cfg = os.path.join(get_package_share_directory('hsim_bringup'), 'config')
     joints = os.path.join(cfg, 'g1_joints.yaml')
     sim_time = {'use_sim_time': True}
@@ -35,7 +37,7 @@ def generate_launch_description():
              remappings=[('cmd_vel_out', '/cmd_vel')]),
         Node(package='hsim_state_estimation', executable='state_estimation_stub', name='state_estimation',
              output='screen', parameters=[sim_time]),
-        # Localization stub: identity map -> odom until Phase 3.
+        # Localization stub: identity map -> odom.
         Node(package='tf2_ros', executable='static_transform_publisher', name='localization',
              arguments=['--frame-id', 'map', '--child-frame-id', 'odom'], parameters=[sim_time]),
         Node(package='foxglove_bridge', executable='foxglove_bridge', name='foxglove_bridge',

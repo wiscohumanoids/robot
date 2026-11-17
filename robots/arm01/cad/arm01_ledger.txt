@@ -3,7 +3,7 @@ arm01 design ledger
 ================================================================================
 Robot      arm01: the 7-DOF MyActuator EtherCAT arm under test (right arm on a
            post stand).
-Source     The CAD team's `full_assembly_urdf` export (14 Nov 2026, Onshape
+Source     The mechanical CAD's `full_assembly_urdf` export (Onshape
            capture f7727994091b4cb0be86ce6f, audited inertials and harness),
            converted by robots/arm01/cad/import_full_assembly.py: renamed, re-based,
            tool frames added. Geometry, joint senses, zeros, limits and

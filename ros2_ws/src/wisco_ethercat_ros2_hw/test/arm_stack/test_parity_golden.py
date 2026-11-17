@@ -18,6 +18,7 @@ GOLDEN = os.path.join(ROOT, 'test', 'data', 'arm01_parity.json')
 
 
 def _generator():
+    """Load tools/make_parity_golden.py as a module."""
     spec = importlib.util.spec_from_file_location('make_parity_golden',
                                                   os.path.join(ROOT, 'tools', 'make_parity_golden.py'))
     mod = importlib.util.module_from_spec(spec)
@@ -26,6 +27,7 @@ def _generator():
 
 
 def _close(a, b, path=''):
+    """Assert two nested structures are equal, floats within tolerance."""
     if isinstance(a, dict):
         assert isinstance(b, dict) and set(a) == set(b), path
         for k in a:
@@ -42,6 +44,7 @@ def _close(a, b, path=''):
 
 @pytest.fixture(scope='module')
 def golden():
+    """The parity reference data."""
     with open(GOLDEN) as f:
         return json.load(f)
 

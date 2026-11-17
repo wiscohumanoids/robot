@@ -8,7 +8,7 @@ whole body, 29 joints: every joint except the head). Each retargeted clip has a 
 |---|---|
 | `retarget_lafan1.py` | LAFAN1 BVH -> Wisco CSV (own IK retargeter, numpy + MuJoCo) + quality report (+ optional preview video) |
 | `compare_strip.py` | Same moments of a clip: Unitree's G1 retarget (top) vs our Wisco retarget (bottom) |
-| `motions/<clip>.csv` | Retargeted clip, 30 fps: pelvis xyz, pelvis quat xyzw, 29 joints (training model order) |
+| `motions/<clip>.csv` | Retargeted clip, 30 fps: pelvis xyz, pelvis quat xyzw, 29 joints (training model order). Not kept in the repo: LAFAN1 is CC BY-NC-ND, so derived clips are regenerated locally with `retarget_lafan1.py` |
 | `motions/<clip>.report.json` | Quality numbers for that clip; `.debug.npz` per-frame errors |
 | `wisco_tracking/` | The tracking task (copy of mjlab's G1 tracking config, Wisco names + Wisco randomization) |
 | `train.py`, `play.py` | Launchers: register our tasks, run mjlab's own train / play |

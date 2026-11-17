@@ -1,4 +1,4 @@
-"""One MCAP file per session (spec: Logging and data formats).
+"""One MCAP file per session.
 
 Channels (JSON-encoded, with a JSON schema each):
   joint_state  every cycle   t_ns, q, qd, tau (Nm), tau_raw_permille, counts_raw, status
@@ -45,10 +45,12 @@ SCHEMAS = {
 
 
 class SessionRejected(ValueError):
+    """A session that cannot be recorded (for example, no calibration version)."""
     pass
 
 
 def _list(v):
+    """Array to list, None stays None."""
     if v is None:
         return None
     return np.asarray(v, float).tolist()
@@ -58,12 +60,13 @@ class Recorder:
     """Writes one session. Use as a context manager or call close()."""
 
     def __init__(self, path: str, meta: Dict[str, Any]):
+        """Open an MCAP file and write the session metadata (requires a calibration version)."""
         try:
             from mcap.writer import Writer
         except ImportError as e:  # pragma: no cover
             raise ImportError('pip install mcap (or apt ros-<distro>-mcap-vendor)') from e
         if meta.get('calibration_version') is None:
-            raise SessionRejected('meta needs calibration_version (spec: sessions without one are rejected)')
+            raise SessionRejected('meta needs calibration_version: sessions without one are rejected')
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         self.path = path
         self._f = open(path, 'wb')
@@ -79,10 +82,12 @@ class Recorder:
         self._write('meta', {**meta, 't_ns': time.monotonic_ns()}, time.monotonic_ns())
 
     def _write(self, topic, msg, t_ns):
+        """Write one JSON message to a topic."""
         self._w.add_message(self._ch[topic], log_time=int(t_ns), publish_time=int(t_ns), sequence=0,
                             data=json.dumps(msg).encode())
 
     def joint_state(self, s: JointState):
+        """Write one feedback sample."""
         t = int(s.t * 1e9)
         self._write('joint_state', {
             't_ns': t, 'q': _list(s.q), 'qd': _list(s.qd), 'tau': _list(s.tau),
@@ -94,6 +99,7 @@ class Recorder:
             self._last_mode = s.mode
 
     def joint_cmd(self, t: float, cmd: Command, tau_sent_permille=None):
+        """Write one command, with the torque actually sent."""
         t_ns = int(t * 1e9)
         self._write('joint_cmd', {
             't_ns': t_ns, 'mode': cmd.mode, 'q': _list(cmd.q), 'qd': _list(cmd.qd), 'kp': _list(cmd.kp),
@@ -101,10 +107,12 @@ class Recorder:
             t_ns)
 
     def event(self, event: str, t_ns: Optional[int] = None, **fields):
+        """Write an event."""
         t_ns = int(t_ns if t_ns is not None else time.monotonic_ns())
         self._write('events', {'t_ns': t_ns, 'event': event, **_plain(fields)}, t_ns)
 
     def close(self):
+        """Finish and close the file."""
         if self._w is not None:
             self._w.finish()
             self._f.close()
@@ -118,6 +126,7 @@ class Recorder:
 
 
 def _plain(d):
+    """Convert numpy values in a dict to plain Python for JSON."""
     out = {}
     for k, v in d.items():
         if isinstance(v, np.ndarray):
@@ -145,9 +154,11 @@ class RecordingClient(ArmClient):
         return getattr(self.inner, name)
 
     def state(self) -> JointState:
+        """Inner state."""
         return self.inner.state()
 
     def send(self, cmd: Command) -> None:
+        """Forward a command and record every `every`-th one."""
         self.inner.send(cmd)
         if self._k % self.every:
             return
@@ -159,6 +170,7 @@ class RecordingClient(ArmClient):
         self.rec.joint_cmd(self.inner.state().t, cmd, sent)
 
     def step(self, seconds: float = 0.0) -> JointState:
+        """Step the inner client, record the state and any new events."""
         s = self.inner.step(seconds)
         if self._k % self.every == 0:
             self.rec.joint_state(s)
@@ -172,33 +184,41 @@ class RecordingClient(ArmClient):
         return s
 
     def set_payload(self, payload):
+        """Record and forward a payload change."""
         self.rec.event('payload', mass_kg=getattr(payload, 'mass_kg', 0.0))
         return self.inner.set_payload(payload)
 
     def place_in_jig(self, q_jig):
+        """Forward."""
         return self.inner.place_in_jig(q_jig)
 
     def mocap(self):
+        """Forward."""
         return self.inner.mocap()
 
     def hand_guide(self, prompt, hint_q=None):
+        """Record the hand-guiding prompt and the resulting state."""
         self.rec.event('hand_guide', prompt=prompt)
         s = self.inner.hand_guide(prompt, hint_q)
         self.rec.joint_state(s)
         return s
 
     def drive_gains(self):
+        """Forward."""
         return self.inner.drive_gains()
 
     def set_drive_gains(self, kp_scale, kd_scale):
+        """Forward a drive gain change and record it."""
         self.inner.set_drive_gains(kp_scale, kd_scale)
         self.rec.event('drive_gains', kp_scale=np.asarray(kp_scale).tolist(),
                        kd_scale=np.asarray(kd_scale).tolist())
 
     def time_since_power_on(self) -> float:
+        """Forward."""
         return self.inner.time_since_power_on()
 
     def close(self):
+        """Close the recording and the inner client."""
         self.rec.close()
         self.inner.close()
 
@@ -206,6 +226,7 @@ class RecordingClient(ArmClient):
 # --------------------------------------------------------------------------- reading
 @dataclass
 class Session:
+    """A loaded recording: metadata, state arrays, commands and events."""
     meta: Dict[str, Any]
     state: Dict[str, np.ndarray]
     cmd: List[Dict[str, Any]]
@@ -213,6 +234,7 @@ class Session:
 
 
 def iter_messages(path: str) -> Iterator:
+    """Yield (topic, decoded JSON) for every message in an MCAP file."""
     from mcap.reader import make_reader
     with open(path, 'rb') as f:
         for _schema, channel, message in make_reader(f).iter_messages():

@@ -22,6 +22,7 @@ from action_limits import GRIPPER_ENCODER_TOLERANCE_RAD, clamp_gripper_actions
 
 
 def request(base, path, body=None, timeout=3):
+    """HTTP request to the inference server (server errors reported with their reason)."""
     data = None if body is None else json.dumps(body, allow_nan=False).encode()
     req = Request(base + path, data=data, headers={'Content-Type': 'application/json'})
     try:
@@ -39,6 +40,7 @@ def request(base, path, body=None, timeout=3):
 
 
 def image_payload(jpeg, name):
+    """A 640x480 camera JPEG cropped and resized for the server."""
     with Image.open(io.BytesIO(jpeg)) as source:
         if source.size != (640, 480):
             raise RuntimeError(f'{name}: expected 640x480 camera input')
@@ -50,6 +52,7 @@ def image_payload(jpeg, name):
 
 
 def validate_chunk(response, sequence, initial, lower, upper, physical=True, action_count=None):
+    """Check a returned chunk: sequence, rate, shape, finite values, joint limits."""
     if response['sequence'] != sequence or response['fps'] != CONTRACT['fps']:
         raise RuntimeError('Response sequence/rate mismatch')
     if physical and response.get('mock'):
@@ -85,6 +88,7 @@ class SmoothActionTrajectory:
     The entire path is retimed when necessary rather than dropping waypoints.
     """
     def __init__(self, actions, started):
+        """Time-parameterized path through a chunk's actions with bounded velocity and acceleration."""
         self.actions = np.asarray(actions, dtype=float).copy()
         if (self.actions.ndim != 2 or self.actions.shape[1] != 14 or
                 not 1 <= len(self.actions) <= 50 or not np.isfinite(self.actions).all()):
@@ -101,6 +105,7 @@ class SmoothActionTrajectory:
 
     @staticmethod
     def _derivative_bound(values):
+        """Bound on the trajectory's derivatives."""
         # Subdivide the derivative curves three times to tighten their convex
         # hull bound. This avoids slowing a simple ramp by a coarse hull bound.
         polygons = values[:, None, :, :]
@@ -117,6 +122,7 @@ class SmoothActionTrajectory:
         return np.max(np.abs(polygons), axis=(1, 2))
 
     def _plan(self, target):
+        """Plan the path from the current target."""
         self.origin = target.copy()
         points = np.vstack([self.origin, self.actions])
         delta = np.diff(points, axis=0)
@@ -149,6 +155,7 @@ class SmoothActionTrajectory:
         self.duration = float(self.ends[-1])
 
     def remaining(self, now):
+        """Seconds left on the trajectory."""
         return float('inf') if self.ends is None else max(0., self.started + self.duration - now)
 
     def policy_clock(self, now):
@@ -162,6 +169,7 @@ class SmoothActionTrajectory:
         return (segment + fraction) / CONTRACT['fps'], 1 / (CONTRACT['fps'] * self.durations[segment])
 
     def tick(self, now, dt, target):
+        """Next target (raises if the control loop missed its deadline)."""
         if not np.isfinite(dt) or not 0 <= dt <= 0.1:
             raise RuntimeError('Local control loop missed its deadline')
         if self.index >= len(self.actions):
@@ -189,21 +197,25 @@ class SmoothActionTrajectory:
 class InferenceChunkStream:
     """One in-flight request and one validated chunk, with bounded lookahead."""
     def __init__(self):
+        """No request in flight."""
         self.future = self.pending = None
         self.sequence = 0
         self.latency = .3
 
     def needs_request(self, now, trajectory):
+        """Whether to request the next chunk now (ahead of the current one ending)."""
         lead = min(CONTRACT['max_observation_age_s'] / 2, max(.1, self.latency * 1.5 + .05))
         return (self.future is None and self.pending is None and
                 (trajectory is None or trajectory.remaining(now) <= lead))
 
     def submit(self, pool, url, state, images, now):
+        """Send an inference request in the background."""
         self.observed_at = now
         self.future = pool.submit(request, url, '/infer',
                                   dict(sequence=self.sequence, state=state.tolist(), images=images), 3)
 
     def poll(self, now, target, lower, upper):
+        """Collect a finished request (stale observations are discarded)."""
         if self.future is None:
             return None
         if now - self.observed_at > CONTRACT['max_observation_age_s']:
@@ -219,6 +231,7 @@ class InferenceChunkStream:
         return result
 
     def activate(self, now):
+        """Hand over the pending chunk."""
         if self.pending is None:
             return None
         actions, observed_at = self.pending
@@ -229,6 +242,7 @@ class InferenceChunkStream:
 
 
 def main():
+    """Run remote policy inference on the arms (or simulated without --run)."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--url', default='http://127.0.0.1:8765')
     p.add_argument('--run', action='store_true', help='Enable physical arms and cameras')

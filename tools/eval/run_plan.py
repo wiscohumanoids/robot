@@ -21,6 +21,7 @@ for a in sys.argv[1:]:
     g.plan.skills.append(s)
 last = [None]
 def fb(m):
+    """Print the behavior tree's progress when the step or its status changes."""
     f = m.feedback
     if (f.current_skill_index, f.status) != last[0]:
         last[0] = (f.current_skill_index, f.status); print(f"  [{time.monotonic()-t0:5.1f}s] step {f.current_skill_index}: {f.status}")

@@ -93,6 +93,7 @@ public:
     return true;
   }
 
+  // Last error message.
   const std::string & last_error() const {return error_;}
 
 private:
@@ -113,6 +114,7 @@ private:
   static constexpr uint8_t kGenCfgRst = 0x01;
   static constexpr uint8_t kGenCfgCal = 0x02;
 
+  // Check the device really is an ADS7128, then soft-reset it to manual mode with every pin an analog input.
   bool initialise()
   {
     uint8_t status = 0;
@@ -156,6 +158,7 @@ private:
     return fail_msg("ADC offset calibration did not complete");
   }
 
+  // Write one ADC register.
   bool write_reg(uint8_t reg, uint8_t value)
   {
     const uint8_t tx[3] = {kOpRegWrite, reg, value};
@@ -169,6 +172,7 @@ private:
     return true;
   }
 
+  // Read one ADC register.
   bool read_reg(uint8_t reg, uint8_t & value)
   {
     const uint8_t tx[2] = {kOpRegRead, reg};
@@ -189,6 +193,7 @@ private:
     return true;
   }
 
+  // Close the I2C device.
   void close_device()
   {
     if (fd_ >= 0) {
@@ -197,12 +202,14 @@ private:
     }
   }
 
+  // Record a failure with errno and return false.
   bool fail_errno(const std::string & what)
   {
     error_ = what + ": " + std::strerror(errno);
     return false;
   }
 
+  // Record a failure and return false.
   bool fail_msg(const std::string & what)
   {
     error_ = what;

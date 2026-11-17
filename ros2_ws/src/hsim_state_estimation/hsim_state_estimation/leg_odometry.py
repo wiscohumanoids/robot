@@ -43,7 +43,13 @@ def tilt_only_rotation(qx, qy, qz, qw):
 
 
 class LegOdometry(Node):
+    """Node `leg_odometry`: base velocity from stance-foot kinematics, and the base/torso TF the rest of the stack
+    uses.
+    """
     def __init__(self):
+        """Load the robot model for kinematics, declare the profile parameters, subscribe to joints and IMU, create
+        publishers.
+        """
         super().__init__('leg_odometry')
         self.declare_parameter('robot_model', '/hsim/assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml')
         self.declare_parameter('blend_width', 0.003)    # m: how sharply stance switches between feet (validated: <2% speed error)
@@ -69,6 +75,9 @@ class LegOdometry(Node):
         self.get_logger().info('leg odometry: stance-foot kinematics + IMU gyro')
 
     def on_joints(self, msg: JointState):
+        """Every few joint messages: each foot's velocity relative to the body gives a body-velocity estimate; blend
+        the two by which foot is lower (stance), publish it with the body height.
+        """
         self.count += 1
         if self.imu is None or self.count % self.div:
             return
@@ -120,6 +129,7 @@ class LegOdometry(Node):
         self.pub.publish(out)
 
     def publish_body_tf(self, stamp, height, imu_q):
+        """Publish base_footprint -> base_link (height, IMU tilt) and base_link -> torso_link."""
         # tilt only (roll/pitch); heading lives in odom -> base_footprint
         R = tilt_only_rotation(imu_q.x, imu_q.y, imu_q.z, imu_q.w)
         q = np.zeros(4)
@@ -140,6 +150,7 @@ class LegOdometry(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = LegOdometry()
     try:

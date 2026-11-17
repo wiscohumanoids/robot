@@ -1,0 +1,22 @@
+# Arm profile: the two real Panthera-HT arms (manipulation/panthera_teleop), the gear-and-pin assembly task.
+# Matches the inference contract (manipulation/panthera_teleop/infra/inference/contract.json). See README.md.
+name: panthera_bimanual
+description: two real Panthera-HT arms, one overhead and two wrist cameras, gear into carrier then pin
+robot_type: panthera_ht_bimanual_real
+fps: 20
+state_dim: 14                    # per arm: six joints + measured gripper angle
+action_dim: 14                   # absolute joint and gripper targets
+cameras: [observation.images.overhead, observation.images.wrist_port2, observation.images.wrist_port3]
+image_size: 256
+task: put the gear in the carrier and put a pin in it
+simulation: false
+methods: [pi05]
+pi05:
+  # Exports from panthera_teleop carry processing/manifest.json and verification reports; the trainer checks them and
+  # that every exported frame is trained on (no held-out split: closed-loop tests on the arms are the evaluation).
+  require_manifest: true
+  normalization: checkpoint      # keep the checkpoint's quantiles on resume (same physical action mapping)
+deployment:
+  action_representation: absolute
+  action_alignment: next_uniform_sample
+  state_gripper: measured_native_radians

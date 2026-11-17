@@ -46,6 +46,7 @@ DEFAULT_OUTPUT = REPO_ROOT / "replay_grid.mp4"
 
 @dataclass
 class Replay:
+    """One episode loaded for the grid video."""
     path: Path
     label: str
     t: np.ndarray
@@ -58,6 +59,7 @@ class Replay:
 
     @property
     def duration(self) -> float:
+        """Length of the episode, s."""
         return float(self.t[-1]) if len(self.t) else 0.0
 
     def index_at(self, seconds: float) -> int:
@@ -67,11 +69,13 @@ class Replay:
 
 
 def _episode_number(path: Path) -> int:
+    """Number at the end of an episode folder name (-1 if none)."""
     match = re.search(r"(\d+)$", path.name)
     return int(match.group(1)) if match else -1
 
 
 def find_episodes(data_dir: Path, count: int) -> list[Path]:
+    """The first `count` episodes in `data_dir`."""
     candidates = [p for p in data_dir.glob("episode_*")
                   if (p / "data.npz").is_file()]
     candidates.sort(key=lambda p: (_episode_number(p), p.name))
@@ -82,6 +86,7 @@ def find_episodes(data_dir: Path, count: int) -> list[Path]:
 
 
 def load_replay(path: Path) -> Replay:
+    """Load one episode for replay."""
     path = path.resolve()
     npz_path = path / "data.npz"
     if not npz_path.is_file():
@@ -134,6 +139,7 @@ def tile_rect(index: int, columns: int, rows: int,
 def render_video(replays: list[Replay], output: Path, *, columns: int,
                  width: int, height: int, fps: float, duration: float,
                  timing: str, labels: bool, crf: int) -> None:
+    """Render several episodes side by side into one video."""
     rows = (len(replays) + columns - 1) // columns
     tile_w = max(width // columns, 1)
     tile_h = max(height // rows, 1)
@@ -244,6 +250,7 @@ def render_video(replays: list[Replay], output: Path, *, columns: int,
 
 
 def main() -> None:
+    """Grid video of recorded episodes."""
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("episodes", nargs="*", type=Path,

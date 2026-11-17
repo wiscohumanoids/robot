@@ -1,7 +1,7 @@
 """Ankle linkage: per-motor torque from joint torques, as a reward penalty and a metric (torch).
 
 Each ankle's pitch and roll are driven together by two X4-36 motors through rods
-(HARDWARE_ISSUES H3). The simulation treats pitch and roll as separate joints with their own
+(robots/wisco_v1/hardware_observations.md, "Ankle torque"). The simulation treats pitch and roll as separate joints with their own
 torque caps, which would let the policy use pitch + roll torque combinations the real ankle
 can't produce. This converts joint torques to motor torques,
     tau_motor = solve(J(q)^T, tau_joint),  J = d(crank angle)/d(joint angle)
@@ -30,12 +30,14 @@ class JacobianGrid:
   """Ankle linkage Jacobian J(pitch, roll) (rows = motors, cols = joints), bilinear on the grid. Device-only."""
 
   def __init__(self, device):
+    """Load the linkage Jacobian grid onto `device`."""
     info = json.loads(LINKAGE_JSON.read_text())
     self.pitch = torch.tensor(info["grid_pitch"], device=device, dtype=torch.float32)
     self.roll = torch.tensor(info["grid_roll"], device=device, dtype=torch.float32)
     self.grid = {s: torch.tensor(info["sides"][s]["grid"], device=device, dtype=torch.float32) for s in SIDES}
 
   def jacobian(self, s: str, p: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+    """Bilinearly interpolated Jacobian at batched (pitch, roll)."""
     P, R, g = self.pitch, self.roll, self.grid[s]
     p = p.clamp(P[0], P[-1]); r = r.clamp(R[0], R[-1])
     i = (torch.searchsorted(P, p.contiguous()) - 1).clamp(0, len(P) - 2)
@@ -62,6 +64,7 @@ class AnkleMotorModel:
   """Holds the Jacobian grids on the GPU and the joint/actuator indices. One per env."""
 
   def __init__(self, env: ManagerBasedRlEnv, asset_name: str = "robot"):
+    """Linkage grid and the robot's ankle actuator, if any."""
     g = JacobianGrid(env.device)
     self.pitch, self.roll, self.grid, self._g = g.pitch, g.roll, g.grid, g
     asset = env.scene[asset_name]
@@ -74,12 +77,13 @@ class AnkleMotorModel:
       self.act_ids[s] = asset.find_actuators(names, preserve_order=True)[0]
 
   def _jacobian(self, s: str, p: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+    """Linkage Jacobian at batched angles."""
     return self._g.jacobian(s, p, r)
 
   def motor_torques(self) -> torch.Tensor:
     """(num_envs, 4): [left motor A, left motor B, right motor A, right motor B] in N*m.
 
-    With the linkage ankle actuator (fix 4) this is the actuator's own clamped motor torque from the last physics
+    With the linkage ankle actuator (ankle_actuator.py) this is the actuator's own clamped motor torque from the last physics
     step (exact). Otherwise the applied joint torques are mapped back through J at the current joint angles (after
     the step, so it can read a few N*m off when the ankle moves fast)."""
     if self._ankle_act is not None:
@@ -97,6 +101,7 @@ class AnkleMotorModel:
 
 
 def _model(env: ManagerBasedRlEnv) -> AnkleMotorModel:
+  """The environment's ankle motor model, created on first use."""
   m = getattr(env, "_wisco_ankle_model", None)
   if m is None:
     m = AnkleMotorModel(env)
@@ -116,17 +121,19 @@ def ankle_motor_peak(env: ManagerBasedRlEnv) -> torch.Tensor:
 
 
 class ankle_motor_thermal:
-  """Reward term (class): sustained ankle motor torque above rated (fix 4, HARDWARE_ISSUES H3/H13).
+  """Reward term (class): sustained ankle motor torque above rated (a stand-in for motor heating).
 
   Per motor, exponential moving average of tau^2 with time constant tau_s (default 2 s); penalty
   sum over the 4 motors of relu(sqrt(ema) / rated - 1)^2. Resets per episode. Also logs metrics.
   """
 
   def __init__(self, cfg, env: ManagerBasedRlEnv):
+    """Per-motor torque averages."""
     self.ema = torch.zeros(env.num_envs, 4, device=env.device)
     self.env = env
 
   def reset(self, env_ids=None):
+    """Clear the torque averages of `env_ids`."""
     if env_ids is None:
       env_ids = slice(None)
     self.ema[env_ids] = 0.0

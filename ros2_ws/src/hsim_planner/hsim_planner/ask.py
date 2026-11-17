@@ -13,6 +13,9 @@ from std_msgs.msg import String
 
 
 def main():
+    """Publish the command-line words as one request on /planner/command and print the planner's replies until it
+    finishes.
+    """
     text = ' '.join(sys.argv[1:]).strip()
     if not text:
         print('usage: ros2 run hsim_planner ask "<request>"   (or: ask stop)')

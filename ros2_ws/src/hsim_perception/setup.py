@@ -1,3 +1,4 @@
+"""Package setup: installs the perception nodes and the world model."""
 from setuptools import setup
 
 setup(

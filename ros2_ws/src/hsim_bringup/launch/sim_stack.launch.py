@@ -20,11 +20,18 @@ sensors:=lidar         head lidar -> /scan (G1-style) + the G1's head RGB-D came
 sensors:=stereo        ZED X-style stereo camera (110 deg, depth to 12 m) -> depth -> point cloud -> /scan (front
                        only), plus color + depth images for perception and RTAB-Map (no lidar)
                        Both modes publish /camera/head/{color,depth}/image_raw (+ camera_info, points).
+backend:=sim           the MuJoCo sim node (hsim_sim/mujoco_sim): realistic sensors, lockstep with the policy
+backend:=ros2_control  the robot's control path instead: the upstream mujoco_ros2_control plugin runs the same trained
+                       scene under controller_manager (joint_state_broadcaster, imu_sensor_broadcaster, a forward
+                       position controller at update_rate:=200 Hz) and the policy's targets reach it through
+                       joint_target_bridge, as they reach the drives on the robot. No lockstep, no exteroceptive
+                       sensors (no env, cameras or lidar) and no Mac viewer stream; IMU and joint states are noise-free.
 Options: viewer:=false, foxglove:=true, render_hz:=10
 """
 
 import math
 import os
+import tempfile
 
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -47,14 +54,17 @@ def profile(context):
 
 
 def sensors_of(context, prof):
+    """The sensor set: the argument, else the profile's default."""
     return LaunchConfiguration('sensors').perform(context).strip() or prof['default_sensors']
 
 
 def arg(context, name):
+    """A launch argument's value."""
     return LaunchConfiguration(name).perform(context).strip()
 
 
 def spawn_pose(env, build_dir='build'):
+    """The environment's spawn pose (x, y, yaw) from its built objects.yaml; the origin without an environment."""
     if not env:
         return 0.0, 0.0, 0.0
     objs = yaml.safe_load(open(os.path.join(ENVS, env, build_dir, 'objects.yaml')))
@@ -62,7 +72,30 @@ def spawn_pose(env, build_dir='build'):
     return float(sp.get('x', 0.0)), float(sp.get('y', 0.0)), math.radians(float(sp.get('yaw_deg', 0.0)))
 
 
+def ros2_control_nodes(prof, update_rate):
+    """The ros2_control backend: plugin-ready scene, URDF and controllers written for the profile's trained world,
+    then ros2_control_node, the spawners and the target bridge (which also serves the description).
+    """
+    from hsim_sim.ros2_control_backend import build
+    files = build(prof['world'], tempfile.mkdtemp(prefix='hsim_ros2_control_'), update_rate)
+    controllers = files['controllers']
+    return [
+        Node(package='mujoco_ros2_control', executable='ros2_control_node', output='screen',
+             parameters=[{'use_sim_time': True}, controllers],
+             remappings=[('/imu_sensor_broadcaster/imu', '/imu')]),
+        *[Node(package='controller_manager', executable='spawner', output='screen',
+               arguments=[c, '--param-file', controllers, '--controller-manager-timeout', '60'])
+          for c in ('joint_state_broadcaster', 'imu_sensor_broadcaster', 'joint_targets_controller')],
+        Node(package='hsim_sim', executable='joint_target_bridge', name='joint_target_bridge', output='screen',
+             parameters=[{'joints_file': files['joints'], 'robot_description_file': files['urdf'],
+                          'use_sim_time': True}]),
+    ]
+
+
 def robot_nodes(context):
+    """Every robot-side node for the resolved profile: MuJoCo, sensors, state estimation, localization, the walking
+    policy and the sensor mounts.
+    """
     env = arg(context, 'env')
     prof = profile(context)
     bdir = prof['env_build_dir']
@@ -79,6 +112,14 @@ def robot_nodes(context):
                   'lidar_mount': [float(v) for v in mounts['lidar_on_torso']],
                   'use_sim_time': False}            # the sim is the clock source
     nodes = []
+    backend = arg(context, 'backend')
+    if backend not in ('sim', 'ros2_control'):
+        raise RuntimeError(f'backend:={backend}: sim or ros2_control')
+    ros2_control = backend == 'ros2_control'
+    if ros2_control:
+        if env:
+            raise RuntimeError('backend:=ros2_control runs the bare training world: leave env empty')
+        nodes += ros2_control_nodes(prof, float(arg(context, 'update_rate')))
 
     if env:
         build = os.path.join(ENVS, env, bdir)
@@ -96,7 +137,7 @@ def robot_nodes(context):
                      name='lifecycle_manager_map', output='screen',
                      parameters=[{'autostart': True, 'node_names': ['map_server'], 'use_sim_time': True}]),
             ]
-    else:
+    elif not ros2_control:
         nodes.append(Node(package='hsim_sim', executable='mujoco_sim', name='sim', output='screen',
                           parameters=[{'scene': prof['world'], **sim_params}]))
 
@@ -115,10 +156,10 @@ def robot_nodes(context):
                  arguments=['--roll', '-1.5708', '--yaw', '-1.5708', '--frame-id', 'head_camera',
                             '--child-frame-id', 'head_camera_optical'], parameters=[sim_time]),
         ]
-    elif stereo:
+    elif stereo and not ros2_control:
         raise RuntimeError('sensors:=stereo needs an env (the camera renders a built world)')
 
-    if stereo:
+    if stereo and world is not None:
         nodes += [
             Node(package='rtabmap_util', executable='point_cloud_xyz', name='depth_to_cloud', output='screen',
                  parameters=[{'decimation': 2, 'max_depth': 8.0, 'voxel_size': 0.05, 'approx_sync': False,
@@ -189,6 +230,9 @@ def robot_nodes(context):
 
 
 def generate_launch_description():
+    """Declare the launch arguments; robot nodes come from `robot_nodes`, then twist_mux, safety, teleop and the
+    viewer bridge.
+    """
     cfg = os.path.join(get_package_share_directory('hsim_bringup'), 'config')
     sim_time = {'use_sim_time': True}
     return LaunchDescription([
@@ -207,6 +251,9 @@ def generate_launch_description():
                               description='stream state to the Mac viewer and accept its key commands'),
         DeclareLaunchArgument('render_hz', default_value='0.0', description='camera image for Foxglove, 0 = off'),
         DeclareLaunchArgument('foxglove', default_value='false'),
+        DeclareLaunchArgument('backend', default_value='sim', description='sim | ros2_control (see the docstring)'),
+        DeclareLaunchArgument('update_rate', default_value='200',
+                              description='backend:=ros2_control: controller_manager rate, Hz'),
 
         OpaqueFunction(function=robot_nodes),
         Node(package='twist_mux', executable='twist_mux', name='twist_mux', output='screen',

@@ -1,4 +1,4 @@
-"""Sim backend behind the ArmClient API (spec: Phase 0).
+"""Sim backend behind the ArmClient API: every procedure can be rehearsed on it before hardware.
 
 The plant is the URDF with known, injectable errors, so every procedure can be
 checked for recovering them:
@@ -60,6 +60,7 @@ class SimErrors:
 
     @staticmethod
     def random(n: int, seed: int = 0, scale: float = 1.0) -> 'SimErrors':
+        """Random errors of every kind at typical sizes, times `scale`."""
         r = np.random.default_rng(seed)
         return SimErrors(
             zero_offsets_rad=r.uniform(-1, 1, n) * math.radians(5) * scale,
@@ -85,9 +86,13 @@ ARMATURE = {'x6_60': 0.03, 'x4_36': 0.012, 'x4_10': 0.004}  # kg m^2 at the outp
 
 class SimArm(ArmClient):
 
+    """ArmClient on a simulated arm: the same control law, with known zero, Kt, mass, friction, delay and compliance
+    errors.
+    """
     def __init__(self, arm: ArmConfig, calibration: Dict, errors: Optional[SimErrors] = None,
                  dt: float = 0.001, substeps: int = 2, q0: Optional[np.ndarray] = None,
                  seed: int = 0, mocap_enabled: bool = True):
+        """Build the simulated arm and its truth model from the joint config, calibration and errors."""
         self.arm = arm
         self.names = arm.names
         self.n = arm.n
@@ -163,6 +168,7 @@ class SimArm(ArmClient):
 
     # ------------------------------------------------------------------ RT side
     def reload_calibration(self, calibration: Dict):
+        """Use a new calibration (as the controller would after a restart)."""
         self.calibration = calibration
         self.units = Units(self.arm, calibration)
         self.model = ArmModel(self.arm.urdf, self.arm.names, home=self.arm.home)
@@ -182,12 +188,14 @@ class SimArm(ArmClient):
 
     # ------------------------------------------------------------------ sensors
     def _encoder_counts(self) -> np.ndarray:
+        """Raw encoder counts from the true angle, zero error, deflection and thermal drift."""
         drift = self.thermal * (1 - math.exp(-(self.t - self.power_on_t) / self.err.thermal_tau_s))
         motor = self.q + self.deflection
         return np.round(self.dir_true * (motor + self.true_zero + drift) * self.units.counts_per_rad
                         * self.counts_scale)
 
     def _measured(self):
+        """What the drives report: counts, calibrated angle and speed, raw and converted torque."""
         counts = self._encoder_counts()
         # what the host computes with its configured direction and zero offsets
         q = self.dir_cfg * counts / self.units.counts_per_rad - self.units.zero
@@ -201,6 +209,7 @@ class SimArm(ArmClient):
         return counts, q, qd, permille, tau
 
     def state(self) -> JointState:
+        """The measured state as a JointState."""
         counts, q, qd, permille, tau = self._measured()
         return JointState(t=self.t, q=q, qd=qd, tau=tau, raw_counts=counts, raw_permille=permille,
                           status=np.full(self.n, 0x1237), mode=self.mode,
@@ -209,18 +218,21 @@ class SimArm(ArmClient):
 
     # ------------------------------------------------------------------ commands
     def send(self, cmd: Command) -> None:
+        """Accept a command (and log a mode switch)."""
         if cmd.mode != self.mode:
             self.events.append({'t': self.t, 'event': 'mode_switch', 'from': self.mode, 'to': cmd.mode})
         self.cmd = cmd
         self.cmd_t = self.t
 
     def step(self, seconds: float = 0.0) -> JointState:
+        """Run control cycles for `seconds`."""
         cycles = max(1, int(round(seconds / self.dt)))
         for _ in range(cycles):
             self._cycle()
         return self.state()
 
     def _cycle(self):
+        """One control cycle: the control law on the measured state, then integrate the dynamics."""
         _, q_meas, qd_meas, _, _ = self._measured()
         age = self.t - self.cmd_t if self.cmd is not None else 1e9
         out = self.law.compute(self.cmd, age, q_meas, qd_meas, self.mode)
@@ -284,6 +296,7 @@ class SimArm(ArmClient):
         return stribeck * np.tanh(qd / eps) + self.viscous * qd
 
     def _integrate(self, tau_motor, h):
+        """Integrate the joint dynamics with drive torque, gravity, friction, compliance and stops."""
         q, qd = self.q, self.qd
         # transmission: backlash + compliance as a quasi-static deflection
         k = self.stiffness
@@ -369,6 +382,7 @@ class SimArm(ArmClient):
         return self.tau_ext
 
     def place_in_jig(self, q_jig: np.ndarray) -> None:
+        """Seat the arm in the jig (with reseat scatter), at rest."""
         self.q = np.array(q_jig, float) + self.rng.normal(0, self.err.jig_reseat_sigma_rad, self.n)
         self.qd = np.zeros(self.n)
         self.tau_drive = np.zeros(self.n)
@@ -390,9 +404,11 @@ class SimArm(ArmClient):
         return self.state()
 
     def drive_gains(self):
+        """The drives' own loop gains."""
         return self.drive_kp.copy(), self.drive_kd.copy()
 
     def set_drive_gains(self, kp_scale: np.ndarray, kd_scale: np.ndarray) -> None:
+        """Scale the drives' loop gains."""
         self.drive_kp = self.drive_kp0 * np.asarray(kp_scale, float)
         self.drive_kd = self.drive_kd0 * np.asarray(kd_scale, float)
 
@@ -408,9 +424,11 @@ class SimArm(ArmClient):
         self.deflection = elastic + 0.5 * self.backlash * np.tanh(self.tau_drive / 0.05)
 
     def mocap(self):
+        """Simulated mocap, if enabled."""
         return SimMocap(self) if self.mocap_enabled else None
 
     def time_since_power_on(self) -> float:
+        """Seconds since power-on."""
         return self.t - self.power_on_t
 
     def true_joint_angles(self) -> np.ndarray:
@@ -427,6 +445,7 @@ class SimMocap:
 
     def __init__(self, sim: SimArm, base_in_mocap: Optional[pin.SE3] = None,
                  marker_in_flange: Optional[pin.SE3] = None, frame: str = 'flange'):
+        """Simulated mocap of a marker on the flange, with unknown base and marker poses."""
         self.sim = sim
         r = np.random.default_rng(1234)
         self.base_in_mocap = base_in_mocap or pin.SE3(pin.exp3(r.normal(0, 0.3, 3)), r.normal(0, 0.5, 3))
@@ -447,8 +466,10 @@ class SimMocap:
         return out
 
     def static_noise_3sigma_m(self, samples: int = 600) -> float:
+        """3-sigma position noise."""
         p = np.array([self.marker_pose().translation for _ in range(samples)])
         return float(3 * np.max(p.std(axis=0)))
 
     def length_bar_error_m(self, length: float = 0.5) -> float:
+        """Expected length-bar error."""
         return abs(length * self.length_bar_scale_error) + math.sqrt(2) * self.sigma

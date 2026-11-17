@@ -20,4 +20,3 @@ One package per layer of the stack. Each owns the topics and TF edges listed for
 | `hsim_interfaces` | custom messages, actions, services |
 | `wisco_ethercat_ros2_hw` | ros2_control hardware interface for MyActuator drives on EtherCAT, `SafeCommandController`, `ArmController`, mock EtherCAT, arm calibration toolkit |
 | `arm01_description` | arm01's URDF, meshes, joint configs, calibration store (a link to `robots/arm01/`) |
-| `mujoco_ros2_control` | MuJoCo as a `ros2_control` hardware plugin (not built yet: `COLCON_IGNORE`) |

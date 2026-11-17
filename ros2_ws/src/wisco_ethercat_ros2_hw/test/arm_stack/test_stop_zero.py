@@ -1,3 +1,4 @@
+"""Mechanical-stop zeroing, stop verification and the encoder check, on the simulated arm."""
 from contextlib import nullcontext
 from types import SimpleNamespace
 

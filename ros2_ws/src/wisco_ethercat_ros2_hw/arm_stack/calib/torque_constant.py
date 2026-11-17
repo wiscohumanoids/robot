@@ -1,4 +1,4 @@
-"""Stage 4, `arm kt`: output-side torque constant per joint.
+"""`arm kt`: output-side torque constant per joint.
 
 A known mass hangs on a known lever. The joint is raised and lowered slowly
 through the test pose in Mode P, with and without the load, and the current
@@ -67,6 +67,7 @@ def load_torque(model, q, link, mass, offset):
 
 
 def best_pose(model, j, home, offset, rng, tries=300):
+    """The pose where a test mass on the link after joint `j` loads `j` the most."""
     link = model.link_names()[j]
     best, best_t = home.copy(), abs(load_torque(model, home, link, 1.0, offset)[j])
     for _ in range(tries):
@@ -110,6 +111,7 @@ def swept_current(ctx, j, q0, clamp):
 
 
 def run(ctx: StageContext) -> StageResult:
+    """`arm kt`: hang known masses and fit each joint's output torque constant."""
     client, model, arm = ctx.client, ctx.model, ctx.arm
     home = safe_home(model)
     lines, flags = [], []

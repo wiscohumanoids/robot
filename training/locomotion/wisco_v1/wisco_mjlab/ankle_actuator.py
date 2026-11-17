@@ -1,8 +1,8 @@
-"""Ankle actuator with per-MOTOR limits through the rod linkage (fix 4, HARDWARE_ISSUES H3).
+"""Ankle actuator with per-MOTOR limits through the rod linkage (robots/wisco_v1/hardware_observations.md, "Ankle torque").
 
 Each ankle (pitch + roll) is driven by two X4-36 motors through rods. Joint-level torque caps (pitch 86.6 /
-roll 35.2 N*m) let the policy combine pitch and roll torque that needs one motor above its 34 N*m peak (J3d:
-2.7 % of robot-steps above peak, max 76.8 N*m). This actuator does what the real drivers do, every physics step:
+roll 35.2 N*m) let the policy combine pitch and roll torque that needs one motor above its 34 N*m peak (in a
+measured run, 2.7 % of robot-steps above peak, max 76.8 N*m). This actuator does what the real drivers do, every physics step:
 
   1. joint-space PD (our kp/kd per joint, with mjlab's gain randomization):  tau_j = kp (q* - q) - kd qdot
   2. motor torques through the linkage:  tau_m = solve(J^T, tau_j),  motor speeds  w_m = J qdot
@@ -47,13 +47,16 @@ class AnkleLinkageActuatorCfg(DcMotorActuatorCfg):
   motor_velocity_limit: float = 11.62
 
   def build(self, entity, target_ids, target_names) -> "AnkleLinkageActuator":
+    """Create the actuator."""
     return AnkleLinkageActuator(self, entity, target_ids, target_names)
 
 
 class AnkleLinkageActuator(DcMotorActuator):
+  """Joint-space PD for the four ankle joints, with each motor clamped through the linkage."""
   cfg: AnkleLinkageActuatorCfg
 
   def initialize(self, mj_model, model, data, device) -> None:
+    """Per-joint gains and the linkage pairs."""
     super().initialize(mj_model, model, data, device)
     names = list(self._target_names)
     for j, n in enumerate(names):
@@ -66,6 +69,7 @@ class AnkleLinkageActuator(DcMotorActuator):
     self.last_motor_torque = torch.zeros(data.nworld, 4, device=device)
 
   def compute(self, cmd: ActuatorCmd) -> torch.Tensor:
+    """PD torque, mapped to motor torques, clamped to peak and torque-speed, mapped back."""
     tau = pd_torque(self.stiffness, self.damping, cmd)
     out = tau.clone()
     for k, s in enumerate(SIDES):

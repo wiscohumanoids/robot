@@ -34,6 +34,7 @@ DELAY_STEPS = 0
 
 
 def make_spec(fixed_base=False, base_height=None, floor=True, actuator="position"):
+    """The training model with mjlab's simulation settings and one actuator per joint."""
     spec = mujoco.MjSpec.from_file(str(P.TRAIN_XML))
     spec.option.timestep = SIM_DT
     spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
@@ -86,6 +87,7 @@ class Sim:
     """Robot with mjlab-style actuators. ctrl is the joint target; policy action 0 = default pose."""
 
     def __init__(self, fixed_base=False, base_height=None, floor=True, actuator=None, delay_steps=None):
+        """Compiled model with the chosen actuator model and command delay."""
         self.actuator = actuator or ACTUATOR
         self.delay = DELAY_STEPS if delay_steps is None else delay_steps
         self.spec, self.params = make_spec(fixed_base, base_height, floor, self.actuator)
@@ -109,6 +111,7 @@ class Sim:
         self.pelvis_z = json.loads(info.read_text())["default_pelvis_height"]
 
     def reset(self, z_offset=0.002, quat=(1, 0, 0, 0), q=None):
+        """Reset to the default pose (or `q`), the base `z_offset` above the floor."""
         mujoco.mj_resetData(self.m, self.d)
         if not self.fixed:
             self.d.qpos[2] = self.pelvis_z + z_offset
@@ -149,13 +152,16 @@ class Sim:
         self.kp[:] = 0; self.kd[:] = 0
 
     def tilt_deg(self):
+        """Pelvis tilt from vertical, degrees."""
         R = self.d.xmat[self.m.body("pelvis").id].reshape(3, 3)
         return float(np.degrees(np.arccos(np.clip(R[2, 2], -1, 1))))
 
     def joint_q(self):
+        """Joint angles."""
         return self.d.qpos[self.qadr].copy()
 
     def torque(self):
+        """Actuator torques."""
         return self.d.actuator_force.copy()
 
     def self_contacts(self):

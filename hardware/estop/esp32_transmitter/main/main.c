@@ -68,6 +68,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
     }
 }
 
+// Join the receiver's Wi-Fi hotspot as a station.
 static void wifi_start(void)
 {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -94,6 +95,7 @@ static void wifi_start(void)
 
 /* ---------------- Button ---------------- */
 
+// Configure the e-stop button input (pulled up; pressed = low).
 static void button_init(void)
 {
     gpio_config_t io = {
@@ -114,6 +116,7 @@ static bool button_raw_pressed(void)
 
 /* ---------------- Main loop ---------------- */
 
+// Send ALIVE heartbeats while the button is released and STOP packets while it is pressed.
 static void transmit_task(void *arg)
 {
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -178,6 +181,7 @@ static void transmit_task(void *arg)
     }
 }
 
+// Entry point: start Wi-Fi, the button and the transmit task.
 void app_main(void)
 {
     /* NVS is required by the Wi-Fi driver (it stores calibration data there). */

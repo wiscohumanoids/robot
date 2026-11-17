@@ -20,6 +20,7 @@ CONTAINER_ROOT = '/hsim/'   # the repo root inside the ROS container (infra/dock
 
 
 def _tracked(*patterns):
+    """Tracked or new files matching the patterns."""
     out = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard', *patterns],
                          cwd=ROOT, capture_output=True, text=True).stdout.split('\n')
     return [ROOT / f for f in out if f and (ROOT / f).exists()]

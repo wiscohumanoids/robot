@@ -1,3 +1,4 @@
+"""Package setup: installs the manipulation node, its launch file and config."""
 from glob import glob
 from setuptools import setup
 

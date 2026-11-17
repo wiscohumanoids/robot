@@ -28,6 +28,7 @@ WATCHDOG_S = 0.050
 
 @dataclass
 class LawOutput:
+    """One cycle of the control law: applied mode, position target, torque, and what limited it."""
     mode: str                 # 'P' or 'T' actually applied
     q_target: np.ndarray      # Mode P position target
     tau: np.ndarray           # Mode P: torque offset; Mode T: target torque
@@ -53,8 +54,10 @@ def payload_gravity(model, q, payload, frame: Optional[str] = None) -> np.ndarra
 
 class ControlLaw:
 
+    """Python twin of the C++ ArmController law, used by the simulated arm and the parity tests."""
     def __init__(self, model, max_torque, max_vel, soft_lower, soft_upper, kd_fallback,
                  soft_margin=0.05):
+        """Model and per-joint limits: torque, speed, soft limits and the fallback damping."""
         self.model = model
         self.max_torque = np.asarray(max_torque, float)
         self.max_vel = np.asarray(max_vel, float)
@@ -73,6 +76,8 @@ class ControlLaw:
         return g
 
     def compute(self, cmd: Optional[Command], age_s: float, q, qd, last_mode: str) -> LawOutput:
+        """Mode P or T output for a command of age `age_s`; falls back to gravity compensation + damping when stale.
+        """
         n = len(q)
         q = np.asarray(q, float)
         qd = np.asarray(qd, float)
@@ -123,6 +128,7 @@ class ControlLaw:
         return LawOutput('T', q.copy(), tau, clamped, limit_hit, False)
 
     def _clamp(self, tau, clamp):
+        """Clip torques to the joint limit (and an optional command clamp); returns whether anything was clipped."""
         limit = self.max_torque if clamp is None else np.minimum(self.max_torque, clamp)
         out = np.clip(tau, -limit, limit)
         return out, bool(np.any(out != tau))

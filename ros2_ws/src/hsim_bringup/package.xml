@@ -3,7 +3,7 @@
         <name>hsim_bringup</name>
         <version>0.1.0</version>
         <description>Launch files, parameters, and the machine-readable interface contract</description>
-        <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+        <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
         <license>MIT</license>
         <exec_depend>rclpy</exec_depend>
 <exec_depend>launch</exec_depend>

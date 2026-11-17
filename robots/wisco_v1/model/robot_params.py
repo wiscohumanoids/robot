@@ -3,7 +3,7 @@
 Plain Python + numpy + pyyaml (no mjlab import), so the Mac checks (robots/wisco_v1/checks/) and the mjlab task
 (training/locomotion/wisco_v1/) both read the same numbers.
 
-Where the numbers come from (change them there, then rerun sync_robot_folder.py, build_training_model.py, phase_a):
+Where the numbers come from (change them there, then rerun sync_robot_folder.py, build_training_model.py, checks/run_checks.py):
   robot_numbers.yaml   THE numbers file: motors (datasheet values + sources), delay/bus, mass overrides,
                        control (gains, modes, default pose, locomotion action joints), sensors (IMU, camera)
   ankle_linkage.json   ankle linkage Jacobians (linkage_tools.py, from robots/wisco_v1/linkage.json)
@@ -46,11 +46,12 @@ SOURCE_ANKLE_PITCH_LOWER = -0.610865238
 
 @functools.lru_cache(maxsize=1)
 def load_numbers():
+    """The numbers file."""
     import yaml
     return yaml.safe_load(NUMBERS.read_text())
 
 
-# Default (home) pose: knees bent like the G1 recipe's KNEES_BENT pose (see WORK_LOG 2026-11-09).
+# Default (home) pose: knees bent like mjlab's G1 KNEES_BENT pose.
 DEFAULT_POSE = {k: v for k, v in load_numbers()["control"]["default_pose"].items() if k != "source"}
 # Joints the walking policy drives (legs + waist; arms belong to the ROS controls stack).
 LOCOMOTION_ACTION_JOINTS = tuple(load_numbers()["control"]["locomotion_action_joints"])
@@ -64,10 +65,12 @@ RPM = 2 * math.pi / 60
 
 
 def load_report():
+    """Per-joint values from model_report.json."""
     return json.loads(REPORT.read_text())["joints"]
 
 
 def load_linkage_info():
+    """The ankle linkage analysis, if it has been run."""
     return json.loads(LINKAGE_OUT.read_text()) if LINKAGE_OUT.exists() else None
 
 
@@ -90,10 +93,12 @@ def gains(joint):
 
 
 def sensors():
+    """Sensor poses from the numbers file."""
     return load_numbers()["sensors"]
 
 
 def ankle_pitch_lower():
+    """Training lower limit of ankle pitch (from the linkage analysis when available)."""
     info = load_linkage_info()
     return info["training_ankle_pitch_lower"] if info else SOURCE_ANKLE_PITCH_LOWER
 
@@ -193,6 +198,7 @@ def joint_params():
 
 # Per-motor limits used by the ankle linkage penalty (X4-36 datasheet).
 def _x4_36():
+    """X4-36 peak and rated torque."""
     m = load_motor_specs()["models"]["X4-36"]
     return m["peak_torque_nm"]["value"], m["rated_torque_nm"]["value"]
 
@@ -201,6 +207,7 @@ X4_36_PEAK_NM, X4_36_RATED_NM = _x4_36()
 
 
 def command_delay_ms():
+    """Command delay range, ms."""
     return load_motor_specs()["delay"]["command_delay_ms"]["range"]
 
 

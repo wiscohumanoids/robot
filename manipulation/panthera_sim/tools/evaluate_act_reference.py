@@ -18,6 +18,7 @@ from lerobot.policies.factory import make_pre_post_processors
 
 
 def main():
+    """Evaluate a reference ACT checkpoint in the original transfer-cube simulator."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--upstream", type=Path, default=ROOT / "outputs/act_reference/upstream")

@@ -1,4 +1,4 @@
-"""Stage 8, `arm pivot`: kinematics check with the probe tip in a table divot.
+"""`arm pivot`: kinematics check with the probe tip in a table divot.
 
 The arm is hand guided (Mode T, gravity comp, no stiffness) into 20 to 30
 varied configurations with the probe tip in the divot; FK of each must land on
@@ -42,6 +42,7 @@ def spread_mm(tips: np.ndarray) -> float:
 
 
 def _pivot_residual(model, Q, d, p):
+    """Tool tip minus the pivot point for every configuration."""
     return np.concatenate([model.tool_position(q + d) - p for q in Q])
 
 
@@ -141,6 +142,7 @@ def collect(ctx: StageContext, count: int):
 
 
 def evaluate(ctx: StageContext, Q: np.ndarray):
+    """Tool tip spread over the configurations and the fitted zero offsets for them."""
     model = ctx.model
     tips = np.array([model.tool_position(q) for q in Q])
     spread = spread_mm(tips)
@@ -149,6 +151,7 @@ def evaluate(ctx: StageContext, Q: np.ndarray):
 
 
 def run(ctx: StageContext, count: int = None) -> StageResult:
+    """`arm pivot`: hand-guide the tool tip around a fixed point; the tip spread gives zero offsets."""
     count = count or (MIN_POSES if ctx.quick else 25)
     Q, _ = collect(ctx, count)
     lines, flags = [], []

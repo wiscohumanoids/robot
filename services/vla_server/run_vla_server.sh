@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Start the VLA server on the GPU VM in tmux session hsim-svc-vla (port 8200, localhost only).
 #   services/vla_server/run_vla_server.sh [checkpoint dir | --mock]
-# Default checkpoint: newest ~/hsim_runs/M1_finetune_v1/checkpoint-*.
+# Default checkpoint: newest ~/hsim_runs/groot_finetune_v1/checkpoint-*.
 # GROOT=n17|n16 picks the env (must match the version the checkpoint was trained with; see its logs/run_info.txt).
 # Stop: tmux kill-session -t hsim-svc-vla. Mac side: ssh -N -L 8200:localhost:8200 hsim-gpu
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-CKPT="${1:-$(ls -d "$HOME"/hsim_runs/M1_finetune_v1/checkpoint-* 2>/dev/null | sort -t- -k2 -n | tail -1)}"
+CKPT="${1:-$(ls -d "$HOME"/hsim_runs/groot_finetune_v1/checkpoint-* 2>/dev/null | sort -t- -k2 -n | tail -1)}"
 if [ "$CKPT" = "--mock" ]; then ARGS="--mock"; GROOT="${GROOT:-n17}"
 else
   [ -d "$CKPT" ] || { echo "no checkpoint (pass a path or --mock)"; exit 1; }

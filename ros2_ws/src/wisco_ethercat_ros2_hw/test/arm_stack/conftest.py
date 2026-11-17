@@ -1,3 +1,4 @@
+"""Puts the package root on sys.path so the tests import arm_stack from the source tree."""
 import os
 import sys
 

@@ -34,10 +34,11 @@ from tf2_ros import Buffer, TransformListener
 from vision_msgs.msg import Detection3DArray
 
 MAX_SCAN, MAX_CLOUD, MAX_PLAN = 450, 1800, 120
-MAX_UDP = 9000     # Docker Desktop drops container -> Mac UDP datagrams above ~9.2 kB (measured 2026-11-10: 9000 ok, 9300 lost)
+MAX_UDP = 9000     # Docker Desktop drops container -> Mac UDP datagrams above ~9.2 kB (measured: 9000 ok, 9300 lost)
 
 
 def quat_to_mat(x, y, z, w):
+    """Rotation matrix from a quaternion (x, y, z, w)."""
     return np.array([
         [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
@@ -45,7 +46,11 @@ def quat_to_mat(x, y, z, w):
 
 
 class ViewerBridge(Node):
+    """Node `viewer_bridge`: streams the robot's own view of the world (map, scan, plan, objects, status) to the Mac
+    viewer.
+    """
     def __init__(self):
+        """Resolve the viewer address, set up TF and the subscriptions, start the live and map timers."""
         super().__init__('viewer_bridge')
         self.declare_parameter('viewer_host', 'host.docker.internal')
         self.declare_parameter('viewer_port', 9872)
@@ -94,6 +99,8 @@ class ViewerBridge(Node):
         return None
 
     def send(self, magic, payload: bytes):
+        """Compress and send one packet with its 4-byte tag; packets above the UDP limit are dropped with a warning.
+        """
         if self.addr is None:
             return
         data = magic + zlib.compress(payload, 3)
@@ -109,9 +116,11 @@ class ViewerBridge(Node):
 
     # ------------------------------------------------------------------ inputs
     def on_map(self, m):
+        """Store the latest map."""
         self.map_msg = m
 
     def on_scan(self, m):
+        """Send the scan as map-frame points."""
         T = self.to_map(m.header.frame_id, m.header.stamp)
         if T is None:
             return
@@ -127,6 +136,7 @@ class ViewerBridge(Node):
         self.scan = np.round((pts @ R.T + t)[:, :2], 2).tolist()
 
     def on_cloud(self, m):
+        """Send a decimated camera point cloud as map-frame points."""
         from sensor_msgs_py import point_cloud2
         T = self.to_map(m.header.frame_id, m.header.stamp)
         if T is None:
@@ -140,12 +150,14 @@ class ViewerBridge(Node):
         self.cloud = np.round(pts @ R.T + t, 2).tolist()
 
     def on_plan(self, m):
+        """Keep the Nav2 plan, decimated to at most MAX_PLAN points."""
         p = [[round(s.pose.position.x, 2), round(s.pose.position.y, 2)] for s in m.poses]
         if len(p) > MAX_PLAN:
             p = [p[int(i)] for i in np.linspace(0, len(p) - 1, MAX_PLAN)]
         self.plan, self.plan_t = p, time.monotonic()
 
     def on_objects(self, m):
+        """Keep the object memory in the compact form the viewer draws."""
         self.objects = [{
             'id': d.id, 'label': d.results[0].hypothesis.class_id if d.results else d.id,
             'c': round(float(d.results[0].hypothesis.score), 2) if d.results else 0.0,
@@ -154,6 +166,7 @@ class ViewerBridge(Node):
         } for d in m.detections]
 
     def on_status(self, m):
+        """Keep the planner state and the current plan for the viewer overlay."""
         try:
             s = json.loads(m.data)
         except ValueError:
@@ -165,6 +178,7 @@ class ViewerBridge(Node):
 
     # ------------------------------------------------------------------ outputs
     def send_live(self):
+        """Send the live packet: robot pose, plan, objects and status (stale plans are dropped)."""
         T = self.to_map(self.base_frame)
         pose = None
         if T is not None:
@@ -189,6 +203,7 @@ class ViewerBridge(Node):
         self.send(b'HPER', payload)
 
     def send_map(self):
+        """Send the occupancy map when it changes (and resend it now and then for a viewer that started late)."""
         # a new map at most once a second; the last one again every 3 s for viewers opened later
         m, now = self.map_msg, time.monotonic()
         if m is None:
@@ -217,6 +232,7 @@ class ViewerBridge(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = ViewerBridge()
     try:

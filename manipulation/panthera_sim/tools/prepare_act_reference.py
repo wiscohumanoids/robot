@@ -20,6 +20,7 @@ UPSTREAM_COMMIT = "742c753c0d4a5d87076c8f69e5628c79a8cc5488"
 
 
 def download_public_file(file_id, raw):
+    """Download a public Google Drive file (resumable)."""
     try:
         gdown.download(id=file_id, output=str(raw), quiet=True, resume=True, retries=3)
         return
@@ -48,6 +49,7 @@ def download_public_file(file_id, raw):
 
 
 def download_episode(item, destination):
+    """Download one episode and record its source."""
     target = destination / item.path
     record_path = target.with_suffix(".source.json")
     if target.exists() and record_path.exists():
@@ -90,6 +92,7 @@ def download_episode(item, destination):
 
 
 def main():
+    """Download and compress the reference transfer-cube episodes, and the pinned upstream code."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("data/act_reference/sim_transfer_cube_scripted"))
     parser.add_argument("--workers", type=int, default=2)

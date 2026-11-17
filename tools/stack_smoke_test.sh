@@ -4,6 +4,7 @@
 #   STACK=stub (default) -> stub_stack.launch.py      STACK=sim -> sim_stack.launch.py (MuJoCo + policy)
 #   ENV=test/table_room  -> load that environment and also check /map (contract phase 2)
 #   ROBOT=g1             -> robot profile (default wisco: stereo camera, build_wisco/ envs; also g1, g1_arms_free)
+#   BACKEND=ros2_control -> STACK=sim through the ros2_control backend (no ENV: it runs the bare training world)
 set -uo pipefail
 STACK="${STACK:-stub}"
 LOG=/tmp/${STACK}_stack.log
@@ -14,6 +15,7 @@ LOG=/tmp/${STACK}_stack.log
 EXTRA=(); [[ $STACK == sim ]] && EXTRA=(viewer:=false)
 PHASE=1; if [[ -n "${ENV:-}" ]]; then EXTRA+=(env:=$ENV); PHASE=2; fi
 if [[ -n "${ROBOT:-}" ]]; then EXTRA+=(robot:=$ROBOT); fi
+if [[ -n "${BACKEND:-}" ]]; then EXTRA+=(backend:=$BACKEND); fi
 setsid ros2 launch hsim_bringup ${STACK}_stack.launch.py foxglove:=false "${EXTRA[@]}" > "$LOG" 2>&1 &
 LAUNCH_PID=$!
 cleanup() {

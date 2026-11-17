@@ -17,6 +17,7 @@ DEG = math.pi / 180
 
 # --------------------------------------------------------------------------- cube math
 def _rotation(rv):
+    """Rotation matrix of a rotation vector (Rodrigues)."""
     rv = np.asarray(rv, float)
     th = np.linalg.norm(rv)
     k = rv / th
@@ -70,10 +71,12 @@ class _FakeSim:
     """Just enough of SimArm for SimIndicatorCube: a truth model and link angles."""
 
     def __init__(self, truth, q):
+        """True model and angles."""
         self.truth = truth
         self.q = np.array(q, float)
 
     def true_joint_angles(self):
+        """True angles."""
         return self.q.copy()
 
 
@@ -100,7 +103,7 @@ def test_sim_cube_reads_the_flange_motion_on_its_axes():
 
 # --------------------------------------------------------------------------- sim stages
 def _axial_free_overlay(model, names, rng, dxyz=0.0008, drot=0.002):
-    """Kinematic errors as in test_phase0_gate, but with each axis tilt
+    """Kinematic errors as in test_sim_chain, but with each axis tilt
     orthogonal to the joint's own axis and its parent's: a tilt about either
     is physically a zero offset (of that joint or the parent), which no tip
     or pose measurement can tell apart."""
@@ -121,6 +124,7 @@ def _axial_free_overlay(model, names, rng, dxyz=0.0008, drot=0.002):
 
 
 def _context(arm, store, sim, quick=True):
+    """Stage context on the simulated arm with the store's latest calibration."""
     from arm_stack.calib.common import StageContext
     from arm_stack.cli import build_model
     cal = store.latest()

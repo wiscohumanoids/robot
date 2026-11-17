@@ -1,8 +1,8 @@
-# Joint config for arm01, the 7 DOF test arm (spec: "Joint config").
+# Joint config for arm01, the 7 DOF test arm.
 #
 # One per arm, checked in, changes rarely. The hardware fields are the
 # MyActuator V4 datasheet values (sources in config/actuator_models.yaml);
-# Phase 1 bench tests confirm or correct them. A field set to null falls back to
+# bench tests confirm or correct them. A field set to null falls back to
 # the actuator model table and the code says so.
 #
 # max_torque_nm / max_vel_rad_s are the RT controller's per-joint clamps, and
@@ -15,7 +15,7 @@
 # limits, gains). Joint names match robots/arm01/urdf/arm01.urdf.
 #
 # bus_position: physical place on the ring, 0 = first drive after the master
-#   (the spec's `slave`, minus one).
+#   (the EtherCAT slave index, minus one).
 # direction: +1 if a positive drive count moves the joint positively about its
 #   URDF axis. `arm bringup` checks it and reports a mismatch.
 
@@ -38,8 +38,8 @@ home_pose_rad:
   wrist_pitch: 0.0
   wrist_yaw: 0.0
 
-# velocity (CSV), effort (CST), or arm (CSP + CST with runtime switching, the
-# spec's Mode P / Mode T; needs the ArmController).
+# velocity (CSV), effort (CST), or arm (CSP + CST with runtime switching:
+# Mode P / Mode T; needs the ArmController).
 control_mode: arm
 
 joints:
@@ -139,7 +139,8 @@ link_masses_kg:
   link7: null
 
 # Flange marker cluster for arm mocap-calib / mocap-repeat / validate.
-# topic: geometry_msgs/PoseStamped of the cluster in the mocap frame (null: no mocap).
+# topic: geometry_msgs/PoseStamped of the cluster in the mocap frame (null: no mocap), e.g.
+#   /vrpn_mocap/<rigid body name>/pose from `ros2 launch wisco_ethercat_ros2_hw mocap.launch.py`.
 # length_bar_error_m: absolute error from the calibrated length bar moved through the
 #   workspace; it caps the accuracy any fit can reach (pass = 2x this).
 mocap:

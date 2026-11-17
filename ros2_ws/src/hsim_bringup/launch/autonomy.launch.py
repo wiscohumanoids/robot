@@ -26,6 +26,9 @@ ENVS = '/hsim/assets/envs'
 
 
 def stack(context):
+    """Resolve the robot profile and arguments, then return sim_stack plus navigation, perception, world model,
+    behavior and planner.
+    """
     mapping = LaunchConfiguration('mapping').perform(context)
     env = LaunchConfiguration('env').perform(context)
     bringup = get_package_share_directory('hsim_bringup')
@@ -79,6 +82,7 @@ def stack(context):
 
 
 def generate_launch_description():
+    """Declare the launch arguments and defer the node list to `stack` (it needs the resolved values)."""
     return LaunchDescription([
         # Ctrl-C: give nodes 2 s to stop, then 2 s after SIGTERM, before force-killing (default 5 + 10 s)
         SetLaunchConfiguration('sigterm_timeout', '2'),

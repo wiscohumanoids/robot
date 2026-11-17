@@ -3,7 +3,7 @@
 
 // Gravity torques from the URDF, with the calibration layered on top the same
 // way arm_stack/model/robot.py does it: weighed masses and fitted COMs per
-// link (stage 5) and the mocap kinematic overlay. Joints not driven (the
+// link (`arm gravity`) and the mocap kinematic overlay. Joints not driven (the
 // wrist parallelogram's mimic joints) are locked at zero.
 //
 // Used by the ArmController's RT loop; test/test_gravity_parity.cpp checks it
@@ -37,6 +37,7 @@ public:
   // order). Not for the RT loop. False if the frame does not exist.
   bool frame_placement(const std::vector<double> & q, const std::string & frame, pinocchio::SE3 & out);
 
+  // The built model.
   const pinocchio::Model & model() const {return model_;}
 
   // Payload: a point mass fixed in `frame` (tool0), carried as extra inertia on

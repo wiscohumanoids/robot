@@ -4,7 +4,9 @@ from collections import deque
 
 
 class NeutralReturn:
+    """Smoothly return both arms to neutral within their limits after a countdown."""
     def __init__(self, settings, limits, requested_at):
+        """Settings, limits and request time."""
         self.settings = settings
         self.limits = limits
         self.requested_at = requested_at
@@ -21,6 +23,7 @@ class NeutralReturn:
                 raise ValueError(f'{side}: neutral pose is outside joint limits')
 
     def tick(self, now, arms):
+        """Next targets, whether done, and the phase name."""
         if now-self.requested_at < self.settings['release_delay_seconds']:
             return None, False, 'countdown'
         measured = {side: np.asarray(a['position_rad']) for side, a in arms.items()}

@@ -143,7 +143,7 @@ work/postprocess-venv/bin/python scripts/postprocess_kept.py \
   --source data/hitl/kept --annotations config/hitl-round1.json \
   --output data/processed/hitl-round1-20hz \
   --trimmed-output data/processed/hitl-round1-full-rate \
-  --repo-id FoxNerdSaysMoo/panthera-hitl-round1
+  --repo-id "$HF_NAMESPACE/panthera-hitl-round1"
 
 work/postprocess-venv/bin/python scripts/verify_processed.py \
   data/processed/hitl-round1-20hz --source data/hitl/kept

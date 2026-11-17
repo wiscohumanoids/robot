@@ -1,5 +1,5 @@
-# Joint config for bench01, the single-joint lever-and-weight rig (spec: Phase 1
-# single joint bring-up, Phase 2 single joint characterization).
+# Joint config for bench01, the single-joint lever-and-weight rig: bring-up and
+# characterization of one actuator at a time.
 #
 # Same schema as arm01.yaml. One spare actuator on a stand with a lever on its
 # output; test masses hang from the hook. Every actuator, spares included, goes
@@ -7,9 +7,9 @@
 # (or pass --serial) before each run: calibration versions are stored per serial
 # (robots/arm01/calibration/bench01/<serial>/) because Kt varies unit to unit.
 #
-# Fields set to null are filled by the Phase 1 bench tests, not guessed; code
+# Fields set to null are filled by the bench tests, not guessed; code
 # falls back to the actuator model table and says so. `arm indicator` lists
-# every null left in the joint row (Phase 1 gate: none left).
+# every null left in the joint row (none may be left before the arm is assembled).
 #
 # Geometry (robots/arm01/urdf/bench01.urdf): shaft axis horizontal (+y), q = 0 with
 # the lever horizontal, q = +90 deg with it hanging straight down.
@@ -42,7 +42,7 @@ link_masses_kg:
 jig_pose_rad:
   bench_joint: 0.0
 
-# The rig (stage 4 `arm kt` reads it; everything is in the lever link frame,
+# The rig (`arm kt` reads it; everything is in the lever link frame,
 # x along the bar from the shaft axis).
 rig:
   lever_link: lever

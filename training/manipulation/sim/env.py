@@ -25,11 +25,14 @@ WRIST_W, WRIST_H = 160, 120
 
 
 def yaw_quat(yaw):
+    """Quaternion (w, x, y, z) of a yaw."""
     return np.array([math.cos(yaw / 2), 0, 0, math.sin(yaw / 2)])
 
 
 class ManipEnv:
+    """The tabletop pick-and-place environment: G1 + Dex1-1 at a kitchen counter."""
     def __init__(self, mjb, wrist_cams=False, render=True, prefix="g1/"):
+        """Load a compiled scene and its metadata, resolve joints, actuators and cameras."""
         self.mjb = Path(mjb)
         self.m = mujoco.MjModel.from_binary_path(str(self.mjb))
         self.d = mujoco.MjData(self.m)
@@ -63,23 +66,28 @@ class ManipEnv:
     # ------------------------------------------------------------------ geometry helpers
     @property
     def base_frame(self):
+        """Robot base position and rotation."""
         return self.d.xpos[self.base_body].copy(), self.d.xmat[self.base_body].reshape(3, 3).copy()
 
     def to_world(self, p_local):
+        """Base-frame point to world."""
         o, R = self.base_frame
         return o + R @ np.asarray(p_local)
 
     def obj_pose(self, name):
+        """Pose of a free object."""
         a = self.m.jnt_qposadr[self.obj_joint[name]]
         return self.d.qpos[a:a + 7].copy()
 
     def set_obj_pose(self, name, pos, quat):
+        """Place a free object."""
         a = self.m.jnt_qposadr[self.obj_joint[name]]
         self.d.qpos[a:a + 3] = pos
         self.d.qpos[a + 3:a + 7] = quat
         self.d.qvel[self.m.jnt_dofadr[self.obj_joint[name]]:self.m.jnt_dofadr[self.obj_joint[name]] + 6] = 0
 
     def meta(self, name):
+        """Metadata of an object or target."""
         for o in self.info["objects"] + self.info["targets"]:
             if o["name"] == name:
                 return o
@@ -91,6 +99,7 @@ class ManipEnv:
         return o.get("half_extents", [0.04, 0.04, 0.04])[2] - o.get("bbox_offset", [0, 0, 0])[2]
 
     def tcp_pose(self, side):
+        """Tool pose on one side."""
         return self.d.site_xpos[self.tcp[side]].copy(), self.d.site_xmat[self.tcp[side]].reshape(3, 3).copy()
 
     # ------------------------------------------------------------------ reset
@@ -103,6 +112,7 @@ class ManipEnv:
         return pos, Rt
 
     def reset(self, seed, obj=None, target=None, randomize=True):
+        """New episode: pick object and target, randomize layout and arm start."""
         rng = np.random.default_rng(seed)
         self.rng = rng
         m, d = self.m, self.d
@@ -190,9 +200,11 @@ class ManipEnv:
 
     # ------------------------------------------------------------------ step / observe
     def grip_open_frac(self, side):
+        """Gripper opening, 0 closed to 1 open."""
         return float((self.d.qpos[self.grip_q[side]] - GRIP_CLOSED) / (GRIP_OPEN - GRIP_CLOSED))
 
     def step(self, q_left, q_right, g_left, g_right):
+        """Apply arm and gripper targets and step one control period."""
         d = self.d
         d.ctrl[self.arm_act["left"]] = q_left
         d.ctrl[self.arm_act["right"]] = q_right
@@ -204,10 +216,12 @@ class ManipEnv:
         return self.observe()
 
     def render_cam(self, renderer, cam):
+        """Render one camera."""
         renderer.update_scene(self.d, camera=cam, scene_option=self.vopt)
         return renderer.render().copy()
 
     def observe(self):
+        """Joint state, gripper state and camera images."""
         d = self.d
         obs = {
             "q_left_arm": d.qpos[self.arm_q["left"]].copy(),
@@ -261,6 +275,7 @@ class ManipEnv:
         return bool(on_xy and resting and up and released and still)
 
     def camera_intrinsics(self):
+        """Pinhole intrinsics of the ego camera."""
         fovy = self.m.cam_fovy[self.ego_cam]
         f = 0.5 * EGO_H / math.tan(math.radians(fovy) / 2)
         return {"width": EGO_W, "height": EGO_H, "fx": f, "fy": f, "cx": EGO_W / 2, "cy": EGO_H / 2, "fovy_deg": float(fovy)}

@@ -27,6 +27,7 @@ TRAINING_OBJECTIVES = frozenset(('gear_insertion', 'gear_and_pin'))
 
 
 def file_sha256(path):
+    """SHA-256 of a file."""
     digest = hashlib.sha256()
     with Path(path).open('rb') as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b''):
@@ -35,6 +36,7 @@ def file_sha256(path):
 
 
 def to_numpy(value):
+    """Tensor or array to numpy."""
     if hasattr(value, 'detach'):
         value = value.detach().cpu().numpy()
     import numpy as np
@@ -47,6 +49,7 @@ class Runtime:
     def __init__(self, checkpoint, rl_checkpoint=None, device='cuda', *,
                  guard=None, adapter_factory=None, learner_factory=None,
                  normalizer_factory=None, explore=False, seed=0, prefix_length=None):
+        """Base policy, optional RL editor, normalizer and resource lease."""
         if prefix_length is not None and (type(prefix_length) is not int or not 1 <= prefix_length <= HORIZON):
             raise ValueError('Prefix length must be an integer from 1 to 50')
         self.requested_prefix_length = prefix_length
@@ -195,6 +198,7 @@ class Runtime:
         self.run_config = config
 
     def _expected_action_bounds(self):
+        """Normalized bounds of physical actions."""
         import numpy as np
         normalized_lower = self.normalizer.normalize(np.zeros(len(NAMES), dtype=np.float32))
         normalized_upper = self.normalizer.normalize(np.full(len(NAMES), 2., dtype=np.float32))
@@ -204,11 +208,13 @@ class Runtime:
         return lower, upper
 
     def close(self):
+        """Release the GPU lease."""
         if self.resource_lease is not None:
             self.resource_lease.__exit__(None, None, None)
             self.resource_lease = None
 
     def health(self):
+        """Status and model identities."""
         return dict(status=self.status, error=self.error, checkpoint=self.checkpoint,
                     checkpoint_id=getattr(self.adapter, 'checkpoint_id', None),
                     processor_id=getattr(self.adapter, 'processor_id', None),
@@ -222,6 +228,7 @@ class Runtime:
                     resources=self.resource_report)
 
     def infer(self, payload):
+        """One action chunk: base candidates, optionally edited and selected by the critic."""
         if self.status != 'ready':
             raise RuntimeError(f'Runtime is {self.status}')
         if not isinstance(payload, dict) or 'sequence' not in payload:
@@ -284,6 +291,7 @@ class Runtime:
             self.lock.release()
 
 def make_handler(runtime):
+    """HTTP handler for the server."""
     class Handler(BaseHTTPRequestHandler):
         def send(self, status, body):
             data = json.dumps(body, allow_nan=False).encode()
@@ -315,6 +323,7 @@ def make_handler(runtime):
 
 
 def main():
+    """Serve the frozen base policy (with an optional RL checkpoint)."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', required=True, help='Existing local frozen pi0.5 checkpoint')
     parser.add_argument('--rl-checkpoint', help='Optional locally trained EXPO learner; its complete chunk length is required')

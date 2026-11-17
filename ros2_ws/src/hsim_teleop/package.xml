@@ -3,7 +3,7 @@
   <name>hsim_teleop</name>
   <version>0.1.0</version>
   <description>Mac viewer bridges: keys to /cmd_vel_teleop, typed tasks to the planner, perception to the viewer's panel</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>

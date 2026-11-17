@@ -1,4 +1,4 @@
-"""`arm <stage> [--sim]`: one command per calibration stage (spec: Calibration procedures).
+"""`arm <stage> [--sim]`: one command per calibration stage.
 
   arm reference                  save the resting encoder pose as relative zero; no motor enabling
   arm commission --write-config  passive encoder direction/scale, zeros and usable limits;
@@ -8,11 +8,11 @@
 
   arm bringup | indicator | zero | limits | kt | gravity | friction | latency | pivot | plate
   arm mocap-calib | pace | mocap-repeat | repeat [--indicators] | validate
-  arm all --sim [--no-mocap]    every stage in order on one sim arm (Phase 0 gate run);
+  arm all --sim [--no-mocap]    every stage in order on one sim arm (the simulation gate);
                                 with mocap: mocap-calib + mocap-repeat, without: plate +
                                 the indicator cube (repeat, validate)
   arm rig --arm bench01 --serial SN [--model x4_36]
-                                Phase 2 lever rig for one actuator: zero, kt, gravity
+                                lever rig characterization of one actuator: zero, kt, gravity
                                 (lever COM), friction, latency, stored per serial
   arm float [--lock J,..] [--friction-gain G] [--damping D] [--payload KG@x,y,z]
             [--duration S] [--record [PATH]]
@@ -73,7 +73,7 @@ MODULES = dict(STAGES)
 MODULES['gravity-check'] = 'gravity_check'     # a check, not part of `arm all`
 # Stages that need an assembled arm: fewer joints -> SKIP with the reason.
 MIN_JOINTS = {'pivot': 4, 'plate': 6, 'mocap-calib': 6, 'mocap-repeat': 6, 'repeat': 6, 'validate': 6}
-# Phase 2 lever rig, per actuator: zero (lever level), Kt on the hook masses, the lever's
+# Lever rig characterization, per actuator: zero (lever level), Kt on the hook masses, the lever's
 # COM (friction subtracts its gravity), friction, latency.
 RIG_STAGES = ['zero', 'kt', 'gravity', 'friction', 'latency']
 RIG_KT_LINEARITY = 0.05
@@ -82,6 +82,7 @@ SIM_ROOT = os.path.join(os.path.expanduser('~'), '.cache', 'arm_stack', 'sim_cal
 
 
 def build_model(arm, calibration) -> ArmModel:
+    """Pinocchio model with the calibration applied; refuses a relative reference (no URDF angles)."""
     if calibration.get('coordinate_frame') == 'relative':
         raise ValueError('This reference uses relative angles, not URDF angles. '
                          'CAD gravity and kinematic stages need a registered physical pose first.')
@@ -98,6 +99,7 @@ def build_model(arm, calibration) -> ArmModel:
 
 
 def make_client(args, arm, calibration):
+    """The simulated arm (with seeded errors) for --sim, otherwise the ROS client to the running controller."""
     if args.sim:
         from .sim.arm_sim import SimArm, SimErrors
         # each actuator serial gets its own unit-to-unit errors
@@ -116,6 +118,7 @@ def make_client(args, arm, calibration):
 
 
 def session_meta(arm, store, calibration, client, operator):
+    """Metadata stored with every recorded session: arm, joints, calibration and code versions, operator."""
     return {
         'arm': arm.arm, 'joint_names': arm.names,
         'calibration_version': calibration.get('version'),
@@ -168,6 +171,7 @@ def update_joint_config(path: str, updates: Dict[str, Dict]) -> List[str]:
 
 
 def run_stage(name, args, arm, store, client, recorder=None, extra=None):
+    """Run one stage (or skip it when the arm has too few joints), print its report, and write a passing result."""
     from .calib.common import StageContext, skipped
     need = MIN_JOINTS.get(name)
     if need and arm.n < need:
@@ -220,6 +224,7 @@ def run_stage(name, args, arm, store, client, recorder=None, extra=None):
 
 
 def _plain(o):
+    """Convert numpy values in nested containers to plain Python for YAML."""
     if isinstance(o, dict):
         return {str(k): _plain(v) for k, v in o.items()}
     if isinstance(o, (list, tuple)):
@@ -232,6 +237,7 @@ def _plain(o):
 
 
 def cmd_status(args):
+    """`arm status`: print the newest calibration version and what it holds."""
     arm = load_arm(args.arm, model=args.model, serial=args.serial)
     store = CalibrationStore(arm, args.calib_root or (SIM_ROOT if args.sim else None), store_serial(arm))
     path = store.latest_path()
@@ -270,7 +276,7 @@ def store_serial(arm):
 
 
 def run_rig(args, arm, store, client, recorder):
-    """Phase 2 lever rig for the mounted actuator; writes a per-serial summary."""
+    """Lever rig characterization of the mounted actuator; writes a per-serial summary."""
     print('rig: %s actuator %s (%s): %s' % (arm.arm, store.serial, arm.joints[0].model, ', '.join(RIG_STAGES)))
     results = {}
     for name in RIG_STAGES:
@@ -302,7 +308,7 @@ def run_rig(args, arm, store, client, recorder):
         f.write('# Written by `arm rig` for actuator %s.\n' % store.serial)
         yaml.safe_dump(_plain(summary), f, sort_keys=False)
     print('RIG %s: Kt %s Nm/A (linear across %d loads: %s), friction R^2 %s (> 0.9: %s), latency %s ms -> '
-          'Phase 2 gate %s' % (store.serial, _fmt(summary['kt_output_nm_per_a']), loads, 'yes' if kt_ok else 'NO',
+          'rig gate %s' % (store.serial, _fmt(summary['kt_output_nm_per_a']), loads, 'yes' if kt_ok else 'NO',
                                _fmt(summary['friction_r2']), 'yes' if fr_ok else 'NO',
                                _fmt(summary['latency_ms']), 'MET' if gate else 'NOT MET'))
     print('  summary %s' % path)
@@ -310,10 +316,12 @@ def run_rig(args, arm, store, client, recorder):
 
 
 def _fmt(v):
+    """Number or "-"."""
     return '-' if v is None else '%.4g' % v
 
 
 def cmd_export(args):
+    """`arm export pace|lerobot`: convert recorded sessions."""
     from .log import export
     if args.kind == 'pace':
         print(export.export_pace(args.paths[0], args.paths[1]))
@@ -323,6 +331,7 @@ def cmd_export(args):
 
 
 def main(argv=None) -> int:
+    """Parse the command line and dispatch to the stage, rig, float, export or status command."""
     p = argparse.ArgumentParser(prog='arm', description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('stage', choices=[s for s, _ in STAGES] + ['gravity-check', 'float', 'all', 'rig', 'status',
@@ -358,7 +367,8 @@ def main(argv=None) -> int:
     p.add_argument('--powered-at', default=None, help='seconds since the drives were powered on')
     p.add_argument('--operator', default=None)
     p.add_argument('--replay', nargs='*', default=None, help='validate: recorded teleop sessions to replay')
-    p.add_argument('--repo-id', default='WiscoHumanoidsLab/arm01-teleop')
+    p.add_argument('--repo-id', default=os.environ.get('HF_NAMESPACE', 'local') + '/arm01-teleop',
+                   help='export lerobot: dataset repo id (default: $HF_NAMESPACE/arm01-teleop)')
     p.add_argument('--fps', type=int, default=50)
     p.add_argument('--fresh', action='store_true', help='sim: start from an empty sim calibration store')
     p.add_argument('--payload', default=None, help='float, gravity-check: KG@x,y,z point mass in tool0 (m)')

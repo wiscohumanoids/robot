@@ -12,7 +12,9 @@ import numpy as np
 
 class CMAES:
 
+    """Bounded CMA-ES (covariance matrix adaptation evolution strategy)."""
     def __init__(self, x0, sigma0, lower, upper, popsize=None, seed=0):
+        """Start at `x0` with step size `sigma0` inside the bounds."""
         self.x = np.asarray(x0, float)
         self.n = len(self.x)
         self.lower = np.asarray(lower, float)
@@ -43,6 +45,7 @@ class CMAES:
         self.best_history = []      # best-so-far after each generation
 
     def ask(self):
+        """Sample a population of candidate points."""
         z = self.rng.standard_normal((self.lam, self.n))
         y = z @ (self.B * self.D).T
         X = self.x + self.sigma * y
@@ -53,6 +56,7 @@ class CMAES:
         return np.clip(X, self.lower, self.upper)
 
     def tell(self, X, f):
+        """Update the mean, step size and covariance from the candidates' costs."""
         f = np.asarray(f, float)
         order = np.argsort(f)
         if f[order[0]] < self.best_f:
@@ -88,6 +92,7 @@ class CMAES:
         return (b[-window - 1] - b[-1]) <= rtol * max(abs(b[-1]), 1e-30)
 
     def converged(self, ftol=1e-9, window=10, sigma_tol=1e-4):
+        """True when the step size or the recent best costs have stopped changing."""
         if self.sigma * self.D.max() < sigma_tol:
             return True
         if len(self.history) > window:

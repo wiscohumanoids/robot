@@ -27,6 +27,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
@@ -59,6 +60,12 @@ install(TARGETS wisco_ethercat_ros2_hw_controllers wisco_ethercat_ros2_hw_arm_co
   RUNTIME DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
+# --- current_sensor_node: power-rail currents (ADS7128 + ACS758 over I2C) -> /power/currents ---
+add_executable(current_sensor_node src/current_sensor_node.cpp)
+target_compile_features(current_sensor_node PRIVATE cxx_std_17)
+ament_target_dependencies(current_sensor_node rclcpp diagnostic_msgs)
+install(TARGETS current_sensor_node DESTINATION lib/${PROJECT_NAME})
+
 # --- pp_test: profile-position drive check, talks to the IgH master directly ---
 if(HAVE_ETHERCAT)
   add_executable(pp_test src/pp_test.cpp)
@@ -86,6 +93,7 @@ install(
     scripts/multi_velocity_cmd.py
     scripts/bringup_check.py
     scripts/check_urdf.py
+    scripts/mocap_check.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

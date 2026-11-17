@@ -8,6 +8,7 @@ _VERSION = re.compile(r'\d{4}-\d{2}-\d{2}_v(\d+)\.yaml')
 
 
 def calibration_versions(directory):
+    """Calibration files `<date>_v<N>.yaml` in `directory`, oldest version first (reports ignored)."""
     versions = []
     for path in Path(directory).glob('*_v*.yaml'):
         match = _VERSION.fullmatch(path.name)

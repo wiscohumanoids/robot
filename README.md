@@ -43,16 +43,16 @@ How one command flows through this repo's code, file by file:
 
 | Folder | What it holds |
 |---|---|
-| [`ros2_ws/src/`](ros2_ws/README.md) | the ROS 2 stack: one package per layer (`hsim_*`), the hardware interface and controllers (`wisco_ethercat_ros2_hw`), the MuJoCo `ros2_control` plugin |
+| [`ros2_ws/src/`](ros2_ws/README.md) | the ROS 2 stack: one package per layer (`hsim_*`), and the hardware interface and controllers (`wisco_ethercat_ros2_hw`) |
 | [`robots/`](robots/README.md) | one folder per robot we build: [`wisco_v1/`](robots/wisco_v1/README.md) (full body) and [`arm01/`](robots/arm01/README.md) (7-DOF test arm): models, numbers with their sources, calibration, hardware observations |
-| [`training/`](training/README.md) | GPU training: walking policies, motion tracking, humanoid manipulation |
-| [`manipulation/`](manipulation/README.md) | arm pipelines: real-arm teleop and recording, arm simulation, imitation learning and VLA fine-tuning |
+| [`training/`](training/README.md) | GPU training: walking policies, motion tracking, humanoid manipulation (one entry point, `training/train.sh`); sim-to-real (`sim2real/`) |
+| [`manipulation/`](manipulation/README.md) | arm pipelines: real-arm teleop and recording, arm simulation, imitation learning and VLA fine-tuning (one entry point, `manipulation/finetune.sh`, over arm profiles) |
 | [`models/`](models/locomotion/README.md) | deployed policies (ONNX + manifest) |
 | [`assets/`](assets/README.md) | simulation worlds: robot worlds exported from training, rooms and kitchens |
 | [`services/`](services/README.md) | GPU inference servers: object detection, VLA |
 | [`hardware/`](hardware/README.md) | the robot's computers and buses, the wireless e-stop |
 | [`tools/`](tools/README.md), [`tests/`](tests/README.md) | developer scripts and graders; repository checks |
-| [`infra/`](infra/README.md) | the development container, the GPU machine, the training job queue |
+| [`infra/`](infra/README.md) | the development container, the GPU machine, the training job queue, the RK3588 real-time setup |
 | [`docs/`](docs/README.md) | interface contract, knowledge base, academy |
 
 ## Where each team works
@@ -62,9 +62,9 @@ How one command flows through this repo's code, file by file:
 | Planning and behavior | `ros2_ws/src/hsim_planner`, `hsim_behavior`, `hsim_interfaces` | `hsim_behavior/README.md` |
 | Perception | `ros2_ws/src/hsim_perception`, `services/perception_server` | `hsim_perception/README.md` |
 | State estimation, mapping, navigation | `ros2_ws/src/hsim_state_estimation`, `hsim_navigation` | `hsim_navigation/README.md` |
-| Locomotion | `training/locomotion`, `training/tracking`, `models/locomotion`, `ros2_ws/src/hsim_locomotion` | `training/README.md` |
+| Locomotion | `training/locomotion`, `training/tracking`, `training/sim2real`, `models/locomotion`, `ros2_ws/src/hsim_locomotion` | `training/README.md` |
 | Manipulation | `manipulation/`, `training/manipulation`, `services/vla_server`, `ros2_ws/src/hsim_manipulation` | `manipulation/README.md` |
-| Controls and hardware interface | `ros2_ws/src/wisco_ethercat_ros2_hw`, `robots/arm01`, `hardware/` | `ros2_ws/src/wisco_ethercat_ros2_hw/README.md` |
+| Controls and hardware interface | `ros2_ws/src/wisco_ethercat_ros2_hw`, `robots/arm01`, `hardware/`, `infra/rk3588` | `ros2_ws/src/wisco_ethercat_ros2_hw/README.md` |
 | Robot model (with mechanical and electrical) | `robots/wisco_v1` | `robots/wisco_v1/README.md` |
 | Simulation and infrastructure | `ros2_ws/src/hsim_sim`, `hsim_bringup`, `assets/`, `tools/`, `infra/` | `ros2_ws/src/hsim_bringup/README.md` |
 
@@ -80,7 +80,7 @@ The stack is built so the parts most often changed can be swapped from the comma
 | **Sensors** | `sensors:=stereo\|lidar` | ZED X stereo (Wisco's default), head lidar (G1's) |
 | **Localization** | `mapping:=rtabmap\|slam\|map` | RTAB-Map visual SLAM (default), slam_toolbox, AMCL on a known map |
 | **Perception / estimation** | `perception:=server\|stub`, `estimator:=ekf\|truth` | real detector or line-of-sight stub; EKF or ground truth (debug) |
-| **Robot backend (low level)** | see below | MuJoCo simulation node; ros2_control + EtherCAT on hardware |
+| **Robot backend (low level)** | `backend:=sim\|ros2_control` | MuJoCo simulation node, or ros2_control + MuJoCo; ros2_control + EtherCAT on hardware |
 | **Training job** | `infra/vm_jobs/jobs.yaml` + `tools/vm.sh jobs launch <job>` | Wisco / G1 walking, tracking, GR00T fine-tune |
 
 **Robot backends.** The layer under the walking policy and the arm controller can be:
@@ -88,7 +88,7 @@ The stack is built so the parts most often changed can be swapped from the comma
 | Backend | What runs | What it tests | State |
 |---|---|---|---|
 | MuJoCo simulation node (`hsim_sim`) | joint targets go straight into MuJoCo, which applies the PD and the physics | everything above the controllers | ✅ default |
-| `ros2_control` + MuJoCo plugin (`mujoco_ros2_control`) | the real controller manager and controllers, with MuJoCo as the hardware | the control software itself | ⬜ planned |
+| `ros2_control` + MuJoCo plugin (upstream `mujoco_ros2_control`, `backend:=ros2_control`) | controller_manager, broadcasters and a forward position controller, with the trained scene as the hardware; MuJoCo's position actuators apply the trained kp / kd at the physics step, the law the drives run in mode 5 | the control path without lockstep, as on the robot | ✅ G1 and Wisco walk on it |
 | `ros2_control` + mock EtherCAT drives | the controllers and the drive protocol against simulated MyActuator drives | drive state machine, units, watchdogs | ✅ in `wisco_ethercat_ros2_hw` tests |
 | `ros2_control` + EtherCAT | the controllers on real MyActuator drives (`ethercat_driver_ros2`) | the robot | 🟡 arm01 on the bench |
 
@@ -109,7 +109,9 @@ without it use `perception:=stub`.
 
 ## Training on the GPU machine
 
-`tools/vm.sh sync` copies the repo to the GPU machine; jobs are defined in `infra/vm_jobs/jobs.yaml` and launched with
+`training/train.sh <robot> <task>` is the one entry point for walking and tracking runs, and
+`manipulation/finetune.sh <method> <arm profile>` for manipulation fine-tunes. `tools/vm.sh sync` copies the repo to
+the GPU machine; jobs are defined in `infra/vm_jobs/jobs.yaml` and launched with
 `tools/vm.sh jobs launch <job>`; `tools/vm.sh pull-policy <run> <id>` exports a trained walking policy into
 `models/locomotion/<id>/`, where the stack can load it. Machine setup: [`infra/README.md`](infra/README.md).
 
@@ -151,7 +153,7 @@ without it use `perception:=stub`.
   literals; add its interfaces to the contract with its node name as owner; start it from a launch file in
   `hsim_bringup`; give the package a README.
 - **Generated files are never hand-edited:** robot models (`robots/*/model/`), training models, the contract tables.
-- **Checks:** `python -m pytest tests ros2_ws/src/*/test` (no ROS needed); `tools/ros.sh test [stub|sim] [env] [robot]`
+- **Checks:** `python -m pytest tests ros2_ws/src/*/test training/sim2real manipulation/finetune` (no ROS needed); `tools/ros.sh test [stub|sim] [env] [robot] [backend]`
   (stack smoke test); `tools/ros.sh autotest [name] [robot]` (autonomy checks).
 - **Code and docs describe the work, not who did it**; history and authorship live in git.
 

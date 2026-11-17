@@ -12,6 +12,7 @@ from std_msgs.msg import Bool
 
 
 def main():
+    """Publish an operator e-stop request (on or off) as node `operator`, latched so the safety node sees it."""
     if len(sys.argv) < 2 or sys.argv[1] not in ('on', 'off'):
         print('usage: ros2 run hsim_safety estop on|off')
         return 1

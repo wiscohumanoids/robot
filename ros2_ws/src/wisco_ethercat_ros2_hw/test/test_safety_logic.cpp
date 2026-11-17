@@ -1,3 +1,5 @@
+// Tests of SafeCommandController's per-joint safety functions: timeouts, clamps and soft limits.
+
 #include <gtest/gtest.h>
 
 #include <limits>

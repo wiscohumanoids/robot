@@ -1,1 +1,1 @@
-"""Arm calibration and control stack (spec: Arm Calibration and Control Stack Spec)."""
+"""Arm calibration and control stack: commissioning, calibration, identification, control law, simulation and logging."""

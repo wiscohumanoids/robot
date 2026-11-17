@@ -11,6 +11,7 @@ import numpy as np
 
 @dataclass
 class LMResult:
+    """Levenberg-Marquardt result: parameters, cost, iterations, convergence."""
     x: np.ndarray
     cost: float
     iterations: int
@@ -18,6 +19,7 @@ class LMResult:
 
 
 def numeric_jacobian(f, x, r0=None, h=1e-6):
+    """Forward-difference Jacobian of residual function `f` at `x`."""
     r0 = f(x) if r0 is None else r0
     J = np.empty((len(r0), len(x)))
     for i in range(len(x)):

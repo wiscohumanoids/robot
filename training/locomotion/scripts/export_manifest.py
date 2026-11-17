@@ -19,6 +19,9 @@ Manifest versions:
      robot joint in observation order (default_pos, kp, kd; action_scale only on driven joints,
      plus role: policy|held); `action.joints` gives the driven joints in action order; `held_joints`
      says how the other joints are commanded on the robot (see hsim_locomotion/policy_node.py).
+  3  motion-tracking policy (kind: tracking): drives every joint and plays the clip its ONNX file carries. Written
+     when the ONNX metadata has `anchor_body_name` (mjlab's tracking exporter); `tracking` records the anchor body,
+     its index in the ONNX body outputs, and the clip length.
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MANIFEST_VERSION = 1          # all joints driven by the policy
 MANIFEST_VERSION_SUBSET = 2   # policy drives a subset; the rest are held / commanded elsewhere
+MANIFEST_VERSION_TRACKING = 3  # motion tracking: all joints, clip carried by the ONNX file
 HELD_SOURCE_TOPIC = "/arm/joint_targets"
 
 # mjlab G1 defaults, used only if the run's env.yaml can't be read.
@@ -67,6 +71,7 @@ class _AnyTagLoader(yaml.SafeLoader):
 
 
 def _construct_any(loader, _suffix, node):
+    """YAML constructor that reads any tagged node as plain data."""
     if isinstance(node, yaml.MappingNode):
         return loader.construct_mapping(node, deep=True)
     if isinstance(node, yaml.SequenceNode):
@@ -91,6 +96,14 @@ def find_key(obj, key):
             found = find_key(v, key)
             if found is not None:
                 return found
+    return None
+
+
+def motion_steps(model) -> int | None:
+    """Clip length of a tracking ONNX: the first dimension of its bundled `joint_pos` buffer."""
+    for init in model.graph.initializer:
+        if init.name.split('.')[0] == 'joint_pos' and len(init.dims) == 2:   # exported as 'joint_pos.1'
+            return int(init.dims[0])
     return None
 
 
@@ -120,6 +133,7 @@ def run_on_cpu(onnx_path: Path) -> dict:
 
 
 def main() -> int:
+    """Write models/locomotion/<id>/ from a run: ONNX, manifest from its metadata, configs; check it on CPU."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("run_dir", type=Path, help="mjlab run dir, e.g. logs/rsl_rl/g1_velocity/<timestamp>")
     ap.add_argument("--policy-id", required=True, help="folder name under models/locomotion/")
@@ -159,6 +173,12 @@ def main() -> int:
             print(f"action_joint_names not in joint_names: {unknown}", file=sys.stderr)
             return 1
     n_act = len(action_joints) if subset else n
+    tracking = 'anchor_body_name' in meta
+    if tracking and subset:
+        print('a tracking policy must drive every joint', file=sys.stderr)
+        return 1
+    body_names = meta.get('body_names')
+    body_names = [body_names] if isinstance(body_names, str) else body_names
 
     def per_joint(key, count=n):
         v = meta[key]
@@ -206,8 +226,16 @@ def main() -> int:
             shutil.copy2(params / name, out_dir / name)
 
     manifest = {
-        "manifest_version": MANIFEST_VERSION_SUBSET if subset else MANIFEST_VERSION,
+        "manifest_version": (MANIFEST_VERSION_TRACKING if tracking else
+                             MANIFEST_VERSION_SUBSET if subset else MANIFEST_VERSION),
         "policy_id": args.policy_id,
+        "kind": "tracking" if tracking else "velocity",
+        **({"tracking": {
+            "anchor_body": meta["anchor_body_name"],
+            "anchor_index": body_names.index(meta["anchor_body_name"]),
+            "body_names": body_names,
+            "motion_steps": motion_steps(model),
+        }} if tracking else {}),
         # Checksum of policy.onnx, so a manifest and a policy file can be checked to belong together.
         "source": {"onnx_sha256": hashlib.sha256(onnx_path.read_bytes()).hexdigest()},
         "timing": {

@@ -9,6 +9,7 @@ from tools import pi05_checkpoint_backup as backup
 
 
 def checkpoint(root, step):
+    """Create a fake completed checkpoint folder for `step`."""
     path = root / f"{step:06d}"
     (path / "pretrained_model").mkdir(parents=True)
     (path / "training_state").mkdir()

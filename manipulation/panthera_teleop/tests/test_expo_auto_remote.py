@@ -17,7 +17,9 @@ from infra.rl.remote_server import CONTRACT, NAMES, canonical_hash
 
 
 class FakeBackend:
+    """Backend stand-in serving a given checkpoint."""
     def __init__(self, checkpoint):
+        """Checkpoint and call log."""
         self.checkpoint = checkpoint
         self.calls = []
         self.contract = CONTRACT
@@ -29,6 +31,7 @@ class FakeBackend:
         self.lock = threading.Lock()
 
     def request(self, path, body=None):
+        """Fake /health and /infer replies."""
         self.calls.append(path)
         checkpoint = self.checkpoint
         if path == '/health':
@@ -50,7 +53,9 @@ class FakeBackend:
 
 
 class AutoRemoteTests(unittest.TestCase):
+    """Checkpoint following and verification of the auto-remote proxy."""
     def setUp(self):
+        """Fresh temporary folder for the test."""
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
@@ -59,6 +64,7 @@ class AutoRemoteTests(unittest.TestCase):
         self.backend = FakeBackend('/test-only/base-A')
 
     def manifest(self, checkpoint, marker, directory=None):
+        """Write a fake checkpoint manifest."""
         files = {name: hashlib.sha256((marker + name).encode()).hexdigest() for name in
                  ('config.json', 'deployment.json', 'model.safetensors',
                   'policy_preprocessor.json', 'policy_postprocessor.json')}
@@ -77,6 +83,7 @@ class AutoRemoteTests(unittest.TestCase):
         return path, value
 
     def payload(self):
+        """A valid inference request."""
         stream = io.BytesIO()
         Image.new('RGB', (256, 256), '#173042').save(stream, 'JPEG')
         image = base64.b64encode(stream.getvalue()).decode()
@@ -84,9 +91,11 @@ class AutoRemoteTests(unittest.TestCase):
                     images={camera: image for camera in CONTRACT['image_crops_xyxy']})
 
     def runtime(self, resolver):
+        """An auto-remote runtime on the fake backend."""
         return AutoRuntime(self.cache, ssh_host='test-only-no-ssh', client=self.backend, resolver=resolver)
 
     def wait(self, predicate):
+        """Wait until `predicate` holds."""
         deadline = time.perf_counter() + 2
         while not predicate():
             if time.perf_counter() > deadline:

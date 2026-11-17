@@ -28,12 +28,14 @@ namespace
 // read (processData) then write (exchange).
 struct Bus
 {
+  // One mock drive behind the CiA 402 master logic.
   explicit Bus(const RmdxParams & p = RmdxParams())
   : slave(p)
   {
     master.scaling = DriveScaling::from_joint(p.counts_per_rev, p.rated_torque_nm / 1000.0, 1, 0.0);
   }
 
+  // One bus cycle (or a dropped frame).
   void cycle(bool drop = false)
   {
     master.process(have ? &tx : nullptr, cmd, st);
@@ -68,6 +70,7 @@ struct Bus
   std::vector<uint16_t> cw_seen;
 };
 
+// Drive parameters for the tests.
 RmdxParams params()
 {
   RmdxParams p;
@@ -89,6 +92,7 @@ TxPdo send(RmdxMockSlave & s, uint16_t cw, int8_t mode = cia402::kModeCst, int16
   return s.cycle(&rx);
 }
 
+// Walk a drive to Operation Enabled.
 void boot(RmdxMockSlave & s)
 {
   for (int k = 0; k < 5; ++k) {send(s, 0x0000);}

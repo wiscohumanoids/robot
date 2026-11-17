@@ -1,10 +1,10 @@
 """Rigid-body model of the arm: URDF load, Pinocchio FK, gravity, regressors.
 
 Calibration results layer on top of the supplied URDF without editing it:
-  * link_inertials (stage 5): per-link mass and center of mass,
+  * link_inertials (`arm gravity`): per-link mass and center of mass,
   * kinematic_overlay (mocap-calib): small per-joint origin translations and
     axis-tilt rotations,
-  * friction (stage 6): Coulomb + viscous per joint.
+  * friction (`arm friction`): Coulomb + viscous per joint.
 """
 
 from __future__ import annotations
@@ -20,8 +20,10 @@ GRAVITY = np.array([0.0, 0.0, -9.81])
 
 class ArmModel:
 
+    """Pinocchio model of the arm: kinematics, gravity, mass matrix, friction, with calibration applied."""
     def __init__(self, urdf_path: str, joint_names: Sequence[str], tool_frame: str = 'tool0',
                  home: Optional[Sequence[float]] = None):
+        """Build the model from the URDF and keep the named joints (others fixed)."""
         self.urdf_path = urdf_path
         # the arm's resting pose (joint config `home_pose_rad`); None: q = 0
         self.home = None if home is None else np.asarray(home, float)
@@ -59,23 +61,28 @@ class ArmModel:
 
     @property
     def n(self) -> int:
+        """Number of arm joints."""
         return len(self.joint_names)
 
     # ------------------------------------------------------------------ conversion
     def _q(self, q: Sequence[float]) -> np.ndarray:
+        """Embed arm joint angles in the full configuration."""
         out = np.zeros(self.model.nq)
         out[self.qidx] = q
         return out
 
     def _v(self, v: Sequence[float]) -> np.ndarray:
+        """Embed arm joint velocities in the full velocity vector."""
         out = np.zeros(self.model.nv)
         out[self.vidx] = v
         return out
 
     def _from_v(self, v: np.ndarray) -> np.ndarray:
+        """Arm entries of a full velocity-sized vector."""
         return np.asarray(v)[self.vidx]
 
     def copy(self) -> 'ArmModel':
+        """Independent copy (model, data and friction)."""
         other = copy.copy(self)
         other.model = self.model.copy()
         other.data = other.model.createData()
@@ -108,6 +115,7 @@ class ArmModel:
         self.data = self.model.createData()
 
     def apply_friction(self, friction: Dict[str, Dict]):
+        """Set Coulomb and viscous friction from a calibration's friction table."""
         for i, n in enumerate(self.joint_names):
             f = friction.get(n) or {}
             self.coulomb[i] = f.get('coulomb_nm') or 0.0
@@ -129,6 +137,7 @@ class ArmModel:
         self.data = self.model.createData()
 
     def apply_calibration(self, calib: Dict, masses: Optional[Dict] = None):
+        """Apply link inertials and masses, friction and the kinematic overlay from a calibration."""
         if calib.get('link_inertials') or masses:
             self.apply_link_inertials(calib.get('link_inertials') or {}, masses)
         if calib.get('friction'):
@@ -148,11 +157,13 @@ class ArmModel:
         return a / np.linalg.norm(a)
 
     def fk(self, q: Sequence[float], frame: Optional[str] = None) -> pin.SE3:
+        """Pose of `frame` (default the tool) at `q`."""
         frame = frame or self.tool_frame
         pin.framesForwardKinematics(self.model, self.data, self._q(q))
         return self.data.oMf[self.model.getFrameId(frame)].copy()
 
     def tool_position(self, q, frame=None) -> np.ndarray:
+        """Position of `frame` (default the tool)."""
         return self.fk(q, frame).translation.copy()
 
     def jacobian(self, q, frame=None) -> np.ndarray:
@@ -194,19 +205,24 @@ class ArmModel:
 
     # ------------------------------------------------------------------ dynamics
     def gravity(self, q: Sequence[float]) -> np.ndarray:
+        """Gravity torque at `q`."""
         return self._from_v(pin.computeGeneralizedGravity(self.model, self.data, self._q(q)))
 
     def rnea(self, q, qd, qdd) -> np.ndarray:
+        """Inverse dynamics torque."""
         return self._from_v(pin.rnea(self.model, self.data, self._q(q), self._v(qd), self._v(qdd)))
 
     def friction(self, qd: Sequence[float], eps: float = 0.02) -> np.ndarray:
+        """Friction torque (smooth Coulomb + viscous)."""
         qd = np.asarray(qd, float)
         return self.coulomb * np.tanh(qd / eps) + self.viscous * qd
 
     def aba(self, q, qd, tau) -> np.ndarray:
+        """Forward dynamics: joint accelerations."""
         return self._from_v(pin.aba(self.model, self.data, self._q(q), self._v(qd), self._v(tau)))
 
     def mass_matrix(self, q) -> np.ndarray:
+        """Joint-space mass matrix at `q`."""
         M = np.asarray(pin.crba(self.model, self.data, self._q(q))).reshape(self.model.nv, self.model.nv)
         M = np.triu(M) + np.triu(M, 1).T
         return M[np.ix_(self.vidx, self.vidx)]
@@ -233,6 +249,7 @@ class ArmModel:
         return Y, Y0
 
     def first_moments(self) -> np.ndarray:
+        """Per-link mass x COM vectors, concatenated."""
         out = []
         for j in self.jid:
             I = self.model.inertias[j]
@@ -240,9 +257,11 @@ class ArmModel:
         return np.array(out)
 
     def masses(self) -> np.ndarray:
+        """Link masses."""
         return np.array([self.model.inertias[j].mass for j in self.jid])
 
     def set_first_moments(self, h: np.ndarray):
+        """Set link COMs from first moments (masses unchanged)."""
         for k, j in enumerate(self.jid):
             I = self.model.inertias[j]
             com = np.asarray(h[3 * k:3 * k + 3]) / I.mass
@@ -250,6 +269,7 @@ class ArmModel:
         self.data = self.model.createData()
 
     def peak_gravity_torque(self, samples: int = 500, seed: int = 0) -> np.ndarray:
+        """Largest gravity torque per joint over random configurations."""
         rng = np.random.default_rng(seed)
         peak = np.zeros(self.n)
         for _ in range(samples):

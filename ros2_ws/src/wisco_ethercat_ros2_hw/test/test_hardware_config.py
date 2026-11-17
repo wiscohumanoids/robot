@@ -32,12 +32,14 @@ URDF = """<robot name="r">
 
 
 def write(tmp_path, name, data):
+    """Write `data` as YAML to `tmp_path/name`; returns the path."""
     path = tmp_path / name
     path.write_text(yaml.safe_dump(data))
     return str(path)
 
 
 def make(tmp_path, joints, control_mode=None, calibration=None, urdf=URDF):
+    """HardwareConfig for a small joint table, optional control mode and calibration."""
     table = write(tmp_path, 'joints.yaml', {'control_mode': 'velocity', 'joints': joints})
     cal = write(tmp_path, 'cal.yaml', calibration) if calibration is not None else None
     return HardwareConfig(MODELS, table, urdf, calibration_file=cal,
@@ -45,6 +47,7 @@ def make(tmp_path, joints, control_mode=None, calibration=None, urdf=URDF):
 
 
 def channel(cfg, pdo, index):
+    """The PDO channel with object `index` in a generated slave config."""
     for p in cfg[pdo]:
         for ch in p['channels']:
             if ch['index'] == index:

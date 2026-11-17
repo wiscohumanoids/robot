@@ -10,13 +10,17 @@ from arm_stack.hw.client import Command
 
 
 class FakeModel:
+    """Model stand-in with a fixed gravity torque."""
     def __init__(self, g):
+        """Fixed gravity torque."""
         self.g = np.asarray(g, float)
 
     def gravity(self, q):
+        """Fixed gravity torque."""
         return self.g.copy()
 
     def friction(self, qd):
+        """No friction."""
         return np.zeros(len(self.g))
 
 
@@ -25,11 +29,13 @@ Q = np.zeros(2)
 
 
 def law():
+    """A two-joint control law."""
     return ControlLaw(FakeModel(G), max_torque=[10.0, 2.0], max_vel=[2.0, 4.0], soft_lower=[-1.0, -0.5],
                       soft_upper=[1.0, 0.5], kd_fallback=[0.5, 0.1])
 
 
 def cmd(mode, **kw):
+    """A two-joint command in `mode` with overrides."""
     base = dict(mode=mode, q=np.array([0.2, 0.1]), qd=np.zeros(2), kp=np.array([50.0, 10.0]),
                 kd=np.array([1.0, 0.2]), tau_ff=np.zeros(2))
     base.update(kw)

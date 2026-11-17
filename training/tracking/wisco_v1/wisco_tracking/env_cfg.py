@@ -2,7 +2,7 @@
 (tasks/tracking/config/g1/env_cfgs.py) with the robot swapped to Wisco. Lines that differ are marked "# WISCO:".
 
 Whole body: all 29 joints are actions (head welded, as in the velocity task). Robot, actuators (DC motors with
-torque-speed curve + 0-10 ms delay), gains and action scales come from wisco_mjlab.robot_cfg (helper A), so
+torque-speed curve + 0-10 ms delay), gains and action scales come from wisco_mjlab.robot_cfg, so
 tracking and velocity always share the same robot model.
 """
 from __future__ import annotations
@@ -40,11 +40,12 @@ KEY_BODIES = (                                                              # WI
 )
 END_EFFECTORS = ("left_ankle_roll_link", "right_ankle_roll_link", "left_hand", "right_hand")
 
-MASS_SCALE = (0.85, 1.20)                                                   # WISCO: same as the velocity task (H1)
+MASS_SCALE = (0.85, 1.20)                                                   # WISCO: same as the velocity task (masses are estimates)
 ALPHA_RANGE = (math.log(MASS_SCALE[0]) / 2, math.log(MASS_SCALE[1]) / 2)
 
 
 def wisco_flat_tracking_env_cfg(has_state_estimation: bool = True, play: bool = False) -> ManagerBasedRlEnvCfg:
+  """The Wisco V1 tracking task."""
   cfg = make_tracking_env_cfg()
 
   cfg.scene.entities = {"robot": RC.get_wisco_robot_cfg()}                  # WISCO
@@ -72,7 +73,7 @@ def wisco_flat_tracking_env_cfg(has_state_estimation: bool = True, play: bool = 
   cfg.events["foot_friction"].params["asset_cfg"].geom_names = r"^(left|right)_foot_collision$"   # WISCO
   cfg.events["base_com"].params["asset_cfg"].body_names = (ANCHOR_BODY,)
 
-  # WISCO: same model-uncertainty randomization as the Wisco velocity task (masses H1, motors H6/H10)
+  # WISCO: same model-uncertainty randomization as the Wisco velocity task (masses, rotor inertia, friction and damping)
   cfg.events["mass_inertia"] = EventTermCfg(
     mode="startup", func=dr.pseudo_inertia,
     params={"asset_cfg": SceneEntityCfg("robot", body_names=(".*",)), "alpha_range": ALPHA_RANGE})
@@ -85,7 +86,7 @@ def wisco_flat_tracking_env_cfg(has_state_estimation: bool = True, play: bool = 
   cfg.events["joint_friction"] = _joint_dr(dr.joint_friction, (".*",), RC.FRICTION_SCALE)
   cfg.events["joint_damping"] = _joint_dr(dr.joint_damping, (".*",), RC.DAMPING_SCALE)
 
-  # WISCO: ankle linkage motor overload penalty (H3), same as the velocity task
+  # WISCO: ankle linkage motor overload penalty, same as the velocity task
   cfg.rewards["ankle_motor_overload"] = RewardTermCfg(
     func=linkage_penalty.ankle_motor_overload, weight=-1.0,
     params={"motor_limit": RC.P.X4_36_PEAK_NM})

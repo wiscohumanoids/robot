@@ -11,7 +11,9 @@ from hitl_recording import RolloutStore
 
 
 class RecordingClockTests(unittest.TestCase):
+    """Timestamps of human-in-the-loop recordings."""
     def setUp(self):
+        """A rollout store in a temporary folder."""
         self.temp = tempfile.TemporaryDirectory()
         config = json.loads((ROOT / 'config/recording.json').read_text())
         config.update(minimum_free_bytes=0, control_hz=100)
@@ -21,11 +23,13 @@ class RecordingClockTests(unittest.TestCase):
         self.send('rollout_begin', dict(sample=dict(monotonic_ns=1_000_000_000), details={}))
 
     def send(self, kind, payload):
+        """Submit an event and wait until it is written."""
         self.store.submit(kind, payload)
         self.store.events.join()
         self.assertIsNone(self.store.failure)
 
     def sample(self, i, source='policy', origin=1_000_000_000):
+        """Submit sample `i`."""
         raw = origin + i*10_000_000
         frame = dict(camera='overhead', sequence=i, monotonic_ns=raw-5_000_000, jpeg=b'jpeg')
         self.send('sample', dict(monotonic_ns=raw, sequence=i, control_source=source,
@@ -33,6 +37,7 @@ class RecordingClockTests(unittest.TestCase):
             camera_frames={'overhead': frame}, arms={}))
 
     def saved(self):
+        """End the rollout and read back what was written."""
         self.send('rollout_end', dict(label='kept'))
         directory = next((Path(self.temp.name) / 'kept').iterdir())
         return {kind: [json.loads(l) for l in (directory / f'{kind}.jsonl').read_text().splitlines()]

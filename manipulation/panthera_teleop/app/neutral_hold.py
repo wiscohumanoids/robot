@@ -4,7 +4,9 @@ from collections import deque
 
 
 class NeutralHold:
+    """Hold both arms at neutral targets until each has settled."""
     def __init__(self, targets, settings, now):
+        """Targets, settings and start time."""
         self.targets = {s: np.asarray(q, dtype=float).copy() for s, q in targets.items()}
         self.settings = settings
         self.started = now
@@ -15,6 +17,7 @@ class NeutralHold:
         self.diagnostics = {}
 
     def tick(self, now, arms):
+        """Update which arms are ready."""
         for side, arm in arms.items():
             if self.ready[side]:
                 continue

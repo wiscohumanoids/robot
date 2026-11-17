@@ -8,8 +8,10 @@ from .remote_server import BackendClient, CONTRACT, NAMES, Runtime, read_manifes
 
 
 class AutoRuntime:
+    """Proxy that follows the newest verified checkpoint on the backend."""
     def __init__(self, directory, backend='http://127.0.0.1:8765', *, ssh_host,
                  prefix_length=17, timeout=30., client=None, resolver=None):
+        """Backend, SSH host for manifest audits, prefix length."""
         if type(prefix_length) is not int or not 1 <= prefix_length <= 50:
             raise ValueError('Prefix length must be an integer from 1 to 50')
         self.directory = Path(directory)
@@ -23,10 +25,12 @@ class AutoRuntime:
         self.retry_after = 0.
 
     def _runtime(self, path):
+        """A runtime for one manifest."""
         return Runtime(path, self.backend, client=self.client,
                        timeout=self.timeout, prefix_length=self.prefix_length)
 
     def _verify_new(self, checkpoint):
+        """Verify a newly seen checkpoint before switching to it."""
         try:
             runtime = self._runtime(self.resolver(checkpoint))
             if runtime.checkpoint != checkpoint:
@@ -43,6 +47,7 @@ class AutoRuntime:
                 self.pending = None
 
     def _resolve(self):
+        """The runtime for the backend's current checkpoint (None while loading)."""
         health = self.client.request('/health')
         if (health.get('status') != 'ready' or health.get('contract') != CONTRACT or
                 health.get('names') != NAMES or health.get('mock', False) is not False):
@@ -67,6 +72,7 @@ class AutoRuntime:
             return None
 
     def health(self):
+        """Health of the current runtime."""
         runtime = self._resolve()
         if runtime is None:
             return dict(status='loading', contract=CONTRACT,
@@ -75,6 +81,7 @@ class AutoRuntime:
         return dict(runtime.health(), checkpoint_following=True)
 
     def infer(self, payload):
+        """Forward an inference request to the current runtime."""
         # Strict runtimes have separate locks. Keep a single inference lease
         # across checkpoint swaps so an old/new pair cannot overlap the backend.
         with self.lock:

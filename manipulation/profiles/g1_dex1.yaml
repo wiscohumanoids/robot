@@ -1,0 +1,14 @@
+# Arm profile: the simulated G1 with Dex1 grippers at a kitchen counter (training/manipulation). See README.md.
+# GR00T reads its layout from training/manipulation/groot/g1_dex1_config.py and the dataset's meta/modality.json.
+name: g1_dex1
+description: simulated G1 humanoid, two 7-DoF arms + Dex1 parallel grippers, standing at a counter
+robot_type: g1_dex1_sim
+fps: 20
+state_dim: 19                    # left arm 7, right arm 7, two grippers, waist 3
+action_dim: 16                   # both arms (relative) + both grippers (absolute)
+cameras: [ego_view]
+task: null                       # per-episode language instructions
+simulation: true
+methods: [groot]
+groot:
+  modality_config: training/manipulation/groot/g1_dex1_config.py

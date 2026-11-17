@@ -20,6 +20,7 @@ class ActionNormalizer:
     this adapter never invents statistics or an epsilon scale.
     """
     def __init__(self, q01, q99, zero_width_epsilon=None):
+        """Quantile normalization of 14-D actions (q01 -> -1, q99 -> 1)."""
         self.q01 = np.asarray(q01, dtype=np.float32)
         self.q99 = np.asarray(q99, dtype=np.float32)
         if (self.q01.shape != (14,) or self.q99.shape != (14,) or
@@ -35,6 +36,7 @@ class ActionNormalizer:
 
     @classmethod
     def from_stats(cls, stats):
+        """Normalizer from checkpoint statistics (q01 and q99 required)."""
         if not isinstance(stats, dict) or 'q01' not in stats or 'q99' not in stats:
             raise ValueError('Checkpoint q01/q99 are mandatory; identity normalization is unavailable')
         if stats.get('mode', 'QUANTILES') != 'QUANTILES':
@@ -42,20 +44,24 @@ class ActionNormalizer:
         return cls(stats['q01'], stats['q99'], zero_width_epsilon=stats.get('eps'))
 
     def _values(self, values):
+        """Check an array of 14-D values."""
         values = np.asarray(values, dtype=np.float32)
         if values.ndim < 1 or values.shape[-1] != 14 or not np.isfinite(values).all():
             raise ValueError('Expected finite native/normalized values with final dimension 14')
         return values
 
     def normalize(self, values):
+        """Physical to normalized."""
         values = self._values(values)
         return 2.0 * (values - self.q01) / self.denominator - 1.0
 
     def denormalize(self, values):
+        """Normalized to physical."""
         values = self._values(values)
         return (values + 1.0) * self.denominator / 2.0 + self.q01
 
     def as_dict(self):
+        """Serializable form."""
         result = {'q01': self.q01.tolist(), 'q99': self.q99.tolist(), 'mode': 'QUANTILES'}
         if self.zero_width_epsilon is not None:
             result['eps'] = self.zero_width_epsilon
@@ -64,6 +70,7 @@ class ActionNormalizer:
 
 @dataclass(frozen=True)
 class ReplaySpec:
+    """Replay buffer contract: discount, chunk length, candidates, sizes and model identities."""
     gamma: float = .99
     C: int = 1
     N: int = 8
@@ -80,9 +87,11 @@ class ReplaySpec:
             raise ValueError('Pinned checkpoint_id and processor_id are mandatory')
 
     def as_dict(self):
+        """As a dict."""
         return asdict(self)
 
 
 def normalization_fingerprint(normalization):
+    """Stable hash of normalization statistics."""
     return hashlib.sha256(json.dumps(normalization, sort_keys=True,
                                     separators=(',', ':'), allow_nan=False).encode()).hexdigest()

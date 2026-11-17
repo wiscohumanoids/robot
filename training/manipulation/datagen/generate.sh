@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generate manipulation demos on the VM (scripted sources -> MimicGen), successes only.
 #   training/manipulation/datagen/generate.sh <version> <n_episodes> [workers=3]
-# Scene: ~/hsim_data/manip/scenes/<scene>_<version>.mjb (compiled on the Mac by sim/scene.py, copied by the coordinator)
+# Scene: ~/hsim_data/manip/scenes/<scene>_<version>.mjb (compiled on the Mac by sim/scene.py, then copied over)
 # Output: ~/hsim_data/manip/<version>/raw/episode_XXXXXX.{npz,json}, progress.jsonl, stats.json
 set -euo pipefail
 VERSION=${1:?usage: generate.sh <version> <n_episodes> [workers]}

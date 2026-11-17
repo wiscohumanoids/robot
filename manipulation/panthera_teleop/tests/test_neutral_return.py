@@ -1,3 +1,4 @@
+"""Returning both arms to neutral."""
 import copy
 import json
 from pathlib import Path
@@ -13,13 +14,16 @@ import test_recording as recording_tests
 
 
 def arms(q, v=0):
+    """Arm states at angles `q`."""
     return {s: {'position_rad': list(q), 'velocity_rad_s': [v]*6,
                 'gripper': {'position': 0, 'velocity': 0}}
             for s in ('left', 'right')}
 
 
 class MotionTests(unittest.TestCase):
+    """Neutral return motion."""
     def setUp(self):
+        """Return settings and limits."""
         self.settings = json.loads((ROOT/'config/recording.json').read_text())['neutral_return']
         self.limits = {s: (np.full(6, -1), np.full(6, 1)) for s in ('left', 'right')}
 
@@ -114,6 +118,7 @@ class MotionTests(unittest.TestCase):
 
 
 class RecordingReturnTests(unittest.TestCase):
+    """Recording during the return."""
     setUp = recording_tests.EpisodeTests.setUp
     tearDown = recording_tests.EpisodeTests.tearDown
     sample = recording_tests.EpisodeTests.sample

@@ -1,3 +1,4 @@
+"""Opening the grippers before an episode."""
 import json
 from pathlib import Path
 import sys
@@ -10,7 +11,9 @@ from reset_grippers import ResetGrippers, command_gripper
 
 
 class GripperResetTests(unittest.TestCase):
+    """Gripper reset behaviour."""
     def setUp(self):
+        """Reset settings and gripper limits."""
         self.settings = json.loads((ROOT/'config/recording.json').read_text())['neutral_return']['gripper_open']
         self.reset = ResetGrippers(self.settings, {
             'left': dict(lower=0, upper=2), 'right': dict(lower=0, upper=1.8)}, 10)

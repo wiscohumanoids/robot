@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert the CAD team's `full_assembly_urdf` export into robots/arm01/urdf/arm01.urdf.
+"""Convert the mechanical CAD's `full_assembly_urdf` export into robots/arm01/urdf/arm01.urdf.
 
 The export (Onshape capture, audited inertials and harness) names its joints J1..J7 plus
 the two passive wrist-loop joints, and uses the CAD world frame as base_link. The arm
@@ -56,6 +56,7 @@ MESH_PREFIX = 'package://arm01_description/meshes/'
 
 
 def rpy_matrix(r, p, y):
+    """Rotation matrix for URDF fixed-axis roll, pitch, yaw."""
     cr, sr, cp, sp, cy, sy = np.cos(r), np.sin(r), np.cos(p), np.sin(p), np.cos(y), np.sin(y)
     return np.array([[cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
                      [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
@@ -63,6 +64,7 @@ def rpy_matrix(r, p, y):
 
 
 def matrix_rpy(R):
+    """URDF roll, pitch, yaw of a rotation matrix (raises at gimbal lock)."""
     p = -np.arcsin(np.clip(R[2, 0], -1.0, 1.0))
     if abs(np.cos(p)) < 1e-9:
         raise ValueError('gimbal lock')
@@ -72,6 +74,7 @@ def matrix_rpy(R):
 
 
 def origin_matrix(el):
+    """Homogeneous transform of a URDF <origin> element (identity when absent)."""
     T = np.eye(4)
     if el is not None:
         T[:3, :3] = rpy_matrix(*[float(v) for v in el.get('rpy', '0 0 0').split()])
@@ -80,11 +83,13 @@ def origin_matrix(el):
 
 
 def set_origin(el, T):
+    """Write a transform into a URDF <origin> element."""
     el.set('xyz', ' '.join('%.9g' % v for v in T[:3, 3]))
     el.set('rpy', ' '.join('%.9g' % v for v in matrix_rpy(T[:3, :3])))
 
 
 def frame(origin, z, x_hint):
+    """Transform with z along `z` and x as close to `x_hint` as possible, at `origin`."""
     z = z / np.linalg.norm(z)
     x = x_hint - (x_hint @ z) * z
     x /= np.linalg.norm(x)
@@ -157,6 +162,7 @@ def write_capture(src, path, T_base_cad):
 
 
 def convert(src, out_urdf, mesh_dir):
+    """Rewrite the CAD export as arm01.urdf: rename, re-base, re-frame each joint at its pivot, copy meshes."""
     tree = ET.parse(os.path.join(src, 'full_assembly.urdf'))
     robot = tree.getroot()
     robot.set('name', 'arm01')
@@ -241,6 +247,7 @@ def convert(src, out_urdf, mesh_dir):
 
 
 def main(argv=None):
+    """Command line: convert an unzipped full_assembly_urdf export into robots/arm01/urdf/arm01.urdf."""
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('export', help='the unzipped full_assembly_urdf folder')
     ap.add_argument('--out', default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'urdf', 'arm01.urdf'))

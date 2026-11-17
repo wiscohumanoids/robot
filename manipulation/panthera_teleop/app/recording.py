@@ -11,6 +11,7 @@ import uuid
 
 
 def atomic_json(path, value):
+    """Write JSON atomically."""
     temporary = path.with_suffix('.tmp')
     with temporary.open('w') as f:
         json.dump(value, f, indent=2, allow_nan=False)
@@ -21,7 +22,9 @@ def atomic_json(path, value):
 
 
 class EpisodeStore:
+    """Records teleop episodes in a writer thread: samples, frames, start on motion, labelled at the end."""
     def __init__(self, root, config, context):
+        """Output folder, settings and recording context."""
         self.root = Path(root)
         self.config = config
         self.context = context
@@ -55,18 +58,22 @@ class EpisodeStore:
         self.thread.start()
 
     def update(self, **values):
+        """Update the status."""
         with self.lock:
             self.status.update(values)
 
     def snapshot(self):
+        """Copy of the status."""
         with self.lock:
             return dict(self.status)
 
     def refresh_counts(self):
+        """Count saved episodes per label."""
         self.update(counts={label: sum(p.is_dir() for p in (self.root / label).iterdir())
                            for label in ('kept', 'review', 'discarded')})
 
     def submit(self, kind, payload):
+        """Queue an event (raises once writing has failed)."""
         if self.failure:
             raise RuntimeError(f'Recording failed: {self.failure}')
         try:
@@ -78,10 +85,12 @@ class EpisodeStore:
 
     @staticmethod
     def pose(sample):
+        """Joint and gripper positions of a sample."""
         return [x for arm in sample['arms'].values() for x in arm['position_rad']] + [
             arm['gripper']['position'] for arm in sample['arms'].values()]
 
     def motion(self, sample):
+        """Whether the arms have moved from the episode's starting pose."""
         pose = self.pose(sample)
         if self.baseline is None:
             self.baseline = pose
@@ -94,6 +103,7 @@ class EpisodeStore:
         return changed or speed > self.config['motion_velocity_rad_s'], speed
 
     def start(self, sample):
+        """Start a new episode (refused below the free-disk reserve)."""
         if shutil.disk_usage(self.root).free < self.config['minimum_free_bytes']:
             raise RuntimeError('Less than configured free disk reserve; cannot start episode')
         identifier = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + uuid.uuid4().hex[:8]
@@ -119,6 +129,7 @@ class EpisodeStore:
         self.update(phase='recording', active=identifier, samples=self.active['samples'])
 
     def write(self, kind, payload):
+        """Write one sample or frame of the active episode."""
         active = self.active
         if kind == 'sample':
             data = dict(payload, episode_time_s=(payload['monotonic_ns']-active['start_ns']) / 1e9)
@@ -139,6 +150,7 @@ class EpisodeStore:
             active['frames'][name] += 1
 
     def finish(self, label, reason='operator', complete=True):
+        """Close the active episode with its label."""
         if not self.active:
             return
         active = self.active
@@ -166,6 +178,7 @@ class EpisodeStore:
         self.refresh_counts()
 
     def handle(self, kind, payload):
+        """Handle one queued event."""
         if kind == 'decision':
             if self.active and payload['episode_id'] == self.active['id']:
                 self.finish(payload['label'])
@@ -242,6 +255,7 @@ class EpisodeStore:
             self.start(payload)
 
     def worker(self):
+        """Writer thread loop."""
         try:
             while True:
                 try:
@@ -271,6 +285,7 @@ class EpisodeStore:
             self.update(error=self.failure, phase='error')
 
     def close(self, reason):
+        """Finish and stop the writer."""
         if self.thread.is_alive():
             self.events.put(('close', {'reason': reason}), timeout=3)
             self.thread.join(timeout=10)

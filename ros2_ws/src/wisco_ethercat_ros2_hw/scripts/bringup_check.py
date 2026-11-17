@@ -32,7 +32,9 @@ from wisco_ethercat_ros2_hw.ros_tools import get_controller_limits
 
 class BringupCheck(Node):
 
+    """Node that jogs each drive in bus order and checks that only the named joint moved, the right way."""
     def __init__(self):
+        """Declare the jog parameters, subscribe to joint states and create the command publisher."""
         super().__init__('bringup_check')
         self.declare_parameter('controller', 'velocity_controller')
         self.declare_parameter('jog_rad', 0.15)
@@ -63,12 +65,14 @@ class BringupCheck(Node):
         self.create_subscription(JointState, '/joint_states', self._on_joint_states, 10)
 
     def _on_joint_states(self, msg):
+        """Keep the latest position of every joint."""
         with self.lock:
             for i, name in enumerate(msg.name):
                 if i < len(msg.position):
                     self.positions[name] = msg.position[i]
 
     def snapshot(self):
+        """Latest joint positions."""
         with self.lock:
             return [self.positions.get(j, float('nan')) for j in self.joints]
 
@@ -91,6 +95,7 @@ class BringupCheck(Node):
 
 
 def ask(question):
+    """Ask a y/n/q question until answered."""
     while True:
         answer = input('%s [y/n/q] ' % question).strip().lower()
         if answer in ('y', 'n', 'q'):
@@ -98,6 +103,7 @@ def ask(question):
 
 
 def count_slaves():
+    """Number of EtherCAT slaves the master sees, or None without the `ethercat` tool."""
     if shutil.which('ethercat') is None:
         return None
     try:
@@ -108,6 +114,7 @@ def count_slaves():
 
 
 def main(args=None):
+    """Run the jog check for every joint with operator confirmation, and print the summary."""
     rclpy.init(args=args)
     node = BringupCheck()
     executor = SingleThreadedExecutor()

@@ -13,6 +13,7 @@ Publishes /locomotion/joint_targets and /locomotion/status (`mode=policy`, polic
 |---|---|---|
 | 1 | every joint in `joints` | none |
 | 2 | `action.joints` (e.g. 12 legs + 3 waist) | `held_joints.names` (arms): default pose until the first `sensor_msgs/JointState` on `held_joints.source_topic` (default `/arm/joint_targets`), then the latest commanded target per joint (no timeout; joints missing from a message keep their target; unknown names are ignored with a warning) |
+| 3 (`kind: tracking`) | every joint in `joints`, playing the clip its ONNX file carries | none. The node aligns the clip to the robot's anchor body (TF `world_frame` -> `anchor_frame`, default `odom` -> `torso_link`) on the first tick, advances one clip step per policy step, then holds the last frame (`loop:=true` restarts); `/cmd_vel` is ignored |
 
 /locomotion/joint_targets always carries every joint: the policy's joints first (action order), then the held joints.
 The manifest/observation logic is in `policy_contract.py` (no ROS), shared with `tools/sim2sim_play.py`.

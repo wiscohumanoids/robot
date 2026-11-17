@@ -28,7 +28,11 @@ from std_msgs.msg import Bool
 
 
 class SafetyMonitor(Node):
+    """Node `safety`: owns /safety/estop; engages it on an operator request, a fall, a critical battery or stale
+    sensors.
+    """
     def __init__(self):
+        """Declare the thresholds, subscribe to the monitored topics, create the publishers and timers."""
         super().__init__('safety')
         for name, default in (('max_tilt_deg', 35.0), ('battery_low', 0.20), ('battery_critical', 0.05),
                               ('stale_s', 0.5), ('scan_stale_s', 1.0), ('clear_hold_s', 2.0)):
@@ -59,9 +63,11 @@ class SafetyMonitor(Node):
         self.get_logger().info('safety monitor up: e-stop on operator request, fall, critical battery, stale sensors')
 
     def seen(self, key):
+        """Mark a source as alive."""
         self.last[key] = time.monotonic()
 
     def on_imu(self, m: Imu):
+        """Mark the IMU as alive and compute the body tilt from vertical."""
         self.seen('imu')
         q = m.orientation
         # angle between the body's up axis and gravity
@@ -69,17 +75,23 @@ class SafetyMonitor(Node):
         self.tilt_deg = math.degrees(math.acos(max(-1.0, min(1.0, up_z))))
 
     def on_battery(self, m: BatteryState):
+        """Store the battery level."""
         self.battery = m.percentage
 
     def on_request(self, m: Bool):
+        """Apply an operator e-stop request."""
         if m.data != self.operator_estop:
             self.get_logger().warn(f'operator e-stop {"ENGAGED" if m.data else "released"}')
         self.operator_estop = m.data
 
     def age(self, key):
+        """Seconds since a source was last seen."""
         return time.monotonic() - self.last[key] if key in self.last else math.inf
 
     def tick(self):
+        """Collect stop reasons and warnings; publish the e-stop, which only clears after `clear_hold_s` without
+        reasons.
+        """
         reasons, warnings = [], []
         if self.operator_estop:
             reasons.append('operator e-stop')
@@ -111,7 +123,8 @@ class SafetyMonitor(Node):
         self.pub_estop.publish(Bool(data=self.estop))
 
     def publish_status(self):
-        st = DiagnosticStatus(name='safety', hardware_id='g1')
+        """Publish /safety/status: e-stop with its reasons, warnings, or OK."""
+        st = DiagnosticStatus(name='safety', hardware_id='robot')
         if self.estop:
             st.level, st.message = DiagnosticStatus.ERROR, 'E-STOP: ' + ('; '.join(self.reasons) or 'clearing')
         elif self.warnings:
@@ -130,6 +143,7 @@ class SafetyMonitor(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = SafetyMonitor()
     try:

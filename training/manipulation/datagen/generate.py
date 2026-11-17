@@ -23,6 +23,7 @@ sys.path.insert(0, str(HERE))
 
 
 def episode_meta(env, side, seed, source, ok, extra=None):
+    """Metadata saved with each episode."""
     mo, mt = env.meta(env.obj), env.meta(env.target)
     return {"instruction": env.instruction, "object_category": mo["category"], "object_name": mo["asset"],
             "object_label": mo["label"], "target_category": mt["category"], "target_name": mt["asset"],
@@ -35,6 +36,7 @@ def episode_meta(env, side, seed, source, ok, extra=None):
 
 
 def worker(job):
+    """Generate episodes in one process until its quota of successes."""
     wid, mjb, out, kind, quota, seeds, src_files, wrist = job
     import expert as X
     from env import ManipEnv
@@ -86,6 +88,7 @@ def worker(job):
 
 
 def run(kind, args, quota, seed0, src_files=None):
+    """Split a quota over worker processes and run them."""
     per = [quota // args.workers + (1 if i < quota % args.workers else 0) for i in range(args.workers)]
     jobs = [(i, args.mjb, args.out, kind, per[i], range(seed0 + i, seed0 + 10 ** 6, args.workers), src_files or [], args.wrist_cams)
             for i in range(args.workers) if per[i] > 0]
@@ -94,6 +97,7 @@ def run(kind, args, quota, seed0, src_files=None):
 
 
 def main():
+    """Generate scripted source demos, then MimicGen-style episodes from them."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--mjb", required=True)
     ap.add_argument("--out", required=True)

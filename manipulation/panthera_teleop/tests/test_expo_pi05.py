@@ -18,7 +18,9 @@ from infra.rl.base_training import success_only_flow_loss, success_only_flow_ste
 
 
 class MockPolicy(torch.nn.Module):
+    """pi0.5 stand-in with one parameter."""
     def __init__(self):
+        """One weight and a pi0.5-like config."""
         super().__init__()
         self.weight = torch.nn.Parameter(torch.tensor(1.0))
         self.config = SimpleNamespace(max_action_dim=32, chunk_size=50, use_relative_actions=False)
@@ -26,20 +28,25 @@ class MockPolicy(torch.nn.Module):
         self.resets = 0
 
     def reset(self):
+        """Count resets."""
         self.resets += 1
 
     def predict_action_chunk(self, batch, *, noise):
+        """Deterministic chunk from the noise and state."""
         self.seen = batch
         return noise[..., :14] + batch["observation.state"][:, None, :] * self.weight
 
     def forward(self, batch, reduction="mean"):
+        """Loss on the batch's actions."""
         self.seen = batch
         assert reduction == "mean"
         return (batch["action"] * self.weight).square().mean(), {"loss_per_dim": [1.0] * 14}
 
 
 class MockPreprocessor:
+    """Preprocessor stand-in with action statistics."""
     def __init__(self):
+        """Fixed statistics."""
         self.calls = 0
         self.steps = [SimpleNamespace(_tensor_stats={
             "action": {"q01": torch.full((14,), -2.), "q99": torch.full((14,), 2.)},
@@ -58,7 +65,9 @@ class MockPreprocessor:
 
 
 class PI05AdapterTests(unittest.TestCase):
+    """Checkpoint validation of the pi0.5 adapter."""
     def setUp(self):
+        """Fresh temporary folder for the test."""
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.path = Path(temporary.name)
@@ -141,7 +150,9 @@ class PI05AdapterTests(unittest.TestCase):
 
 
 class BaseSupervisionTests(unittest.TestCase):
+    """Supervised base-policy training step."""
     def setUp(self):
+        """Mock policy, preprocessor and batch."""
         self.policy = MockPolicy().eval()
         self.pre = MockPreprocessor()
         self.batch = {"observation.state": torch.zeros(3, 14),

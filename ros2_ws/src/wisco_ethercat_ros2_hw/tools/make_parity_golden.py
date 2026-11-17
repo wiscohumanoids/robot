@@ -44,6 +44,7 @@ N_POSES = 25
 
 
 def make_calibration(model: ArmModel, rng):
+    """A random but plausible calibration (inertials and masses) for the parity data."""
     links = model.link_names()
     inertials, masses = {}, {}
     for k, (link, j) in enumerate(zip(links, model.jid)):
@@ -75,11 +76,13 @@ def make_calibration(model: ArmModel, rng):
 
 
 def pose(M):
+    """SE3 as nested lists."""
     return {'translation': np.asarray(M.translation).tolist(),
             'rotation': np.asarray(M.rotation).tolist()}
 
 
 def make(seed: int = SEED, n_poses: int = N_POSES):
+    """Gravity torques at random poses under a random calibration: the C++/Python parity reference."""
     arm = load_arm('arm01')
     urdf = os.path.join(ROOT, URDF)
     nominal = ArmModel(urdf, arm.names)
@@ -111,6 +114,7 @@ def make(seed: int = SEED, n_poses: int = N_POSES):
 
 
 def main():
+    """Write the parity golden file."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--out', default=os.path.join(ROOT, 'test', 'data', 'arm01_parity.json'))
     ap.add_argument('--seed', type=int, default=SEED)

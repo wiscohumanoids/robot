@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# J1: G1 velocity arms-free (legs+waist policy, scripted arms, arms-free recipe; docs/runs/2026-11-10_overnight_plan.md).
+# G1 velocity arms-free (legs+waist policy, scripted arms; hsim_tasks/g1_velocity_arms_free.py).
 # Runs from ~/robot/training/locomotion with its uv .venv (mjlab 1.6.0, GPU).
-# Usage: scripts/train_g1_velocity_arms_free.sh --log-root ~/hsim_runs/J1_g1_velocity_arms_free [extra mjlab train flags...]
+# Usage: scripts/train_g1_velocity_arms_free.sh --log-root ~/hsim_runs/g1_velocity_arms_free [extra mjlab train flags...]
 #   NUM_ENVS (default 4096) and ITERS (default 20000) can be set in the environment.
 #   Resume: add  --agent.resume True --agent.load-run <run dir name>
 set -euo pipefail
@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
     *) ARGS+=("$1"); shift ;;
   esac
 done
-LOG_ROOT="${LOG_ROOT:-$HOME/hsim_runs/J1_g1_velocity_arms_free}"
+LOG_ROOT="${LOG_ROOT:-$HOME/hsim_runs/g1_velocity_arms_free}"
 mkdir -p "$LOG_ROOT"
 exec .venv/bin/python hsim_tasks/train.py Hsim-G1-Velocity-Flat-ArmsFree \
   --env.scene.num-envs "${NUM_ENVS:-4096}" \

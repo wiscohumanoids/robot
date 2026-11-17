@@ -1,5 +1,5 @@
 """Random arm-target offsets from the default pose that keep the G1's arms away from its body
-(J1c fix: the old "60 % of soft range" targets drove the arms into the legs/torso).
+(uniform targets within 60 % of each joint's soft range drove the arms into the legs and torso in 46 % of poses).
 
 Offsets are in radians relative to the default joint position, for the LEFT arm; the right arm is
 mirrored (roll / yaw offsets negated). Checked with hsim_tasks/tools/arm_contact_sweep.py.

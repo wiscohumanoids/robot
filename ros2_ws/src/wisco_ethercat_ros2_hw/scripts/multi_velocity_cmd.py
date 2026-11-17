@@ -24,7 +24,9 @@ from wisco_ethercat_ros2_hw.ros_tools import get_controller_limits, wait_for_joi
 
 class MultiVelocityCommand(Node):
 
+    """Demo: phased sine velocities on every joint, kept away from the limits."""
     def __init__(self):
+        """Declare the demo parameters, subscribe to joint states and start the command timer."""
         super().__init__('multi_velocity_cmd')
         self.declare_parameter('controller', 'velocity_controller')
         self.declare_parameter('max_amplitude_rad', 0.5)
@@ -72,6 +74,7 @@ class MultiVelocityCommand(Node):
             ', '.join(self.joints), ', '.join('%.2f' % a for a in self.amplitude)))
 
     def _on_joint_states(self, msg):
+        """Keep the latest position of each commanded joint."""
         index = {name: i for i, name in enumerate(msg.name)}
         for k, joint in enumerate(self.joints):
             i = index.get(joint)
@@ -79,6 +82,7 @@ class MultiVelocityCommand(Node):
                 self.position[k] = msg.position[i]
 
     def _step(self):
+        """Publish the next velocity command (ramped in, scaled down near a limit)."""
         t = (self.get_clock().now() - self.t0).nanoseconds * 1e-9
         ramp = min(1.0, t / self.ramp_s)
         out = []
@@ -92,6 +96,7 @@ class MultiVelocityCommand(Node):
         self.pub.publish(Float64MultiArray(data=out))
 
     def stop(self):
+        """Publish zero velocity a few times."""
         # Belt and braces: the controller also stops the joints once commands
         # stop arriving (command_timeout).
         for _ in range(3):
@@ -99,6 +104,7 @@ class MultiVelocityCommand(Node):
 
 
 def main(args=None):
+    """Run the demo until Ctrl-C, then stop the joints."""
     rclpy.init(args=args)
     node = None
     try:

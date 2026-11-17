@@ -11,7 +11,9 @@ from remote_inference import ROOT, CONTRACT
 
 
 class DemoCameras:
+    """Synthetic cameras for the human-in-the-loop demo."""
     def __init__(self, config):
+        """Synthetic frames for each configured camera."""
         self.store = type('Sink', (), {'submit': lambda *_: None})()
         self.stop = threading.Event()
         self.latest = {}
@@ -27,6 +29,7 @@ class DemoCameras:
         self.thread.start()
 
     def capture(self):
+        """Produce frames until stopped."""
         sequence = 0
         while not self.stop.is_set():
             timestamp = time.monotonic_ns()
@@ -43,20 +46,25 @@ class DemoCameras:
             self.stop.wait(.05)
 
     def jpeg(self, name):
+        """Latest JPEG of a camera."""
         return self.latest.get(name)
 
     def recording_frames(self):
+        """Latest frame of every camera."""
         with self.lock:
             return dict(self.latest_frames)
 
     def close(self):
+        """Stop producing frames."""
         self.stop.set()
         self.thread.join(2)
 
 
 class DemoHardware:
+    """Simulated arms for the human-in-the-loop demo (no devices opened)."""
     simulated = True
     def __init__(self):
+        """Load the recording config and start simulated arms."""
         self.config = json.loads((ROOT / 'config/recording.json').read_text())
         self.config['takeover_hold'] = self.config.pop('neutral_return')
         self.pull_torque = {s: [0.]*6 for s in ('left', 'right')}
@@ -69,13 +77,16 @@ class DemoHardware:
         self.cameras = None
 
     def open(self):
+        """Start the synthetic cameras."""
         self.cameras = DemoCameras(self.config)
 
     def prepare_handoff(self, now):
+        """Start a scripted operator pull."""
         self.handoff_started = now
         self.pull_torque = {s: [0.]*6 for s in ('left', 'right')}
 
     def read(self):
+        """Simulated arm state (with scripted operator pulls)."""
         if self.auto_pull and self.handoff_started is not None:
             elapsed = time.monotonic() - self.handoff_started
             for side, delay in (('left', 1.), ('right', 1.5)):
@@ -88,12 +99,15 @@ class DemoHardware:
         return self.position.copy(), arms, cameras
 
     def images(self):
+        """No images in demo mode."""
         return {}
 
     def command(self, target):
+        """Jump straight to the target."""
         self.position = target.copy()
 
     def guide(self, arms, target, released):
+        """Simulated guiding: released arms follow the operator."""
         for side, offset in (('left', 0), ('right', 7)):
             arms[side]['gripper'].update(control_mode='passive', command=[0.]*5)
             if released[side]:
@@ -102,15 +116,18 @@ class DemoHardware:
                 self.position[offset:offset+6] = target[offset:offset+6]
 
     def recording_context(self, checkpoint):
+        """Recording metadata for the simulation."""
         return dict(mode='human_in_the_loop_simulation', simulated=True,
                     checkpoint=checkpoint, contract=CONTRACT)
 
     def close(self):
+        """Stop the cameras."""
         if self.cameras:
             self.cameras.close()
 
 
 def demo_request(base, path, body=None, timeout=3):
+    """Simulated inference server replies."""
     if path == '/health':
         return dict(status='ready', checkpoint='simulation', contract=CONTRACT)
     state = np.asarray(body['state'])

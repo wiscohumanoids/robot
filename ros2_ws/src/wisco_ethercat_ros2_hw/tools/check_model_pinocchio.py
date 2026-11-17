@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the arm01 URDF against its joint config, with Pinocchio only (no Isaac).
 
-Spec: "Load the URDF into Pinocchio and Isaac Lab; check joint axes,
+Goal: "Load the URDF into Pinocchio and Isaac Lab; check joint axes,
 directions, limits, and masses against CAD". This is the Pinocchio half;
 tools/isaac/check_model.py compares the Isaac Lab articulation against the same
 reference (`reference()` below).
@@ -50,25 +50,32 @@ MOVABLE = ('revolute', 'continuous', 'prismatic')
 
 
 class Report:
+    """Collects check results by section and prints them."""
     def __init__(self):
+        """No results yet."""
         self.fails, self.warns, self.section = [], [], None
 
     def head(self, title):
+        """Start a section."""
         self.section = title
         print('\n== %s' % title)
 
     def ok(self, msg):
+        """Print a pass."""
         print('  ok    ' + msg)
 
     def fail(self, msg):
+        """Record and print a failure."""
         self.fails.append('%s: %s' % (self.section, msg))
         print('  FAIL  ' + msg)
 
     def warn(self, msg):
+        """Record and print a warning."""
         self.warns.append('%s: %s' % (self.section, msg))
         print('  warn  ' + msg)
 
     def check(self, cond, msg, warn_only=False):
+        """Record a check as ok, warning or failure."""
         if cond:
             self.ok(msg)
         elif warn_only:
@@ -79,6 +86,7 @@ class Report:
 
 
 def parse_urdf(path):
+    """Links (inertials) and joints (axes, limits) from the URDF."""
     root = ET.parse(path).getroot()
     links = {}
     for link in root.findall('link'):
@@ -145,6 +153,7 @@ def reference(urdf_path, joint_names):
 
 
 def main():
+    """Check the arm model in Pinocchio: inertials, ranges, gravity and the CAD capture."""
     import pinocchio as pin
     from arm_stack.config import load_arm, load_yaml, resolve
 

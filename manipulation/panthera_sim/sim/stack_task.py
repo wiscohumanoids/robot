@@ -137,6 +137,7 @@ class StackReward:
     stable_steps: int = 0
 
     def reset(self, positions: np.ndarray, ee_pos: np.ndarray, grasped: bool = False) -> dict:
+        """Start a new episode's shaped reward from the initial state."""
         self.previous_potential, metrics = task_potential(positions, ee_pos, grasped)
         self.two_stack_seen = bool(metrics["two_stack"])
         self.full_stack_seen = bool(metrics["three_stack"])
@@ -151,6 +152,7 @@ class StackReward:
         action_delta: np.ndarray | None = None,
         action_acceleration: np.ndarray | None = None,
     ) -> tuple[float, bool, dict]:
+        """Shaped reward for one step: potential difference, action penalties, and success."""
         potential, metrics = task_potential(positions, ee_pos, grasped)
         # Potential-based shaping must include the same discount used by the
         # learner.  Using ``potential - previous_potential`` with gamma < 1

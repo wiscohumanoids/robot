@@ -18,6 +18,7 @@ from infra.rl.remote_server import (BackendChanged, BackendClient, CAMERAS, CONT
 
 
 def make_manifest():
+    """A verified manifest with fake file hashes."""
     files = {name: hashlib.sha256(name.encode()).hexdigest() for name in (
         'config.json', 'deployment.json', 'model.safetensors', 'policy_preprocessor.json',
         'policy_postprocessor.json', 'policy_preprocessor_step_3_normalizer.safetensors')}
@@ -35,7 +36,9 @@ def make_manifest():
 
 
 class FakeClient:
+    """Backend client stand-in."""
     def __init__(self, manifest):
+        """Healthy replies for the manifest's checkpoint."""
         self.calls = []
         self.health = dict(status='ready', checkpoint=manifest['checkpoint'], contract=copy.deepcopy(CONTRACT), names=NAMES)
         self.response_override = None
@@ -43,6 +46,7 @@ class FakeClient:
         self.counter = 0
 
     def request(self, path, body=None):
+        """Fake /health and /infer replies (overridable)."""
         self.calls.append((path, copy.deepcopy(body)))
         if path == '/health':
             return copy.deepcopy(self.health_override or self.health)
@@ -56,7 +60,9 @@ class FakeClient:
 
 
 class RemoteProxyTests(unittest.TestCase):
+    """The frozen-base proxy's checks."""
     def setUp(self):
+        """A manifest file in a temporary folder."""
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / 'manifest.json'

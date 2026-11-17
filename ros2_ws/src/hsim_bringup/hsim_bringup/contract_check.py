@@ -40,12 +40,15 @@ def publishers(node: Node, topic: str):
 
 
 def spin_for(node: Node, seconds: float):
+    """Spin the node for `seconds`, so subscriptions collect messages."""
     end = time.monotonic() + seconds
     while time.monotonic() < end:
         rclpy.spin_once(node, timeout_sec=0.05)
 
 
 def main(argv=None):
+    """Parse the arguments, measure the live graph for the window and print one PASS/FAIL line per contract entry.
+    """
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--contract', default=os.path.join(
         get_package_share_directory('hsim_bringup'), 'config', 'interface_contract.yaml'))

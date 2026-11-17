@@ -1,4 +1,4 @@
-"""Stage 2, `arm zero`: zero offsets from the zeroing jig.
+"""`arm zero`: zero offsets from the zeroing jig.
 
 The arm sits in the jig (drives disabled), and 1 s of encoder counts per
 joint is averaged. Re-seat 5 times; the spread must stay under 0.1 deg.
@@ -17,6 +17,7 @@ SPREAD_LIMIT = 0.1 * DEG
 
 
 def jig_pose(ctx: StageContext) -> np.ndarray:
+    """The configured jig pose, or the home pose when none is set."""
     pose = ctx.arm.raw.get('jig_pose_rad')
     if pose is None:          # the jig holds the arm at its home pose
         return safe_home(ctx.model)
@@ -24,6 +25,8 @@ def jig_pose(ctx: StageContext) -> np.ndarray:
 
 
 def run(ctx: StageContext, reseats: int = 5) -> StageResult:
+    """`arm zero`: with the drives disabled and the arm in the jig, take the zero offsets (averaged over reseats).
+    """
     client, arm = ctx.client, ctx.arm
     if not ctx.sim and np.any(client.state().status & 4):
         raise RuntimeError('Zeroing requires disabled drives. Restart arm01.launch.py with enable_motion:=false.')

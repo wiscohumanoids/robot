@@ -39,6 +39,7 @@ PAYLOAD_BLOCK = 4
 
 
 def encode_command(cmd: Command, n: int) -> list:
+    """Flatten a Command into the controller's Float64MultiArray layout (NaN for unset blocks)."""
     def block(v):
         return [math.nan] * n if v is None else [float(x) for x in np.broadcast_to(np.asarray(v, float), (n,))]
     flags = (1 if cmd.gravity_ff else 0) | (2 if cmd.ignore_soft_limits else 0)
@@ -53,6 +54,7 @@ def encode_command(cmd: Command, n: int) -> list:
 
 
 def decode_state(data, n: int):
+    """Unpack the controller's state array into named fields."""
     d = np.asarray(data, float)
     if len(d) not in (STATE_HEADER + 5 * n, STATE_HEADER + 7 * n):
         raise ValueError('state has %d values, expected %d' % (len(d), STATE_HEADER + 5 * n))
@@ -65,9 +67,11 @@ def decode_state(data, n: int):
 
 class RosArmClient(ArmClient):
 
+    """ArmClient over ROS: commands to and state from the running ArmController."""
     def __init__(self, arm: ArmConfig, calibration: dict, controller: str = 'arm_controller',
                  power_on_monotonic: Optional[float] = None, node_name: str = 'arm_stack',
                  state_timeout: float = 5.0, check_launch=None):
+        """Start a node and spin thread, check the controller uses the same calibration, wait for state."""
         import rclpy
         from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
         from rclpy.qos import QoSProfile, ReliabilityPolicy
@@ -122,6 +126,7 @@ class RosArmClient(ArmClient):
             raise
 
     def _check_calibration(self, controller, calibration):
+        """Refuse to run if the controller loaded a different calibration than this command uses."""
         from rcl_interfaces.srv import GetParameters
         from ..config import load_yaml
         service = self.node.create_client(GetParameters, '/%s/get_parameters' % controller)
@@ -143,6 +148,7 @@ class RosArmClient(ArmClient):
             self.node.destroy_client(service)
 
     def _on_state(self, msg):
+        """Store a decoded state message and wake waiters."""
         try:
             st = decode_state(msg.data, self.n)
         except ValueError:
@@ -153,10 +159,12 @@ class RosArmClient(ArmClient):
             self._cond.notify_all()
 
     def _wait_state(self, timeout):
+        """Wait for the first state message."""
         with self._cond:
             return self._cond.wait_for(lambda: self._state is not None, timeout)
 
     def state(self) -> JointState:
+        """The latest state as a JointState (raises if older than 200 ms)."""
         with self._lock:
             if time.monotonic() - self._received_at > 0.2:
                 raise RuntimeError('controller feedback is stale (over 200 ms)')
@@ -172,6 +180,7 @@ class RosArmClient(ArmClient):
                           fallback=bool(st['fallback']), tau_cmd=st['tau_out'].copy())
 
     def send(self, cmd: Command) -> None:
+        """Publish a command; refuses while any drive is disabled or faulted."""
         if not np.all((self.state().status & 0x6f) == 0x27):
             raise RuntimeError('A drive is disabled or faulted; motion commands stopped.')
         msg = self._msg_type()
@@ -180,11 +189,13 @@ class RosArmClient(ArmClient):
         self._last_cmd = cmd
 
     def step(self, seconds: float = 0.0) -> JointState:
+        """Wait `seconds` (at least one cycle) and return the new state."""
         # wall-clock pacing; the RT loop runs on its own clock
         time.sleep(max(seconds, self.cmd_dt))
         return self.state()
 
     def hand_guide(self, prompt: str, hint_q=None) -> JointState:
+        """Float the arm in gravity compensation while the operator moves it, until they press Enter."""
         if hint_q is not None:
             print('  suggested configuration (deg): %s' % np.round(np.degrees(hint_q), 1).tolist())
         done = threading.Event()
@@ -214,6 +225,7 @@ class RosArmClient(ArmClient):
         return s
 
     def drive_gains(self):
+        """The drives' own loop gains from the joint config, or None when any is unset."""
         # read from the drives over SDO and recorded in the joint config (drive_gains: {kp, kd})
         rows = {r['name']: r for r in self.arm.raw.get('joints') or []}
         g = [(rows.get(n) or {}).get('drive_gains') or {} for n in self.names]
@@ -222,6 +234,7 @@ class RosArmClient(ArmClient):
         return np.array([x['kp'] for x in g], float), np.array([x['kd'] for x in g], float)
 
     def mocap(self):
+        """The mocap source configured in the joint config, or None."""
         cfg = self.arm.raw.get('mocap') or {}
         if not cfg.get('topic'):
             return None
@@ -230,9 +243,11 @@ class RosArmClient(ArmClient):
         return self._mocap
 
     def time_since_power_on(self) -> float:
+        """Seconds since the given power-on time (NaN when unknown)."""
         return float('nan') if self._power_on is None else time.monotonic() - self._power_on
 
     def close(self) -> None:
+        """Stop the spin thread and destroy the node."""
         self.executor.shutdown()
         self._spin.join()
         self.node.destroy_node()
@@ -242,6 +257,7 @@ class RosMocap:
     """Flange marker-cluster pose from a geometry_msgs/PoseStamped topic (mocap frame)."""
 
     def __init__(self, node, topic: str, length_bar_error_m: Optional[float]):
+        """Subscribe to the marker pose topic."""
         import pinocchio as pin
         from geometry_msgs.msg import PoseStamped
         self._pin = pin
@@ -251,12 +267,14 @@ class RosMocap:
         node.create_subscription(PoseStamped, topic, self._on_pose, 10)
 
     def _on_pose(self, msg):
+        """Store the latest marker pose."""
         p, o = msg.pose.position, msg.pose.orientation
         q = self._pin.Quaternion(o.w, o.x, o.y, o.z)
         with self._lock:
             self._pose = self._pin.SE3(q.matrix(), np.array([p.x, p.y, p.z]))
 
     def marker_pose(self):
+        """The latest marker pose (waits up to 1 s for the first)."""
         deadline = time.monotonic() + 1.0
         while True:
             with self._lock:
@@ -267,6 +285,7 @@ class RosMocap:
             time.sleep(0.01)
 
     def static_noise_3sigma_m(self, seconds: float = 60.0) -> float:
+        """3-sigma position noise of a static marker over `seconds`."""
         P = []
         end = time.monotonic() + seconds
         while time.monotonic() < end:
@@ -275,4 +294,5 @@ class RosMocap:
         return float(3 * np.max(np.std(P, axis=0)))
 
     def length_bar_error_m(self):
+        """Configured length-bar error."""
         return self._bar

@@ -3,7 +3,7 @@
   <name>hsim_interfaces</name>
   <version>0.1.0</version>
   <description>Custom messages for the stack: skill plans, plan execution action, test hooks</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>

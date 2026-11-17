@@ -1,8 +1,8 @@
-"""Stage 6, `arm friction`: Coulomb plus viscous per joint.
+"""`arm friction`: Coulomb plus viscous per joint.
 
 Each joint runs constant-velocity sweeps in both directions at 5 speeds
 (others held) in Mode P. Over the constant-speed part of each sweep, the
-friction torque is the measured torque minus the model gravity (stage 5) and
+friction torque is the measured torque minus the model gravity (`arm gravity`) and
 inertia (zero at constant speed). For each joint
 
     f(v) = Fc sign(v) + Fv v + b
@@ -24,6 +24,7 @@ SPAN = 30 * DEG
 
 
 def run(ctx: StageContext) -> StageResult:
+    """`arm friction`: constant-speed sweeps both ways per joint; fits Coulomb and viscous friction."""
     client, model, arm = ctx.client, ctx.model, ctx.arm
     home = safe_home(model)
     peak = np.array([j.peak_torque_nm for j in arm.joints])

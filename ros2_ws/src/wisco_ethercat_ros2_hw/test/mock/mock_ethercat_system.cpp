@@ -1,3 +1,6 @@
+// MockEthercatSystem: a ros2_control hardware interface over simulated RMD-X drives, so the real
+// controllers can be tested against the drive protocol without hardware.
+
 #include "mock_ethercat_system.hpp"
 
 #include <string>
@@ -18,6 +21,7 @@ double param(
 }
 }  // namespace
 
+// Create one simulated drive per joint from the URDF parameters.
 MockEthercatSystem::CallbackReturn MockEthercatSystem::on_init(
   const hardware_interface::HardwareInfo & info)
 {
@@ -65,6 +69,7 @@ MockEthercatSystem::CallbackReturn MockEthercatSystem::on_init(
   return CallbackReturn::SUCCESS;
 }
 
+// State interfaces, as ethercat_driver_ros2 exports them.
 std::vector<hardware_interface::StateInterface> MockEthercatSystem::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> out;
@@ -81,6 +86,7 @@ std::vector<hardware_interface::StateInterface> MockEthercatSystem::export_state
   return out;
 }
 
+// Command interfaces, as ethercat_driver_ros2 exports them.
 std::vector<hardware_interface::CommandInterface> MockEthercatSystem::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> out;
@@ -100,6 +106,7 @@ std::vector<hardware_interface::CommandInterface> MockEthercatSystem::export_com
   return out;
 }
 
+// Copy the drives' latest TxPDO values into the state interfaces.
 hardware_interface::return_type MockEthercatSystem::read(
   const rclcpp::Time &, const rclcpp::Duration &)
 {
@@ -110,6 +117,7 @@ hardware_interface::return_type MockEthercatSystem::read(
   return hardware_interface::return_type::OK;
 }
 
+// Run one bus cycle: CiA 402 master logic, then each drive's cycle.
 hardware_interface::return_type MockEthercatSystem::write(
   const rclcpp::Time &, const rclcpp::Duration &)
 {
@@ -133,16 +141,19 @@ hardware_interface::return_type MockEthercatSystem::write(
   return hardware_interface::return_type::OK;
 }
 
+// True joint position (test access).
 double MockEthercatSystem::joint_position(size_t i) const
 {
   return direction_[i] * slaves_[i].position() - zero_offset_[i];
 }
 
+// True joint velocity (test access).
 double MockEthercatSystem::joint_velocity(size_t i) const
 {
   return direction_[i] * slaves_[i].velocity();
 }
 
+// Torque the drive applied (test access).
 double MockEthercatSystem::joint_torque(size_t i) const
 {
   return direction_[i] * slaves_[i].applied_torque();

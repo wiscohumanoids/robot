@@ -11,11 +11,13 @@
 #   tools/vm.sh jobs <args>                   job queue (infra/vm_jobs/): list | status | launch <job>... | launch-all |
 #                                             logs <job> [-f] [-n N] | stop <job>... | resume <job>...
 #
-# Environment: VM_HOST (ssh host alias, default hsim-gpu), VM_REPO (repo folder under ~ on the VM, default robot).
+# Environment (the repo's .env, or the shell): VM_HOST (ssh host alias, default hsim-gpu), VM_REPO (repo folder under ~
+# on the VM, default robot).
 set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -f "$ROOT/.env" ]; then set -a; . "$ROOT/.env"; set +a; fi
 HOST="${VM_HOST:-hsim-gpu}"
 VM_REPO="${VM_REPO:-robot}"
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cmd="${1:-}"; shift || true
 
 case "$cmd" in

@@ -11,7 +11,9 @@ from infra.rl import resources
 
 
 class ResourceTests(unittest.TestCase):
+    """GPU lease and resource reporting."""
     def query(self, fields, kind="gpu"):
+        """Fake nvidia-smi rows."""
         if kind == "gpu":
             return [["0", "GPU-test", "Test GPU", "8192", "7000", "0"]]
         return []

@@ -18,6 +18,8 @@ from ..units import Units
 
 
 def has_reference(arm, calibration):
+    """Whether `calibration` registers URDF coordinates for this exact joint table (a relative reference does not).
+    """
     if calibration.get('coordinate_frame') == 'relative':
         return False
     if not calibration.get('version') or calibration.get('joint_config_hash') != arm.hash():
@@ -85,6 +87,7 @@ class MotionMonitor:
     """Stop automated motion on faults, excessive tracking error, or saturation."""
 
     def __init__(self, inner, arm, model, command_margin=0.0, *, check_tracking=True):
+        """Wrap client `inner`, allowing position commands only inside the model limits less `command_margin`."""
         self.check_tracking = check_tracking
         self.inner, self.arm, self.model = inner, arm, model
         self.command_lower = model.lower + command_margin
@@ -96,6 +99,9 @@ class MotionMonitor:
         return getattr(self.inner, name)
 
     def state(self):
+        """Inner state, after checking every drive is still enabled and the feedback is finite (and tracking, if
+        on).
+        """
         state = self.inner.state()
         if not np.all((state.status & 0x6f) == 0x27):
             raise RuntimeError('Autocal stopped because a drive lost operation-enabled state.')
@@ -131,6 +137,7 @@ class MotionMonitor:
         return state
 
     def send(self, command):
+        """Forward a bounded Mode P command; anything else, or a target outside the envelope, stops autocal."""
         if command.mode != 'P' or command.q is None:
             raise RuntimeError('Autocal only supports bounded position commands.')
         target = np.asarray(command.q, float)
@@ -146,11 +153,15 @@ class MotionMonitor:
         self.inner.send(command)
 
     def step(self, seconds=0.0):
+        """Step and return the checked state."""
         self.inner.step(seconds)
         return self.state()
 
 
 def calibrate(arm, seed, center, client, quick=False):
+    """Run the local checks and gravity fit around `center` through a monitored client; returns the calibration
+    updates.
+    """
     from ..cli import build_model
     model = build_model(arm, seed)
     margin = np.minimum(1 * DEG, 0.2 * (model.upper - model.lower))
@@ -184,6 +195,9 @@ def calibrate(arm, seed, center, client, quick=False):
 
 
 def run(args):
+    """`arm autocal`: choose the relative or registered procedure, manage the arm launch, and save only a passing
+    result.
+    """
     from ..cli import build_model
     arm = load_arm(args.arm)
     joint_hash = arm.hash()

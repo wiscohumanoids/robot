@@ -1,4 +1,4 @@
-"""LINE-OF-SIGHT PERCEPTION STUB (node name: `perception`). Replaced by real detectors in Phase 4.
+"""LINE-OF-SIGHT PERCEPTION STUB (node name: `perception`). The detector-free alternative to perception_client.
 
 Stands in for "camera + open-vocabulary detector + pose estimator" (Grounded-SAM +
 FoundationPose). It is honest about WHAT the robot can see, and privileged about WHERE:
@@ -32,6 +32,7 @@ CAMERA_PITCH = math.radians(25.0)
 
 
 def to_time(t):
+    """ROS Time from seconds."""
     sec, nsec = divmod(int(round(t * 1e9)), 1_000_000_000)
     return Time(sec=sec, nanosec=nsec)
 
@@ -44,7 +45,11 @@ def mat_to_quat(R):
 
 
 class PerceptionStub(Node):
+    """Node `perception` without a detector: honest about what the camera can see, privileged about where it is."""
     def __init__(self):
+        """Load the world and its object list, declare the camera model parameters, subscribe to the sim state and
+        start the timer.
+        """
         super().__init__('perception')
         self.declare_parameter('world', '')
         self.declare_parameter('objects', '')
@@ -100,9 +105,11 @@ class PerceptionStub(Node):
                                f'range {self.max_range} m')
 
     def on_state(self, msg):
+        """Store the latest sim state."""
         self.state = msg.data
 
     def aabb(self, geoms):
+        """World-frame axis-aligned bounding box (centre, size) of the given geoms."""
         corners = []
         for g in geoms:
             c, half = self.m.geom_aabb[g, :3], self.m.geom_aabb[g, 3:]
@@ -115,6 +122,7 @@ class PerceptionStub(Node):
         return corners.min(0), corners.max(0)
 
     def visible(self, cam, point, obj):
+        """Whether the ray from the camera to `point` reaches the object (or nothing blocks it before)."""
         v = point - cam
         dist = np.linalg.norm(v)
         hit = mujoco.mj_ray(self.m, self.d, cam, v / dist, self.groups, 1, -1, self.gid)
@@ -123,6 +131,9 @@ class PerceptionStub(Node):
         return self.m.geom_bodyid[self.gid[0]] in obj['bodies'] or hit >= dist - 0.02
 
     def tick(self):
+        """Update the scene from the sim state and publish noisy detections of every object in view, in the camera
+        frame.
+        """
         if self.state is None:
             return
         t = self.state[0]
@@ -179,6 +190,7 @@ class PerceptionStub(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = PerceptionStub()
     try:

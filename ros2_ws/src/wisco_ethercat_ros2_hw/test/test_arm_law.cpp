@@ -21,6 +21,7 @@ namespace
 {
 const double kNaN = std::numeric_limits<double>::quiet_NaN();
 
+// Two-joint law configuration.
 LawConfig config()
 {
   LawConfig c;
@@ -34,6 +35,7 @@ LawConfig config()
   return c;
 }
 
+// A command in `mode`.
 LawCommand command(int mode)
 {
   LawCommand cmd;

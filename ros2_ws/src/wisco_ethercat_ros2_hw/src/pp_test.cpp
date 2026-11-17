@@ -19,8 +19,10 @@ namespace
 using namespace pp_test;
 using Slave = ethercat_generic_plugins::GenericEcSlave;
 volatile std::sig_atomic_t interrupted = 0;
+// SIGINT handler: request a stop.
 void interrupt(int) { interrupted = 1; }
 
+// Value as hex text.
 std::string hex(uint32_t value)
 {
   std::ostringstream out;
@@ -28,6 +30,7 @@ std::string hex(uint32_t value)
   return out.str();
 }
 
+// Little-endian SDO value of 1, 2 or 4 bytes.
 uint32_t decode(const uint8_t * bytes, size_t size)
 {
   switch (size) {
@@ -41,6 +44,7 @@ uint32_t decode(const uint8_t * bytes, size_t size)
 class Bench : public ethercat_interface::EcMaster
 {
 public:
+  // Claim the IgH master, check the drive at `position` is an MT_Device, and configure its PDOs.
   explicit Bench(uint16_t position) : position_(position)
   {
     if (!master_) { throw std::runtime_error("Could not acquire IgH master 0. Stop other launches and check master access."); }
@@ -112,6 +116,7 @@ public:
     if (!activate()) { throw std::runtime_error("Could not activate PP domain"); }
   }
 
+  // Bring the drive to OP, verify the mappings and profile values, and (with `move`) run one +5 degree step.
   void test(bool move)
   {
     const auto startup_deadline = Clock::now() + 30s;
@@ -173,6 +178,7 @@ public:
               << (motion.ack_edge ? "observed" : "not observed") << ".\n";
   }
 
+  // Disable the drive and restore its original profile values and current limit.
   void finish()
   {
     cleaning_ = true;
@@ -189,6 +195,7 @@ public:
     std::cout << "Drive disabled. Original profile restored.\n";
   }
 
+  // One line of bus and drive state for error messages.
   std::string diagnostic() const
   {
     auto f = feedback();
@@ -216,11 +223,13 @@ private:
   bool cleaning_ = false;
   Clock::time_point next_ = Clock::now();
 
+  // Latest TxPDO values.
   Feedback feedback() const
   {
     return {static_cast<uint16_t>(state_[0]), static_cast<int32_t>(state_[1]),
       static_cast<int>(state_[3]), static_cast<uint16_t>(state_[2])};
   }
+  // SDO upload before the master is activated.
   int read_before_activation(uint16_t index, uint8_t sub, uint8_t *bytes, size_t capacity,
     size_t &length, uint32_t &abort)
   {
@@ -236,6 +245,7 @@ private:
       std::this_thread::sleep_for(250ms * attempt);
     }
   }
+  // SDO upload of one object (before activation).
   uint32_t upload(uint16_t index, uint8_t sub, size_t size)
   {
     alignas(uint32_t) uint8_t bytes[4]{};
@@ -252,6 +262,7 @@ private:
     }
     return decode(bytes, size);
   }
+  // Throw unless an object holds the wanted value.
   static void expect(uint16_t index, uint8_t sub, uint32_t actual, uint32_t wanted)
   {
     if (actual != wanted) {
@@ -259,10 +270,12 @@ private:
         " expected " + hex(wanted) + ", read " + hex(actual));
     }
   }
+  // Throw if Ctrl-C was pressed.
   void check_interrupt() const
   {
     if (interrupted && !cleaning_) { throw std::runtime_error("Interrupted"); }
   }
+  // Slave in OP and every frame answered (complete working counter).
   bool healthy() const
   {
     ec_slave_config_state_t slave{};
@@ -271,12 +284,14 @@ private:
     return slave.online && slave.operational && slave.al_state == 8 &&
            domain.wc_state == EC_WC_COMPLETE && domain.working_counter > 0;
   }
+  // One bus cycle: receive, update, send.
   void cycle()
   {
     next_ = std::max(next_ + cycle_period, Clock::now());
     std::this_thread::sleep_until(next_);
     update();
   }
+  // One bus cycle that throws if the bus is unhealthy.
   void checked_cycle()
   {
     check_interrupt();
@@ -286,6 +301,7 @@ private:
       throw std::runtime_error("Drive left switch-on disabled during the passive check");
     }
   }
+  // Command a disable and wait until the drive reports it.
   void confirm_disabled()
   {
     command_[Control] = 0;
@@ -300,6 +316,7 @@ private:
     }
     motion_active_ = false;
   }
+  // Create an SDO request mailbox of `size` bytes.
   ec_sdo_request_t * request(size_t size)
   {
     auto * req = ecrt_slave_config_create_sdo_request(slave_info_.at(0).config, 0x6041, 0, size);
@@ -307,6 +324,7 @@ private:
     ecrt_sdo_request_timeout(req, 1000);
     return req;
   }
+  // Cycle the bus until an SDO request completes.
   void wait_sdo(ec_sdo_request_t * req, uint16_t index)
   {
     const auto deadline = Clock::now() + 2s;
@@ -319,6 +337,7 @@ private:
       }
     }
   }
+  // SDO read while the bus is cycling.
   uint32_t read_live(ec_sdo_request_t * req, uint16_t index, uint8_t sub, size_t size)
   {
     if (ecrt_sdo_request_state(req) == EC_REQUEST_BUSY) { wait_sdo(req, index); }
@@ -331,10 +350,12 @@ private:
     }
     return decode(ecrt_sdo_request_data(req), size);
   }
+  // Throw unless a live SDO read holds the value.
   void expect_live(uint16_t index, uint8_t sub, size_t size, uint32_t value)
   {
     expect(index, sub, read_live(mailbox_, index, sub, size), value);
   }
+  // Write the drive's current limit (0x6072).
   void write_cap(uint16_t value)
   {
     if (ecrt_sdo_request_state(cap_mailbox_) == EC_REQUEST_BUSY) { wait_sdo(cap_mailbox_, 0x6072); }
@@ -348,6 +369,7 @@ private:
     wait_sdo(cap_mailbox_, 0x6072);
   }
 };
+// Bus positions of every connected slave.
 std::vector<uint16_t> connected_positions()
 {
   std::unique_ptr<ec_master_t, decltype(&ecrt_release_master)> master(
@@ -370,6 +392,7 @@ std::vector<uint16_t> connected_positions()
   return positions;
 }
 
+// Run the test on one drive; returns the exit code.
 int run_position(uint16_t position, bool move)
 {
   try {
@@ -399,6 +422,7 @@ int run_position(uint16_t position, bool move)
 }
 }  // namespace
 
+// Parse --position/--all and --move, confirm a move, and run the test.
 int main(int argc, char ** argv)
 {
   const char * usage = "Usage: ros2 run wisco_ethercat_ros2_hw pp_test (--position N | --all) [--move]\n";

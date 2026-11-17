@@ -1,4 +1,4 @@
-// ArmController: the arm stack's RT loop (spec Mode P / Mode T) as a
+// ArmController: the arm stack's RT loop (Mode P / Mode T) as a
 // ros2_control controller. Runs arm_law.hpp every cycle with Pinocchio
 // gravity from the robot description plus the calibration file.
 //
@@ -81,6 +81,7 @@ public:
   ArmController();
   ~ArmController() override;
 
+  // ros2_control lifecycle and update callbacks (see arm_controller.cpp).
   controller_interface::CallbackReturn on_init() override;
   controller_interface::InterfaceConfiguration command_interface_configuration() const override;
   controller_interface::InterfaceConfiguration state_interface_configuration() const override;

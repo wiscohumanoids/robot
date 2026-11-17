@@ -22,6 +22,7 @@ PACKAGE = 'wisco_ethercat_ros2_hw'
 
 
 def _share_dir():
+    """This package's share directory, or the source folder when not installed."""
     try:
         from ament_index_python.packages import get_package_share_directory
         return get_package_share_directory(PACKAGE)
@@ -30,6 +31,7 @@ def _share_dir():
 
 
 def read_joints(urdf_xml):
+    """Axis, limits, effort and velocity of every movable URDF joint."""
     out = {}
     for joint in ET.fromstring(urdf_xml).findall('joint'):
         if joint.get('type') not in ('revolute', 'continuous', 'prismatic'):
@@ -47,6 +49,7 @@ def read_joints(urdf_xml):
 
 
 def mirror_findings(joints, axis_tol=0.05, rel_tol=0.05):
+    """Left/right joints whose axes or limits do not mirror."""
     findings = []
     for name in sorted(joints):
         if not name.startswith('left_'):
@@ -73,6 +76,7 @@ def mirror_findings(joints, axis_tol=0.05, rel_tol=0.05):
 
 
 def model_findings(joints, table, models, rel_tol=0.05):
+    """URDF limits that disagree with the wired actuator models."""
     findings = []
     for row in table.get('joints') or []:
         name, model_name = row['name'], row['model']
@@ -89,10 +93,12 @@ def model_findings(joints, table, models, rel_tol=0.05):
 
 
 def _fmt(v):
+    """Vector as text."""
     return '(%s)' % ', '.join('%.3f' % x for x in v)
 
 
 def main():
+    """Check the URDF against the joint table and actuator models; print the findings."""
     share = _share_dir()
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--urdf', default=os.path.join(share, 'urdf', 'test_bench.urdf.xacro'))

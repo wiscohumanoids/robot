@@ -14,7 +14,9 @@ import uuid
 
 
 class ExplorationRolloutStore:
+    """Records EXPO exploration rollouts (requests, chunks, commands, outcomes) to disk in a worker thread."""
     def __init__(self, root, manifest, queue_size=1024):
+        """New session folder with its immutable manifest."""
         self.root = Path(root)
         self.session_id = uuid.uuid4().hex
         self.path = self.root / self.session_id
@@ -38,10 +40,12 @@ class ExplorationRolloutStore:
         self.thread.start()
 
     def snapshot(self):
+        """Status for the dashboard."""
         return dict(self.status, enabled=True, active=self.active, error=self.failure,
                     session_id=self.session_id, path=str(self.path), closed=self.closed)
 
     def submit(self, kind, payload):
+        """Queue an event for the writer (raises once writing has failed)."""
         if self.failure:
             raise RuntimeError(f'EXPO recording failed: {self.failure}')
         if self.closed:
@@ -53,12 +57,14 @@ class ExplorationRolloutStore:
             raise RuntimeError(self.failure)
 
     def begin(self, details, monotonic_ns):
+        """Start a trial (its objective must match the session's)."""
         if details.get('training_objective', self.manifest['training_objective']) != self.manifest['training_objective']:
             raise ValueError('Trial objective differs from the immutable session objective')
         self.submit('begin', dict(details=details, monotonic_ns=monotonic_ns))
         self.active = True
 
     def requested(self, decision_index, state, images, monotonic_ns, camera_metadata=None, observation_id=None):
+        """Record the observation an inference request was made from."""
         if self.active:
             observation_id = observation_id or uuid.uuid4().hex
             self.submit('request', dict(decision_index=decision_index,
@@ -67,19 +73,23 @@ class ExplorationRolloutStore:
             return observation_id
 
     def accepted(self, response, executed_actions):
+        """Record an accepted chunk and the actions executed from it."""
         if self.active:
             self.submit('accept', dict(response=response, executed_actions=executed_actions))
 
     def responded(self, response):
+        """Record a server response."""
         if self.active:
             self.submit('response', dict(response=response))
 
     def command(self, target, emitted_ns, policy_time_s):
+        """Record one command sent to the arms."""
         if self.active:
             self.submit('command', dict(target=list(target), emitted_monotonic_ns=emitted_ns,
                                         policy_time_s=policy_time_s))
 
     def completed(self, state, images, monotonic_ns, camera_metadata=None):
+        """Record the observation after a chunk finished."""
         if self.active:
             observation_id = uuid.uuid4().hex
             self.submit('complete', dict(state=list(state), images=dict(images),
@@ -87,10 +97,12 @@ class ExplorationRolloutStore:
             return observation_id
 
     def boundary(self, reason):
+        """Mark a boundary (for example a takeover)."""
         if self.active:
             self.submit('boundary', dict(reason=reason, monotonic_ns=time.monotonic_ns()))
 
     def end(self, outcome):
+        """End the trial with its outcome."""
         if outcome.get('training_objective', self.manifest['training_objective']) != self.manifest['training_objective']:
             raise ValueError('Trial objective differs from the immutable session objective')
         if self.active:
@@ -98,6 +110,7 @@ class ExplorationRolloutStore:
             self.active = False
 
     def close(self, reason='session_stopped'):
+        """Flush and close the session."""
         if self.closed:
             return
         try:
@@ -114,6 +127,7 @@ class ExplorationRolloutStore:
             self.failure = self.failure or 'EXPO writer did not finish'
 
     def _observation(self, value):
+        """Validate an observation record and give it an id."""
         observation = dict(value)
         identifier = value.get('observation_id') or uuid.uuid4().hex
         if not isinstance(identifier, str) or len(identifier) != 32 or any(c not in '0123456789abcdef' for c in identifier):
@@ -135,10 +149,12 @@ class ExplorationRolloutStore:
 
     @staticmethod
     def _write(stream, payload):
+        """Append one JSON line and flush."""
         stream.write(json.dumps(payload, allow_nan=False) + '\n')
         stream.flush()
 
     def _worker(self):
+        """Writer thread: turn queued events into episode and observation files."""
         pending = episode = last_decision = None
         segment = 0
         try:

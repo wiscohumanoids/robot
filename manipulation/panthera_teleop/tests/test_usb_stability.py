@@ -1,3 +1,4 @@
+"""Keeping the robot's USB devices awake, and faults during hand guiding."""
 from contextlib import redirect_stderr
 import io
 from pathlib import Path
@@ -14,6 +15,7 @@ from usb_stability import is_serial_disconnect, keep_usb_awake, robot_usb_device
 
 
 class UsbStabilityTests(unittest.TestCase):
+    """USB power settings and fault handling."""
     def test_board_and_upstream_hubs_stay_awake(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -55,6 +57,7 @@ class UsbStabilityTests(unittest.TestCase):
             self.assertFalse(is_serial_disconnect(RuntimeError(message)))
 
     def run_fault(self, fault):
+        """Run hand guiding in demo mode with an injected fault."""
         store = Mock(failure=None, control_requests=queue.Queue())
         dashboard = Mock()
         with patch.object(sys, 'argv', ['hand_guide.py', '--demo', '--no-browser']), \

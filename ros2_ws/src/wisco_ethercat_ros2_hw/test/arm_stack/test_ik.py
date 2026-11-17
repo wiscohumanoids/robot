@@ -20,16 +20,19 @@ DEG = math.pi / 180
 
 @pytest.fixture(scope='module')
 def model():
+    """arm01 model."""
     return ArmModel(URDF, NAMES)
 
 
 def _targets(model, n, seed):
+    """`n` random reachable target poses and the configurations that produced them."""
     rng = np.random.default_rng(seed)
     Q = rng.uniform(model.lower, model.upper, (n, model.n))
     return Q, [model.fk(q) for q in Q], rng
 
 
 def _inside(model, q):
+    """Whether `q` is inside the limits."""
     return bool(np.all(q >= model.lower) and np.all(q <= model.upper))
 
 
@@ -89,6 +92,7 @@ def test_position_only_and_free_spin(model):
 
 
 def _loop_path(model, steps=300, loops=3, seed=5):
+    """A smooth periodic joint path through the workspace, for tracking tests."""
     rng = np.random.default_rng(seed)
     mid = ik.mid_posture(model)
     half = 0.5 * (model.upper - model.lower)

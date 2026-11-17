@@ -30,6 +30,7 @@ sys.path.insert(0, REPO)
 
 
 def main():
+    """Convert the arm URDF (mimic joints prepared) to USD with Isaac Lab's UrdfConverter."""
     from arm_stack.pace.isaac_cfg import MIMIC_JOINTS, URDF_PATH, USD_DIR, prepare_urdf_for_isaac
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])

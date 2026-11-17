@@ -1,3 +1,4 @@
+"""Package setup: installs the safety monitor and the e-stop command."""
 from setuptools import setup
 
 setup(

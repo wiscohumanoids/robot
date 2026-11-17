@@ -1,12 +1,12 @@
-"""Phases 1 and 2 on the single-joint lever rig (robots/arm01/config/bench01.yaml) in sim.
+"""Bring-up and characterization on the single-joint lever rig (robots/arm01/config/bench01.yaml) in sim.
 
-Phase 1: one sim actuator with known errors (zero offset, Kt, lever COM,
+Bring-up: one sim actuator with known errors (zero offset, Kt, lever COM,
 friction and stiction, delay, backlash, hard stops past the URDF limits) goes
 through bringup, indicator, zero and limits, each writing to a scratch store
 as `arm <stage> --sim --arm bench01` would. `arm indicator` must also catch a
 reversed direction and a wrong counts_per_rev, and the full-arm stages skip.
 
-Phase 2: `arm rig --sim --quick --arm bench01 --serial ...` runs zero, kt,
+Characterization: `arm rig --sim --quick --arm bench01 --serial ...` runs zero, kt,
 gravity, friction and latency through the CLI; its sim errors are seeded from
 the serial, so the test rebuilds them and checks each recovered value and that
 the serial is in every calibration version and the rig summary.
@@ -28,6 +28,7 @@ SERIAL = 'RMD-TEST-0042'
 
 @pytest.fixture(scope='module')
 def rig(tmp_path_factory):
+    """A simulated bench01 actuator with seeded errors and a scratch calibration store."""
     from arm_stack.config import CalibrationStore, load_arm
     from arm_stack.sim.arm_sim import SimArm, SimErrors
     arm = load_arm('bench01')
@@ -38,6 +39,7 @@ def rig(tmp_path_factory):
 
 
 def run(rig, name, client=None, **kw):
+    """Run stage `name` on the rig and write its result to the store."""
     import importlib
 
     from arm_stack.calib.common import StageContext
@@ -57,12 +59,13 @@ def run(rig, name, client=None, **kw):
 
 
 def _fresh_sim(rig, **errors):
+    """A new simulated bench actuator with the given errors."""
     from arm_stack.config import empty_calibration
     from arm_stack.sim.arm_sim import SimArm, SimErrors
     return SimArm(rig['arm'], empty_calibration(rig['arm']), SimErrors(**errors), seed=5)
 
 
-# --------------------------------------------------------------------------- Phase 1
+# --------------------------------------------------------------------------- bring-up
 def test_bench_model_is_one_joint_lever(rig):
     from arm_stack.cli import build_model
     arm = rig['arm']
@@ -92,7 +95,7 @@ def test_indicator(rig):
     # every null in the joint row is listed, and the gate is not met while any is left
     assert {'serial', 'gear_ratio', 'counts_per_rev', 'encoder_side', 'rated_current_a',
             'max_torque_nm', 'max_vel_rad_s'} <= set(m['nulls'])
-    assert r.metrics['phase1_gate'] is False
+    assert r.metrics['bringup_gate'] is False
 
 
 def test_indicator_catches_reversed_direction(rig):
@@ -131,9 +134,10 @@ def test_full_arm_stages_skip(rig):
         assert 'SKIP' in r.report()
 
 
-# --------------------------------------------------------------------------- Phase 2
+# --------------------------------------------------------------------------- characterization
 @pytest.fixture(scope='module')
 def rig_run(tmp_path_factory):
+    """Run `arm rig --sim --quick` once for the module and return its outputs."""
     from arm_stack.cli import main
     root = tmp_path_factory.mktemp('rig')
     rc = main(['rig', '--sim', '--quick', '--arm', 'bench01', '--serial', SERIAL, '--no-log',

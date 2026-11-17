@@ -1,4 +1,4 @@
-"""Raw episode writer/reader (format agreed in docs/runs/2026-11-10_overnight_plan.md, F1 -> F2).
+"""Raw episode writer/reader (the format between data generation and the GR00T converter).
 
 One episode_XXXXXX.npz + episode_XXXXXX.json per episode, T steps at 20 Hz:
   ego_rgb (T,240,320,3) uint8, [wrist_left_rgb, wrist_right_rgb (T,120,160,3)]
@@ -18,12 +18,15 @@ from ik import mat_to_quat
 
 
 class Recorder:
+    """Collects one episode step by step."""
     def __init__(self):
+        """Empty buffers for every field."""
         self.buf = {k: [] for k in ("ego_rgb", "wrist_left_rgb", "wrist_right_rgb", "q_left_arm", "q_right_arm", "q_waist",
                                     "grip_left", "grip_right", "act_left_arm", "act_right_arm", "act_grip_left",
                                     "act_grip_right", "obj_pose", "target_pose", "tcp_active", "segment")}
 
     def add(self, obs, ql, qr, gl, gr, tcp, seg):
+        """Append one step."""
         b = self.buf
         for k in ("ego_rgb", "wrist_left_rgb", "wrist_right_rgb"):
             if k in obs:
@@ -41,6 +44,7 @@ class Recorder:
         return len(self.buf["segment"])
 
     def save(self, out_dir, index, meta):
+        """Write episode_<index>.npz and .json."""
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         arrs = {}

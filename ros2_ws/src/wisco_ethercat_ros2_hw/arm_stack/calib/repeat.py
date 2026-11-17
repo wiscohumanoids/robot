@@ -26,6 +26,7 @@ from .common import StageContext, StageResult
 
 
 def run(ctx: StageContext, indicators: bool = False, cycles: int = None, warm_s: float = None) -> StageResult:
+    """`arm repeat`: ISO 9283 pose repeatability, with mocap or the dial-indicator cube."""
     mocap = None if indicators else ctx.client.mocap()
     source = mocap if mocap is not None else indicator_cube.for_context(ctx)
     cycles = cycles or (6 if ctx.quick else 30)

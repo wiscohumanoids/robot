@@ -7,7 +7,7 @@ Uses the simulator's TRUE robot pose and the env's TRUE geometry (graders may; t
     of the object (the surface straight ahead is within the object's width, +-0.10 m).
   - small objects (block, mug): the horizontal distance from the body center to the object, which must
     be within arm's reach (0.60 m), and the robot must face it within 20 deg.
-  (Tightened 2026-11-10 from <= 0.45 m / 20 deg and 0.65 m / 45 deg: "got there" = ready to reach for it.)
+  (Strict on purpose: "got there" means ready to reach for it.)
 
     python3 tools/eval/reach_check.py ENV OBJECT_NAME
     e.g. python3 tools/eval/reach_check.py robocasa/kitchen_l1_s1 fridge_main_group
@@ -33,6 +33,7 @@ if o is None:
 
 
 def load_map():
+    """The environment's occupancy map (PGM) and its metadata."""
     meta = yaml.safe_load(open(f'{build}/map.yaml'))
     raw = open(f"{build}/{meta['image']}", 'rb').read()
     fields, i = [], 0

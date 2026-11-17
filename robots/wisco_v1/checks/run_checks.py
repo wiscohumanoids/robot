@@ -1,4 +1,4 @@
-"""Phase A: pre-training checks in plain MuJoCo with mjlab's actuator model (sim_replica.py).
+"""Pre-training checks in plain MuJoCo with mjlab's actuator model (sim_replica.py).
 
   A1 model          the training model loads: 29 policy joints, sensors, named collision geoms
   A2 default pose   no self-collision, both soles flat on the floor, centre of mass over the feet
@@ -34,11 +34,13 @@ SIZING = {"ncon": 0, "nefc": 0}
 
 
 def track(sim):
+    """Track the largest contact and constraint counts."""
     SIZING["ncon"] = max(SIZING["ncon"], int(sim.d.ncon))
     SIZING["nefc"] = max(SIZING["nefc"], int(sim.d.nefc))
 
 
 def run(sim, seconds, action=None, target=None, every=None):
+    """Run the policy loop for `seconds` with a fixed action or target, tracking extremes."""
     n = int(round(seconds / (SIM_DT * DECIMATION)))
     for i in range(n):
         sim.step_policy(action=action, target=target)
@@ -48,6 +50,7 @@ def run(sim, seconds, action=None, target=None, every=None):
 
 
 def ankle_motor_torques(sim):
+    """Per-motor ankle torques through the linkage, both sides."""
     out = {}
     for side in ("left", "right"):
         ip, ir = sim.names.index(f"{side}_ankle_pitch"), sim.names.index(f"{side}_ankle_roll")
@@ -58,6 +61,7 @@ def ankle_motor_torques(sim):
 
 # ----------------------------------------------------------------------------- A1
 def a1_model():
+    """A1: the training model loads with the expected joints, sensors and named collision geoms."""
     sim = Sim()
     m = sim.m
     col = [m.geom(g).name for g in range(m.ngeom) if m.geom_contype[g] or m.geom_conaffinity[g]]
@@ -72,6 +76,7 @@ def a1_model():
 
 # ----------------------------------------------------------------------------- A2
 def a2_default_pose():
+    """A2: the default pose has no self-collision, flat soles and the centre of mass over the feet."""
     sim = Sim()
     sim.reset(z_offset=0.0)
     mujoco.mj_forward(sim.m, sim.d)
@@ -103,6 +108,7 @@ def a2_default_pose():
 
 # ----------------------------------------------------------------------------- A3
 def a3_stand():
+    """A3: zero action holds the pose for 10 s; shaking dies out; holding torques against rated."""
     sim = Sim()
     sim.reset()
     hist = {"t": [], "z": [], "tilt": [], "x": [], "y": [], "qd": [], "tau": [], "motor": []}
@@ -125,7 +131,7 @@ def a3_stand():
     motor_hold = np.abs(mot[last]).mean(0); motor_peak = np.abs(mot).max(0)
     q_err = np.abs(sim.joint_q() - sim.default)
     # Pass = doesn't fall and the shaking dies out. (A 5 deg tilt limit was dropped: the G1, which
-    # trains fine, falls over completely in this test - see g1_baseline.py / WORK_LOG.)
+    # trains fine, falls over completely in this test - see g1_baseline.py.)
     ok = dz < 0.05 and max(hist["tilt"]) < 20 and drift < 0.10 and rms_qd < 0.02
     R["A3"] = {"pass": bool(ok), "pelvis_height_change_m": round(dz, 4), "max_tilt_deg": round(max(hist["tilt"]), 2),
                "horizontal_drift_m": round(drift, 4), "joint_speed_rms_last_2s": round(rms_qd, 5),
@@ -139,6 +145,7 @@ def a3_stand():
 
 # ----------------------------------------------------------------------------- A4
 def a4_gains():
+    """A4: per-joint step responses with the robot hung in the air."""
     out = {}
     worst_ok = True
     for n in P.joint_params():
@@ -188,6 +195,7 @@ EXPECT = {  # what +angle should do at the default pose (world axes: x forward, 
 
 
 def point(sim, name):
+    """World position of a named site or body."""
     if name.endswith("_foot"):
         return sim.d.site_xpos[sim.m.site(name).id].copy()
     if name in ("torso",):
@@ -198,6 +206,7 @@ def point(sim, name):
 
 
 def a5_directions():
+    """A5: every joint moves the expected way, left/right mirror, range sweeps for collisions."""
     sim = Sim(fixed_base=True)
     dirs, ok = {}, True
     for n in sim.names:
@@ -262,6 +271,7 @@ def a5_directions():
 
 # ----------------------------------------------------------------------------- A6
 def a6_falls():
+    """A6: limp collapse, a push and a tilted start are each caught by the fall rule."""
     cases = {}
 
     def fall_run(sim, seconds, push=None, limp=False):
@@ -300,6 +310,7 @@ def a6_falls():
 
 # ----------------------------------------------------------------------------- A7
 def a7_contacts():
+    """A7: both feet carry the weight when standing."""
     sim = Sim(); sim.reset()
     run(sim, 2.0)
     f = sim.foot_forces()
@@ -313,6 +324,7 @@ def a7_contacts():
 
 # ----------------------------------------------------------------------------- A8
 def a8_sizing():
+    """A8: contact and constraint counts (mjlab sizing) and CPU step time."""
     sim = Sim(); sim.reset()
     t0 = time.perf_counter(); run(sim, 5.0); dt = time.perf_counter() - t0
     R["A8"] = {"pass": True, "max_contacts_seen": SIZING["ncon"], "max_constraint_rows_seen": SIZING["nefc"],
@@ -321,6 +333,7 @@ def a8_sizing():
 
 # ----------------------------------------------------------------------------- output
 def render(sim, name):
+    """Front and side snapshot of the current state."""
     try:
         r = mujoco.Renderer(sim.m, 480, 480)
         cam = mujoco.MjvCamera(); cam.lookat[:] = [sim.d.qpos[0], sim.d.qpos[1], 0.55]; cam.distance = 2.2
@@ -336,6 +349,7 @@ def render(sim, name):
 
 
 def main():
+    """Parse --actuator / --delay and the check names, run them, and write results.json."""
     global OUT
     import sim_replica
     args = sys.argv[1:]

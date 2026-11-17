@@ -16,6 +16,7 @@ from postprocess_kept import (CAMERAS, prepare_image, read_rows, sha256, vector,
 
 
 def verify(root, source):
+    """Check a processed dataset against its manifest and source."""
     manifest = json.loads((root / "processing/manifest.json").read_text())
     info = json.loads((root / "meta/info.json").read_text())
     assert info["codebase_version"] == "v3.0" and info["fps"] == manifest["fps"]

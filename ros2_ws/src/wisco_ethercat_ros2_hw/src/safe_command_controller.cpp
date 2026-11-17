@@ -1,3 +1,6 @@
+// SafeCommandController: forward velocity or effort commands with timeouts, clamps and soft position limits
+// (the per-joint logic is in safety_logic.hpp).
+
 #include "wisco_ethercat_ros2_hw/safe_command_controller.hpp"
 
 #include <chrono>
@@ -9,12 +12,14 @@
 namespace wisco_ethercat_ros2_hw
 {
 
+// Monotonic time in ns (command timeout clock).
 int64_t SafeCommandController::steady_now_ns()
 {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
+// Declare every parameter.
 controller_interface::CallbackReturn SafeCommandController::on_init()
 {
   try {
@@ -35,6 +40,7 @@ controller_interface::CallbackReturn SafeCommandController::on_init()
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// Read joints, limits and mode; create the command subscription.
 controller_interface::CallbackReturn SafeCommandController::on_configure(
   const rclcpp_lifecycle::State &)
 {
@@ -133,6 +139,7 @@ SafeCommandController::state_interface_configuration() const
   return config;
 }
 
+// Start with the joints stopped and no command.
 controller_interface::CallbackReturn SafeCommandController::on_activate(
   const rclcpp_lifecycle::State &)
 {
@@ -156,6 +163,7 @@ controller_interface::CallbackReturn SafeCommandController::on_activate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// Stop the joints.
 controller_interface::CallbackReturn SafeCommandController::on_deactivate(
   const rclcpp_lifecycle::State &)
 {
@@ -167,6 +175,7 @@ controller_interface::CallbackReturn SafeCommandController::on_deactivate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// Write zero to every command interface.
 void SafeCommandController::write_zero()
 {
   for (auto & command : commands_) {
@@ -174,6 +183,7 @@ void SafeCommandController::write_zero()
   }
 }
 
+// One cycle: apply timeouts, clamps and soft limits to the latest command and write it.
 controller_interface::return_type SafeCommandController::update(
   const rclcpp::Time &, const rclcpp::Duration &)
 {

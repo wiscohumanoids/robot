@@ -1,4 +1,4 @@
-"""Stage 5, `arm gravity`: fit each link's center of mass.
+"""`arm gravity`: fit each link's center of mass.
 
 Static joint torque is linear in each link's first moment h_k = m_k c_k:
 
@@ -56,6 +56,7 @@ def measure_pose(ctx, q, clamp, sweep=SWEEP, speed=SPEED):
 
 
 def fit_first_moments(model, Q, T, masses, prior_h, weight=PRIOR_WEIGHT, scale=None):
+    """Least-squares link first moments (mass x COM) from held poses and torques, regularized toward `prior_h`."""
     rows, rhs = [], []
     scale = np.ones(model.n) if scale is None else scale
     for q, tau in zip(Q, T):
@@ -73,6 +74,7 @@ def fit_first_moments(model, Q, T, masses, prior_h, weight=PRIOR_WEIGHT, scale=N
 
 
 def residuals(model, Q, T):
+    """Measured minus model gravity torque at each pose."""
     return np.array([tau - model.gravity(q) for q, tau in zip(Q, T)])
 
 
@@ -117,6 +119,8 @@ def fit_static_parameters(model, Q, T, scale):
 
 def run(ctx: StageContext, n_fit: int = None, n_test: int = 10, fit_masses: bool = False,
         static: bool = False) -> StageResult:
+    """`arm gravity`: hold fit and test poses, fit link first moments (or masses too), validate on held-out poses.
+    """
     client, arm = ctx.client, ctx.arm
     model = ctx.model.copy()
     n_fit = n_fit or (min(16, 4 + 4 * model.n) if ctx.quick else 32)   # 3 params per link

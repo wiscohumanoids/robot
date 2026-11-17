@@ -31,6 +31,7 @@ BOOT, READY, RUNNING, LATCHED = "BOOT", "READY", "RUNNING", "LATCHED"
 
 
 def log(msg):
+    """Print `msg` with a millisecond timestamp."""
     t = time.time()
     print(time.strftime("[%H:%M:%S", time.localtime(t)) + f".{int(t * 1000) % 1000:03d}] {msg}",
           flush=True)
@@ -42,14 +43,17 @@ class FakeGPIO:
     """Laptop stand-in: prints instead of touching hardware."""
 
     def __init__(self):
+        """Unknown state until the first set()."""
         self.value = None
 
     def set(self, high):
+        """Log the power-relay state change (no hardware)."""
         if high != self.value:
             self.value = high
             log(">>> GPIO HIGH -> POWER ON" if high else ">>> GPIO LOW  -> POWER CUT")
 
     def close(self):
+        """Cut power."""
         self.set(False)
 
 
@@ -57,6 +61,7 @@ class GpiodOutput:
     """Real pin via libgpiod v2 (`pip install "gpiod>=2"`). UNTESTED on hardware."""
 
     def __init__(self, chip, line):
+        """Claim GPIO `line` of `chip` as an output, starting low (power cut)."""
         import gpiod
         from gpiod.line import Direction, Value
 
@@ -69,12 +74,14 @@ class GpiodOutput:
         log(f"gpiod: {chip} line {line} driven LOW")
 
     def set(self, high):
+        """Drive the relay line high (power on) or low (power cut)."""
         if high != self.value:
             self.value = high
             self._req.set_value(self._line, self._Value.ACTIVE if high else self._Value.INACTIVE)
             log(">>> GPIO HIGH -> POWER ON" if high else ">>> GPIO LOW  -> POWER CUT")
 
     def close(self):
+        """Cut power and release the line."""
         # Drive LOW before letting go. A hard crash skips this; see README.
         self.set(False)
         self._req.release()
@@ -92,7 +99,11 @@ def rockchip_pin(name):
 # ---------------------------------------------------------------- state machine
 
 class Receiver:
+    """Heartbeat state machine: power stays on only while ALIVE packets keep arriving; STOP or silence latches it
+    off.
+    """
     def __init__(self, gpio, timeout_s=0.150, needed=5):
+        """Start in BOOT with power off; `needed` ALIVEs in a row are required before arming or reset."""
         self.gpio = gpio
         self.timeout = timeout_s
         self.needed = needed        # ALIVEs in a row before arm/reset is allowed
@@ -106,11 +117,13 @@ class Receiver:
         self.gpio.set(False)
 
     def healthy(self, now):
+        """Enough consecutive heartbeats, the last one recent, and no recent STOP."""
         return (self.streak >= self.needed
                 and now - self.last_alive <= self.timeout
                 and (self.last_stop is None or now - self.last_stop > self.timeout))
 
     def why_not_healthy(self, now):
+        """Plain-words reason the link is not healthy, for the operator."""
         if self.last_stop is not None and now - self.last_stop <= self.timeout:
             return "STOP still arriving - release the E-stop button first"
         if self.last_alive is None:
@@ -120,6 +133,7 @@ class Receiver:
         return f"need {self.needed} heartbeats in a row, have {self.streak}"
 
     def on_packet(self, data, now):
+        """Handle one UDP packet: ALIVE (with sequence check) or STOP."""
         parts = data.decode(errors="ignore").split()
         if not parts:
             return
@@ -169,11 +183,13 @@ class Receiver:
                     log("READY -> BOOT")
 
     def latch(self, reason):
+        """Cut power and latch until an explicit reset."""
         self.gpio.set(False)
         prev, self.state = self.state, LATCHED
         log(f"!!! E-STOP LATCHED ({prev} -> LATCHED): {reason}")
 
     def reset(self, now):
+        """Re-enable power from a latched state, only while the link is healthy."""
         if self.state == RUNNING:
             log("reset ignored: already RUNNING")
         elif self.last_alive is None or not self.healthy(now):
@@ -184,6 +200,7 @@ class Receiver:
             log(f"{prev} -> RUNNING ({'armed' if prev == READY else 'reset'})")
 
     def status_line(self, now):
+        """One-line status for the control port and the log."""
         h = self.last_alive is not None and self.healthy(now)
         age = "never" if self.last_alive is None else f"{(now - self.last_alive) * 1000:.0f} ms ago"
         return (f"state={self.state} power={'ON' if self.gpio.value else 'OFF'} healthy={h}"
@@ -195,6 +212,7 @@ class Receiver:
 # ---------------------------------------------------------------- commands
 
 def run(args):
+    """Run the receiver: real GPIO (gpiod) or a fake, the UDP listener, the timeout check and the control port."""
     if args.gpio == "gpiod":
         chip, line = rockchip_pin(args.pin) if args.pin else (args.chip, args.line)
         gpio = GpiodOutput(chip, line)
@@ -242,6 +260,7 @@ def run(args):
 
 
 def control(args):
+    """Send a status or reset command to a running receiver over its localhost control port and print the reply."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(1.0)
     s.sendto(args.command.upper().encode(), ("127.0.0.1", args.control_port))
@@ -255,6 +274,7 @@ def control(args):
 
 
 def main():
+    """Command line: `run` the receiver, or send it `status` / `reset`."""
     p = argparse.ArgumentParser(description="Wireless E-stop receiver")
     p.add_argument("--control-port", type=int, default=4250, help="localhost UDP port for status/reset")
     sub = p.add_subparsers(dest="command", required=True)

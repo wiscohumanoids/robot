@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# J4: Wisco V1 motion tracking (task Wisco-V1-Tracking-Flat, whole body, 29 joints) on one retargeted LAFAN1 clip.
-# The clip CSV comes from retarget_lafan1.py (kept in training/tracking/wisco_v1/motions/<clip>.csv);
+# Wisco V1 motion tracking (task Wisco-V1-Tracking-Flat, whole body, 29 joints) on one retargeted LAFAN1 clip.
+# The clip CSV comes from retarget_lafan1.py (written to training/tracking/wisco_v1/motions/<clip>.csv, not kept in the repo);
 # it is converted to the motion npz on first use (GPU forward kinematics in the Wisco training model).
 #
 # Usage (on the VM):  training/tracking/wisco_v1/train_wisco_tracking.sh <clip> [--log-root DIR] [extra mjlab flags...]
-#   e.g.  training/tracking/wisco_v1/train_wisco_tracking.sh dance1_subject2 --log-root ~/hsim_runs/J4_wisco_track_dance1
+#   e.g.  training/tracking/wisco_v1/train_wisco_tracking.sh dance1_subject2 --log-root ~/hsim_runs/wisco_track_dance1
 # Env overrides: NUM_ENVS (4096), ITERS (15000), SAVE_EVERY (250), MOTION_DIR (~/hsim_data/motions/wisco)
 set -euo pipefail
 CLIP="${1:?usage: train_wisco_tracking.sh <clip> [--log-root DIR] [extra flags]}"; shift
-LOG_ROOT="$HOME/hsim_runs/J4_wisco_tracking_${CLIP}"
+LOG_ROOT="$HOME/hsim_runs/wisco_tracking_${CLIP}"
 EXTRA=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -30,12 +30,12 @@ cd "$REPO/training/locomotion"
 
 if [[ ! -f "$NPZ" || "$CSV" -nt "$NPZ" ]]; then
   [[ -f "$CSV" ]] || { echo "missing $CSV (make it with retarget_lafan1.py)"; exit 1; }
-  echo "[J4] converting $CSV -> $NPZ"
+  echo "[tracking] converting $CSV -> $NPZ"
   "$UV" run python "$REPO/training/tracking/motion_to_npz.py" --robot wisco --input "$CSV" --output "$NPZ" --device cuda:0
 fi
 
 mkdir -p "$LOG_ROOT"
-echo "[J4] training Wisco tracking on $CLIP -> $LOG_ROOT"
+echo "[tracking] training Wisco tracking on $CLIP -> $LOG_ROOT"
 exec "$UV" run python "$HERE/train.py" Wisco-V1-Tracking-Flat \
   --env.commands.motion.motion-file "$NPZ" \
   --env.scene.num-envs "${NUM_ENVS:-4096}" \

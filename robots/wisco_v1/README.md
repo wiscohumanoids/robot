@@ -93,6 +93,7 @@ cd ../../.. && .venv-mjlab/bin/python tools/build_robot_world.py wisco   # the R
 |---|---|---|
 | Measured or CAD masses | `model/robot_numbers.yaml` → `masses.overrides` | rebuild (above), rerun the checks, retrain |
 | Motor bench tests (inertia, friction, damping, torque-speed) | `model/robot_numbers.yaml` → `motors` (value + source) | same |
+| Gantry actuator fit (armature, friction, damping, delay per joint; `training/sim2real/pace.py`) | `model/robot_numbers.yaml` → `motors` and `delay` (source: the fit file) | same; narrow the dynamics randomization around the fitted values |
 | Measured command delay | `model/robot_numbers.yaml` → `delay` | same |
 | Real driver PD gains | `model/robot_numbers.yaml` → `control.gains` | same |
 | IMU or camera pose | `model/robot_numbers.yaml` → `sensors` | same |

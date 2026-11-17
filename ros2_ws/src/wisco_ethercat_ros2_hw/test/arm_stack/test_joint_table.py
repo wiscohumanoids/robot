@@ -14,6 +14,7 @@ MODELS = os.path.join(ROOT, 'config', 'actuator_models.yaml')
 
 
 def models():
+    """The actuator model table."""
     with open(MODELS) as f:
         return yaml.safe_load(f)['models']
 

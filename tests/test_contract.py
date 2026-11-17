@@ -23,7 +23,7 @@ INTERFACES = SRC / 'hsim_interfaces'
 
 # Packages whose publishers are outside the stack contract: the ros2_control hardware side (its controllers
 # talk to ros2_control's own topics) and the robot description packages.
-OUTSIDE_CONTRACT = ('wisco_ethercat_ros2_hw', 'mujoco_ros2_control', 'arm01_description')
+OUTSIDE_CONTRACT = ('wisco_ethercat_ros2_hw', 'arm01_description')
 
 # Contract owners that are people / CLIs rather than nodes started by our launch files.
 NON_NODE_OWNERS = {'operator'}
@@ -34,11 +34,13 @@ CPP_PUB = re.compile(r'create_publisher\s*<[^>]*>\s*\(\s*["\']([^"\']+)["\']')
 
 
 def _owners(spec):
+    """Owners of a contract entry as a list."""
     o = spec['owner']
     return o if isinstance(o, list) else [o]
 
 
 def _stack_sources():
+    """Source files of the robot stack that the contract covers (not tests or packages outside it)."""
     for p in list(SRC.rglob('*.py')) + list(SRC.rglob('*.cpp')) + list((ROOT / 'tools').rglob('*.py')):
         rel = p.relative_to(ROOT).as_posix()
         if any(f'/src/{pkg}/' in f'/{rel}' for pkg in OUTSIDE_CONTRACT) or '/test/' in rel:
@@ -93,6 +95,7 @@ def test_every_literal_publisher_is_in_the_contract():
 
 
 def _registered_interfaces():
+    """Interface files registered in hsim_interfaces' CMake."""
     cmake = (INTERFACES / 'CMakeLists.txt').read_text()
     return set(re.findall(r'"((?:msg|srv|action)/[A-Za-z0-9]+\.(?:msg|srv|action))"', cmake))
 

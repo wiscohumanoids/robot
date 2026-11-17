@@ -1,10 +1,10 @@
 """Wisco V1 velocity (walking) task, arms-free recipe: a copy of mjlab 1.6.0's Unitree G1 flat velocity config
 (tasks/velocity/config/g1/env_cfgs.py, unitree_g1_rough_env_cfg + unitree_g1_flat_env_cfg) with the robot swapped
-(lines marked "# WISCO:") and the arms-free locomotion recipe of docs/runs/2026-11-10_overnight_plan.md (marked "# ARMS-FREE:"):
+(lines marked "# WISCO:") and the arms-free locomotion recipe (marked "# ARMS-FREE:"):
   1 legs + waist only (15 actions); 2 arms position-held with random moving targets; 3 0-1 kg hand payload;
   4 tracking std 0.25 / 0.35; 5 >= 15 % turn-in-place commands, yaw range +-1.5; 6 command delay 0-10 ms
   (robot_cfg.py); 7 pushes 0.8 m/s; 8 motor DR (armature, kp/kd, friction, damping) + mass DR.
-Difficulty curriculum (coordinator fix after J3 run 1 learned to stand still; same design as the G1 arms-free task):
+Difficulty curriculum (without it the policy learns to stand still; the same design as the G1 arms-free task):
 items 2, 3, 7 scale with a performance-gated level L (0 -> 1) and item 4 starts at the G1 defaults (0.5 / 0.707) and
 tightens with a second level L2 after L = 1. See arms_free_terms.py. Mass and motor DR are on from the start.
 """
@@ -30,14 +30,14 @@ from . import robot_cfg as RC
 from . import arms_free_terms
 from .robot_cfg import P, get_wisco_robot_cfg
 
-# WISCO: mass uncertainty (HARDWARE_ISSUES H1). Each part's mass and inertia scaled together by a
+# WISCO: mass uncertainty (robots/wisco_v1/hardware_observations.md, "Masses"). Each part's mass and inertia scaled together by a
 # factor in [0.85, 1.20] (skewed up: the CAD masses leave out wiring). pseudo_inertia scales by e^(2*alpha).
 MASS_SCALE = (0.85, 1.20)
 ALPHA_RANGE = (math.log(MASS_SCALE[0]) / 2, math.log(MASS_SCALE[1]) / 2)
 
-# WISCO: penalty weight for ankle motors above their peak torque (HARDWARE_ISSUES H3).
+# WISCO: penalty weight for ankle motors above their peak torque (robots/wisco_v1/hardware_observations.md, "Ankle torque").
 ANKLE_MOTOR_OVERLOAD_WEIGHT = -1.0
-ANKLE_THERMAL_WEIGHT = -1.0          # fix 4: sustained ankle motor torque above rated (see below)
+ANKLE_THERMAL_WEIGHT = -1.0          # sustained ankle motor torque above rated (see below)
 
 # ARMS-FREE: posture reward on the policy's joints only (legs + waist); arms are moved by the controls-stack stand-in.
 POSE_STD_WALKING = {
@@ -66,16 +66,17 @@ POSE_STD_RUNNING = {
 }
 
 # ARMS-FREE recipe numbers
-TRACK_LIN_STD = (0.5, 0.25)          # G1 default at L2 = 0 -> arms-free target at L2 = 1 (decision 0004 deadband fix)
+TRACK_LIN_STD = (0.5, 0.25)          # G1 default at L2 = 0 -> arms-free target at L2 = 1 (tighter: answers small commands)
 TRACK_ANG_STD = (0.5 ** 0.5, 0.35)   # 0.707 -> 0.35 rad/s
 YAW_RANGE = (-1.5, 1.5)
 REL_YAW_ONLY = 0.18           # x (1 - 10 % standing) = 16 % of samples are pure turns
 PUSH_SPEED = (0.5, 0.8)              # push velocity range +-v, v from 0.5 (G1 default, L = 0) to 0.8 (L = 1)
 HAND_PAYLOAD_MAX_KG = 1.0            # max added mass per hand at L = 1
-# arm target ranges at L = 1: robot_cfg.ARM_TARGET_FRACS (kept away from the body; fix 2)
+# arm target ranges at L = 1: robot_cfg.ARM_TARGET_FRACS (kept away from the body)
 
 
 def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """The Wisco V1 flat velocity task; `play` fixes the curriculum for evaluation."""
   cfg = make_velocity_env_cfg()
 
   # --- from unitree_g1_rough_env_cfg -------------------------------------------------------
@@ -107,7 +108,7 @@ def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     num_slots=1,
     track_air_time=True,
   )
-  # ARMS-FREE fix 2: self-collision counts only contacts where neither body is an arm link. The arms are moved by the scripted
+  # ARMS-FREE: self-collision counts only contacts where neither body is an arm link. The arms are moved by the scripted
   # controls-stack stand-in, so the policy can't avoid arm contacts (the G1 run's self_collisions went to -0.70 at full
   # difficulty). A contact sensor takes one secondary element, so the non-arm pairs are covered by one sensor per group:
   # left leg vs the whole right leg, and both legs vs the pelvis and each torso link (torso_yaw_link, torso_roll_link,
@@ -159,14 +160,14 @@ def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # ARMS-FREE: the G1 velocity curriculum widens yaw only to 0.7; keep +-1.5 at every stage
   for stage in cfg.curriculum["command_vel"].params["velocity_stages"]:
     stage["ang_vel_z"] = YAW_RANGE
-    if "lin_vel_x" in stage:   # J3i: cap forward command at 1.5 m/s (stock stages widen to 2 then 3 m/s at 5k / 10k iterations)
+    if "lin_vel_x" in stage:   # cap forward command at 1.5 m/s (stock stages widen to 2 then 3 m/s at 5k / 10k iterations)
       lo, hi = stage["lin_vel_x"]
       stage["lin_vel_x"] = (max(lo, -1.0), min(hi, 1.5))
 
   cfg.events["foot_friction"].params["asset_cfg"].geom_names = geom_names
   cfg.events["base_com"].params["asset_cfg"].body_names = (P.TORSO_BODY,)        # WISCO
 
-  # WISCO: per-part mass/inertia randomization at startup (H1)
+  # WISCO: per-part mass/inertia randomization at startup (masses are estimates)
   cfg.events["mass_inertia"] = EventTermCfg(
     mode="startup",
     func=dr.pseudo_inertia,
@@ -206,8 +207,8 @@ def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # ARMS-FREE: velocity tracking starts at the G1 defaults and tightens with L2 (curriculum below)
   cfg.rewards["track_linear_velocity"].params["std"] = TRACK_LIN_STD[0]
   cfg.rewards["track_angular_velocity"].params["std"] = TRACK_ANG_STD[0]
-  cfg.rewards["track_angular_velocity"].func = arms_free_terms.track_yaw_rate   # J3g: yaw rate only (no roll/pitch in the error)
-  # J3f: fixed-std copies for the curriculum gate (weight 1e-3: ~no effect on training)
+  cfg.rewards["track_angular_velocity"].func = arms_free_terms.track_yaw_rate   # yaw rate only (no roll/pitch in the error)
+  # Fixed-std copies for the curriculum gate (weight 1e-3: ~no effect on training)
   cfg.rewards["gate_track_lin"] = RewardTermCfg(func=mdp.track_linear_velocity, weight=1e-3,
                                                 params={**cfg.rewards["track_linear_velocity"].params, "std": TRACK_LIN_STD[0]})
   cfg.rewards["gate_track_ang"] = RewardTermCfg(func=arms_free_terms.track_yaw_rate, weight=1e-3,
@@ -232,10 +233,10 @@ def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.rewards[reward_name].params["asset_cfg"].site_names = site_names
 
   cfg.rewards["body_ang_vel"].weight = -0.05
-  # ARMS-FREE fix 2/3: G1 uses -0.02 on whole-body angular momentum. Ours counts only the policy-controlled bodies (pelvis,
+  # ARMS-FREE: G1 uses -0.02 on whole-body angular momentum. Ours counts only the policy-controlled bodies (pelvis,
   # legs, torso links, welded head; not arms/hands): the whole-body value is dominated by the scripted arms + payload as
-  # the curriculum scales them (J3c: -0.02 -> -1.10/s at level 0.35 even at weight -0.005). Weight -0.005 kept (fix 2:
-  # Wisco is heavier and taller than the G1). The old whole-body value is logged as a metric for comparison.
+  # the curriculum scales them (-0.02 -> -1.10/s at level 0.35 even at weight -0.005). Weight -0.005 because Wisco is
+  # heavier and taller than the G1. The whole-body value is logged as a metric for comparison.
   cfg.rewards["angular_momentum"] = RewardTermCfg(
     func=arms_free_terms.policy_body_angular_momentum_sq,
     weight=-0.005,
@@ -244,7 +245,7 @@ def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.rewards["angular_momentum"].params["asset_cfg"] = SceneEntityCfg(
     "robot", body_names=tuple(f"^{b}$" for b in RC.POLICY_BODIES), preserve_order=True)
   cfg.metrics["angmom_wholebody_sq"] = MetricsTermCfg(func=arms_free_terms.wholebody_angular_momentum_sq)
-  # J3h: feet air time (0.05-0.5 s swings) whenever command > 0.1, so slow commands get short steps (same as G1 J1j)
+  # Feet air time (0.05-0.5 s swings) whenever command > 0.1, so slow commands get short steps (same as the G1 task)
   cfg.rewards["air_time"].weight = 0.25
   cfg.rewards["air_time"].params["command_threshold"] = 0.1
 
@@ -254,7 +255,7 @@ def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"sensor_names": tuple(s.name for s in self_col_sensors), "force_threshold": 10.0},
   )
 
-  # WISCO: ankle linkage penalty (H3) + a metric to watch the peak ankle motor torque
+  # WISCO: ankle linkage penalty + a metric to watch the peak ankle motor torque
   cfg.rewards["ankle_motor_overload"] = RewardTermCfg(
     func=linkage_penalty.ankle_motor_overload,
     weight=ANKLE_MOTOR_OVERLOAD_WEIGHT,

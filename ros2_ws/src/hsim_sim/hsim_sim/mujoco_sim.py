@@ -52,17 +52,25 @@ LIDAR_MOUNT = np.array([0.06, 0.0, 0.42])
 
 
 def to_time(t: float) -> Time:
+    """ROS Time from seconds."""
     # whole nanoseconds first, then split: t = 5.9999999999 must become 6.000000000, not 5.0
     sec, nsec = divmod(int(round(t * 1e9)), 1_000_000_000)
     return Time(sec=sec, nanosec=nsec)
 
 
 def wxyz_to_ros(q):
+    """MuJoCo (w, x, y, z) quaternion to ROS (x, y, z, w)."""
     return float(q[1]), float(q[2]), float(q[3]), float(q[0])
 
 
 class MujocoSim(Node):
+    """Node `sim`: steps MuJoCo in real time, applies joint targets through the PD actuators, publishes clock,
+    joints, IMU and sensors.
+    """
     def __init__(self):
+        """Load the scene, set the keyframe, build the sensor models, create publishers, subscriptions, services and
+        the step timer.
+        """
         super().__init__('sim')
         self.declare_parameter('scene', '/hsim/assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml')
         self.declare_parameter('keyframe', 'init_state')
@@ -203,6 +211,7 @@ class MujocoSim(Node):
             self.imu.reset(self.d.xquat[self.pelvis])     # like a power cycle of the IMU
 
     def check_single_sim(self):
+        """Exit if another node already publishes /clock (two sims would fight over sim time)."""
         self.destroy_timer(self.single_sim_timer)
         if self.count_publishers('/clock') > 1:
             self.get_logger().fatal('another node is already publishing /clock (a second sim?). '
@@ -210,12 +219,14 @@ class MujocoSim(Node):
             raise SystemExit(1)
 
     def on_reset(self, _req, resp):
+        """Service /sim/reset: back to the standing keyframe."""
         self.reset()
         self.get_logger().info('reset to standing keyframe (service call)')
         resp.success, resp.message = True, 'reset'
         return resp
 
     def on_set_body_pose(self, req, resp):
+        """Service /sim/set_body_pose: move a free body of the room (never the robot) to a pose."""
         b = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, req.body)
         if b < 0 or self.m.body_jntnum[b] != 1 or self.m.jnt_type[self.m.body_jntadr[b]] != mujoco.mjtJoint.mjJNT_FREE:
             resp.success, resp.message = False, f'"{req.body}" is not a free body in this world'
@@ -235,6 +246,7 @@ class MujocoSim(Node):
         return resp
 
     def stream_to_viewer(self):
+        """Send the state to the Mac viewer over UDP at the viewer's rate."""
         if self.viewer_sock is None or self.d.time < self.viewer_next:
             return
         self.viewer_next = self.d.time + self.viewer_period
@@ -245,6 +257,7 @@ class MujocoSim(Node):
             pass  # viewer not running; that's fine
 
     def on_targets(self, msg: JointState):
+        """Write joint targets into the position actuators (unknown names are warned about once)."""
         with self.lock:
             for name, pos in zip(msg.name, msg.position):
                 a = self.act_of_name.get(name)
@@ -283,6 +296,9 @@ class MujocoSim(Node):
         return True
 
     def step(self):
+        """Advance physics to wall-clock time (lockstep with the policy when enabled), publish, and reset after a
+        fall.
+        """
         # Catch up if the timer fell behind, but never run ahead of wall time.
         target_sim = self.sim_start + (time.monotonic() - self.wall_start)
         steps = 0
@@ -314,6 +330,7 @@ class MujocoSim(Node):
             self.lockstep_waits = self.lockstep_timeouts = 0
 
     def publish(self):
+        """Publish /clock, /joint_states, /imu, ground truth and the battery for the current step."""
         d = self.d
         stamp = to_time(d.time)
         self.pub_clock.publish(Clock(clock=stamp))
@@ -430,6 +447,7 @@ class MujocoSim(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = MujocoSim()
     try:

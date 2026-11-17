@@ -23,6 +23,7 @@ namespace wisco_ethercat_ros2_hw
 class SafeCommandController : public controller_interface::ControllerInterface
 {
 public:
+  // ros2_control lifecycle and update callbacks (see safe_command_controller.cpp).
   controller_interface::CallbackReturn on_init() override;
   controller_interface::InterfaceConfiguration command_interface_configuration() const override;
   controller_interface::InterfaceConfiguration state_interface_configuration() const override;

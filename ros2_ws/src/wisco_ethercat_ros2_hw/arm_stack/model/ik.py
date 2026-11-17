@@ -60,6 +60,7 @@ Target = Union[pin.SE3, np.ndarray, Sequence[float]]
 
 @dataclass
 class IKResult:
+    """One IK solve: joint angles, success, remaining errors, iterations."""
     q: np.ndarray
     success: bool
     pos_err: float          # m (masked components)
@@ -128,6 +129,7 @@ class _Kin:
     """Tool pose and world-aligned Jacobian through Pinocchio, config order."""
 
     def __init__(self, arm, frame=None):
+        """Kinematics for one frame of the arm, over its active joints."""
         self.model = arm.model
         self.data = arm.data
         self.fid = self.model.getFrameId(frame or arm.tool_frame)
@@ -137,15 +139,18 @@ class _Kin:
         self.nv = self.model.nv
 
     def _full(self, q):
+        """Embed arm joint angles in the full model configuration."""
         out = np.zeros(self.nq)
         out[self.qidx] = q
         return out
 
     def pose(self, q) -> pin.SE3:
+        """Frame pose at `q`."""
         pin.forwardKinematics(self.model, self.data, self._full(q))
         return pin.updateFramePlacement(self.model, self.data, self.fid)
 
     def pose_jac(self, q):
+        """Frame pose and its world-aligned Jacobian at `q`."""
         pin.computeJointJacobians(self.model, self.data, self._full(q))
         M = pin.updateFramePlacement(self.model, self.data, self.fid)
         J = pin.getFrameJacobian(self.model, self.data, self.fid,
@@ -164,6 +169,7 @@ class _Problem:
 
     def __init__(self, arm, target, mask='full', weights=None, frame=None, mode='split',
                  tol_pos=TOL_POS, tol_rot=TOL_ROT, rot_weight=ROT_WEIGHT):
+        """Target pose, which components count, weights and tolerances."""
         T, pos_only = as_target(target)
         if pos_only and weights is None and (isinstance(mask, str) and mask == 'full'):
             mask = 'position'
@@ -187,12 +193,14 @@ class _Problem:
         self.tol_rot = tol_rot
 
     def errors(self, M):
+        """Position and rotation errors of pose `M` against the target, in the target frame."""
         rp = self.RtT @ (M.translation - self.pt)
         A = self.RtT @ M.rotation
         rr = pin.log3(A)
         return rp, rr, A, float(np.linalg.norm(rp[self.mp])), float(np.linalg.norm(rr[self.mr]))
 
     def eval(self, q, jac=True):
+        """Residual (and Jacobian) at `q`, plus the error norms."""
         if jac:
             M, J = self.kin.pose_jac(q)
         else:
@@ -216,12 +224,15 @@ class _Problem:
         return r, None, pe, re
 
     def converged(self, pe, re, polish=POLISH):
+        """Within the polish tolerance."""
         return pe < self.tol_pos * polish and re < self.tol_rot * polish
 
     def ok(self, pe, re):
+        """Within tolerance."""
         return pe < self.tol_pos and re < self.tol_rot
 
     def clip(self, q):
+        """Clip to the joint limits."""
         return np.minimum(np.maximum(q, self.lo), self.hi)
 
     def blocked(self, q, dq):
@@ -230,11 +241,13 @@ class _Problem:
 
 
 def _scale_step(dq, max_step):
+    """Scale a step so no joint moves more than `max_step`."""
     m = np.max(np.abs(dq))
     return dq * (max_step / m) if m > max_step else dq
 
 
 def _result(P, q, pe, re, it, t0, status):
+    """Package a solve result."""
     return IKResult(q=np.array(q, float), success=bool(P.ok(pe, re)), pos_err=pe, rot_err=re,
                     iters=it, time=time.perf_counter() - t0, status=status)
 
@@ -515,6 +528,7 @@ def solve(model, target: Target, q_seed, method: str = 'clik', **opts) -> IKResu
 # ----------------------------------------------------------------------------- tracker
 @dataclass
 class TrackResult:
+    """One tracking update: commanded angles, reachability, rate limiting and remaining error."""
     q: np.ndarray               # commanded joint position (inside limits, rate limited)
     reachable: bool             # the IK met tolerance for this target
     rate_limited: bool          # the step was scaled down to the velocity limit
@@ -546,6 +560,7 @@ class IKTracker:
     def __init__(self, model, q0, dt: float = 0.01, method: str = 'clik', max_vel=None,
                  max_iters: int = 30, escape: bool = True, escape_starts: int = 20,
                  escape_retry_m: float = 0.01, **opts):
+        """Track targets from `q0` with a solver, a velocity limit, and escape restarts when stuck."""
         self.model = model
         self.escape = escape
         self.escape_starts = int(escape_starts)
@@ -564,6 +579,7 @@ class IKTracker:
         self.last: Optional[TrackResult] = None
 
     def reset(self, q):
+        """Restart tracking from `q` (clipped to the limits)."""
         self.q = np.clip(np.asarray(q, float), self.model.lower, self.model.upper)
         self.last = None
         self._escape_failed_at = None
@@ -585,6 +601,7 @@ class IKTracker:
         return res
 
     def update(self, target: Target, dt: Optional[float] = None) -> TrackResult:
+        """Solve for `target` from the current angles, escape if stalled, and rate-limit the step."""
         dt = self.dt if dt is None else float(dt)
         res = solve(self.model, target, self.q, method=self.method, **self.opts)
         if self.escape and not res.success and np.max(np.abs(res.q - self.q)) < self.STALL_RAD:
@@ -635,6 +652,7 @@ def swivel_angle(model, q, ref=(0.0, 0.0, -1.0)) -> float:
 
 # ----------------------------------------------------------------------------- batched (numpy)
 def _skew(a):
+    """Skew-symmetric matrix of a vector."""
     return np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]], float)
 
 
@@ -725,6 +743,7 @@ class BatchKinematics:
     """
 
     def __init__(self, arm, frame=None):
+        """Vectorized forward kinematics of the chain for many configurations at once."""
         model = arm.model
         self.n = arm.n
         self.lower = arm.lower.copy()
@@ -779,6 +798,7 @@ class BatchKinematics:
 
 
 def manipulability_batch(J: np.ndarray) -> np.ndarray:
+    """Yoshikawa manipulability of a batch of Jacobians."""
     return np.sqrt(np.maximum(np.linalg.det(J @ np.transpose(J, (0, 2, 1))), 0.0))
 
 

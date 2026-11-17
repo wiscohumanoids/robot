@@ -57,6 +57,7 @@ ARMATURE_NOMINAL = {'x6_60': 0.03, 'x4_36': 0.012, 'x4_10': 0.004}
 
 
 def armature(ctx) -> np.ndarray:
+    """Per-joint armature: the PACE fit where available, else the nominal value for the motor model."""
     fit = ((ctx.calibration.get('pace') or {}).get('armature') or {})
     return np.array([float(fit[j.name]) if fit.get(j.name) is not None else ARMATURE_NOMINAL.get(j.model, 0.0)
                      for j in ctx.arm.joints])
@@ -92,6 +93,7 @@ def estimate_residual(model, arm_inertia, trace, coulomb, viscous):
 
 
 def drift_test(ctx, poses, cfg: FloatConfig, drift_s: float):
+    """Float at each pose with zero friction help and damping; the drift measures the gravity residual."""
     client, model = ctx.client, ctx.model
     inertia = armature(ctx)
     zero = dataclasses.replace(cfg, friction_gain=np.zeros(cfg.n), damping=np.zeros(cfg.n),
@@ -147,6 +149,7 @@ def _creeps(ctx, cfg: FloatConfig, j: int, gain: float, sign: int, pose, observe
 
 
 def bisect_gain(ctx, cfg, j, pose, iters, observe_s):
+    """Largest friction-help gain at which joint `j` does not creep in either direction."""
     trials = []
 
     def ok(gain):

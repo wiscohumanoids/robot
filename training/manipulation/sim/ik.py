@@ -10,12 +10,14 @@ ARM = ("shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow", "wrist_roll",
 
 
 def quat_to_mat(q):
+    """Rotation matrix of a quaternion (w, x, y, z)."""
     m = np.zeros(9)
     mujoco.mju_quat2Mat(m, np.asarray(q, float))
     return m.reshape(3, 3)
 
 
 def mat_to_quat(R):
+    """Quaternion (w, x, y, z) of a rotation matrix."""
     q = np.zeros(4)
     mujoco.mju_mat2Quat(q, np.asarray(R, float).reshape(9))
     return q
@@ -33,7 +35,9 @@ def rot_error(R_target, R_cur):
 
 
 class ArmIK:
+    """Damped least-squares IK for one 7-joint arm."""
     def __init__(self, model, side, prefix="g1/"):
+        """Joint and site addresses for one arm."""
         self.m = model
         self.d = mujoco.MjData(model)
         self.side = side
@@ -46,6 +50,7 @@ class ArmIK:
         self.rest = None
 
     def solve(self, qpos_full, pos, R, q_init=None, iters=60, rot_w=0.35, lam=0.03, tol=1e-3):
+        """Joint angles that put the tool at (pos, R), starting from `q_init`."""
         d = self.d
         d.qpos[:] = qpos_full
         if q_init is not None:

@@ -5,7 +5,9 @@ from neutral_hold import NeutralHold
 
 
 class TakeoverHold(NeutralHold):
+    """Neutral hold that also detects the operator taking over a gripper."""
     def __init__(self, targets, settings, recording_settings, now):
+        """Hold targets plus the motion thresholds that mean a takeover."""
         super().__init__(targets, settings, now)
         self.motion_settings = {key: recording_settings[key] for key in
             ('motion_gripper_rad', 'motion_velocity_rad_s', 'motion_confirm_seconds')}
@@ -14,6 +16,7 @@ class TakeoverHold(NeutralHold):
         self.gripper_since = {side: None for side in targets}
 
     def tick(self, now, arms):
+        """Update readiness and takeovers."""
         previous = dict(self.ready)
         super().tick(now, arms)
         for side, arm in arms.items():

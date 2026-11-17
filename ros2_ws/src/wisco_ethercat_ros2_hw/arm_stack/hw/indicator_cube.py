@@ -1,5 +1,5 @@
-"""Dial-indicator cube: ISO 9283 repeatability without mocap (spec: Validation
-and repeatability, "three dial indicators on a cube fixture").
+"""Dial-indicator cube: ISO 9283 repeatability without mocap (three dial
+indicators on a cube fixture).
 
 A ground cube is bolted to the flange. Three dial indicators on a stand, with
 orthogonal plunger axes a_1..a_3 (rows of A, in base_link), touch three faces
@@ -50,11 +50,13 @@ def position_to_readings(dp: Sequence[float], axes: np.ndarray) -> np.ndarray:
 
 
 def quantize(r: np.ndarray, resolution: float) -> np.ndarray:
+    """Round to the indicator resolution."""
     return np.round(np.asarray(r, float) / resolution) * resolution
 
 
 @dataclass
 class CubeConfig:
+    """Indicator cube geometry: indicator axes, cube size and placement, resolution and travel."""
     axes: np.ndarray = field(default_factory=lambda: np.eye(3))   # rows: indicator axes in base_link
     cube_size_m: float = 0.04
     center_in_flange_m: np.ndarray = field(default_factory=lambda: np.array([0.0, 0.0, 0.025]))
@@ -65,6 +67,7 @@ class CubeConfig:
 
     @staticmethod
     def from_config(raw: dict) -> 'CubeConfig':
+        """Cube geometry from the joint config (defaults where unset)."""
         c = raw.get('indicator_cube') or {}
         d = CubeConfig()
         axes = np.array(c.get('axes_in_base', d.axes), float)
@@ -86,6 +89,7 @@ class IndicatorCube:
     name = 'indicator cube'
 
     def __init__(self, cfg: CubeConfig):
+        """Cube geometry."""
         self.cfg = cfg
         self.pose = None
 
@@ -98,6 +102,7 @@ class IndicatorCube:
         raise NotImplementedError
 
     def position(self, client, q_hold) -> np.ndarray:
+        """Cube centre from the three readings; refuses readings past half the indicator travel."""
         r = np.asarray(self.read(client, q_hold), float)
         half = 0.5 * self.cfg.range_m
         if np.any(np.abs(r) > half):
@@ -117,6 +122,7 @@ class SimIndicatorCube(IndicatorCube):
     name = 'indicator cube (sim)'
 
     def __init__(self, sim, cfg: Optional[CubeConfig] = None, noise_m: float = 0.3e-6, seed: int = 4321):
+        """Simulated indicators reading the simulated arm's true flange position, with noise."""
         super().__init__(cfg or CubeConfig())
         self.sim = sim
         self.noise_m = noise_m
@@ -126,20 +132,24 @@ class SimIndicatorCube(IndicatorCube):
         self.frame = frame
 
     def true_center(self) -> np.ndarray:
+        """True cube centre from the simulated arm."""
         M = self.sim.truth.fk(self.sim.true_joint_angles(), self.frame)
         return M.act(self.cfg.center_in_flange_m)
 
     def setup(self, ctx, k, q) -> None:
+        """Zero the indicators at ISO pose `k`."""
         self.pose = k
         self.zero = position_to_readings(self.true_center(), self.cfg.axes)
 
     def read(self, client, q_hold) -> np.ndarray:
+        """Quantized, noisy readings of the true cube position."""
         r = position_to_readings(self.true_center(), self.cfg.axes) - self.zero
         if self.noise_m:
             r = r + self.rng.normal(0, self.noise_m, 3)
         return quantize(r, self.cfg.resolution_m)
 
     def static_noise_3sigma_m(self, samples: int = 200) -> float:
+        """3-sigma reading noise."""
         r = np.array([self.read(None, None) for _ in range(samples)])
         return float(3 * np.max(r.std(axis=0)))
 
@@ -164,6 +174,7 @@ def hold_while(client, q_hold, fn: Callable):
 
 
 def parse_readings_mm(text: str) -> np.ndarray:
+    """Three readings typed in mm (space or comma separated), in metres."""
     vals = [float(v) for v in text.replace(',', ' ').split()]
     if len(vals) != 3:
         raise ValueError('want three readings, got %d' % len(vals))
@@ -177,10 +188,12 @@ class SerialIndicatorReader:
     and `parse` once it is on the bench. Returns readings in mm."""
 
     def __init__(self, port: str, baud: int = 9600, timeout_s: float = 1.0):
+        """Serial port settings."""
         self.port, self.baud, self.timeout_s = port, baud, timeout_s
         self._ser = None
 
     def open(self):
+        """Open the serial port of digital indicators (needs pyserial)."""
         try:
             import serial  # pyserial, optional
         except ImportError as e:
@@ -188,10 +201,12 @@ class SerialIndicatorReader:
         self._ser = serial.Serial(self.port, self.baud, timeout=self.timeout_s)
 
     def request(self) -> bytes:
+        """Request a reading (interface-specific; not implemented)."""
         raise NotImplementedError('SerialIndicatorReader.request: send the interface\'s read command '
                                   '(depends on the Mitutoyo interface; not on the bench yet)')
 
     def parse(self, line: bytes) -> np.ndarray:
+        """Parse three readings (interface-specific; not implemented)."""
         raise NotImplementedError('SerialIndicatorReader.parse: three readings in mm from one reply')
 
     def __call__(self) -> np.ndarray:
@@ -207,12 +222,14 @@ class OperatorIndicatorCube(IndicatorCube):
 
     def __init__(self, cfg: CubeConfig, reader: Optional[Callable[[], Sequence[float]]] = None,
                  ask: Callable[[str], str] = input):
+        """Indicators read by a serial reader or typed in by the operator."""
         super().__init__(cfg)
         self.reader = reader
         self.ask = ask
         self.cycle = 0
 
     def setup(self, ctx, k, q) -> None:
+        """Hold the arm while the operator sets and zeroes the indicator stand for ISO pose `k`."""
         self.pose = k
         self.cycle = 0
         hold_while(ctx.client, q, lambda: self.ask(
@@ -221,6 +238,7 @@ class OperatorIndicatorCube(IndicatorCube):
             % (k + 1, np.round(self.cfg.axes, 3).tolist())))
 
     def read(self, client, q_hold) -> np.ndarray:
+        """One set of readings while the arm holds `q_hold`."""
         self.cycle += 1
         if self.reader is not None:
             return np.asarray(hold_while(client, q_hold, self.reader), float) * 1e-3

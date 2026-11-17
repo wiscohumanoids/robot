@@ -49,6 +49,7 @@ def robot_setup(robot: str):
 
 def convert(robot: str, input_file: str, output: str, input_fps: float = 30.0, output_fps: float = 50.0,
             device: str = "cpu", video: str | None = None) -> dict:
+  """Retargeted CSV to a motion npz at `output_fps`, with forward kinematics in the robot's training model."""
   from mjlab.scene import Scene
   from mjlab.scripts.csv_to_npz import MotionLoader
   from mjlab.sim.sim import Simulation, SimulationCfg
@@ -118,6 +119,7 @@ def convert(robot: str, input_file: str, output: str, input_fps: float = 30.0, o
 
 
 def main():
+  """Command line for `convert`."""
   ap = argparse.ArgumentParser()
   ap.add_argument("--robot", choices=("g1", "wisco"), required=True)
   ap.add_argument("--input", required=True)

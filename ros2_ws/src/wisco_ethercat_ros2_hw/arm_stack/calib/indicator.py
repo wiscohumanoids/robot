@@ -1,4 +1,4 @@
-"""`arm indicator`: Phase 1 single-joint bring-up check (after `arm bringup`).
+"""`arm indicator`: single-joint bring-up check (after `arm bringup`).
 
 Per joint:
 
@@ -18,7 +18,7 @@ Per joint:
   3. Units: reports how 0x6077 is converted (per-mille of rated current x Kt)
      and where each number comes from.
   4. Nulls: lists every null left in the joint's row of the hardware table
-     (joint config). Phase 1 gate: none left. On hardware a null fails the
+     (joint config). The bring-up gate allows none. On hardware a null fails the
      stage; the sim only lists them.
 """
 
@@ -94,6 +94,7 @@ def sign_pose(model, j, home, samples=25):
 
 
 def run(ctx: StageContext) -> StageResult:
+    """`arm indicator`: 90-degree step against an external reference, torque sign and scale, units, unset values."""
     client, model, arm = ctx.client, ctx.model, ctx.arm
     lines, flags, metrics = [], [], {}
     units = Units(arm, ctx.calibration)
@@ -182,7 +183,7 @@ def run(ctx: StageContext) -> StageResult:
         m['nulls'] = left
         lines.append('%-15s hardware table nulls: %s' % (name, ', '.join(left) if left else 'none'))
         if left:
-            flags.append('%s: %d null(s) left in %s (%s); Phase 1 gate needs them resolved'
+            flags.append('%s: %d null(s) left in %s (%s); the bring-up gate needs them resolved'
                          % (name, len(left), arm.path, ', '.join(left)))
         joint_ok = angle_ok and sign_ok is not False and scale_ok is not False
         ok &= joint_ok
@@ -191,8 +192,8 @@ def run(ctx: StageContext) -> StageResult:
 
     any_nulls = any(nulls.get(n) for n in arm.names)
     gate = bool(ok and not any_nulls)
-    lines.append('Phase 1 gate (90 deg on the indicator, torque sign, 0x6077 units, no nulls): %s'
+    lines.append('Bring-up gate (90 deg on the indicator, torque sign, 0x6077 units, no nulls): %s'
                  % ('MET' if gate else 'NOT MET'))
     passed = bool(ok and (ctx.sim or not any_nulls))
-    metrics['phase1_gate'] = gate
+    metrics['bringup_gate'] = gate
     return StageResult('indicator', passed, metrics, {}, lines, flags)

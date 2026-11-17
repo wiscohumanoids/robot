@@ -14,6 +14,7 @@ from ..control.motion import move_to
 
 
 def stop_references(arm):
+    """Stop angles per joint for arm01: CAD contact angles, and J1's configured range."""
     if arm.arm != 'arm01':
         raise ValueError('The CAD contact capture is for arm01.')
     # The CAD capture sits with the arm's description: robots/arm01/cad/ (config/ is its sibling).
@@ -112,6 +113,8 @@ def verify_stop(args, reader=None):
 
 
 def run(args):
+    """`arm autocal --stop-zero --sim`: zero each joint against its modelled mechanical stop on the simulated arm.
+    """
     if not args.sim:
         raise ValueError('Powered stop-zero requires arm-specific physical stop angles, '
                          'approach paths and contact loads. arm01.urdf lists operating ranges '

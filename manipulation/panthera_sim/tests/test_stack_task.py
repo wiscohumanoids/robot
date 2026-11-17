@@ -1,3 +1,4 @@
+"""Stacking metrics and the shaped reward."""
 import unittest
 
 import numpy as np
@@ -6,7 +7,9 @@ from sim.stack_task import CUBE_EDGE, TABLE_CUBE_Z, StackReward, stack_metrics, 
 
 
 class StackMetricsTest(unittest.TestCase):
+    """Stack detection, potential and reward on hand-placed layouts."""
     def setUp(self):
+        """Flat, two-stack and three-stack layouts."""
         z = TABLE_CUBE_Z
         self.flat = np.array([[0.32, -0.10, z], [0.40, 0.0, z], [0.49, 0.11, z]])
         self.two = np.array([[0.40, 0.0, z], [0.40, 0.0, z + CUBE_EDGE], [0.50, 0.10, z]])

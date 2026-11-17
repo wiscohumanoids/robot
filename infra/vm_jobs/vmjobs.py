@@ -36,6 +36,7 @@ GPULOG_SESSION = "hsim-gpulog"
 
 # ----------------------------------------------------------------------------- config
 def load(jobs_file):
+    """Read the jobs file; returns it and the base folders (repo, runs, data, envs) with ~ expanded."""
     cfg = yaml.safe_load(Path(jobs_file).read_text())
     d = cfg.get("defaults", {})
     base = {k: os.path.expanduser(str(d.get(k, v))) for k, v in
@@ -44,6 +45,7 @@ def load(jobs_file):
 
 
 def subst(s, base, job_id=None, extra=None):
+    """Substitute {repo}, {runs}, {data}, {envs}, {job} and extra values into a job string."""
     if s is None:
         return None
     s = str(s)
@@ -58,6 +60,7 @@ def subst(s, base, job_id=None, extra=None):
 
 
 def job_cfg(cfg, base, job_id):
+    """One job's resolved settings: command, environment, log root, resume rule."""
     jobs = cfg.get("jobs", {})
     if job_id not in jobs:
         sys.exit(f"unknown job '{job_id}'. Jobs: {', '.join(jobs)}")
@@ -76,10 +79,12 @@ def job_cfg(cfg, base, job_id):
 
 # ----------------------------------------------------------------------------- state
 def state_path(base, job_id):
+    """Path of a job's state file."""
     return Path(base["runs"]) / job_id / "state.json"
 
 
 def read_state(base, job_id):
+    """A job's saved state (empty when none)."""
     p = state_path(base, job_id)
     try:
         return json.loads(p.read_text())
@@ -88,6 +93,7 @@ def read_state(base, job_id):
 
 
 def write_state(base, job_id, **kw):
+    """Merge `kw` into a job's saved state, written atomically."""
     p = state_path(base, job_id)
     p.parent.mkdir(parents=True, exist_ok=True)
     s = read_state(base, job_id)
@@ -99,10 +105,12 @@ def write_state(base, job_id, **kw):
 
 
 def now():
+    """Local time as text."""
     return dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def tmux_has(name):
+    """Whether a tmux session exists."""
     return subprocess.run(["tmux", "has-session", "-t", name], capture_output=True).returncode == 0
 
 
@@ -117,6 +125,7 @@ def latest_run_dir(log_root):
 
 
 def latest_checkpoint(run_dir):
+    """Newest model_<N>.pt in a run folder, or None."""
     cks = sorted(Path(run_dir).glob("model_*.pt"), key=lambda p: int(re.findall(r"\d+", p.stem)[-1]))
     return cks[-1] if cks else None
 
@@ -127,6 +136,7 @@ _stop = False
 
 
 def _forward(signum, frame):
+    """Signal handler: forward a stop to the running job's process group."""
     global _stop
     _stop = True
     if _child and _child.poll() is None:
@@ -137,6 +147,7 @@ def _forward(signum, frame):
 
 
 def cmd_run(cfg, base, job_id, resume):
+    """Run one job in the foreground (inside its tmux session), resuming if asked, and record its state."""
     global _child
     j = job_cfg(cfg, base, job_id)
     Path(j["log_root"]).mkdir(parents=True, exist_ok=True)
@@ -205,6 +216,7 @@ def cmd_run(cfg, base, job_id, resume):
 
 # ----------------------------------------------------------------------------- commands
 def cmd_launch(cfg, base, jobs_file, job_ids, resume=False):
+    """Start each job in its own tmux session (skipping ones already running)."""
     for job_id in job_ids:
         j = job_cfg(cfg, base, job_id)
         name = SESSION.format(job_id)
@@ -234,6 +246,7 @@ def cmd_launch(cfg, base, jobs_file, job_ids, resume=False):
 
 
 def cmd_stop(cfg, base, job_id, timeout=45):
+    """Ask a job to stop and wait for it, then kill it after `timeout`."""
     name = SESSION.format(job_id)
     st = write_state(base, job_id, stop_requested=True)
     pid = st.get("child_pid")
@@ -264,6 +277,7 @@ def cmd_stop(cfg, base, job_id, timeout=45):
 
 
 def tail_text(path, nbytes=262144):
+    """The last `nbytes` of a file as text."""
     try:
         with open(path, "rb") as f:
             f.seek(0, 2)
@@ -275,6 +289,7 @@ def tail_text(path, nbytes=262144):
 
 
 def parse_rl(text):
+    """Iteration, reward, episode length and speed from the newest training log block."""
     i = text.rfind("Learning iteration")
     if i < 0:
         return None
@@ -290,6 +305,7 @@ def parse_rl(text):
 
 
 def proc_parents():
+    """Parent of every process (from /proc), to map GPU processes to jobs."""
     par = {}
     for p in Path("/proc").iterdir():
         if p.name.isdigit():
@@ -302,6 +318,7 @@ def proc_parents():
 
 
 def gpu_by_job(states):
+    """GPU memory per job, and GPU processes that belong to no job."""
     try:
         out = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
                              capture_output=True, text=True, timeout=10).stdout
@@ -335,6 +352,7 @@ def gpu_by_job(states):
 
 
 def system_line(base):
+    """One line of GPU and disk status."""
     try:
         g = subprocess.run(["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
                             "--format=csv,noheader,nounits"], capture_output=True, text=True, timeout=10).stdout.strip()
@@ -351,6 +369,7 @@ def system_line(base):
 
 
 def cmd_status(cfg, base):
+    """Table of every job: state, iteration, reward, speed, ETA, GPU memory."""
     jobs = cfg.get("jobs", {})
     states = {jid: read_state(base, jid) for jid in jobs}
     gpu, other = gpu_by_job(states)
@@ -382,6 +401,7 @@ def cmd_status(cfg, base):
 
 
 def cmd_logs(base, job_id, follow, n):
+    """Show (or follow) a job's log."""
     p = Path(base["runs"]) / job_id / "stdout.log"
     if not p.exists():
         sys.exit(f"no log yet: {p}")
@@ -389,6 +409,7 @@ def cmd_logs(base, job_id, follow, n):
 
 
 def cmd_gpulog(base, start):
+    """Start or stop the background GPU memory logger."""
     if not start:
         subprocess.run(["tmux", "kill-session", "-t", GPULOG_SESSION], capture_output=True)
         print("GPU logger stopped")
@@ -406,6 +427,7 @@ def cmd_gpulog(base, start):
 
 
 def main():
+    """Command line: list, launch, run, status, logs, stop, resume, gpulog."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--jobs", default=os.environ.get("HSIM_JOBS", str(DEFAULT_JOBS)))
     sub = ap.add_subparsers(dest="cmd", required=True)

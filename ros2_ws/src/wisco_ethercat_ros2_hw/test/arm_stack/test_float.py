@@ -30,6 +30,7 @@ PAYLOAD = (0.5, 0.0, 0.0, 0.03)
 
 @pytest.fixture(scope='module')
 def arm():
+    """arm01 joint config."""
     return load_arm()
 
 
@@ -51,6 +52,7 @@ def make(arm, coulomb=COULOMB, model_scale=None, com_offsets=None, stiction=0.02
 
 
 def window(res, t0, t1):
+    """Mask of trace samples between t0 and t1."""
     t = res.trace['t']
     return (t >= t0) & (t <= t1)
 

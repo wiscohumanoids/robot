@@ -1,3 +1,5 @@
+// Tests of the profile-position step sequencing used by pp_test (no hardware).
+
 #include <gtest/gtest.h>
 #include "pp_motion.hpp"
 
@@ -7,6 +9,7 @@ using namespace pp_test;
 const auto begin = Clock::time_point{} + 1s;
 constexpr int32_t start = -32000;
 
+// A motion staged from the start position.
 Motion stage()
 {
   Motion m(start, begin);

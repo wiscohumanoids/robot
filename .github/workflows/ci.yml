@@ -15,11 +15,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pytest pyyaml "numpy<2" opencv-python-headless pin scipy
+      - run: pip install pytest pyyaml "numpy<2" opencv-python-headless pin scipy "mujoco==3.11.0" pyarrow
       - name: Generated docs are up to date
         run: python tools/gen_docs.py --check
       - name: Contract, consistency and unit tests
-        run: python -m pytest -q tests ros2_ws/src/*/test
+        run: python -m pytest -q tests ros2_ws/src/*/test training/sim2real manipulation/finetune
 
   # Real ROS 2 Jazzy in the same container the stack is developed in (infra/docker): build the
   # workspace, then bring up the stub stack and the MuJoCo + policy stack, check each against the

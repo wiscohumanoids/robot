@@ -28,6 +28,7 @@ OVERLAY_KEYS = ('dx', 'dy', 'dz', 'rx', 'ry', 'rz')
 
 
 def mean_rotation(R) -> np.ndarray:
+    """Chordal mean of rotation matrices (SVD projection of their average)."""
     U, _, Vt = np.linalg.svd(np.mean(R, axis=0))
     if np.linalg.det(U @ Vt) < 0:
         U[:, -1] *= -1
@@ -65,6 +66,7 @@ class KinematicModel:
     absolute). Subclasses define `residuals(x, *data)`."""
 
     def __init__(self, model, frame: str, blocks: Sequence[Tuple[str, Sequence[str], np.ndarray]]):
+        """Copy `model` and lay out the parameter vector from `blocks` (name, labels, scale) for frame `frame`."""
         self.model = model.copy()
         self.n = model.n
         self.frame = frame if model.model.existFrame(frame) else model.tool_frame
@@ -85,6 +87,7 @@ class KinematicModel:
         self.scale = np.concatenate(scales)
 
     def set_geometry(self, x):
+        """Apply the per-joint placement overlay from parameter vector `x` to the model."""
         ov = x[self.sl['overlay']].reshape(self.n, 6)
         for k, j in enumerate(self.jid):
             M0 = self.placements0[k]
@@ -105,9 +108,11 @@ class KinematicModel:
         return d.oMf[self.fid]
 
     def residuals(self, x, *data) -> np.ndarray:
+        """Residuals of parameters `x`; defined by subclasses."""
         raise NotImplementedError
 
     def jacobian(self, x, *data) -> np.ndarray:
+        """Finite-difference Jacobian of the residuals at `x`."""
         r0 = self.residuals(x, *data)
         J = np.zeros((len(r0), self.size))
         for i in range(self.size):
@@ -181,10 +186,12 @@ def solve(fit: KinematicModel, data: tuple, keep, x0=None, max_iter: int = 60):
 
 
 def rms(v) -> float:
+    """Root mean square."""
     return float(np.sqrt(np.mean(np.square(v))))
 
 
 def compose_overlay(old: Optional[dict], names, ov: np.ndarray) -> dict:
+    """Combine an existing kinematic overlay with a new per-joint correction."""
     out = {}
     for k, n in enumerate(names):
         o = (old or {}).get(n) or {}

@@ -1,6 +1,6 @@
 # tests
 
-Static checks, no ROS needed (CI job `static`): `python -m pytest tests ros2_ws/src/*/test` from the repo root.
+Static checks, no ROS needed (CI job `static`): `python -m pytest tests ros2_ws/src/*/test training/sim2real manipulation/finetune` from the repo root.
 
 | File | Checks |
 |---|---|

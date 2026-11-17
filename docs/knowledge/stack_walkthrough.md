@@ -62,6 +62,9 @@ smoother to `/cmd_vel_nav`. Its limits keep every command above the walking poli
   CPU and publishes **`/locomotion/joint_targets`**: one position target for every joint.
 - With an arms-free policy, the joints it does not drive (arms, head) take their targets from `/arm/joint_targets`
   (published by manipulation) or hold the default pose.
+- With a tracking policy (manifest v3, `training/tracking/`), it plays the motion clip carried in the ONNX file
+  instead: the clip is aligned to where the robot stands (TF `odom → torso_link`) and advances one step per tick;
+  `/cmd_vel` is ignored.
 
 ## 6. The robot backend
 
@@ -71,6 +74,11 @@ publishes `/joint_states`, `/imu`, `/clock` and the battery model; in *lockstep*
 boundary until the policy's new targets arrive, so a slow laptop slows the world instead of starving the policy.
 `stereo_camera.py` renders the head camera; `sensors.py` adds sensor noise; `/sim/ground_truth/*` exists only for
 graders and labeled stubs.
+
+**Through ros2_control in simulation** (`backend:=ros2_control`): `hsim_sim/joint_target_bridge.py` turns the named
+targets into the forward position controller's command, and the upstream `mujoco_ros2_control` plugin runs the same
+trained scene as hardware (files from `hsim_sim/ros2_control_backend.py`). Same PD law, no lockstep: the control path
+the robot uses.
 
 **On hardware**, the same `/locomotion/joint_targets` go to `ros2_control` on the RK3588
 (`ros2_ws/src/wisco_ethercat_ros2_hw/`): legs, waist and head as MyActuator mode-5 targets with the trained kp and kd,
@@ -105,16 +113,18 @@ balance. The arm pipelines (teleop, datasets, ACT / pi0.5 training) are in `mani
 
 | Artifact | Made by | Lives in |
 |---|---|---|
-| Robot model and numbers | `robots/<robot>/model/` scripts from CAD and datasheets | `robots/<robot>/` |
+| Robot model and numbers | `robots/<robot>/model/` scripts from CAD and datasheets; actuator values refined by `training/sim2real/pace.py` | `robots/<robot>/` |
 | Simulation world of the robot | `tools/build_robot_world.py` from the training task | `assets/robots/` |
 | Rooms | `tools/env_build.py` (and `tools/robocasa_export.py` for kitchens) | `assets/envs/<env>/build*/` |
-| Walking policies | `training/locomotion/` on the GPU machine, exported by `tools/vm.sh pull-policy` | `models/locomotion/` |
-| Manipulation policy | `training/manipulation/` (GR00T) or `manipulation/` (ACT, pi0.5) | served by `services/vla_server/` |
+| Walking and tracking policies | `training/train.sh` on the GPU machine, exported by `tools/vm.sh pull-policy` | `models/locomotion/` |
+| Manipulation policy | `manipulation/finetune.sh` (ACT, pi0.5, GR00T over an arm profile) | served by `services/vla_server/` |
 
 ## 11. Checking it
 
-- `python -m pytest tests ros2_ws/src/*/test`: the contract, docs, repo consistency and every package's ROS-free logic.
-- `tools/ros.sh test [stub|sim] [env] [robot]`: brings the stack up in the container, checks the live graph against the
-  contract (`hsim_bringup/contract_check.py`) and drives the robot (`drive_check.py`).
+- `python -m pytest tests ros2_ws/src/*/test training/sim2real manipulation/finetune`: the contract, docs, repo consistency, every package's ROS-free
+  logic, the actuator fit and the pi0.5 trainer's checks.
+- `tools/ros.sh test [stub|sim] [env] [robot] [backend]`: brings the stack up in the container, checks the live graph
+  against the contract (`hsim_bringup/contract_check.py`) and drives the robot (`drive_check.py`);
+  `tools/ros.sh test sim "" wisco ros2_control` runs it through the ros2_control backend.
 - `tools/ros.sh autotest [name] [robot]`: navigation, behavior-tree and reach checks graded on simulator ground truth
   (`tools/autonomy_test.sh`, `tools/eval/`).
