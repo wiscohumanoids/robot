@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pytest pyyaml "numpy<2" opencv-python-headless pin scipy "mujoco==3.11.0" pyarrow
+      - run: pip install pytest pyyaml "numpy<2" opencv-python-headless pin scipy "mujoco==3.11.0" "pyarrow<26"   # pyarrow 26 needs NumPy 2; the ROS image is on NumPy 1.26
       - name: Generated docs are up to date
         run: python tools/gen_docs.py --check
       - name: Contract, consistency and unit tests
