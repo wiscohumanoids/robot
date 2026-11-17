@@ -1,0 +1,21 @@
+# HiPNUC IMU driver (imu_node.py) on Wisco V1. Loaded by launch/imu.launch.py.
+imu:
+  ros__parameters:
+    port: /dev/hipnuc_imu          # stable name from config/99-hipnuc-imu.rules; /dev/ttyUSB0 works for a first test
+    baudrate: 230400               # factory 115200 gives 100 Hz; 200 Hz needs 230400 (README: "Board setup")
+    frame_id: imu_link             # pelvis axes at the IMU, as the walking policy was trained (imu_policy site)
+    # q_pelvis_device (w, x, y, z): the board's output axes in the pelvis frame. From the legs CAD
+    # (robots/wisco_v1/model/robot_numbers.yaml, sensors.imu: board x -> robot right, y -> down, z -> forward) with the
+    # board in its factory COORD 0 output. Confirm on the robot with scripts/imu_check.py; test_mount_matches_robot_numbers
+    # keeps this equal to robot_numbers.yaml.
+    mount_wxyz: [0.5, -0.5, 0.5, -0.5]
+    expected_coord: 0              # the board's output coordinate setting this mount assumes; diagnostics warn otherwise
+    zero_yaw: true                 # start at heading 0, as the simulated IMU does
+    rezero_on_reconnect: false
+    use_device_time: true          # stamps from the board clock (stamping.py) instead of arrival time
+    expected_rate_hz: 200.0
+    # Diagonal covariances, the simulated IMU's values so the state estimator keeps its tuning; replace with the
+    # noise imu_check.py measures (variance = std^2).
+    orientation_covariance: [1.0e-4, 1.0e-4, 1.0e-2]
+    angular_velocity_covariance: [1.2e-5, 1.2e-5, 1.2e-5]       # (0.0035 rad/s)^2
+    linear_acceleration_covariance: [9.0e-4, 9.0e-4, 9.0e-4]    # (0.03 m/s^2)^2

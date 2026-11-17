@@ -1,0 +1,11 @@
+# HiPNUC IMU on the RK3588: a stable /dev/hipnuc_imu whatever USB port the board is in, readable without sudo.
+# Install:  sudo cp 99-hipnuc-imu.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger
+#
+# The EVAL board connects through a USB-serial adapter chip. Find its ids with the board plugged in:
+#   udevadm info -a -n /dev/ttyUSB0 | grep -E 'idVendor|idProduct|serial' | head
+# and put them below (the line matches any of the common adapter chips until then; with two such adapters on the
+# robot, add ATTRS{serial}=="..." so only the IMU's matches).
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", SYMLINK+="hipnuc_imu", MODE="0666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="hipnuc_imu", MODE="0666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d4", SYMLINK+="hipnuc_imu", MODE="0666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="hipnuc_imu", MODE="0666"

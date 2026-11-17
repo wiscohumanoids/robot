@@ -13,8 +13,6 @@ from pathlib import Path
 import pytest
 
 np = pytest.importorskip("numpy")
-pa = pytest.importorskip("pyarrow")
-pq = pytest.importorskip("pyarrow.parquet")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pi05_full  # noqa: E402
@@ -84,6 +82,8 @@ def make_cfg(root, output, resume=False, checkpoint=None, repo="local/test"):
 
 def write_parquet(root, episodes, frames_per_episode, dim):
     """data/chunk-000/file.parquet with episode_index, observation.state and action (value = episode index)."""
+    pa = pytest.importorskip("pyarrow")          # here, not at import: a missing pyarrow skips only these tests
+    pq = pytest.importorskip("pyarrow.parquet")
     rows = [(e, [float(e)] * dim) for e in episodes for _ in range(frames_per_episode)]
     table = pa.table({"episode_index": [r[0] for r in rows], "observation.state": [r[1] for r in rows],
                       "action": [r[1] for r in rows]})
