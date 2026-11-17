@@ -43,7 +43,7 @@ class Mechanism:
             t0, t1 = 0.0, 0.05
             e0, e1 = self._err(c, t0, q), self._err(c, t1, q)
             for _ in range(60):
-                if abs(e1) < 1e-10 or e1 == e0: break
+                if abs(e1) < 1e-14 or e1 == e0: break        # rod length error, m (~1e-12 rad at the crank)
                 t0, t1, e0 = t1, t1-e1*(t1-t0)/(e1-e0), e1
                 e1 = self._err(c, t1, q)
             out.append(t1)
@@ -55,6 +55,17 @@ class Mechanism:
             d = np.zeros(2); d[k] = h
             J[:, k] = (self.motor_angles(q+d)-self.motor_angles(q-d))/(2*h)
         return J
+    def joint_angles(self, theta, guess=(0.0, 0.0), iters=40, tol=1e-12, max_step=0.2):
+        """Joint angles for measured motor (crank) angles `theta`: Newton's method on motor_angles from `guess`, each
+        step limited to `max_step` rad so a far guess cannot overshoot. Raises ValueError when it does not converge."""
+        q = np.asarray(guess, float).copy(); theta = np.asarray(theta, float)
+        for _ in range(iters):
+            e = self.motor_angles(q)-theta
+            if np.max(np.abs(e)) < tol: return q
+            dq = np.linalg.solve(self.jacobian(q), e)
+            q = q-dq*min(1.0, max_step/max(np.max(np.abs(dq)), 1e-300))
+        if np.max(np.abs(self.motor_angles(q)-theta)) < 1e-9: return q
+        raise ValueError(f'no joint angles for motor angles {theta.tolist()}')
     def motor_torque(self, q, tau_joint):
         """Motor torques that produce joint torque `tau_joint` at `q`."""
         return np.linalg.solve(self.jacobian(q).T, np.asarray(tau_joint, float))

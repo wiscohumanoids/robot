@@ -1,0 +1,33 @@
+# JointTargetController for Wisco V1's locomotion joints (include/.../joint_target_controller.hpp): the walking
+# policy's /locomotion/joint_targets (from the central computer) -> the drives, in the RK3588's real-time loop.
+#
+#   policy (Jetson) --/locomotion/joint_targets--> leg_targets --> single-motor drives (hips, knees, waist yaw, head)
+#                                                              \--> parallel_joints (config/wisco_parallel_joints.yaml)
+#                                                                   --> two motors per ankle / waist roll-pitch
+#
+# The arms are not here: the walking policy only holds them, and a manipulation policy's arm targets go to the arms'
+# own controller. Load together with wisco_parallel_joints.yaml (the chained joints need it active first).
+leg_targets:
+  ros__parameters:
+    type: wisco_ethercat_ros2_hw/JointTargetController
+    topic: /locomotion/joint_targets
+    joints: [left_hip_pitch, left_hip_roll, left_hip_yaw, left_knee, left_ankle_pitch, left_ankle_roll,
+             right_hip_pitch, right_hip_roll, right_hip_yaw, right_knee, right_ankle_pitch, right_ankle_roll,
+             torso_yaw, torso_roll, torso_pitch, head_yaw, head_pitch]
+    chained_joints: [left_ankle_pitch, left_ankle_roll, right_ankle_pitch, right_ankle_roll, torso_roll, torso_pitch]
+    chain_prefix: parallel_joints
+    # kp / kd per joint from the deployed policy's manifest (what it was trained with); read as given, so use an
+    # absolute path until a Wisco bringup launch fills it in
+    manifest_file: models/locomotion/wisco_v1_velocity_arms_free/manifest.yaml
+    gain_interfaces: [kp, kd]          # MyActuator mode 5: written with every target
+    # the head is welded in training, so not in the manifest: robot_numbers.yaml control.head_gains. The walking
+    # policy sends no head targets, so the head holds its pose until something else commands it.
+    gain_override_joints: [head_yaw, head_pitch]
+    gain_override_kp: [20.0, 20.0]
+    gain_override_kd: [0.5, 0.5]
+    # limits: from robot_description (the URDF), minus the margin
+    limit_margin: 0.02
+    timeout: 0.05                      # 50 ms = 2.5 missed policy ticks at 50 Hz
+    ramp_time: 2.0                     # from the measured pose to the policy's targets (Unitree's deployment: 2 s)
+    timeout_action: damp               # limp and damped (kp 0, kd damping_kd); the chained joints hold
+    damping_kd: 8.0

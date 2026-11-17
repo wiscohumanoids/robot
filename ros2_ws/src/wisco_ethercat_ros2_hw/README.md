@@ -32,12 +32,14 @@ package): its model, joint config, calibration procedures and results.
 | `launch/test_bench.launch.py`, `launch/arm01.launch.py` | bring up the bench or arm01, on drives or on mock hardware |
 | `src/safe_command_controller.cpp`, `include/.../safety_logic.hpp` | `SafeCommandController` and its unit-tested safety functions |
 | `src/arm_controller.cpp`, `src/gravity_model.cpp`, `include/.../arm_law.hpp` | `ArmController`: the arm's real-time control law |
+| `src/joint_target_controller.cpp`, `config/wisco_joint_targets.yaml` | `JointTargetController`: a policy's joint targets (topic) to the drives, with timeout, ramp-in and limits |
+| `src/parallel_linkage_controller.cpp`, `include/.../parallel_linkage.hpp`, `config/wisco_parallel_joints.yaml` | `ParallelLinkageController`: "PR mode" for the two-motor ankles and waist (joints ↔ motors through the rods) |
 | `src/pp_test.cpp`, `src/pp_motion.hpp`, `config/pp_test.yaml` | `pp_test`: profile-position check of one drive or the whole bus, straight on the IgH master (see below); built only where the EtherCAT libraries are installed |
 | `src/current_sensor_node.cpp`, `src/ads7128.hpp` | power-rail current readout (ADS7128 I2C ADC + ACS758 sensors) on `/power/currents` |
 | `arm_stack/` | Python toolkit: commissioning and calibration stages, the same control law, a simulated arm, PACE system identification, IK, MCAP logging and export; `scripts/arm` is its CLI |
 | `scripts/` | `bringup_check.py` (wiring and direction check), `check_urdf.py` (URDF vs actuator limits), `mocap_check.py` (mocap stream rate, gaps and noise), two demo scripts |
 | `launch/mocap.launch.py` | motion capture into ROS 2 (upstream `vrpn_mocap`): each rigid body on `/vrpn_mocap/<body>/pose` |
-| `tools/` | model checks, IK benchmark, workspace map, Isaac Lab USD import, parity golden-file writer (reports go to `build/analysis/`, not kept in the repo) |
+| `tools/` | model checks, IK benchmark, workspace map, Isaac Lab USD import, parity golden-file writers (`make_parity_golden.py`, `make_linkage_golden.py`) (reports go to `build/analysis/`, not kept in the repo) |
 | `test/` | C++ tests (safety logic, control law, mock drives, controllers against the mock bus, C++/Python gravity parity) and Python tests |
 
 ## One joint table
@@ -96,6 +98,67 @@ MyActuator mode 5 (position + kp + kd every cycle, PD in the drive); see `robots
   envelope (at most 20° wide per joint) with the fitted local gravity model; CAD gravity and torque mode stay off until the arm has a
   registered (URDF) calibration.
 - Command and state layouts are documented in `include/wisco_ethercat_ros2_hw/arm_controller.hpp`.
+
+## Policy targets on the robot
+
+On the robot the walking policy runs on the central computer and publishes `/locomotion/joint_targets` (joint names
+and positions, 50 Hz). `JointTargetController` takes them into the RK3588's real-time loop:
+
+```
+policy (Jetson) --/locomotion/joint_targets--> leg_targets (JointTargetController)
+                                                 |-- hips, knees, waist yaw, head --> drives: position + kp + kd
+                                                 '-- ankles, waist roll/pitch --> parallel_joints --> 2 motors each
+```
+
+| Phase | What it does |
+|---|---|
+| hold | on activation, hold the measured pose until targets arrive |
+| ramp | blend from the measured pose to the policy's (moving) targets over `ramp_time` (2 s; Unitree's deployment does the same before its policy runs) |
+| track | pass targets through, clamped to the URDF limits; kp and kd per joint from the policy's `manifest.yaml`, i.e. the PD it was trained with |
+| safe | no message for `timeout` (50 ms): `damp` (kp 0, kd 8, Unitree's exit command) or `hold`; the two-motor joints hold. When messages return, ramp again |
+
+It is a safe pass-through, not a whole-body controller: the drives run the PD (mode 5). One instance per policy
+output: the walking policy's here; a manipulation policy's arm targets would get their own instance or the
+ArmController. Joints a message leaves out keep their last target, and joints not in the instance are ignored.
+Tested against fake drives (`test/test_joint_target_controller.cpp`) and chained into `parallel_joints` in a real
+controller manager on mock motors (hold, ramp at the expected rate, exact final pose, timeout to damping). Config for
+Wisco's 17 non-arm joints: `config/wisco_joint_targets.yaml`. The two computers' network and clock:
+[`infra/robot_network/`](../../../infra/robot_network/README.md).
+
+## Parallel joints: ankles and waist ("PR mode")
+
+Each ankle (pitch, roll) and the waist (roll, pitch) is driven by **two motors through push rods**, but the URDF,
+the simulator and the walking policy treat them as two ordinary joints. `ParallelLinkageController` translates
+between the two, as Unitree's G1 does in its "PR mode" (`unitree_sdk2`, G1 ankle example: `Mode::PR`, "Series Control
+for Pitch/Roll Joints", versus `Mode::AB`, "Parallel Control for A/B Joints"), so the policy only ever sees pitch and
+roll:
+
+```
+leg controller ──joint references──► ParallelLinkageController ──motor commands──► 2 drives per mechanism
+ (pitch, roll)   ◄──joint states────   (rod geometry from CAD)   ◄──motor states──
+```
+
+- **Joints → motors** (`include/.../parallel_linkage.hpp`): closed form. Each rod has a fixed length, so each crank
+  angle solves `P cos θ + Q sin θ = K`; of the two roots, the one the robot is assembled in (the CAD's) is kept.
+- **Motors → joints**: Newton's method on that, warm-started from the last cycle (one or two iterations), with each
+  step limited so a bad guess cannot overshoot. Velocities go through the Jacobian J, torques through Jᵀ.
+- **Gains**: a joint-space PD seen at the motors is `J⁻ᵀ K J⁻¹`. In `pd_in_drive` mode (MyActuator mode 5) each drive
+  gets its diagonal, and the dropped coupling term is reported; `torque` mode computes the exact joint PD here and
+  sends motor torques.
+- **Safety**: references are clamped to the joint limits. A motor reading the rods cannot produce, or one that only
+  fits a physically impossible configuration (another rod assembly, a pose past the limits), holds the motors where
+  they are and is counted. The controller will not activate on such readings: that is the check that the motors are
+  calibrated and their directions right.
+- **Geometry** is `robots/wisco_v1/linkage.json`, measured from the CAD; `robots/wisco_v1/linkage.py` is the Python
+  reference, also used in training (per-motor limits through the rods, `training/locomotion/wisco_v1/wisco_mjlab/
+  ankle_actuator.py`).
+
+Setup (`config/wisco_parallel_joints.yaml`): one joint-table row per motor; calibrate each motor to read 0 at the
+joint's zero pose (foot flat, torso upright), with the direction that turns its crank the way linkage.json does; the
+upstream controller then commands `parallel_joints/<joint>/position` (and velocity, effort). Tested against the Python
+reference (`test/test_parallel_linkage.cpp`, `test/test_linkage_golden.py`), against fake motors
+(`test/test_parallel_linkage_controller.cpp`), and chained under a position controller in a real controller manager
+on mock motors. Not yet on the drives: the motors' calibration and directions, and mode 5 itself.
 
 ## Run it
 

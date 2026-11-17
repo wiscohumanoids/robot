@@ -22,5 +22,27 @@
     </description>
   </class>
 </library>
+<library path="wisco_ethercat_ros2_hw_linkage_controller">
+  <class name="wisco_ethercat_ros2_hw/ParallelLinkageController"
+         type="wisco_ethercat_ros2_hw::ParallelLinkageController"
+         base_class_type="controller_interface::ChainableControllerInterface">
+    <description>
+      "PR mode" for parallel two-motor joints (ankles, waist): exports the serial joints' position / velocity /
+      effort references and states, and drives the two motors of each mechanism through the CAD rod geometry
+      (motor targets and per-motor gains for a PD-in-drive mode, or host-side joint PD as motor torques).
+    </description>
+  </class>
+</library>
+<library path="wisco_ethercat_ros2_hw_joint_target_controller">
+  <class name="wisco_ethercat_ros2_hw/JointTargetController"
+         type="wisco_ethercat_ros2_hw::JointTargetController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      A policy's joint targets (sensor_msgs/JointState by name) to the drives: hold on start, ramp in from the
+      measured pose, clamp to the joint limits, the policy manifest's kp / kd per joint, and damp or hold when the
+      targets stop arriving. Two-motor joints go through ParallelLinkageController's reference interfaces.
+    </description>
+  </class>
+</library>
 
 </class_libraries>
