@@ -25,25 +25,24 @@ adaptive schedule, 24 steps per env per update; checkpoint and ONNX every 50 upd
 
 ## Run order on the GPU machine
 
-All commands from `training/locomotion/` on the GPU machine unless marked laptop. Queued jobs can run the same steps
-unattended (`infra/vm_jobs/`).
+Queued jobs can run the same steps unattended (`infra/vm_jobs/`).
 
 | # | Step | Command | Done when |
 |---|---|---|---|
 | 0 | Copy the repo | (laptop) `tools/vm.sh sync` | repo at `~/robot` on the machine |
 | 1 | Set up the machine | `infra/aws/gpu_vm/setup.sh` | torch and Warp see the GPU |
-| 2 | Smoke test | `scripts/smoke_test.sh` | 5 PPO updates on 256 envs without errors |
-| 3 | W&B login | `uv run wandb login` | |
-| 4 | Train walking | `scripts/train_velocity.sh`, `scripts/train_g1_velocity_arms_free.sh` or `wisco_v1/vm/train_velocity.sh` | reward plateaus; `play` walks at every command |
-| 5 | Motion data | `scripts/fetch_lafan1.sh` | `data/lafan1/g1/*.csv` exist |
+| 2 | Smoke test | `training/locomotion/scripts/smoke_test.sh` | 5 PPO updates on 256 envs without errors |
+| 3 | W&B login | `(cd training/locomotion && uv run wandb login)` | |
+| 4 | Train walking | `training/locomotion/scripts/train_velocity.sh`, `training/locomotion/scripts/train_g1_velocity_arms_free.sh` or `training/locomotion/wisco_v1/vm/train_velocity.sh` | reward plateaus; `play` walks at every command |
+| 5 | Motion data | `training/locomotion/scripts/fetch_lafan1.sh` | `training/locomotion/data/lafan1/g1/*.csv` exist |
 | 6 | W&B registry | one time, in the W&B web UI: Registry → new registry `Motions`, artifact type `All Types` | registry exists |
-| 7 | Convert a clip | `scripts/upload_motion.sh walk1_subject1` | NPZ in the registry, preview video looks right |
-| 8 | Train tracking | `scripts/train_tracking.sh <entity>-org/wandb-registry-Motions/walk1_subject1` | the robot follows the clip without falling |
+| 7 | Convert a clip | `training/locomotion/scripts/upload_motion.sh walk1_subject1` | NPZ in the registry, preview video looks right |
+| 8 | Train tracking | `training/locomotion/scripts/train_tracking.sh <entity>-org/wandb-registry-Motions/walk1_subject1` | the robot follows the clip without falling |
 | 9 | Export | (laptop) `tools/vm.sh pull-policy <run-dir> <policy-id>` (runs `export_manifest.py` on the machine) | ONNX + manifest in `models/locomotion/<id>/` |
 | 10 | Stop the machine | AWS console or CLI | |
 
 mjlab converts motion clips itself, so the BeyondMimic `csv_to_npz.py` step is not used (its body ordering differs).
 
-**Watching a policy:** `uv run play <task> --wandb-run-path <entity>/mjlab/<run-id> --viewer viser` starts a web viewer
-on the machine; open it from the laptop through an SSH tunnel (the port is printed on start). On the laptop,
-`tools/play_mjlab.py` plays an exported policy in plain MuJoCo.
+**Watching a policy:** `(cd training/locomotion && uv run play <task> --wandb-run-path <entity>/mjlab/<run-id> --viewer viser)`
+starts a web viewer on the machine; open it from the laptop through an SSH tunnel (the port is printed on start). On the
+laptop, `tools/play_mjlab.py` plays an exported policy in plain MuJoCo.
