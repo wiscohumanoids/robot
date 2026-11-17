@@ -27,11 +27,13 @@ SYMMETRIC = {"cup", "plate", "bowl", "can", "fruit", "bowl_small"}
 
 
 def yaw_of(quat):
+    """Yaw of a quaternion."""
     R = quat_to_mat(quat)
     return math.atan2(R[1, 0], R[0, 0])
 
 
 def frame(pose, use_yaw):
+    """Transform of an object pose (yaw only when `use_yaw`)."""
     T = np.eye(4)
     T[:3, 3] = pose[:3]
     if use_yaw:
@@ -44,6 +46,7 @@ class Source:
     """One source demo loaded from a raw episode (npz + json)."""
 
     def __init__(self, npz_path, meta):
+        """Load a source demo and its object-relative segments."""
         z = np.load(npz_path)
         self.side = meta["active_side"]
         self.category = meta["object_category"]
@@ -59,6 +62,7 @@ class Source:
 
 
 def transform_segment(seg, new_ref, use_yaw):
+    """Move a source segment from its object frame to a new object pose."""
     Tsrc = frame(seg["ref"], use_yaw)
     Tnew = frame(new_ref, use_yaw)
     M = Tnew @ np.linalg.inv(Tsrc)

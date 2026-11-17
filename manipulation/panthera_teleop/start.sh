@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Start gravity-assisted recording on the real arms, logging to logs/gravity-assist.log.
 set -euo pipefail
 task_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "$task_dir/logs"

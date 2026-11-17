@@ -74,6 +74,7 @@ def checkpoint_files(names: list[str]) -> list[str]:
 
 
 def checkpoint_contract(checkpoint: Path) -> SimpleNamespace:
+    """Action contract of a VLA checkpoint: dataset, rate, action space and normalization statistics."""
     stats = json.loads((checkpoint / "dataset_statistics.json").read_text())
     metadata_path = checkpoint / "validation_split.json"
     metadata = json.loads(metadata_path.read_text()) if metadata_path.is_file() else {}
@@ -125,6 +126,7 @@ def reexec_in_vla_venv() -> None:
 
 
 def default_vla_dir() -> Path:
+    """Where the VLA-Adapter source checkout lives (local folder, else a cached clone)."""
     local = REPO_ROOT / "VLA-Adapter"
     if local.is_dir():
         return local
@@ -151,6 +153,7 @@ def default_checkpoint() -> Path:
 
 
 def _archive_root(names: list[str]) -> str:
+    """The folder inside a checkpoint archive that holds dataset_statistics.json."""
     matches = [name for name in names if name == "dataset_statistics.json" or name.endswith("/dataset_statistics.json")]
     if len(matches) != 1:
         raise SystemExit(
@@ -161,6 +164,7 @@ def _archive_root(names: list[str]) -> str:
 
 
 def materialize_checkpoint(source: Path, cache_root: Path, model_weights: Path | None = None) -> Path:
+    """Extract an archive (or a Drive download plus separate weights) into the cache; returns the folder."""
     source = source.expanduser().resolve()
     if model_weights is not None:
         model_weights = model_weights.expanduser().resolve()
@@ -242,6 +246,7 @@ def materialize_checkpoint(source: Path, cache_root: Path, model_weights: Path |
 
 
 def ensure_vla_checkout(path: Path) -> Path:
+    """Clone the pinned VLA-Adapter source if it is missing."""
     path = path.expanduser().resolve()
     if not path.exists():
         print(f"Cloning the pinned VLA-Adapter source into {path}", flush=True)
@@ -255,6 +260,7 @@ def ensure_vla_checkout(path: Path) -> Path:
 
 
 def require_ml_dependencies(vla_dir: Path) -> None:
+    """Exit with an install hint if the ML packages are missing."""
     sys.path.insert(0, str(vla_dir))
     missing = []
     for package in ("transformers", "peft", "timm", "tokenizers"):
@@ -272,6 +278,7 @@ def require_ml_dependencies(vla_dir: Path) -> None:
 
 
 def ensure_base_model(cache_root: Path, explicit: Path | None) -> Path:
+    """The base model for LoRA checkpoints (downloaded on first use)."""
     if explicit is not None:
         path = explicit.expanduser().resolve()
         if not (path / "config.json").is_file() or not (path / BASE_CHECKPOINT).is_file():
@@ -291,10 +298,12 @@ def ensure_base_model(cache_root: Path, explicit: Path | None) -> Path:
 
 
 def strip_ddp(state: dict) -> dict:
+    """Drop DistributedDataParallel's "module." prefix from state-dict keys."""
     return {key.removeprefix("module."): value for key, value in state.items()}
 
 
 def load_policy(vla_dir: Path, base_dir: Path | None, checkpoint: Path, device_name: str):
+    """Load a full-model or LoRA VLA checkpoint with its processor."""
     import torch
     from peft import PeftModel
     from transformers import AutoConfig, AutoImageProcessor, AutoModelForVision2Seq, AutoProcessor
@@ -420,6 +429,7 @@ def load_policy(vla_dir: Path, base_dir: Path | None, checkpoint: Path, device_n
 
 
 def normalize_proprio(state: np.ndarray, stats: dict) -> np.ndarray:
+    """Scale robot state to [-1, 1] with the dataset's 1st/99th percentiles."""
     low = np.asarray(stats["q01"], dtype=np.float32)
     high = np.asarray(stats["q99"], dtype=np.float32)
     mask = np.asarray(stats.get("mask", np.ones_like(low, dtype=bool)), dtype=bool)
@@ -460,6 +470,7 @@ def prepare_image(image: np.ndarray):
 
 def predict_actions(policy, shoulder: np.ndarray, wrist: np.ndarray,
                     state: np.ndarray, instruction: str) -> np.ndarray:
+    """One action chunk for the two camera images, state and instruction."""
     import torch
 
     prompt = (
@@ -491,6 +502,7 @@ def predict_actions(policy, shoulder: np.ndarray, wrist: np.ndarray,
 
 
 def rotvec_quat(rotvec: np.ndarray) -> np.ndarray:
+    """Quaternion of a rotation vector."""
     angle = float(np.linalg.norm(rotvec))
     quat = np.zeros(4)
     if angle < 1e-12:
@@ -503,6 +515,7 @@ def rotvec_quat(rotvec: np.ndarray) -> np.ndarray:
 
 
 def current_state(sim, joint_control: bool = False) -> np.ndarray:
+    """Robot state in the checkpoint's format: joints + gripper, or end-effector pose + gripper."""
     if joint_control:
         return np.r_[sim.q, 0.0, float(sim.data.ctrl[sim.grip_act])].astype(np.float32)
     from scipy.spatial.transform import Rotation
@@ -525,6 +538,7 @@ def apply_joint_action(sim, action: np.ndarray) -> None:
 
 def display_frame(shoulder: np.ndarray, wrist: np.ndarray, step: int,
                   instruction: str, last_action: np.ndarray | None) -> np.ndarray:
+    """Side-by-side camera view with the step, instruction and last action written on it."""
     import cv2
 
     frame = np.concatenate((shoulder, wrist), axis=1)
@@ -540,6 +554,7 @@ def display_frame(shoulder: np.ndarray, wrist: np.ndarray, step: int,
 
 
 def rollout(args, policy) -> None:
+    """Run the policy in the simulator (interactive or headless, optionally to a video)."""
     os.environ.setdefault("MUJOCO_GL", args.mujoco_gl)
     import cv2
     import mujoco
@@ -698,6 +713,7 @@ def rollout(args, policy) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """Command-line options."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, help="checkpoint directory, .zip, or .tar.gz")
     parser.add_argument(
@@ -738,6 +754,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Re-run inside the VLA environment, resolve the checkpoint, load the policy and roll it out."""
     reexec_in_vla_venv()
     args = parse_args()
     args.cache_dir = args.cache_dir.expanduser().resolve()

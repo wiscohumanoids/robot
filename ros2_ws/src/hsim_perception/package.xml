@@ -3,7 +3,7 @@
   <name>hsim_perception</name>
   <version>0.1.0</version>
   <description>Perception: open-vocabulary detection client (Grounding DINO + SAM 2 server on the GPU VM), the line-of-sight stub (fallback), and the world model (object memory)</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>vision_msgs</exec_depend>

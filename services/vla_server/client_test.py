@@ -10,6 +10,7 @@ import urllib.request
 
 
 def grey_jpeg():
+    """A grey 320x240 JPEG as base64."""
     import io
     from PIL import Image
     buf = io.BytesIO(); Image.new("RGB", (320, 240), (128, 110, 90)).save(buf, "JPEG")
@@ -17,6 +18,7 @@ def grey_jpeg():
 
 
 def call(url, payload=None):
+    """GET (or POST JSON) and return the decoded reply."""
     req = urllib.request.Request(url, data=None if payload is None else json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -24,6 +26,7 @@ def call(url, payload=None):
 
 
 def main():
+    """Check a running VLA server: health, then a few /act calls with their latency."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://127.0.0.1:8200")
     ap.add_argument("--image")

@@ -1,0 +1,371 @@
+<?xml version="1.0"?>
+<!--
+================================================================================
+arm01 design ledger
+================================================================================
+Robot      arm01: the 7-DOF MyActuator EtherCAT arm under test (right arm on a
+           post stand).
+Source     The CAD team's `full_assembly_urdf` export (14 Nov 2026, Onshape
+           capture f7727994091b4cb0be86ce6f, audited inertials and harness),
+           converted by robots/arm01/cad/import_full_assembly.py: renamed, re-based,
+           tool frames added. Geometry, joint senses, zeros, limits and
+           inertials are the export's. Regenerate with that script; do not
+           hand-edit.
+Consumers  Pinocchio (arm_stack model, sim, fits), robot_state_publisher /
+           RViz, ros2_control (robots/arm01/urdf/arm01.ros2_control.xacro), Isaac Lab
+           (PACE, via `arm export pace`).
+Units      metres, kilograms, radians. Meshes are binary STL in metres, one per
+           link, in the link frame.
+
+Names (export -> here)
+  J1 shoulder_pitch, J2 shoulder_roll, J3 shoulder_yaw, J4 elbow,
+  J5 forearm_yaw, output_pivot wrist_pitch, J7 wrist_yaw;
+  J6 wrist_crank_joint and coupler_hinge wrist_rod_joint (mimics, below).
+  shoulder_flexion link1, shoulder_abduction link2, upper_arm link3,
+  forearm link4, wrist_base link5, wrist_output link6, tool_link link7,
+  input_crank wrist_crank, coupler wrist_rod.
+
+Frames
+  base_link  origin at the top centre of the stand's post, CAD (0, 0, 541) mm;
+             x forward (CAD -y), y to the robot's left (CAD +x), z up. The
+             export's base is the CAD frame; the J1 origin and base_link's
+             visual and inertial carry base = Rz(90 deg) (cad - [0 0 0.541]).
+  linkN      the export's frames: z is joint N's axis.
+  flange     J7 output face centre on the J7 axis, z out of the face toward
+             the tool, x toward the peg.
+  tool0      centre of the peg's end face (Ø20 mm PLA peg), z out of the tip,
+             x perpendicular to the peg and the J7 axis. Fitted to the link7
+             mesh.
+
+Zero pose  The export's: q = 0 closes the wrist loop. The CAD capture is
+           J1 80.80, J2 0.00, J3 3.30, J4 19.71, J5 -95.00, J6 28.04,
+           J7 2.05 deg. The export maps its Onshape mate angles to these
+           coordinates (sign, offset: J2 -1, J3 +3.911 deg, J4 -1 / -8.919
+           deg); they are NOT encoder readings. `arm zero` and the zeroing jig
+           set the encoder zeros, `arm bringup` the signs (joint config
+           `direction`). Keep J1/J2 unwrapped through 180 deg.
+
+Wrist      J6 turns a near-parallelogram (crank 41.75, coupler 70.0, ground
+           69.89 mm): output / crank = 0.996..1.004 over +-35 deg. wrist_pitch
+           is the output pivot, driven 1:1 by the J6 actuator here (error
+           about 0.15 deg at the ends of travel); the crank and coupler are
+           mimic joints of it (+1 / -1). Pinocchio locks the mimics and merges
+           their 30 g into link5. The export's model.py has the exact loop.
+
+Limits     The export's operating ranges: J1 [-90, 180], J2 [0, 190],
+           J3 +-90, J4 [0, 130], J5 +-90, J6 +-35, J7 +-90 deg. They are not
+           certified hardware stops: J1's stops are unverified, J2's lower
+           contact is at -0.12 deg, J6's at -35.09 / +35.04 deg. Effort and
+           velocity are the datasheet rated values. Stage 3 (`arm limits`)
+           finds the hard stops and writes soft limits into the calibration
+           file, not here.
+
+Inertials  The export's audited model: 5052 sheet, 6061 billet, steel hardware,
+           PLA peg (solid, 72 g), provisional actuator masses (X6 0.78, X4-36
+           0.36, X4-10 0.33 kg), and a 178 g harness estimate. Moving mass
+           3.918 kg. Weighed masses go in robots/arm01/config/arm01.yaml
+           `link_masses_kg`; stage 5 fits each link's COM. base_link's
+           inertial (fixture) is unused.
+
+Geometry   visual = collision = the link's STL.
+================================================================================
+-->
+<robot name="arm01">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.0209881104 -0.0249459611 -0.3516912" rpy="0 -0 0" />
+      <mass value="8.48834449972315" />
+      <inertia ixx="0.507382807" ixy="0.00441255157" ixz="-0.0415048934" iyy="0.506022808" iyz="0.0643106163" izz="0.0659746181" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.541" rpy="0 -0 1.57079633" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/base_link.stl" />
+      </geometry>
+      <material name="base_link_color">
+        <color rgba="0.5 0.5 0.53 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.541" rpy="0 -0 1.57079633" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/base_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link1">
+    <inertial>
+      <origin xyz="6.28193363739031e-05 -0.000510001541366573 -0.0627447017792746" rpy="0 0 0" />
+      <mass value="1.03954034843141" />
+      <inertia ixx="0.00126854255312548" ixy="3.05291278326572e-06" ixz="7.55125566470251e-07" iyy="0.00115560047771092" iyz="-5.70812069926037e-06" izz="0.000911747596788102" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link1.stl" />
+      </geometry>
+      <material name="link1_color">
+        <color rgba="0.65 0.72 0.8 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link1.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link2">
+    <inertial>
+      <origin xyz="8.40187522635814e-05 0.0289708130780038 -0.020210697162382" rpy="0 0 0" />
+      <mass value="0.224638262500978" />
+      <inertia ixx="0.000456475944180333" ixy="4.44260229119375e-07" ixz="-2.7706406188814e-07" iyy="0.000300259134907002" iyz="7.9006691122891e-05" izz="0.000224319387305477" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link2.stl" />
+      </geometry>
+      <material name="link2_color">
+        <color rgba="0.65 0.72 0.8 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link2.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link3">
+    <inertial>
+      <origin xyz="-0.000884860251041079 0.0123306139737281 -0.0753817522063616" rpy="0 0 0" />
+      <mass value="0.955428515370027" />
+      <inertia ixx="0.00259766559360135" ixy="2.3466014962175e-06" ixz="-4.07107954950693e-05" iyy="0.00258521461111198" iyz="0.000561982262328355" izz="0.000702966100318948" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link3.stl" />
+      </geometry>
+      <material name="link3_color">
+        <color rgba="0.68 0.73 0.8 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link3.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link4">
+    <inertial>
+      <origin xyz="0.025003990750778 0.0555249203142339 -0.0308501339841859" rpy="0 0 0" />
+      <mass value="0.506322819610221" />
+      <inertia ixx="0.000524712049443047" ixy="-6.32790707470935e-05" ixz="1.49420144284315e-05" iyy="0.000314515071861158" iyz="3.19308009244638e-05" izz="0.000432180418077225" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link4.stl" />
+      </geometry>
+      <material name="link4_color">
+        <color rgba="0.68 0.73 0.8 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link4.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link5">
+    <inertial>
+      <origin xyz="-0.00300480967441928 -0.000442759553258613 -0.0372032297307027" rpy="0 0 0" />
+      <mass value="0.487429133738675" />
+      <inertia ixx="0.000315862616675246" ixy="-6.20850229960958e-06" ixz="-1.16338046149474e-05" iyy="0.000423183155760322" iyz="-6.22522109046e-08" izz="0.000263835038145093" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link5.stl" />
+      </geometry>
+      <material name="link5_color">
+        <color rgba="0.5 0.63 0.75 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link5.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="wrist_crank">
+    <inertial>
+      <origin xyz="-0.00943964051682924 -6.77168358008667e-09 -0.00261924023607058" rpy="0 0 0" />
+      <mass value="0.0142187791796307" />
+      <inertia ixx="1.17393834304399e-06" ixy="-2.88802677271492e-12" ixz="-4.72976356126276e-09" iyy="4.46638597948988e-06" iyz="-4.2775810392593e-13" izz="5.57116929256228e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/wrist_crank.stl" />
+      </geometry>
+      <material name="wrist_crank_color">
+        <color rgba="0.85 0.6 0.24 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/wrist_crank.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="wrist_rod">
+    <inertial>
+      <origin xyz="0.0164044135483392 0.0309174043788142 -0.00306837268587808" rpy="0 0 0" />
+      <mass value="0.0155711739254297" />
+      <inertia ixx="9.1851100665474e-06" ixy="-4.77668200312659e-06" ixz="4.80077557867517e-12" iyy="2.71692989941013e-06" iyz="1.21734164600643e-11" izz="1.17825733794848e-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/wrist_rod.stl" />
+      </geometry>
+      <material name="wrist_rod_color">
+        <color rgba="0.85 0.6 0.24 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/wrist_rod.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link6">
+    <inertial>
+      <origin xyz="0.000709485579475247 -0.0010031677109319 0.0343378638717342" rpy="0 0 0" />
+      <mass value="0.442574975466571" />
+      <inertia ixx="0.000234683542219092" ixy="-3.24564112967087e-05" ixz="-2.88862442222168e-06" iyy="0.000259042968286654" iyz="-1.43324337717524e-06" izz="0.0002489360375543" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link6.stl" />
+      </geometry>
+      <material name="link6_color">
+        <color rgba="0.5 0.63 0.75 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link6.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link7">
+    <inertial>
+      <origin xyz="0.00867923115887527 0.0532843695444002 0.0175173922152606" rpy="0 0 0" />
+      <mass value="0.231917717710317" />
+      <inertia ixx="0.000417793921610081" ixy="-7.46815622461728e-06" ixz="-2.05312858297144e-05" iyy="0.000166432314133193" iyz="-0.000100101566329267" izz="0.000382581839170079" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link7.stl" />
+      </geometry>
+      <material name="link7_color">
+        <color rgba="0.18 0.58 0.75 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://arm01_description/meshes/link7.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="shoulder_pitch" type="revolute">
+    <parent link="base_link" />
+    <child link="link1" />
+    <origin xyz="-0.000156330126 -0.188873205 -0.0333247018" rpy="2.0943951 4.98352458e-15 -3.14159265" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948966" upper="3.141592653589793" effort="20" velocity="16.022122533307947" />
+  </joint>
+  <joint name="shoulder_roll" type="revolute">
+    <parent link="link1" />
+    <child link="link2" />
+    <origin xyz="-4.07603069629836e-08 -0.0352502330739208 -0.0698001490458872" rpy="1.5707963267949 -1.0471975511966 -1.02880735442697e-15" />
+    <axis xyz="0 0 1" />
+    <limit lower="0.0" upper="3.3161255787892263" effort="20" velocity="16.022122533307947" />
+  </joint>
+  <joint name="shoulder_yaw" type="revolute">
+    <parent link="link2" />
+    <child link="link3" />
+    <origin xyz="1.2839831583511e-06 0.066000292767543 -0.0353065721306212" rpy="-1.5707963267949 -0.0682598270454991 -3.14159265358979" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="10.5" velocity="8.691739674931762" />
+  </joint>
+  <joint name="elbow" type="revolute">
+    <parent link="link3" />
+    <child link="link4" />
+    <origin xyz="0.0300471412868477 0.0296229881593858 -0.123999999999999" rpy="-1.57079632679486 0.087266462599717 -1.50240475949108" />
+    <axis xyz="0 0 1" />
+    <limit lower="0.0" upper="2.2689280275926285" effort="10.5" velocity="8.691739674931762" />
+  </joint>
+  <joint name="forearm_yaw" type="revolute">
+    <parent link="link4" />
+    <child link="link5" />
+    <origin xyz="0.0275406812647838 0.0920000029569688 -0.0319999999999996" rpy="1.5707963267949 -2.23735517675913e-16 -4.93329232006911e-16" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="10.5" velocity="8.691739674931762" />
+  </joint>
+  <joint name="wrist_crank_joint" type="revolute">
+    <parent link="link5" />
+    <child link="wrist_crank" />
+    <origin xyz="-0.0282499999999997 -3.7470027081099e-15 -0.0379999999999939" rpy="-1.57079632679489 -1.86502989730315e-14 -1.5707963267949" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6108652381980153" upper="0.6108652381980153" effort="4" velocity="24.923301718479024" />
+    <mimic joint="wrist_pitch" multiplier="1" offset="0" />
+  </joint>
+  <joint name="wrist_rod_joint" type="revolute">
+    <parent link="wrist_crank" />
+    <child link="wrist_rod" />
+    <origin xyz="-0.0417499999999999 2.77555756156289e-16 -0.00542500000000007" rpy="-8.42367149530332e-20 6.09003849150813e-19 0.487817121901269" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6108652381980153" upper="0.6108652381980153" effort="4" velocity="24.923301718479024" />
+    <mimic joint="wrist_pitch" multiplier="-1" offset="0" />
+  </joint>
+  <joint name="wrist_pitch" type="revolute">
+    <parent link="link5" />
+    <child link="link6" />
+    <origin xyz="-0.0342749999999999 1.38777878078145e-16 -0.1078" rpy="-1.5707963267949 -0.488702840013189 -1.5707963267949" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6108652381980153" upper="0.6108652381980153" effort="4" velocity="24.923301718479024" />
+  </joint>
+  <joint name="wrist_yaw" type="revolute">
+    <parent link="link6" />
+    <child link="link7" />
+    <origin xyz="0.0248492320645589 0.0134394257988117 0.0342750000000006" rpy="0.488702840013303 -1.5707963267949 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="4" velocity="24.923301718479024" />
+  </joint>
+  <joint name="flange_joint" type="fixed">
+    <parent link="link7" />
+    <child link="flange" />
+    <origin xyz="0 0 0.005243" rpy="0 -0 1.57188929" />
+  </joint>
+  <link name="flange" />
+  <joint name="tool0_joint" type="fixed">
+    <parent link="link7" />
+    <child link="tool0" />
+    <origin xyz="6.0429933e-05 0.162726218 0.0283422283" rpy="-1.57205658 1.37740818e-06 0.00109296135" />
+  </joint>
+  <link name="tool0" />
+</robot>

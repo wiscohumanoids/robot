@@ -1,9 +1,9 @@
-"""Closed-loop success rate of a GR00T policy in F1's manipulation env, through the VLA server (same path
-the robot uses). Run on the VM with a python that has mujoco + numpy + Pillow (F1's datagen env).
+"""Closed-loop success rate of a GR00T policy in the manipulation env (sim/env.py), through the VLA server (same path
+the robot uses). Run on the VM with a python that has mujoco + numpy + Pillow (the datagen env).
 
   services/vla_server/run_vla_server.sh <checkpoint>                     # start the server first
   MUJOCO_GL=egl python eval_closed_loop.py --episodes 50 --mjb ../sim/build/kitchen_l1_s1_v1.mjb \
-      --out ~/hsim_runs/M1_eval_v1 [--video 5]
+      --out ~/hsim_runs/groot_eval_v1 [--video 5]
 
 Each episode: env.reset(seed) with held-out seeds (>= 1,000,000; datagen uses lower seeds), then repeat:
 send ego image + state + instruction, execute the first `execution_horizon` actions of the returned chunk
@@ -27,6 +27,7 @@ sys.path.insert(0, str(SIM_DIR))
 
 
 def jpeg_b64(img):
+    """Image as base64 JPEG."""
     from PIL import Image
     buf = io.BytesIO()
     Image.fromarray(img).save(buf, "JPEG", quality=90)
@@ -34,12 +35,14 @@ def jpeg_b64(img):
 
 
 def post(url, payload):
+    """POST JSON and return the reply."""
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
 
 
 def write_mp4(frames, path, fps=20):
+    """Write frames to an MP4 with ffmpeg."""
     T, H, W, _ = np.asarray(frames).shape
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
                     "-r", str(fps), "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(path)],
@@ -47,6 +50,7 @@ def write_mp4(frames, path, fps=20):
 
 
 def main():
+    """Closed-loop success rate over held-out seeds, through the VLA server."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://127.0.0.1:8200")
     ap.add_argument("--mjb", default=str(SIM_DIR / "build" / "kitchen_l1_s1_v1.mjb"))
@@ -56,7 +60,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--video", type=int, default=0, help="save mp4 of the first N episodes")
     a = ap.parse_args()
-    from env import ManipEnv                                   # F1's env (training/manipulation/sim/env.py)
+    from env import ManipEnv                                   # training/manipulation/sim/env.py
 
     out = Path(a.out).expanduser(); out.mkdir(parents=True, exist_ok=True)
     health = json.loads(urllib.request.urlopen(a.url + "/health", timeout=10).read())

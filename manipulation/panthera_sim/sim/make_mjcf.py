@@ -165,6 +165,7 @@ BULK_POS_X = -0.058                    # x in [-0.093, -0.023]
 
 
 def indent(elem, level=0):
+    """Pretty-print an XML tree in place."""
     pad = "\n" + "  " * level
     if len(elem):
         if not (elem.text or "").strip():
@@ -178,6 +179,7 @@ def indent(elem, level=0):
 
 
 def sub(parent, tag, **attrs):
+    """Append a child element with stringified attributes."""
     return ET.SubElement(parent, tag, {k: str(v) for k, v in attrs.items()})
 
 
@@ -268,6 +270,7 @@ def add_grasp_contacts(scene):
 
 
 def build(objects: bool = True):
+    """Convert the Panthera URDF into the MJCF scene (with or without the blocks)."""
     # 1. Import the URDF and dump MuJoCo's own MJCF; this resolves the mesh
     #    inertias, axis conventions and the mimic->equality translation for us.
     model = mujoco.MjModel.from_xml_path(str(URDF))

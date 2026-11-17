@@ -1,5 +1,5 @@
 """Post-processing after detection + segmentation + 3D lifting (shared by the server and the offline benchmark,
-so the benchmark measures exactly what the server does). Precision study 2026-11-10: docs/runs/2026-11-10_worklog_E.md.
+so an offline benchmark measures exactly what the server does).
 
   mask_nms        same label, mask IoU > `thr` -> keep the higher score (the base + tiny ensemble finds one object
                   twice with slightly different boxes; box NMS keeps both). IoU, not overlap-of-the-smaller: a big
@@ -23,6 +23,7 @@ SYNONYMS = [{"cabinet", "drawer", "shelf"}, {"stove", "stovetop", "range hood", 
 
 
 def synonym(a: str, b: str) -> bool:
+    """Whether two labels are the same or synonyms."""
     return a == b or any(a in g and b in g for g in SYNONYMS)
 
 
@@ -61,7 +62,9 @@ def apply_priors(dets: list[dict]) -> tuple[list[dict], list[dict]]:
 
 
 class CropVerifier:
+    """SigLIP 2 check that a detection's crop looks like its label among the vocabulary."""
     def __init__(self, model_id="google/siglip2-base-patch16-224", device="cuda", topk=3):
+        """Load the image-text model."""
         import torch
         from transformers import AutoModel, AutoProcessor
         self.torch, self.device, self.topk = torch, device, topk
@@ -74,9 +77,11 @@ class CropVerifier:
 
     @staticmethod
     def _emb(out):
+        """Embedding tensor of a model output."""
         return out.pooler_output if hasattr(out, "pooler_output") else out
 
     def _text_emb(self, names: tuple):
+        """Cached text embeddings for a tuple of label names."""
         if names not in self._text:
             with self.torch.inference_mode():
                 ti = self.proc(text=[f"a photo of a {x}." for x in names], padding="max_length", max_length=64,

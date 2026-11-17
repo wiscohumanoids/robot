@@ -1,9 +1,9 @@
 # AWS policy inference
 
-AWS: `admin@3.83.15.102` (existing SSH config/key). The pinned LeRobot runtime
+AWS: the host in `PANTHERA_SSH_HOST` (set it in the repo's `.env`; SSH key as usual). The pinned LeRobot runtime
 already lives at `/mnt/pi05/lerobot/.venv`; deployment does not replace it.
 The selected model is pi0.5 at step 35,000, resumed on the October 5 original-camera
-202-demo dataset (`FoxNerdSaysMoo/panthera-gear-carrier-pin-oct05-original-camera-20hz-202`).
+202-demo dataset (`$HF_NAMESPACE/panthera-gear-carrier-pin-oct05-original-camera-20hz-202`).
 This training stage uses a local dataset with no Hub revision; its manifest SHA-256
 is `041690aea82ae8658c870159d12ba33717b2312a5683c3237f659764c6651b54`.
 
@@ -199,15 +199,15 @@ it is no longer part of the active setup. `configure_robot_hub.py` was a
 targeted diagnostic workaround for that old hub, not a startup requirement.
 
 ```bash
-ssh 3.83.15.102 'systemctl --user status panthera-inference --no-pager'
-ssh 3.83.15.102 'journalctl --user -u panthera-inference -n 100 --no-pager'
-ssh 3.83.15.102 'systemctl --user restart panthera-inference'
+ssh "$PANTHERA_SSH_HOST" 'systemctl --user status panthera-inference --no-pager'
+ssh "$PANTHERA_SSH_HOST" 'journalctl --user -u panthera-inference -n 100 --no-pager'
+ssh "$PANTHERA_SSH_HOST" 'systemctl --user restart panthera-inference'
 curl http://127.0.0.1:8765/health
 systemctl --user status panthera-inference-tunnel --no-pager
 systemctl --user stop panthera-inference-tunnel
 ```
 
-Override the SSH destination with `PANTHERA_SSH_HOST`. To change the model run,
+The scripts read the SSH destination from `PANTHERA_SSH_HOST` in the repo's `.env`. To change the model run,
 edit the remote service checkpoint argument and redeploy; checkpoint metadata
 must still match this deployment contract.
 

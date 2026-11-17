@@ -1,103 +1,256 @@
-> **In this repo:** this package lives in the main colcon workspace, `ros2_ws/src/wisco_ethercat_ros2_hw/` (the
-> layout below shows its original standalone `wisco_ws`). It builds with the rest of the workspace, but running the
-> test bench also needs `ethercat_driver_ros2` and the IgH EtherCAT master, which the simulation container
-> (`infra/docker/`) does not install. How it fits the stack (compute split, drive modes, what is next):
-> `docs/architecture.md` §3.1 and `hardware/README.md`.
+# wisco_ethercat_ros2_hw — hardware interface and joint controllers
 
-## WiscoHumanoids Hardware Interface
+The `ros2_control` side of the robot: how the MyActuator RMD-X drives are configured on the EtherCAT bus, the
+real-time controllers that run on top of them, a mock EtherCAT drive to test all of it without hardware, and the
+Python toolkit that commissions, calibrates and identifies an arm. It runs on the **RK3588 (Rockchip)**, the robot's
+real-time computer; the central computer (**Jetson Thor or Jetson Orin NX**) sends it targets over ROS 2 at 50–100 Hz
+and is never inside the real-time loop. The drives' bus driver is ICube's
+[`ethercat_driver_ros2`](https://github.com/ICube-Robotics/ethercat_driver_ros2) on the IgH EtherCAT master; both are
+installed on the robot computer, not in the development container.
 
-Demo: https://drive.google.com/file/d/1zwNxs48vFlNf9jD_jDFN_XyyGplYSpis/view?usp=sharing
-
-This repository contains the physical hardware configuration, PDO mapping, demo script, and ROS 2 launch files to bridge the RK3588's real-time EtherCAT master to the Jetson Thor's high-level AI policy. Its contents serve as a test demo that proves you can run a single servo with ROS 2 Jazzy and ethercat_driver_ros2 on a Linux laptop (replace with RK3588 in final implementation). Note that it is configured to run on 100Hz instead of the intended 1kHz since it was made on a device that did not have PREEMPT_RT patched.
-
-RK3588: The software is split into hardware definitions (this repo) and mathematical control plugins (loaded dynamically).
-
-```text
-wisco_ws/src/
-├── ethercat_driver_ros2/          # (add separately, you need to install this for it to work github.com/ICube-Robotics/ethercat_driver_ros2)
-│
-├── wisco_ethercat_ros2_hw/        # <----- (THIS REPO: Hardware configuration)
-│   ├── config/rmd_x4_10.yaml      #      Hexadecimal PDO maps & gear ratios
-│   ├── config/controllers.yaml    #      Dictates which controllers to load
-│   ├── launch/test_bench.launch.py 
-│   ├── urdf/test_bench.urdf.xacro #      Physical robot description & slave IDs
-│   └── README.md                  # (you are here)
-│
-└── wisco_controllers/             # (C++ controls stack to be added separately later along with the rest of the humanoid)
-    ├── include/wisco_controllers/
-    │   └── wbc_controller.hpp     # Class headers, Eigen matrix declarations
-    └── src/
-        └── wbc_controller.cpp     # The 1kHz QP solver, Pinocchio rigid body dynamics, etc.
-
-ros2_control (controller_manager process, same process as hw_interface)
-├── ethercat_driver_ros2 (SystemInterface) ── 14x RMD-X4-10 CiA 402
-├── wbc_controller plugin
-└── State/Command Interfaces (hardware interface exposed by ethercat_driver_ros2, consumed/written by wbc_controller)
-
-ROS 2 (minimal) on RK3588
-└── Command surface exposed by wbc_controller (action/topic for
-    Cartesian/task targets) — receives targets from Jetson Thor
+```
+ros2_control_node (one real-time process on the RK3588)
+├── EthercatDriver (hardware interface): one CiA 402 drive per row of the joint table
+├── joint_state_broadcaster
+├── SafeCommandController   velocity or torque commands with timeouts, clamps and soft limits
+└── ArmController           arm control at the cycle rate: gravity compensation (Pinocchio) + PD, two drive modes
 ```
 
-Jetson Thor (not included here; for context):
-```text
-jetson_ws/src/
-└── wisco_policy/
-    ├── wisco_policy/
-    │   └── policy_node.py              # RL locomotion policy / MPC
-    └── launch/
-        └── policy.launch.py
+The arm this is tested on is described in [`robots/arm01/`](../../../robots/arm01/README.md) (the `arm01_description`
+package): its model, joint config, calibration procedures and results.
 
-ROS 2 (full) on Jetson Thor
-├── MoveIt 2 / AI pipeline
-├── RL locomotion policy / MPC
-├── Vision / SLAM
-└── Sends high-level targets (50–100Hz) over DDS ──┐
-                                                     │
-                                                     ▼
-                               ROS 2 DDS Network (non-RT link)
-                                                     │
-                                                     ▼
-                     RK3588: wbc_controller's ROS 2 command surface
-```
+## What is here
 
-### Quick Start Workflow
+| Path | What |
+|---|---|
+| `config/actuator_models.yaml` | per-motor-model numbers: encoder counts, torque scale, peak torque and speed, bring-up limits, torque cap, vendor id, distributed-clock setting |
+| `config/drive_pdo_template.yaml` | the PDO map shared by every RMD-X drive |
+| `config/joints.yaml`, `config/calibration.yaml` | the test-bench joint table (left-arm drives) and its zero offsets |
+| `wisco_ethercat_ros2_hw/hardware_config.py` | generates every drive's slave config, the hardware manifest and the controller parameters from a joint table, and checks the table first |
+| `wisco_ethercat_ros2_hw/calibration_files.py` | finds an arm's calibration versions (`<date>_v<N>.yaml`, newest last), ignoring reports that share the folder |
+| `urdf/ros2_control_macros.xacro`, `urdf/test_bench.urdf.xacro` | the `<ros2_control>` block built from the manifest; the test-bench robot |
+| `launch/test_bench.launch.py`, `launch/arm01.launch.py` | bring up the bench or arm01, on drives or on mock hardware |
+| `src/safe_command_controller.cpp`, `include/.../safety_logic.hpp` | `SafeCommandController` and its unit-tested safety functions |
+| `src/arm_controller.cpp`, `src/gravity_model.cpp`, `include/.../arm_law.hpp` | `ArmController`: the arm's real-time control law |
+| `src/pp_test.cpp`, `src/pp_motion.hpp`, `config/pp_test.yaml` | `pp_test`: profile-position check of one drive or the whole bus, straight on the IgH master (see below); built only where the EtherCAT libraries are installed |
+| `src/current_sensor_node.cpp`, `src/ads7128.hpp` | power-rail current readout (ADS7128 I2C ADC + ACS758 sensors) on `/power/currents` |
+| `arm_stack/` | Python toolkit: commissioning and calibration stages, the same control law, a simulated arm, PACE system identification, IK, MCAP logging and export; `scripts/arm` is its CLI |
+| `scripts/` | `bringup_check.py` (wiring and direction check), `check_urdf.py` (URDF vs actuator limits), `mocap_check.py` (mocap stream rate, gaps and noise), two demo scripts |
+| `launch/mocap.launch.py` | motion capture into ROS 2 (upstream `vrpn_mocap`): each rigid body on `/vrpn_mocap/<body>/pose` |
+| `tools/` | model checks, IK benchmark, workspace map, Isaac Lab USD import, parity golden-file writer (reports go to `build/analysis/`, not kept in the repo) |
+| `test/` | C++ tests (safety logic, control law, mock drives, controllers against the mock bus, C++/Python gravity parity) and Python tests |
 
-**1. Build**
-Run this from the workspace root (`[DIRECTORY]/wisco_ws`) whenever you make changes
+## One joint table
+
+Everything that depends on the wiring is generated at launch from three files, then checked before anything starts:
+
+- the **joint table** (`config/joints.yaml`, or an arm's `robots/<robot>/config/<arm>.yaml`): one row per drive with the
+  URDF joint name, `bus_position` (place on the ring, 0 = first after the master), `model` and `direction` (±1, so a
+  positive command moves the joint positively about its URDF axis), plus optional per-joint limits, damping and soft
+  limits, and the table's `control_mode`;
+- the **actuator model table** (`config/actuator_models.yaml`);
+- the **calibration file**: zero offsets, so joint angle = direction × encoder − offset (the drives have no home-offset
+  object, so the offset is folded into the PDO scale factors).
+
+From these the launch writes, into a temporary directory removed on shutdown, one slave config per drive, the
+hardware manifest the xacro reads, and the controller parameters. Unknown joints or models, duplicate or
+non-contiguous bus positions, bad directions and calibration entries for joints not in the URDF stop the launch with a
+message. URDF joints not in the table run on mock hardware (state only), so `/joint_states` always covers the robot.
+Adding or moving a drive is one row in the joint table, followed by the bring-up check.
+
+**Control modes** (`control_mode` in the table, or `control_mode:=` at launch):
+
+| Mode | Drive mode of operation | Command | Used by |
+|---|---|---|---|
+| `velocity` | 9, CSV | rad/s on `/velocity_controller/commands` | bench bring-up |
+| `effort` | 10, CST | N·m on `/effort_controller/commands` | torque tests |
+| `arm` | starts in 8 (CSP); `ArmController` switches to 10 (CST) at runtime | position + torque offset, or torque | `ArmController` |
+
+The drive mode, the commanded PDO channel, the exported command interface and the controller all follow the setting,
+and only the selected mode's command interface is exported. The walking joints (legs, waist, head) are planned to run
+MyActuator mode 5 (position + kp + kd every cycle, PD in the drive); see `robots/wisco_v1/README.md`.
+
+## Controllers
+
+**`SafeCommandController`**, a forward controller with the checks the stock ones lack:
+- **timeout:** no command for `command_timeout` → velocity 0, or in torque mode a damping torque (never a push), so a
+  crashed or stalled script stops the joint;
+- **magnitude:** each joint clamped to its `max_command`;
+- **soft position limits:** within the margin of a limit, motion toward it is scaled down to zero at the limit; past a
+  limit, outward commands are dropped and, in torque mode, outward motion is damped; moving back in is always allowed;
+- **bad input:** NaN commands count as stale, wrong-length arrays are ignored with a warning, the joints are stopped on
+  activate and deactivate.
+
+**`ArmController`**, the arm's control law, run every cycle:
+- **Mode P:** CSP position target (0x607A) plus a gravity and friction torque offset (0x60B2), so the drive's own
+  position loop tracks while the host cancels gravity.
+- **Mode T:** CST torque (0x6071) = host PD + gravity + friction feedforward.
+- Pinocchio gravity from `robot_description` and the calibration file, optional payload at the tool, soft limits,
+  torque and velocity clamps, bumpless switching between modes, and a 50 ms watchdog that falls back to gravity
+  compensation + damping. Options: hold position on startup or on command timeout, gravity compensation on/off, and a
+  per-joint switch for drives whose firmware lacks the torque-offset object (those joints use the plain position path).
+- It writes each command's torque clamp to the drive's torque limit (0x6072), so the drive's own position loop is capped
+  too. 0x6072 = 0 means the drive's stall-current limit, not zero torque, so it never writes less than 1% of the limit.
+- With a **relative** calibration (a resting-pose reference, see `robots/arm01/README.md`) it only holds the position it
+  starts at (`hold_only`), or, after a passing local calibration, accepts position commands inside the measured local
+  envelope (at most 20° wide per joint) with the fitted local gravity model; CAD gravity and torque mode stay off until the arm has a
+  registered (URDF) calibration.
+- Command and state layouts are documented in `include/wisco_ethercat_ros2_hw/arm_controller.hpp`.
+
+## Run it
+
 ```bash
-colcon build --symlink-install
-```
+# on mock hardware (no drives), from a built and sourced workspace
+ros2 launch wisco_ethercat_ros2_hw test_bench.launch.py use_mock_hardware:=true
+ros2 launch wisco_ethercat_ros2_hw arm01.launch.py use_mock_hardware:=true
 
-**2. Source the Environment**
-Run this in any new terminal before executing ROS 2 commands.
-```bash
-source /opt/ros/jazzy/setup.bash
-source [DIRECTORY]/wisco_ws/install/setup.bash
-```
-
-**3. Launch**
-Requires `sudo` to allow the EtherCAT driver to access the raw `/dev/EtherCAT0` network device.
-```bash
-# 1. Start the kernel module (make sure the slave is connected)
+# on the drives (EtherCAT master running, drives powered)
 sudo systemctl start ethercat
-
-# 2. Launch ros2_control and the hardware interface
-sudo -E bash -c 'source /opt/ros/jazzy/setup.bash && source ~/Code/wisco_ws/install/setup.bash && ros2 launch wisco_ethercat_ros2_hw test_bench.launch.py'
+ros2 launch wisco_ethercat_ros2_hw test_bench.launch.py            # demo:=true also starts a demo script
+ros2 launch wisco_ethercat_ros2_hw arm01.launch.py enable_motion:=true
 ```
 
-Note that the test bench by default runs an example python script that sends torque commands to the motor to spin every couple seconds.
+| Launch argument | Default | Meaning |
+|---|---|---|
+| `description` | `urdf/test_bench.urdf.xacro` | robot description xacro (relative to this package's share or absolute) |
+| `joints_file` | `config/joints.yaml` | joint table |
+| `calibration_file` | `config/calibration.yaml` | zero offsets (arm01: its newest calibration version) |
+| `control_mode` | from the table | `velocity`, `effort` or `arm` |
+| `update_rate` | `100` | controller manager rate **and** EtherCAT cycle, Hz; raise toward 1000 only after checking loop timing on the target |
+| `joint_state_rate` | `100` (arm01: `50`) | `/joint_states` rate (capped at `update_rate`) |
+| `command_timeout` | `0.1` | seconds without a command before the joints are stopped |
+| `use_mock_hardware` | `false` | `mock_components/GenericSystem` instead of drives |
+| `enable_motion` | `false` | let the drives go to Operation Enabled (arm mode on real drives). Off by default: the arm launch starts with the motors disabled; set it after a reference or calibration exists |
+| `demo` | `false` | start the demo script for the selected mode |
 
-rviz2 is recommended to visualize the servo as it runs.
+To run without sudo, give the EtherCAT device to your user:
+`echo 'KERNEL=="EtherCAT[0-9]*", MODE="0666"' | sudo tee /etc/udev/rules.d/99-ethercat.rules` and reload udev.
 
-### Useful Debugging Command Examples
+## Bring-up procedure
 
-Open a second (sourced) terminal while the launch file is running to inspect the real-time loop:
+1. `ros2 run wisco_ethercat_ros2_hw check_urdf.py` (offline): left/right axis, limit, effort and velocity mismatches,
+   and URDF limits that disagree with the wired actuator models.
+2. `ethercat slaves`: every drive is in PREOP/OP and the count matches the table.
+3. Passive commissioning, with ROS stopped and the drives disabled: `ros2 run wisco_ethercat_ros2_hw arm commission`.
+   You move each joint by hand to measured angles; it reads the encoders over SDO and derives direction, counts per
+   output revolution, zero offset and software limits, and writes a calibration version.
+4. For an arm, record a reference or calibrate before enabling motion (`arm reference`, `arm autocal`; see
+   `robots/arm01/README.md`). For a bench joint, launch in velocity mode with the joints clear, then
+   `ros2 run wisco_ethercat_ros2_hw bringup_check.py`: it jogs each drive in bus order and checks that only the named joint moved, by about the commanded amount, in the commanded
+   direction. A failure means a wrong `bus_position` or `direction`.
+5. Only then raise the bring-up limits in the model table or per joint. The full calibration chain for an arm is in
+   `robots/arm01/README.md`.
 
-* **List active ROS2 topics:** `ros2 topic list`
-* **Stream live motor telemetry (pos/vel/effort):** `ros2 topic echo /joint_states`
-* **Verify hardware loaded:** `ros2 control list_hardware_interfaces`
-* **Verify controllers loaded:** `ros2 control list_controllers`
-* **Command torque manually:** `ros2 topic pub /effort_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.5]}"`
+## Motion capture
 
+The arm calibrations that use mocap (`arm mocap-calib`, `mocap-repeat`, `validate`) read a
+`geometry_msgs/PoseStamped` topic, set as `mocap.topic` in the arm's joint config. The upstream
+[`vrpn_mocap`](https://index.ros.org/p/vrpn_mocap/) client provides it from any system that streams VRPN (OptiTrack
+Motive, Vicon, Qualisys):
 
+```bash
+# MOCAP_HOST (the mocap computer) in the repo .env; VRPN streaming enabled in the mocap software
+ros2 launch wisco_ethercat_ros2_hw mocap.launch.py
+ros2 run wisco_ethercat_ros2_hw mocap_check.py /vrpn_mocap/arm01_flange/pose --rate 240   # rigid body held still
+```
+
+Then set `mocap.topic: /vrpn_mocap/arm01_flange/pose` and `length_bar_error_m` (from a length-bar test in the mocap
+software) in `robots/arm01/config/arm01.yaml`. The same stream gives the walking robot's true base pose for
+sim-to-real checks (`training/sim2real/README.md`).
+
+## Real-time setup (toward 1 kHz)
+
+[`infra/rk3588/`](../../../infra/rk3588/README.md) sets up the RK3588 and checks it (`setup_rt.sh`): PREEMPT_RT
+kernel, cores 6-7 isolated, `rtprio`/`memlock` limits, NIC interrupts on the control core, a cyclictest report, and
+the `update_rate` ramp (100 → 250 → 500 → 1000 Hz, each step checked for EtherCAT lost frames, working-counter changes
+and controller overruns). The launch uses the same value for the EtherCAT cycle, so the two cannot drift apart.
+
+| Measured on the RK3588 | Result |
+|---|---|
+| cyclictest, 1 ms period, cores 6-7, under load (`setup_rt.sh latency`) | not measured yet |
+| highest `update_rate` passing `setup_rt.sh rate-check` | not measured yet (runs at the default 100 Hz) |
+- Keep `joint_state_rate` at 50–250 Hz: the controllers read state interfaces directly, and a 1 kHz JointState stream
+  only loads DDS.
+- Distributed clocks are on (`dc_assign_activate: 0x0300` in the model table); check it against the drive's ESI.
+
+## MyActuator drive facts
+
+From MyActuator's EtherCAT control protocol and ESI file (`MT-Device`, firmware 26042402):
+- **0x6071 / 0x6077 / 0x6072 are per mille of the rated *current*** (0x6075, mA, read over SDO), so
+  `effort_nm_per_permille` = Kt × I_rated / 1000 in `config/actuator_models.yaml`. 0x6076 (rated torque) is not implemented.
+- The torque offset 0x60B2 is not in the default RxPDO 0x1600 = [6040, 607A, 60FF, 6071, 6072, 6060, 2FFD]; arm mode
+  adds the optional RxPDO 0x1603 = [60B0, 60B1, 60B2], which needs firmware 26042402 or newer.
+- The drives' own CSP/CSV loop gains are 0x2002–0x2008 (REAL32, SDO only), a cascaded position-P / velocity-PI loop
+  with no documented units: read them on the bench (`ethercat upload -p <pos> -t float 0x2002 0`) before tuning.
+  Saving to flash is Controlword 0 → 0x1000 → 0 within 3 s with the motor disabled.
+- One generic device for every model: vendor 0x00202008, product 0, revision 0x00010000; minimum cycle 250 µs.
+- **Firmware:** all seven arm01 drives run the 26042402 PDO profile (the older 5.12 profile, with base PDOs only and no
+  torque offset, is no longer used). Read a drive's version from 0x100A; `pp_test` prints it.
+- The 26042402 ESI (`MT-Device_260424.xml`) maps kp and kd (0x2000 / 0x2001, int32) into RxPDO 0x1601, next to the
+  controlword, targets and mode: the objects the walking joints' mode 5 needs. Profile-position parameters are in
+  RxPDO 0x1602 (0x6081 velocity, 0x6083 / 0x6084 acceleration / deceleration, 0x6085 quick stop), and 0x603F (error
+  code) is in TxPDO 0x1A00 (`config/pp_test.yaml`).
+- **Torque clamps:** a joint row with `use_peak_torque_limit: true` may set `max_torque_nm` up to the model's peak
+  torque; otherwise the ceiling is the rated torque. Loading refuses anything above.
+- The model table uses the "-E" EtherCAT datasheets. Marked "verify" there: the X4-10 gear ratio (12.5 in the table,
+  12.6 in the user manual, 1:13 on the label), the X4s' encoder counts per output revolution (131072 assumed), and the
+  X4s' torque constant (the datasheet Kt disagrees with rated torque / rated current).
+
+## Profile-position drive check (`pp_test`)
+
+A direct test of the drives that bypasses `ros2_control`: it checks a drive's PDO mapping against the
+profile-position configuration and, if asked, moves it one small step. Stop any launch that owns IgH master 0 first,
+and identify drives by their bus position (`ethercat slaves`).
+
+```bash
+ros2 run wisco_ethercat_ros2_hw pp_test --position 0          # mapping only: controlword stays 0, nothing moves
+ros2 run wisco_ethercat_ros2_hw pp_test --position 0 --move   # same checks, then +5° at 2°/s (type MOVE to confirm)
+ros2 run wisco_ethercat_ros2_hw pp_test --all --move          # every drive in bus order, one confirmation
+```
+It compares the live CoE descriptors with `config/pp_test.yaml`, brings the drive to OP, reads back the SM2
+(0x1601 + 0x1602) and SM3 (0x1A00) mappings, verifies the profile values over SDO, and for a move checks the step
+reached its target within 0.15°. Keep the load supported and clear in the positive direction; a failure or Ctrl-C
+stops the sequence.
+
+## Mock EtherCAT
+
+`test/mock/`: `RmdxMockSlave` is an RMD-X drive as a CiA 402 slave (0x6040/0x6041 state machine, CSP and CST, the
+0x6072 torque cap, a one-joint dynamics model, injectable faults and lost frames); `Cia402DriveMaster` reproduces the
+`EcCiA402Drive` per-cycle logic of `ethercat_driver_ros2`; `MockEthercatSystem` is a `ros2_control` hardware interface
+over both. `test_arm_controller_mock` runs the real `ArmController` and `SafeCommandController` against it: enable,
+fault and reset, CSP/CST switching, the watchdog, torque clamps, rejected commands, the payload. The mock's assumptions
+about the drive are the `RmdxParams` fields marked "guess".
+
+## Safety
+
+Software safety here is the command layer (`SafeCommandController`, `ArmController`'s clamps, soft limits and
+watchdog). The hardware e-stop, which cuts motor power independent of all software, is in `hardware/estop/`.
+
+## Current sensing
+
+`ros2 run wisco_ethercat_ros2_hw current_sensor_node` reads seven ACS758 hall-effect current sensors through an ADS7128
+ADC on I2C (`/dev/i2c-1`, address 0x10): main bus, the 24 V buck converter, all actuators, and four actuator rails. It
+publishes `/power/currents` (`diagnostic_msgs/DiagnosticArray`, one status per rail with `current_a` and `raw_counts`)
+every `poll_period_ms` (100). Parameters: `i2c_device`, `i2c_address`, `poll_period_ms`, `print` (also print a line
+per sweep) and `print_raw_counts`. Zero offsets are set in `kSensors`: measure each channel unloaded with
+`print:=true print_raw_counts:=true`. The rail names in `kSensors` are placeholders until they are matched to the power
+distribution board; compare the readings with the simulated current draw in `robots/wisco_v1/reports/`.
+
+## Open items (need the bench)
+
+- The torque scale for the X4-10 and X4-36 implies more than their rated torque at 1000 ‰: measure Kt and correct it;
+  effort readings and torque commands are suspect until then.
+- Whether 0x6064 reports the output-side or motor-side encoder (the scale factors assume output side, 2^17 counts per
+  output revolution).
+- The test-bench URDF: the right arm's axes don't mirror the left, wrist pitch limits differ left/right, and the
+  shoulder limits don't match the X4-10s wired there (`check_urdf.py`).
+
+## Debugging
+
+- `ros2 control list_controllers`, `ros2 control list_hardware_interfaces`
+- `ros2 topic echo /joint_states`, `ros2 topic hz /joint_states`
+- `ethercat slaves`; `ethercat domains` (the working counter should be N/N)
+- `ros2 run wisco_ethercat_ros2_hw arm status`: the newest calibration version and its contents
+
+Tests: `colcon test --packages-select wisco_ethercat_ros2_hw` (C++ and Python), or the Python part alone with
+`python -m pytest test/arm_stack test/test_hardware_config.py` from this folder.

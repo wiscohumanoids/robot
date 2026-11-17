@@ -88,8 +88,8 @@ The completed local batch-256 check used about 0.30 GiB peak reserved VRAM, with
 100 editor updates and 2,000 critic updates. Its synthetic reward improved from
 approximately -0.368 to -0.109. This measures algorithm/compute behavior only;
 it says nothing about real task success. Synthetic run checkpoints are rejected
-by the real inference service. See `docs/expo-validation.json` for the recorded
-verification results.
+by the real inference service. Each run writes `run.json` (its checks and results) and `metrics.jsonl` into its
+output directory; records are not kept in the repo.
 
 ## Fresh rollout collection and learning rounds
 

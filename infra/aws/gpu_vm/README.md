@@ -4,4 +4,4 @@
 
 - AMI: AWS Deep Learning Base GPU AMI (Ubuntu 24.04), NVIDIA driver ≥ 580
 - Root EBS ≥ 200 GB (the instance-store NVMe is wiped on stop)
-- Setup: `infra/aws/gpu_vm/setup.sh` from the repo root (checks the driver, installs uv + mjlab, verifies torch/Warp on the GPU)
+- Setup: `infra/aws/gpu_vm/setup.sh` from the repo root (checks the driver, installs uv and mjlab, verifies torch and Warp on the GPU), then `tools/vm.sh sync` from the laptop

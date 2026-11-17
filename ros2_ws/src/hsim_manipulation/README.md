@@ -1,7 +1,7 @@
-# hsim_manipulation (Phase 5)
+# hsim_manipulation
 
 Manipulation skill node (ROS name `manipulation`): action server **/skills/manipulate**
-(`hsim_interfaces/action/Manipulate`; design history in `docs/runs/2026-11-10_worklog_F2.md`).
+(`hsim_interfaces/action/Manipulate`).
 
 For a goal `{instruction, object?, target?, max_duration_s?}` it runs the VLA policy (services/vla_server, GR00T) at
 20 Hz: head-camera image + arm/gripper joint state + instruction -> 16-step chunk of absolute joint targets; publishes
@@ -14,8 +14,9 @@ ros2 action send_goal /skills/manipulate hsim_interfaces/action/Manipulate "{ins
 ```
 Behavior tree: `pick(X)` + `place(Y)` in a plan become one goal (`hsim_behavior`). The success check reads the object
 memory, `/world/objects` (map frame).
-Test (throwaway container, builds under /tmp): `docker run --rm -v $PWD:/repo:ro hsim/ros-jazzy:dev bash /repo/ros2_ws/src/hsim_manipulation/test/smoke_test.sh`
+Tests: `test/test_vla_client.py` (pytest, no ROS); `services/vla_server/run_vla_server.sh --mock` serves hold-still
+chunks, so the node can be exercised without a model.
 
 Needs before it works in the full sim (not this package): the G1 in hsim_sim must carry the Dex1-1 grippers and an ego
-camera matching training (F1: D435 mount on the torso, pitched 47.6 deg down, 320x240), and the arm joints must be
+camera matching training (a D435-style mount on the torso, pitched 47.6° down, 320×240), and the arm joints must be
 released by the locomotion policy (legs+waist, arms-free) so `/arm/joint_targets` is their only writer.

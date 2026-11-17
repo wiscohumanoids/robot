@@ -2,7 +2,7 @@ manipulation:
   ros__parameters:
     use_sim_time: true
     vla_url: http://host.docker.internal:8200      # Mac: ssh -N -L 8200:localhost:8200 hsim-gpu
-    image_topic: /camera/head/color/image_raw      # must show the same view as training (F1 ego camera: G1 D435 mount)
+    image_topic: /camera/head/color/image_raw      # must show the same view as training (the training ego camera: G1 D435 mount)
     joint_states_topic: /joint_states
     targets_topic: /arm/joint_targets
     objects_topic: /world/objects

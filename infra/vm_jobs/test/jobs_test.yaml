@@ -1,6 +1,6 @@
 # Test jobs for vmjobs (dummy, no GPU). Outputs under ~/hsim_runs/_vmjobs_test/.
 defaults:
-  repo: ~/humanoid-sim-stack
+  repo: ~/robot
   runs: ~/hsim_runs/_vmjobs_test
   env: {PYTHONUNBUFFERED: "1"}
 jobs:
@@ -27,7 +27,7 @@ jobs:
     workdir: "{repo}"
     command: "{repo}/training/locomotion/.venv/bin/python -c \"import torch,time; x=torch.zeros(256,1024,1024,device='cuda'); print('holding 1 GB'); time.sleep(25); print('bye')\""
   T6_g1v1:
-    description: copy of the 2026-11-08 G1 all-joints run's last checkpoint (report test only, never launched)
+    description: a copied G1 all-joints run (report test only, never launched)
     kind: rl
     enabled: false
     workdir: "{repo}/training/locomotion"

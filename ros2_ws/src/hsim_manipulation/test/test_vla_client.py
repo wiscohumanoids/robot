@@ -1,3 +1,4 @@
+"""VLA client tests: request encoding, chunk handling and HTTP round trips against a local fake server."""
 import base64
 import struct
 import zlib

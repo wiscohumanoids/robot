@@ -10,6 +10,7 @@ from postprocess_kept import source_path, read_rows, sha256, write_json, data_ti
 
 
 def verify(root, source, previous_root=None):
+    """Check a processed dataset against its full-rate source."""
     manifest = json.loads((root / 'processing/manifest.json').read_text())
     checked_images = checked_states = original_images = 0
     reused = 0

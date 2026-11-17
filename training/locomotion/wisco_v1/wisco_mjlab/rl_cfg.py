@@ -4,6 +4,7 @@ from mjlab.rl import RslRlModelCfg, RslRlOnPolicyRunnerCfg, RslRlPpoAlgorithmCfg
 
 
 def wisco_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """PPO settings for the Wisco task (the G1 runner's values)."""
   return RslRlOnPolicyRunnerCfg(
     actor=RslRlModelCfg(
       hidden_dims=(512, 256, 128),

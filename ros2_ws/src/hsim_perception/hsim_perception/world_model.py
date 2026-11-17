@@ -39,6 +39,7 @@ from vision_msgs.msg import Detection3D, Detection3DArray, ObjectHypothesisWithP
 
 
 def quat_to_mat(x, y, z, w):
+    """Rotation matrix from a quaternion (x, y, z, w)."""
     return np.array([
         [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
@@ -46,7 +47,9 @@ def quat_to_mat(x, y, z, w):
 
 
 class Track:
+    """One remembered object: smoothed position and size, confidence, sightings and distinct views."""
     def __init__(self, tid, label, pos, size, score, t):
+        """Start a tentative track (no id until it is confirmed)."""
         self.id, self.label = tid, label          # id None while tentative (assigned at confirmation)
         self.pos, self.size = pos, size
         self.confidence = 0.5 * score
@@ -55,6 +58,9 @@ class Track:
         self.view_cam = None                      # camera (position, forward axis) at the last counted view
 
     def update(self, pos, size, score, t, alpha=0.3, cam=None, view_rule=None):
+        """Blend in a new sighting; count it as a new view when `view_rule` says the camera moved or enough time
+        passed.
+        """
         self.pos = (1 - alpha) * self.pos + alpha * pos
         self.size = (1 - alpha) * self.size + alpha * size
         self.confidence = min(0.99, 1 - (1 - self.confidence) * (1 - 0.5 * score))
@@ -66,7 +72,12 @@ class Track:
 
 
 class WorldModel(Node):
+    """Node `world_model`: places detections in the map with the robot's own pose and keeps a merged object memory.
+    """
     def __init__(self):
+        """Declare the association and confirmation parameters, set up TF, subscribe to detections, start the
+        publish timer.
+        """
         super().__init__('world_model')
         self.declare_parameter('map_frame', 'map')
         self.declare_parameter('base_frame', 'base_footprint')
@@ -100,6 +111,9 @@ class WorldModel(Node):
         self.get_logger().info('world model: tracking objects seen by perception, in the map frame')
 
     def to_map(self, frame, stamp):
+        """Map-from-`frame` transform at `stamp` (falling back to the latest), as (p, R), or None while not
+        localized.
+        """
         try:
             tf = self.tf.lookup_transform(self.map_frame, frame, Time.from_msg(stamp), Duration(seconds=0.5))
         except Exception:
@@ -118,6 +132,9 @@ class WorldModel(Node):
         return np.array([t.x, t.y, t.z]), quat_to_mat(q.x, q.y, q.z, q.w)
 
     def on_detections(self, msg: Detection3DArray):
+        """Transform detections into the map frame and associate each with the nearest same-label track, or start a
+        new one.
+        """
         if not msg.detections:
             return
         T = self.to_map(msg.header.frame_id, msg.header.stamp)
@@ -153,6 +170,7 @@ class WorldModel(Node):
                 self.confirm(best)
 
     def new_view(self, tr, t, cam):
+        """Whether a sighting counts as a new view: enough time passed, or the camera moved or turned enough."""
         dt = t - tr.last_view
         if dt < self.min_view_dt:
             return False
@@ -163,6 +181,7 @@ class WorldModel(Node):
         return moved >= self.min_view_move or turned <= self.min_view_cos
 
     def confirm(self, tr):
+        """Give a track its id (label_N) once it has enough views."""
         k = self.counter.get(tr.label, 0) + 1
         self.counter[tr.label] = k
         tr.id = f"{tr.label.replace(' ', '_')}_{k}"
@@ -170,11 +189,13 @@ class WorldModel(Node):
         self.get_logger().info(f'new object: {tr.id} at ({tr.pos[0]:.2f}, {tr.pos[1]:.2f}, {tr.pos[2]:.2f}){extra}')
 
     def expire_tentative(self, now):
+        """Drop unconfirmed tracks not seen for a while (only when confirmation needs several views)."""
         if self.confirm_views <= 1:
             return
         self.tracks = [tr for tr in self.tracks if tr.id is not None or now - tr.last_seen < self.tentative_timeout]
 
     def relations(self):
+        """Which confirmed objects rest on which ("on" relations), from their boxes."""
         rel = {}
         conf = [tr for tr in self.tracks if tr.id is not None]      # relations only between committed objects
         for a in conf:
@@ -189,6 +210,7 @@ class WorldModel(Node):
         return rel
 
     def robot_pose(self):
+        """The robot's (x, y, yaw) in the map, or None while not localized."""
         try:
             tf = self.tf.lookup_transform(self.map_frame, self.base_frame, Time())
         except Exception:
@@ -223,6 +245,7 @@ class WorldModel(Node):
                     break
 
     def publish(self):
+        """Merge duplicates, expire stale tentative tracks, and publish /world/objects and /world/summary."""
         self.merge_duplicates()
         self.expire_tentative(self.get_clock().now().nanoseconds * 1e-9)
         confirmed = [tr for tr in self.tracks if tr.id is not None]
@@ -268,6 +291,7 @@ class WorldModel(Node):
 
 
 def main():
+    """Entry point: spin the node on three threads (TF listener + detection and publish work) until Ctrl-C."""
     rclpy.init()
     node = WorldModel()
     ex = MultiThreadedExecutor(num_threads=3)     # TF listener + detection/publish work in parallel

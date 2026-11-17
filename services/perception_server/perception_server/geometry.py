@@ -19,6 +19,7 @@ import numpy as np
 
 
 def erode(mask: np.ndarray, r: int) -> np.ndarray:
+    """Erode a boolean mask by `r` pixels (4-neighbourhood)."""
     if r <= 0:
         return mask
     m = mask.copy()
@@ -47,6 +48,7 @@ def nearest_cluster(z: np.ndarray, min_frac: float = 0.25) -> np.ndarray:
 
 
 def resize_nearest(mask: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+    """Nearest-neighbour resize of a boolean mask."""
     if mask.shape == tuple(shape):
         return mask
     H, W = mask.shape

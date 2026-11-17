@@ -28,13 +28,16 @@ FIELDS = (
 
 
 class Episode:
+    """One recorded take: rows of arrays and optional rendered frames."""
     def __init__(self, *, simulation_dynamics: str = "contact-v2") -> None:
+        """Empty take, tagged with the simulator dynamics."""
         self.simulation_dynamics = simulation_dynamics
         self.rows: list[dict] = []
         self.sim_frames: list[np.ndarray] = []
         self.t0 = time.time()
 
     def add(self, row: dict, sim: np.ndarray | None = None) -> None:
+        """Append one row (and a frame)."""
         self.rows.append(row)
         if sim is not None:
             self.sim_frames.append(sim)
@@ -44,6 +47,7 @@ class Episode:
 
     def save(self, out_dir: Path, meta: dict, fps: float,
              save_video: bool) -> None:
+        """Write data.npz, meta.json and the video."""
         out_dir.mkdir(parents=True, exist_ok=True)
         optional = ("sim_time", "finger_q", "finger_dq", "physics_steps")
         fields = (*FIELDS, *(key for key in optional if self.rows and all(key in row for row in self.rows)))
@@ -71,6 +75,7 @@ class Episode:
 
 
 def write_video(path: Path, frames: list[np.ndarray], fps: float) -> None:
+    """Write frames to an MP4."""
     height, width = frames[0].shape[:2]
     writer = cv2.VideoWriter(
         str(path), cv2.VideoWriter_fourcc(*"mp4v"), max(fps, 1.0),
@@ -85,6 +90,7 @@ def write_video(path: Path, frames: list[np.ndarray], fps: float) -> None:
 
 
 def next_episode_dir(root: Path) -> Path:
+    """The next free episode_NNN folder."""
     root.mkdir(parents=True, exist_ok=True)
     number = 0
     while (root / f"episode_{number:03d}").exists():

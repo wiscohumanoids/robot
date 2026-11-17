@@ -78,7 +78,7 @@ The MCU sits between the two worlds and translates. On one side it's an EtherCAT
 
 A human either grabs a joystick — in which case they are the planner and their command flows straight to /cmd_vel — or speaks a goal, which Whisper turns to text, which wakes a task planner that reasons once, combining a skill library and live world state through a language model into an ordered skill sequence, which a behavior tree then executes reactively at 20Hz, guarding safety every tick, reading the world from a blackboard, calling action servers for each skill, and recovering from failures — and when a skill is navigation, Nav2 turns it into a path and then into /cmd_vel, the very same three velocity numbers the joystick would have produced, so both paths converge there. The locomotion policy takes /cmd_vel and outputs joint angle targets; a WBC or a PD controller turns those into torques; ros2_control's 1kHz read-update-write loop takes those torques and, through its EtherCAT hardware plugin, packs each into a CiA 402 target-torque object at address 0x6071 and fires one EtherCAT frame down a daisy chain that services every drive in under a hundred microseconds, its packet layout defined by a YAML mapping you filled from each actuator's datasheet, all drives clock-synchronized to under a microsecond; inside each drive, field-oriented control at thirty kilohertz turns that torque into phase currents that spin the motor, while the encoder reads the actual angle and sends it back up through EtherCAT into ros2_control into the state estimator into the policy's next observation, closing the loop — and if the motors speak CAN instead of EtherCAT, an MCU running your firmware sits in the chain wearing an EtherCAT-slave mask on one face and a CAN-master face on the other, translating between them every millisecond. From a sentence to a spinning motor, that's the whole stack.
 
-## In our stack (2026-11)
+## In our stack
 
 | Stage | Wisco V1 / this repo |
 |---|---|
@@ -88,11 +88,12 @@ A human either grabs a joystick — in which case they are the planner and their
 | Navigation | Nav2 + RTAB-Map SLAM, `ros2_ws/src/hsim_navigation/` |
 | Velocity arbitration | `twist_mux`: teleop > final approach > Nav2; e-stop lock above all |
 | Walking policy | mjlab-trained PPO policy, ONNX, 50 Hz, `models/locomotion/wisco_v1_velocity_arms_free/` |
-| Angle → torque | legs, waist, head: PD in the MyActuator driver (mode 5); arms: arm controller → torque (mode 10, CST) |
+| Angle → torque | legs, waist, head: PD in the MyActuator driver (mode 5); arms: arm controller → position with a gravity torque offset, or torque (CST) |
 | ros2_control + EtherCAT | `ethercat_driver_ros2` on the RK3588, configuration in `ros2_ws/src/wisco_ethercat_ros2_hw/` (one motor on a bench so far) |
 | Motors | MyActuator RMD-X8-150, X6-60, X4-36, X4-10 (`robots/wisco_v1/model/robot_numbers.yaml`) |
 | Safety | ROS: `hsim_safety` (e-stop lock, fall, battery, stale sensors); hardware: wireless e-stop cutting the 48 V contactor (`hardware/estop/`) |
 
-Today the bottom of this chain is MuJoCo: the simulator applies the same PD the drivers will. Where each part
-stands: `STATUS.md`; the architecture of this repo: `docs/architecture.md`.
+Today the bottom of this chain is MuJoCo: the simulator applies the same PD the drives will. How this repo
+implements each layer, file by file: [stack_walkthrough.md](stack_walkthrough.md); what runs today and the swap
+points: the root `README.md`.
 

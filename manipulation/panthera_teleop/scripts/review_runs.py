@@ -16,13 +16,16 @@ from hitl_recording import data_timestamp, data_origin
 
 
 class ReviewStore:
+    """Annotations of recorded runs, edited through the review page."""
     def __init__(self, source, annotations, template):
+        """Source runs, annotations file and template."""
         self.source = source.resolve()
         self.annotations = annotations.resolve()
         self.template = template
         self.lock = threading.Lock()
 
     def spec(self):
+        """The annotations (from the template when new)."""
         if self.annotations.exists():
             return json.loads(self.annotations.read_text())
         spec = json.loads(self.template.read_text())
@@ -34,16 +37,19 @@ class ReviewStore:
 
     @staticmethod
     def write_json(path, value):
+        """Write JSON atomically."""
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix(path.suffix + '.tmp')
         temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + '\n')
         temporary.replace(path)
 
     def review_state(self):
+        """Saved review progress."""
         path = self.annotations.with_suffix('.review-state.json')
         return json.loads(path.read_text()) if path.exists() else {}
 
     def episode_path(self, identifier):
+        """Folder of an episode."""
         if Path(identifier).name != identifier or identifier in ('.', '..'):
             raise ValueError('Unknown episode')
         roots = [self.source]
@@ -58,6 +64,7 @@ class ReviewStore:
         return path
 
     def episode(self, identifier):
+        """An episode with its metadata."""
         path = self.episode_path(identifier)
         metadata = json.loads((path / 'metadata.json').read_text())
         origin = data_origin(metadata)
@@ -82,6 +89,7 @@ class ReviewStore:
                     notes=self.review_state().get(identifier, {}).get('notes', None))
 
     def listing(self):
+        """All episodes with their review state."""
         edits = {e['id']: e for e in self.spec()['episodes']}
         state = self.review_state()
         roots = [self.source]
@@ -104,6 +112,7 @@ class ReviewStore:
         return dict(episodes=rows, annotations=str(self.annotations))
 
     def update_details(self, identifier, payload):
+        """Update an episode's category and notes."""
         with self.lock:
             path = self.episode_path(identifier)
             category = payload.get('category')
@@ -143,6 +152,7 @@ class ReviewStore:
             return dict(id=identifier, notes=details.get('notes', None), label=metadata.get('label'))
 
     def save(self, identifier, payload):
+        """Save an episode's trim and labels."""
         with self.lock:
             episode = self.episode(identifier)
             if episode['label'] == 'discarded':
@@ -168,6 +178,7 @@ class ReviewStore:
 
 
 def handler_for(store):
+    """HTTP handler for the review page."""
     class Handler(BaseHTTPRequestHandler):
         def respond(self, value, status=200):
             data = json.dumps(value, allow_nan=False).encode()
@@ -237,7 +248,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=ROOT / 'data/review')
     parser.add_argument('--annotations', type=Path, default=ROOT / 'config/postprocessing-review.json')
-    parser.add_argument('--template', type=Path, default=ROOT / 'config/postprocessing-gear-pin-sept30.json')
+    parser.add_argument('--template', type=Path, default=ROOT / 'config/postprocessing-template.json')
     parser.add_argument('--port', type=int, default=8091)
     args = parser.parse_args()
     store = ReviewStore(args.source, args.annotations, args.template)

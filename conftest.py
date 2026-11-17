@@ -2,7 +2,7 @@
 (policy_contract, prompt, vla_client, server_link, ...) can be unit-tested with plain pytest, no ROS
 installation needed:
 
-    python -m pytest tests ros2_ws/src/*/test -q
+    python -m pytest tests ros2_ws/src/*/test training/sim2real manipulation/finetune -q
 
 Test modules must not import rclpy; tests that need a running stack live in tools/ (stack_smoke_test.sh,
 autonomy_test.sh) and run inside the ROS container."""

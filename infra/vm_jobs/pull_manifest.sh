@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VM side of tools/vm_pull_results.sh: print the files worth pulling (relative to RUNS_DIR), then a final
+# VM side of `tools/vm.sh pull-results`: print the files worth pulling (relative to RUNS_DIR), then a final
 # line "TOTAL <bytes>". Small artifacts + only the newest model_*.pt per run dir; never data/datasets/raw/wandb,
 # stdout logs, tensorboard events, or (unless pulling it explicitly) the vmjobs test folder and vm_backup.
 #   pull_manifest.sh RUNS_DIR

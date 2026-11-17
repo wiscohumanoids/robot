@@ -27,6 +27,7 @@ SCRIPT = [(4, (0, 0, 0), "stand"), (3, (0.4, 0, 0), "walk 0.4"), (4, (0, 0, 0), 
 
 
 def run(folder, seed=0):
+    """Run the command script with the policy in plain MuJoCo and report sway and drift per phase."""
     p = Policy.load(Path(folder))
     m = mujoco.MjModel.from_xml_path(str(DEFAULT_SCENE))
     r, d = Robot(m, p), mujoco.MjData(m)

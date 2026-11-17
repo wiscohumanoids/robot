@@ -1,7 +1,7 @@
 """Ankle linkage analysis for training (uses the rod geometry in robots/wisco_v1/linkage.json).
 
 Why this exists: robots/wisco_v1/linkage.py solves each crank angle with a secant iteration started
-at 0, which diverges near the edge of the ankle range (HARDWARE_ISSUES H2). Here each crank
+at 0, which diverges near the edge of the ankle range (hardware_observations.md, Ankle reach). Here each crank
 angle is found by bracketing the rod-length equation on a fine scan and refining with
 brentq, then:
 
@@ -56,6 +56,7 @@ def crank_angles(mech, q, ref=None):
 
 
 def jacobian(mech, q, ref, h=1e-5):
+    """Central-difference Jacobian of crank angles with respect to (pitch, roll)."""
     J = np.zeros((2, 2))
     for k in range(2):
         d = np.zeros(2); d[k] = h
@@ -68,6 +69,7 @@ def jacobian(mech, q, ref, h=1e-5):
 
 
 def main():
+    """Scan the ankle linkage over its range: reachable limits and Jacobian grids into ankle_linkage.json."""
     rep = load_report()
     pitch_upper = rep["left_ankle_pitch"]["upper"]
     roll_lo, roll_hi = rep["left_ankle_roll"]["lower"], rep["left_ankle_roll"]["upper"]

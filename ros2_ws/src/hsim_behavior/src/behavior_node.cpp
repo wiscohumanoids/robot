@@ -13,7 +13,7 @@
 //      |- SearchFor target=... hints=a;b   visit hinted places and look around until it shows up
 //      |- LookAround                 full turn (Nav2 spin)
 //      |- Say text=...               /robot/say
-//      '- Pick / Place               not available until Phase 5: fail with that reason
+//      '- Manipulate instruction=... one VLA goal on /skills/manipulate (pick / place, or both in one goal)
 //
 // Geometry never comes from the planner: targets are names, resolved against /world/objects.
 
@@ -84,6 +84,7 @@ struct Context {
   int current_index = -1;
   std::string current_skill, status, failure;
 
+  // Lowercase copy of a string.
   static std::string lower(std::string s) {
     for (auto& c : s) c = std::tolower(c);
     return s;
@@ -105,6 +106,7 @@ struct Context {
     }
     return best;
   }
+  // Robot (x, y, yaw) in `frame`, or nullopt while TF is not available.
   std::optional<std::array<double, 3>> robot_pose(const char* frame = "map") {
     try {
       auto t = tf->lookupTransform(frame, "base_footprint", tf2::TimePointZero);
@@ -115,6 +117,7 @@ struct Context {
       return std::nullopt;
     }
   }
+  // Record why the current skill failed (returned to the planner).
   void fail(const std::string& why) { failure = why; }
 
   // The furniture a small object rests on (the red block's table), if it is in memory.
@@ -167,6 +170,7 @@ struct Context {
     }
     return std::nullopt;
   }
+  // Whether a map has been received.
   bool has_map() { std::lock_guard<std::mutex> lk(mtx); return static_cast<bool>(map); }
   // What the robot's map says at (x, y): -1 unknown / off the map, 0 free, 1 occupied.
   int cell(double x, double y) {
@@ -199,6 +203,7 @@ struct Context {
     if (!covered) return std::nullopt;
     return best;
   }
+  // Nearest scan return straight ahead within +-half_angle.
   std::optional<double> front_range(double half_angle) { return range_toward(0.0, half_angle); }
   // Heading error to the flat surface straight ahead, from the scan alone (fits a line to the returns
   // within +-35 deg and 1 m). Independent of the pose estimate. nullopt: no clean flat surface seen.
@@ -208,6 +213,7 @@ struct Context {
     if (!scan) return std::nullopt;
     return rclcpp::Time(scan->header.stamp, RCL_ROS_TIME);
   }
+  // Heading error to the flat surface ahead (see the comment above).
   std::optional<double> surface_heading_error() {
     std::lock_guard<std::mutex> lk(mtx);
     if (!scan || (node->now() - scan_stamp).seconds() > 0.5) return std::nullopt;
@@ -251,6 +257,7 @@ struct Context {
     }
     return best;
   }
+  // Publish a velocity command on the approach input of twist_mux.
   void drive(double vx, double wz, double vy = 0.0) {
     geometry_msgs::msg::TwistStamped t;
     t.header.stamp = node->now();
@@ -274,6 +281,7 @@ struct PendingGoal {
   std::shared_ptr<typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr> handle_ptr =
       std::make_shared<typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr>();
 
+  // Send a goal and track its acceptance and result.
   void send(typename rclcpp_action::Client<ActionT>::SharedPtr client, const typename ActionT::Goal& goal) {
     // Fresh slots for every goal: when a new goal preempts the old one, the old goal's late
     // "aborted/canceled" result lands in the old slots and can't end the new goal.
@@ -292,16 +300,22 @@ struct PendingGoal {
     };
     client->async_send_goal(goal, opts);
   }
+  // Cancel the goal if one is in flight.
   void cancel(typename rclcpp_action::Client<ActionT>::SharedPtr client) {
     if (*handle_ptr && !result->has_value()) client->async_cancel_goal(*handle_ptr);
   }
+  // Whether the goal finished or was rejected.
   bool done() const { return result->has_value() || *rejected_flag; }
+  // Whether the action server rejected the goal.
   bool was_rejected() const { return *rejected_flag; }
+  // Whether the goal finished successfully.
   bool succeeded() const { return result->has_value() && **result == rclcpp_action::ResultCode::SUCCEEDED; }
 };
 
+// Angle wrapped to (-pi, pi].
 double wrap(double a) { return std::atan2(std::sin(a), std::cos(a)); }
 
+// Map-frame pose stamped now.
 geometry_msgs::msg::PoseStamped pose_at(double x, double y, double yaw) {
   geometry_msgs::msg::PoseStamped p;
   p.header.frame_id = "map";
@@ -369,6 +383,7 @@ double standoff_for(const std::string& label) {
   if (l.find("cabinet") != std::string::npos || l.find("drawer") != std::string::npos) return 0.35;
   return REACH_STANDOFF;
 }
+// Whether to approach the middle of the object's front (appliances) rather than its nearest part.
 bool center_on_front(const std::string& label) {
   const std::string l = Context::lower(label);
   for (const char* k : {"fridge", "refrigerator", "dishwasher", "oven", "stove", "sink", "microwave", "cabinet", "drawer",
@@ -386,9 +401,13 @@ struct Approach {
   double reach_dist;     // body center (at the reach spot) -> target, horizontally
   double staging = STAGING_STANDOFF;   // where Nav2 stops: pulled in (>= STAGING_MIN) when a wall is close behind
   double reach = REACH_STANDOFF;       // where the approach stops (per object kind: standoff_for)
+  // Standing spot x at `standoff` from the face.
   double x(double standoff) const { return px + nx * standoff; }
+  // Standing spot y at `standoff` from the face.
   double y(double standoff) const { return py + ny * standoff; }
+  // Heading that faces the surface.
   double yaw() const { return std::atan2(-ny, -nx); }
+  // Standing pose at `standoff` from the face.
   geometry_msgs::msg::PoseStamped pose(double standoff) const { return pose_at(x(standoff), y(standoff), yaw()); }
 };
 
@@ -474,12 +493,14 @@ class SkillBase : public BT::StatefulActionNode {
  public:
   SkillBase(const std::string& name, const BT::NodeConfig& cfg, Ctx ctx) : BT::StatefulActionNode(name, cfg), ctx_(ctx) {}
  protected:
+  // Report which skill of the plan is running.
   void mark(const std::string& what) {
     auto idx = getInput<int>("index");
     ctx_->current_index = idx ? idx.value() : -1;
     ctx_->current_skill = what;
     ctx_->status = "running " + what;
   }
+  // A string input port, empty when unset.
   std::string in(const char* key) {
     auto v = getInput<std::string>(key);
     return v ? v.value() : "";
@@ -490,7 +511,9 @@ class SkillBase : public BT::StatefulActionNode {
 class NavigateTo : public SkillBase {
  public:
   using SkillBase::SkillBase;
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() { return {BT::InputPort<std::string>("target"), BT::InputPort<int>("index")}; }
+  // Resolve the target, choose a side to stand at, and send Nav2 to the staging spot.
   BT::NodeStatus onStart() override {
     target_ = in("target");
     mark("navigate_to(" + target_ + ")");
@@ -514,6 +537,7 @@ class NavigateTo : public SkillBase {
     phase_ = Phase::Travel;
     return BT::NodeStatus::RUNNING;
   }
+  // Follow Nav2, then run the final approach to arm's reach.
   BT::NodeStatus onRunning() override {
     if (phase_ != Phase::Travel) return approach();
     // The view of the target sharpens as we get closer: re-plan every second and move the staging
@@ -575,6 +599,7 @@ class NavigateTo : public SkillBase {
     ctx_->status = "stepping up to the " + plan_->surface;
     return BT::NodeStatus::RUNNING;
   }
+  // Stop moving and cancel Nav2.
   void onHalted() override {
     goal_.cancel(ctx_->nav);
     if (phase_ != Phase::Travel) ctx_->drive(0.0, 0.0);
@@ -582,6 +607,7 @@ class NavigateTo : public SkillBase {
 
  private:
   enum class Phase { Travel, Turn, Drive, Square };
+  // Send a Nav2 goal to `pose`.
   void send(const geometry_msgs::msg::PoseStamped& pose) {
     NavigateToPose::Goal g;
     g.pose = pose;
@@ -591,9 +617,6 @@ class NavigateTo : public SkillBase {
     last_check_ = ctx_->node->now();
   }
 
-  // Final approach, closed-loop on the robot's own pose estimate and lidar: square up to the
-  // surface, then walk straight in until it is REACH_STANDOFF away. Commands go to twist_mux's
-  // "approach" input (above Nav2, below teleop; the e-stop lock still blocks it).
   // Final approach (after Nav2 stops at the staging spot): square up to the surface while my own sensor can still
   // see it, then walk straight in holding that heading, and stop REACH_STANDOFF from it.
   // Headings and the last few cm are tracked in the ODOM frame (leg odometry + IMU): smooth over half a metre, and
@@ -691,6 +714,7 @@ class NavigateTo : public SkillBase {
     ctx_->drive(remaining > 0.10 ? 0.3 : 0.2, std::clamp(1.5 * err, -0.4, 0.4));
     return BT::NodeStatus::RUNNING;
   }
+  // Stop, check the final distance and heading against the reach rule, and finish.
   BT::NodeStatus arrived(double gap, double err) {
     ctx_->drive(0.0, 0.0);
     auto r = ctx_->robot_pose();
@@ -753,7 +777,9 @@ class NavigateTo : public SkillBase {
 class StepBack : public BT::StatefulActionNode {
  public:
   StepBack(const std::string& name, const BT::NodeConfig& cfg, Ctx ctx) : BT::StatefulActionNode(name, cfg), ctx_(ctx) {}
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() { return {BT::InputPort<bool>("turn", false, "a turn in place comes next")}; }
+  // Decide whether the robot must back off, step away, or find open floor before the next skill.
   BT::NodeStatus onStart() override {
     auto t = getInput<bool>("turn");
     turn_ = t && t.value();
@@ -773,6 +799,7 @@ class StepBack : public BT::StatefulActionNode {
     }
     return escape();
   }
+  // Run the current phase (back off, step away, walk to open floor).
   BT::NodeStatus onRunning() override {
     if (phase_ == Phase::Back) {
       auto r = ctx_->robot_pose();
@@ -801,6 +828,7 @@ class StepBack : public BT::StatefulActionNode {
     if (!nav_.done()) return BT::NodeStatus::RUNNING;
     return BT::NodeStatus::SUCCESS;              // reached open floor, or couldn't: let the next skill try anyway
   }
+  // Stop moving and cancel Nav2.
   void onHalted() override {
     if (phase_ != Phase::Open) ctx_->drive(0.0, 0.0);
     else nav_.cancel(ctx_->nav);
@@ -810,6 +838,7 @@ class StepBack : public BT::StatefulActionNode {
   enum class Phase { Back, Escape, Open };
   static constexpr double CLEAR = 0.6;          // room needed to turn in place
   static constexpr double ESCAPE_CLEAR = 0.42;  // closer than this, Nav2 may think the robot is touching it
+  // Step directly away from the nearest obstacle when too close; else go on to the open-floor check.
   BT::NodeStatus escape() {
     auto near = ctx_->nearest_return();
     if (!near || near->first >= ESCAPE_CLEAR) return open_floor();
@@ -820,6 +849,7 @@ class StepBack : public BT::StatefulActionNode {
                 near->first, near->second * 180 / M_PI);
     return BT::NodeStatus::RUNNING;
   }
+  // Before a turn in place, walk (Nav2) to the nearest spot with room all round.
   BT::NodeStatus open_floor() {
     phase_ = Phase::Open;
     if (!turn_) return BT::NodeStatus::SUCCESS;
@@ -854,7 +884,9 @@ class StepBack : public BT::StatefulActionNode {
 class LookAround : public SkillBase {
  public:
   using SkillBase::SkillBase;
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() { return {BT::InputPort<int>("index")}; }
+  // Start a full turn (Nav2 spin, or turning in place directly when close to obstacles).
   BT::NodeStatus onStart() override {
     mark("look_around");
     manual_ = false;
@@ -865,6 +897,7 @@ class LookAround : public SkillBase {
     goal_.send(ctx_->spin, g);
     return BT::NodeStatus::RUNNING;
   }
+  // Wait for the turn to finish.
   BT::NodeStatus onRunning() override {
     if (manual_) return turn_myself();
     if (!goal_.done()) return BT::NodeStatus::RUNNING;
@@ -878,9 +911,11 @@ class LookAround : public SkillBase {
     manual_ = true; turned_ = 0.0; last_yaw_ = (*r)[2]; start_ = ctx_->node->now();
     return turn_myself();
   }
+  // Stop the turn.
   void onHalted() override { if (manual_) ctx_->drive(0, 0); else goal_.cancel(ctx_->spin); manual_ = false; }
  private:
   static constexpr double TOUCH = 0.30;
+  // Turn in place with direct velocity commands (Nav2 refuses to spin near obstacles).
   BT::NodeStatus turn_myself() {
     auto r = ctx_->robot_pose();
     auto near = ctx_->nearest_return();
@@ -908,7 +943,9 @@ class LookAround : public SkillBase {
 class FindObject : public SkillBase {
  public:
   using SkillBase::SkillBase;
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() { return {BT::InputPort<std::string>("target"), BT::InputPort<int>("index")}; }
+  // Succeed if the object is already in memory, else look around once.
   BT::NodeStatus onStart() override {
     target_ = in("target");
     mark("find_object(" + target_ + ")");
@@ -920,12 +957,14 @@ class FindObject : public SkillBase {
     goal_.send(ctx_->spin, g);
     return BT::NodeStatus::RUNNING;
   }
+  // After the look-around, succeed if the object was seen.
   BT::NodeStatus onRunning() override {
     if (ctx_->resolve(target_)) { goal_.cancel(ctx_->spin); return BT::NodeStatus::SUCCESS; }
     if (!goal_.done()) return BT::NodeStatus::RUNNING;
     ctx_->fail("I looked around but I can't see a " + target_ + " from here");
     return BT::NodeStatus::FAILURE;
   }
+  // Stop the turn.
   void onHalted() override { goal_.cancel(ctx_->spin); }
  private:
   std::string target_;
@@ -935,9 +974,11 @@ class FindObject : public SkillBase {
 class SearchFor : public SkillBase {
  public:
   using SkillBase::SkillBase;
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() {
     return {BT::InputPort<std::string>("target"), BT::InputPort<std::string>("hints"), BT::InputPort<int>("index")};
   }
+  // Start visiting the hinted places.
   BT::NodeStatus onStart() override {
     target_ = in("target");
     mark("search_for(" + target_ + ")");
@@ -949,6 +990,7 @@ class SearchFor : public SkillBase {
     visited_.clear();
     return ctx_->resolve(target_) ? BT::NodeStatus::SUCCESS : BT::NodeStatus::RUNNING;
   }
+  // Walk to each hint and look around until the object shows up.
   BT::NodeStatus onRunning() override {
     if (ctx_->resolve(target_)) { nav_.cancel(ctx_->nav); spin_.cancel(ctx_->spin); return BT::NodeStatus::SUCCESS; }
     switch (phase_) {
@@ -988,9 +1030,11 @@ class SearchFor : public SkillBase {
     }
     return BT::NodeStatus::FAILURE;
   }
+  // Cancel walking and turning.
   void onHalted() override { nav_.cancel(ctx_->nav); spin_.cancel(ctx_->spin); }
  private:
   enum class Phase { Next, Walking, Looking };
+  // Start a full look-around turn.
   BT::NodeStatus start_spin() {
     Spin::Goal g;
     g.target_yaw = 6.2;
@@ -1013,10 +1057,12 @@ class SearchFor : public SkillBase {
 class Manipulate : public SkillBase {
  public:
   using SkillBase::SkillBase;
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() {
     return {BT::InputPort<std::string>("instruction"), BT::InputPort<std::string>("object"),
             BT::InputPort<std::string>("target"), BT::InputPort<int>("index")};
   }
+  // Send the manipulation goal.
   BT::NodeStatus onStart() override {
     const std::string instr = in("instruction");
     mark("manipulate(" + instr + ")");
@@ -1044,12 +1090,14 @@ class Manipulate : public SkillBase {
     ctx_->manip->async_send_goal(g, opts);
     return BT::NodeStatus::RUNNING;
   }
+  // Wait for the manipulation result.
   BT::NodeStatus onRunning() override {
     if (!done_->has_value()) return BT::NodeStatus::RUNNING;
     if ((*done_)->first) return BT::NodeStatus::SUCCESS;
     ctx_->fail((*done_)->second.empty() ? "the hand skill failed" : (*done_)->second);
     return BT::NodeStatus::FAILURE;
   }
+  // Cancel the manipulation goal.
   void onHalted() override {
     if (*handle_ && !done_->has_value()) ctx_->manip->async_cancel_goal(*handle_);
   }
@@ -1059,23 +1107,12 @@ class Manipulate : public SkillBase {
       std::make_shared<rclcpp_action::ClientGoalHandle<ManipulateAction>::SharedPtr>();
 };
 
-class NotYetAvailable : public SkillBase {     // kept for skills that have no implementation
- public:
-  using SkillBase::SkillBase;
-  static BT::PortsList providedPorts() { return {BT::InputPort<std::string>("target"), BT::InputPort<int>("index")}; }
-  BT::NodeStatus onStart() override {
-    mark(name() + "(" + in("target") + ")");
-    ctx_->fail("I can't " + Context::lower(name()) + " things yet: my manipulation skills aren't installed (Phase 5)");
-    return BT::NodeStatus::FAILURE;
-  }
-  BT::NodeStatus onRunning() override { return BT::NodeStatus::FAILURE; }
-  void onHalted() override {}
-};
-
 class Say : public BT::SyncActionNode {
  public:
   Say(const std::string& name, const BT::NodeConfig& cfg, Ctx ctx) : BT::SyncActionNode(name, cfg), ctx_(ctx) {}
+  // Ports this node reads from the plan XML.
   static BT::PortsList providedPorts() { return {BT::InputPort<std::string>("text"), BT::InputPort<int>("index")}; }
+  // Publish the text on /robot/say.
   BT::NodeStatus tick() override {
     auto t = getInput<std::string>("text");
     std_msgs::msg::String m;
@@ -1091,7 +1128,9 @@ class Say : public BT::SyncActionNode {
 class IsSafe : public BT::ConditionNode {
  public:
   IsSafe(const std::string& name, const BT::NodeConfig& cfg, Ctx ctx) : BT::ConditionNode(name, cfg), ctx_(ctx) {}
+  // No ports.
   static BT::PortsList providedPorts() { return {}; }
+  // Safe while /safety/status is fresh and not ERROR.
   BT::NodeStatus tick() override {
     std::lock_guard<std::mutex> lk(ctx_->mtx);
     double age = (ctx_->node->now() - ctx_->safety_stamp).seconds();
@@ -1109,6 +1148,7 @@ class IsSafe : public BT::ConditionNode {
 // ---------------------------------------------------------------- the executor node
 class BehaviorNode {
  public:
+  // Register the tree nodes, create the ROS interfaces and the action server, start the tick timer.
   explicit BehaviorNode(rclcpp::Node::SharedPtr node) : node_(node), ctx_(std::make_shared<Context>()) {
     ctx_->off_map_blocked = node_->declare_parameter<bool>("off_map_blocked", true);
     ctx_->node = node;
@@ -1179,6 +1219,7 @@ class BehaviorNode {
   }
 
  private:
+  // Escape text for an XML attribute.
   static std::string escape(const std::string& s) {
     std::string o;
     for (char c : s) {
@@ -1193,6 +1234,7 @@ class BehaviorNode {
     return o;
   }
 
+  // Tree XML for a skill plan (pick + place merged into one Manipulate); sets `error` on an unknown skill.
   std::string to_xml(const hsim_interfaces::msg::SkillPlan& plan, std::string& error) {
     std::ostringstream x;
     x << "<root BTCPP_format=\"4\"><BehaviorTree ID=\"Plan\"><ReactiveSequence><IsSafe/><Sequence>";
@@ -1230,6 +1272,7 @@ class BehaviorNode {
     return x.str();
   }
 
+  // Finish the running goal with a result and clear the tree.
   void finish(bool success, const std::string& message) {
     if (!active_) return;
     auto r = std::make_shared<ExecutePlan::Result>();
@@ -1245,6 +1288,7 @@ class BehaviorNode {
     tree_.reset();
   }
 
+  // Start a new plan, preempting the running one.
   void start(std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecutePlan>> gh) {
     if (active_) {                                   // a new command preempts the running plan
       if (tree_) tree_->haltTree();
@@ -1267,6 +1311,7 @@ class BehaviorNode {
     RCLCPP_INFO(node_->get_logger(), "running plan for \"%s\" (%zu skills)", plan.task.c_str(), plan.skills.size());
   }
 
+  // Tick the tree at 20 Hz and publish progress.
   void tick() {
     if (!active_ || !tree_) return;
     if (active_->is_canceling()) {
@@ -1299,6 +1344,7 @@ class BehaviorNode {
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
+// Entry point: spin the behavior node.
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("behavior");

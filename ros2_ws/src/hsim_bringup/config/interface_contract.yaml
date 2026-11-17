@@ -4,23 +4,25 @@
 # owner     = the ROS node name of the only allowed publisher (stubs and real nodes share names)
 # rate_hz   = expected publish rate; null = event/input driven, not rate-checked
 # required  = false: only checked if something is publishing it (e.g. teleop, Nav2 not running)
-version: 1   # Phase 1 entries frozen 2026-11-08
+version: 1   # phase-1 entries (the robot core) are frozen: see docs/interface_contract.md
 topics:
-  /clock:                    {type: rosgraph_msgs/msg/Clock,          owner: sim,              rate_hz: 200,  phase: 1}
-  /joint_states:             {type: sensor_msgs/msg/JointState,       owner: sim,              rate_hz: 200,  phase: 1}
-  /imu:                      {type: sensor_msgs/msg/Imu,              owner: sim,              rate_hz: 200,  phase: 1}
-  /sim/ground_truth/odom:    {type: nav_msgs/msg/Odometry,            owner: sim,              rate_hz: 200,  phase: 1}   # PRIVILEGED
+  /clock:                    {type: rosgraph_msgs/msg/Clock,          owner: [sim, mujoco_ros2_control_node], rate_hz: 200,  phase: 1}
+  /joint_states:             {type: sensor_msgs/msg/JointState,       owner: [sim, joint_state_broadcaster], rate_hz: 200,  phase: 1}
+  /imu:                      {type: sensor_msgs/msg/Imu,              owner: [sim, imu_sensor_broadcaster], rate_hz: 200,  phase: 1}
+  /sim/ground_truth/odom:    {type: nav_msgs/msg/Odometry,            owner: [sim, mujoco_ros2_control_node], rate_hz: 200,  phase: 1}   # PRIVILEGED
   /sim/viewer/image_raw:     {type: sensor_msgs/msg/Image,            owner: sim,              rate_hz: null, phase: 1, required: false}
   /cmd_vel_teleop:           {type: geometry_msgs/msg/TwistStamped,   owner: teleop,           rate_hz: null, phase: 1, required: false}
   /cmd_vel_nav:              {type: geometry_msgs/msg/TwistStamped,   owner: velocity_smoother, rate_hz: null, phase: 3, required: false}
   /cmd_vel_approach:         {type: geometry_msgs/msg/TwistStamped,   owner: behavior,         rate_hz: null, phase: 3, required: false}   # final step to arm's reach
   /cmd_vel:                  {type: geometry_msgs/msg/TwistStamped,   owner: twist_mux,        rate_hz: null, phase: 1}
   /locomotion/joint_targets: {type: sensor_msgs/msg/JointState,       owner: locomotion,       rate_hz: 50,   phase: 1}
+  /robot_description:        {type: std_msgs/msg/String,             owner: joint_target_bridge, rate_hz: null, phase: 1, required: false}   # backend:=ros2_control only (latched)
+  /joint_targets_controller/commands: {type: std_msgs/msg/Float64MultiArray, owner: joint_target_bridge, rate_hz: null, phase: 1, required: false}   # backend:=ros2_control only
   /locomotion/status:        {type: diagnostic_msgs/msg/DiagnosticArray, owner: locomotion,    rate_hz: 1,    phase: 1}
   /odometry/filtered:        {type: nav_msgs/msg/Odometry,            owner: state_estimation, rate_hz: 50,   phase: 1}
   /leg_odometry:             {type: nav_msgs/msg/Odometry,            owner: leg_odometry,     rate_hz: 50,   phase: 3, required: false}
   /map:                      {type: nav_msgs/msg/OccupancyGrid,       owner: [map_server, localization], rate_hz: null, phase: 2}   # map_server (known map) or SLAM
-  # Phase 3: realistic sensors (all from the sim's sensor models)
+  # phase 3: realistic sensors (all from the sim's sensor models)
   /scan:                     {type: sensor_msgs/msg/LaserScan,        owner: [sim, depth_to_scan], rate_hz: null, phase: 3}   # lidar (10 Hz) or from stereo depth (5 Hz)
   /camera/head/color/image_raw: {type: sensor_msgs/msg/Image,         owner: stereo_camera,    rate_hz: null, phase: 3, required: false}
   /camera/head/depth/image_raw: {type: sensor_msgs/msg/Image,         owner: stereo_camera,    rate_hz: null, phase: 3, required: false}
@@ -37,7 +39,7 @@ topics:
   /planner/command:          {type: std_msgs/msg/String,              owner: [ask, teleop],    rate_hz: null, phase: 3, required: false}   # tools/ask.sh or typed in the viewer
   /planner/reply:            {type: std_msgs/msg/String,              owner: planner,          rate_hz: null, phase: 3}
   /planner/status:           {type: std_msgs/msg/String,              owner: planner,          rate_hz: null, phase: 3}
-  # Phase 5: manipulation. Targets for the held (arm/hand) joints; locomotion merges them into /locomotion/joint_targets
+  # phase 5: manipulation. Targets for the held (arm/hand) joints; locomotion merges them into /locomotion/joint_targets
   /arm/joint_targets:        {type: sensor_msgs/msg/JointState,       owner: manipulation,     rate_hz: null, phase: 5, required: false}
   # PRIVILEGED (evaluation only): graders, tests, and explicitly-labeled stubs may read it, the robot stack may not
   /sim/ground_truth/state:   {type: std_msgs/msg/Float64MultiArray,   owner: sim,              rate_hz: 20,   phase: 3}

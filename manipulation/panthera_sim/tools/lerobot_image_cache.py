@@ -31,14 +31,17 @@ MANIFEST_FILENAME = "decoded_images.uint8.json"
 
 
 def default_cache_path(dataset_root: Path) -> Path:
+    """Default cache file of a dataset."""
     return dataset_root / "cache" / CACHE_FILENAME
 
 
 def _manifest_path(cache_path: Path) -> Path:
+    """Manifest file beside a cache."""
     return cache_path.with_name(MANIFEST_FILENAME)
 
 
 def _data_files(dataset_root: Path) -> list[Path]:
+    """Parquet files of a dataset."""
     return sorted((dataset_root / "data").glob("**/*.parquet"))
 
 
@@ -88,6 +91,7 @@ def build_image_cache(
     cache_path: Path | None = None,
     workers: int | None = None,
 ) -> Path:
+    """Decode every image of a dataset into a memory-mapped cache."""
     dataset_root = dataset_root.resolve()
     cache_path = (cache_path or default_cache_path(dataset_root)).resolve()
     metadata = LeRobotDatasetMetadata("local/image_cache", root=dataset_root)
@@ -168,6 +172,7 @@ def build_image_cache(
 
 
 def validate_image_cache(dataset_root: Path, cache_path: Path) -> dict[str, Any]:
+    """Check a cache matches its dataset; returns its manifest."""
     manifest_path = _manifest_path(cache_path)
     if not manifest_path.is_file():
         raise FileNotFoundError(f"missing image-cache manifest: {manifest_path}")
@@ -186,6 +191,7 @@ class CachedLeRobotDataset(LeRobotDataset):
     """LeRobotDataset that serves image tensors from a decoded mmap cache."""
 
     def __init__(self, *args: Any, image_cache: Path | None = None, **kwargs: Any) -> None:
+        """LeRobotDataset that reads images from the cache instead of decoding them."""
         # LeRobot iterates a formatted index column inside its constructor.
         # Hugging Face custom transforms receive every column, so leaving
         # images present there unnecessarily decodes the entire dataset.
@@ -214,6 +220,7 @@ class CachedLeRobotDataset(LeRobotDataset):
         self._decoded_image_cache = np.load(image_cache, mmap_mode="c")
 
     def load_hf_dataset(self):
+        """The dataset without image columns when a cache is used."""
         dataset = super().load_hf_dataset()
         if self._requested_image_cache is not None:
             dataset = dataset.remove_columns(list(self.meta.camera_keys))
@@ -224,6 +231,7 @@ class CachedLeRobotDataset(LeRobotDataset):
 
     @property
     def uses_image_cache(self) -> bool:
+        """Whether images come from the cache."""
         return self._decoded_image_cache is not None
 
     def __getitem__(self, idx: int) -> dict:
@@ -238,6 +246,7 @@ class CachedLeRobotDataset(LeRobotDataset):
 
 
 def main() -> None:
+    """Build (or validate) the image cache of a dataset."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dataset", type=Path)
     parser.add_argument("--output", type=Path)

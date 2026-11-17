@@ -5,7 +5,7 @@ Same table on both sides tells you whether a behavior comes from the policy itse
 (both sides agree) or from the CPU deployment (they differ).
 
     uv run python scripts/eval_commands.py logs/rsl_rl/g1_velocity/<run>/model_9999.pt
-    # arms-free (legs+waist) policy, small-command deadband test (decision 0004), arms held at default:
+    # arms-free (legs+waist) policy, small-command deadband test, arms held at default:
     uv run python scripts/eval_commands.py <run>/model_N.pt --task Hsim-G1-Velocity-Flat-ArmsFree \
         --script deadband --arms default --json deadband_v2.json
 
@@ -57,6 +57,7 @@ SCRIPTS = {"standard": SCRIPT, "deadband": DEADBAND_SCRIPT}
 
 
 def main():
+    """Run a checkpoint on a command script in mjlab and print measured against commanded velocity."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("checkpoint")
     ap.add_argument("--task", default="Mjlab-Velocity-Flat-Unitree-G1")

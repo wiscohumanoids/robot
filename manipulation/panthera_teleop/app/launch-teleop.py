@@ -47,6 +47,7 @@ def wait_for_joint_feedback(robot, label, timeout=5.0):
 
 def resolve_board(mapping, sys_tty=Path('/sys/class/tty'),
                   sys_usb=Path('/sys/bus/usb/devices'), dev_root=Path('/dev')):
+    """The serial device of a mapped controller board, by USB topology."""
     found = []
     for tty in sys_tty.glob('ttyACM*'):
         resolved = tty.resolve()
@@ -91,6 +92,7 @@ def resolve_board(mapping, sys_tty=Path('/sys/class/tty'),
 
 
 def prepare():
+    """Resolve both arms' devices and write their runtime configs."""
     mappings = json.loads((CONFIG/'arm-mapping.json').read_text())
     configs = {}
     devices = {}
@@ -117,6 +119,7 @@ def prepare():
 
 
 def main():
+    """Prepare the arms and (with --run) start the official teleop demo."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run', action='store_true', help='Enable the official demo; both arms move on startup and return to zero on exit')
     args = parser.parse_args()

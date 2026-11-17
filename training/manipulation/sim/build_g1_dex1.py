@@ -1,6 +1,6 @@
 """Build the G1 + Dex1-1 manipulation robot MJCF from Unitree's official URDF.
 
-Source (BSD-3, unitree_ros commit 725b59b, 2026-11-09):
+Source (BSD-3, unitree_ros commit 725b59b):
   assets/robots/g1_dex1/source/g1_29dof_mode_15_with_dex1_1.urdf + source/meshes/
 Output:
   assets/robots/g1_dex1/g1_dex1.xml   (meshes referenced from source/meshes)
@@ -42,6 +42,7 @@ EGO_FOVY = 58.0                                    # D435 depth VFOV; rendered 4
 
 
 def load_urdf_spec():
+    """Unitree's URDF as an MjSpec with the mesh folder set."""
     text = SRC_URDF.read_text()
     meshdir = (ASSET / "source/meshes").resolve()
     text = re.sub(r"<mujoco>.*?</mujoco>",
@@ -57,10 +58,12 @@ def load_urdf_spec():
 
 
 def group(name):
+    """Actuator group of a joint."""
     return "wrist" if "wrist" in name else "elbow" if "elbow" in name else "shoulder"
 
 
 def build():
+    """G1 + Dex1-1 with arm and gripper actuators, collision filtering and the ego camera."""
     spec = load_urdf_spec()
     spec.modelname = "g1_dex1"
     spec.compiler.degree = False
@@ -149,6 +152,7 @@ def build():
 
 
 def main():
+    """Write g1_dex1.xml with a relative mesh path."""
     spec = build()
     model = spec.compile()
     xml = spec.to_xml()

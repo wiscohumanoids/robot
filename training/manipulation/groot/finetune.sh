@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Fine-tune GR00T on a converted manipulation dataset (run on the GPU VM; launched by D's job launcher).
+# Fine-tune GR00T on a converted manipulation dataset (run on the GPU machine, directly or as a queued job).
 #
 #   training/manipulation/groot/finetune.sh <version> [extra launch_finetune.py flags]
 #     <version>  dataset version, e.g. v1  -> ~/hsim_data/manip/v1/lerobot
 # Env overrides:
-#   GROOT=n17|n16|auto (default auto: N1.7 if the gated Cosmos-Reason2-2B backbone is accessible, else N1.6). Decision 2026-11-10: use n16 (open weights).
+#   GROOT=n17|n16|auto (default auto: N1.7 if the gated Cosmos-Reason2-2B backbone is accessible, else N1.6). n16 is the one in use (open weights).
 #   MAX_STEPS (20000)  BATCH (global batch, 96)  SAVE_STEPS (5000)  WORKERS (3: 8 vCPUs are shared with RL jobs)
-#   DATASET (override path)  OUT (default ~/hsim_runs/M1_finetune_<version>)
-# Memory: batch 96 measured ~46-51 GB (N1.6, 2026-11-10), inside the ~60 GB budget next to the RL jobs (logs/gpu_mem.log).
+#   DATASET (override path)  OUT (default ~/hsim_runs/groot_finetune_<version>)
+# Memory: batch 96 measured ~46-51 GB (N1.6), inside the ~60 GB budget next to the RL jobs (logs/gpu_mem.log).
 # Disk: keeps at most 2 checkpoints. N1.7 saves model weights only (--save-only-model; such a run can't be resumed).
 #   N1.6 can't skip the optimizer, so the loop below deletes optimizer.pt from all but the newest checkpoint.
 #   Measured N1.6 sizes: checkpoint with optimizer 22 GB, without 9 GB, final model (run dir) 9.2 GB
@@ -22,7 +22,7 @@ export CUDA_HOME=/usr/local/cuda-12.8
 # The VM puts system CUDA 13.2 libs first on LD_LIBRARY_PATH; torch would load that cuDNN (9.23) instead of its own.
 unset LD_LIBRARY_PATH
 DATASET="${DATASET:-$HOME/hsim_data/manip/$VERSION/lerobot}"
-OUT="${OUT:-$HOME/hsim_runs/M1_finetune_$VERSION}"
+OUT="${OUT:-$HOME/hsim_runs/groot_finetune_$VERSION}"
 MAX_STEPS="${MAX_STEPS:-20000}"; BATCH="${BATCH:-96}"; SAVE_STEPS="${SAVE_STEPS:-5000}"; WORKERS="${WORKERS:-3}"
 
 GROOT="${GROOT:-auto}"

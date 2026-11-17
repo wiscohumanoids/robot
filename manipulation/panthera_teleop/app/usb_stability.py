@@ -11,6 +11,7 @@ def robot_usb_devices(tty, sys_tty=Path('/sys/class/tty')):
 
 
 def keep_usb_awake(tty, sys_tty=Path('/sys/class/tty')):
+    """Disable USB autosuspend for the robot board and its upstream hubs; returns the paths it could not set."""
     blocked = []
     for device in robot_usb_devices(tty, sys_tty):
         control = device / 'power/control'

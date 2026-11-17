@@ -1,3 +1,4 @@
+"""Fixed-start scenes: the arm pose survives random block layouts."""
 import json
 from pathlib import Path
 import tempfile
@@ -9,6 +10,7 @@ from tools.act_scene import fixed_environment, reset_fixed_arm, rollout_metrics
 
 
 class FixedSceneTest(unittest.TestCase):
+    """Fixed arm start across resets."""
     def test_fixed_pose_survives_random_layout_resets(self):
         from sim.panthera_env import PantheraSim
         root = Path(__file__).resolve().parents[1]

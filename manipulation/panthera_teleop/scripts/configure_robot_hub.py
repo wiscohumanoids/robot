@@ -14,6 +14,7 @@ from diagnose_robot_usb import ROOT, attr
 
 
 def main():
+    """Show (or with --apply, set) the robot hub's USB configuration."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply', action='store_true', help='Write configuration 1 (requires sudo)')
     args = parser.parse_args()

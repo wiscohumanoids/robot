@@ -1,7 +1,7 @@
 [project]
 name = "hsim-locomotion-training"
 version = "0.1.0"
-description = "Phase 0: train G1 locomotion policies with mjlab and export ONNX + manifest"
+description = "Train walking and motion-tracking policies with mjlab and export ONNX + manifest"
 requires-python = ">=3.11,<3.15"
 dependencies = [
   "mjlab==1.6.0",

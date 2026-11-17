@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parent
 
 
 def reexec_in_act_venv() -> None:
+    """Re-run this script with the .venv-act interpreter when it exists and is not the current one."""
     python = REPO_ROOT / ".venv-act" / "bin" / "python"
     if not python.is_file() or Path(sys.prefix).resolve() == python.parents[1].resolve():
         return
@@ -31,6 +32,7 @@ def reexec_in_act_venv() -> None:
 
 
 def stack_metrics(positions: np.ndarray) -> dict:
+    """Stacking metrics plus the raw block positions, for the rollout report."""
     metrics = task_stack_metrics(positions)
     return {
         "object_positions": positions.tolist(),
@@ -43,6 +45,7 @@ def stack_metrics(positions: np.ndarray) -> dict:
 
 
 def main() -> None:
+    """Roll out an ACT checkpoint in the simulator (interactive, or headless to a video)."""
     reexec_in_act_venv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)

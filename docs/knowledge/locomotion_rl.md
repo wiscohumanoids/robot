@@ -261,7 +261,7 @@ Number of iterations to run (~2000+), checkpoint frequency, W&B logging config, 
 
 The whole game is: framework owns PPO, you own the environment and the reward. Ninety percent of your time is reward shaping and debugging why the robot does something dumb. The PPO math you learned is what lets you diagnose those problems (is my advantage leaking across episodes, is my value function garbage), but you never write it.
 
-## In our stack (2026-11)
+## In our stack
 
 | Concept above | Wisco V1 in this repo |
 |---|---|
@@ -272,9 +272,9 @@ The whole game is: framework owns PPO, you own the environment and the reward. N
 | Action | 15 joint position targets: `default_pos + action_scale * action`, tracked by PD with the gains in `robots/wisco_v1/model/robot_numbers.yaml` |
 | Actuator realism | DC motor torque-speed limits, 0–10 ms command delay, per-motor ankle torque through the rod linkage (with an overload penalty) |
 | Domain randomization | link masses ×0.85–1.20, friction, kp/kd ±10 %, pushes, arm motion and hand payload |
-| Training run | J3 series on the GPU VM (`training/locomotion/wisco_v1/WORK_LOG.md`); deployed: J3h model_4650 |
+| Training | on the GPU machine (`training/locomotion/wisco_v1/`, launched with `tools/vm.sh jobs launch wisco_velocity`) |
 | Export → deploy | ONNX + `manifest.yaml` (`models/locomotion/wisco_v1_velocity_arms_free/`), run by the `locomotion` node at 50 Hz; checked sim-to-sim in plain MuJoCo first |
 
 What is still estimated on the robot side (masses, delay, driver gains, friction) and how it gets measured:
-`robots/wisco_v1/HARDWARE_ISSUES.md`.
+`robots/wisco_v1/hardware_observations.md`.
 

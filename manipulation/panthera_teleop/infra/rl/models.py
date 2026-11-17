@@ -29,6 +29,7 @@ def scaled_tanh_log_prob(pre_tanh: Tensor, mean: Tensor, log_std: Tensor,
 
 
 def _mlp(input_dim: int, hidden_dim: int, output_dim: int) -> nn.Sequential:
+    """Two-layer MLP with layer norm."""
     return nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.LayerNorm(hidden_dim),
                          nn.SiLU(), nn.Linear(hidden_dim, hidden_dim),
                          nn.LayerNorm(hidden_dim), nn.SiLU(),
@@ -39,6 +40,7 @@ class SquashedGaussianEditor(nn.Module):
     """Stochastic bounded edit conditioned on observation and base action."""
     def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int = 256,
                  residual_bound: float = .05):
+        """Bounded residual edit of base actions."""
         super().__init__()
         if min(obs_dim, action_dim, hidden_dim) < 1:
             raise ValueError("Network dimensions must be positive")
@@ -54,12 +56,14 @@ class SquashedGaussianEditor(nn.Module):
             self.network[-1].bias[action_dim:].fill_(-1.)
 
     def forward(self, obs: Tensor, base_actions: Tensor) -> tuple[Tensor, Tensor]:
+        """Mean and log-std of the edit."""
         output = self.network(torch.cat((obs, base_actions), dim=-1))
         mean, log_std = output.chunk(2, dim=-1)
         return mean, log_std.clamp(-5., 2.)
 
     def sample(self, obs: Tensor, base_actions: Tensor, deterministic: bool = False,
                generator: torch.Generator | None = None) -> tuple[Tensor, Tensor]:
+        """Sample an edit (or its mean) and its log-probability."""
         mean, log_std = self(obs, base_actions)
         if deterministic:
             pre_tanh = mean
@@ -75,6 +79,7 @@ class QEnsemble(nn.Module):
     """Independent Q networks; result shape is (number of critics, batch)."""
     def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int = 256,
                  num_critics: int = 10):
+        """Ensemble of Q critics."""
         super().__init__()
         if min(obs_dim, action_dim, hidden_dim, num_critics) < 1:
             raise ValueError("Network dimensions must be positive")
@@ -83,6 +88,7 @@ class QEnsemble(nn.Module):
 
     def forward(self, obs: Tensor, actions: Tensor,
                 indices: Tensor | None = None) -> Tensor:
+        """Q values of the chosen critics."""
         inputs = torch.cat((obs, actions), dim=-1)
         chosen = range(len(self.heads)) if indices is None else indices.tolist()
         return torch.stack([self.heads[i](inputs).squeeze(-1) for i in chosen], dim=0)

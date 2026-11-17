@@ -1,7 +1,7 @@
-# Manipulation data generation (F1): G1 + Dex1-1 at a RoboCasa counter
+# Manipulation data generation: G1 + Dex1-1 at a RoboCasa counter
 
 Standing, fixed-pelvis tabletop pick-and-place (v1: cups onto plates), scripted expert demos multiplied by
-MimicGen-style generation. Output: raw episodes for F2 (conversion to LeRobot v2 / GR00T).
+MimicGen-style generation. Output: raw episodes for ../groot/ (conversion to LeRobot v2 / GR00T).
 
 ```
 assets/robots/g1_dex1/                  official Unitree G1 + Dex1-1 (unitree_ros, BSD-3) + built MJCF g1_dex1.xml
@@ -29,10 +29,10 @@ cd training/manipulation/sim
 ../../../.venv/bin/python scene.py --scene kitchen_l1_s1 --version v1      # -> build/kitchen_l1_s1_v1.mjb (1.05 GB)
 # copy to the VM
 rsync -a build/kitchen_l1_s1_v1.mjb build/kitchen_l1_s1_v1.json hsim-gpu:~/hsim_data/manip/scenes/
-rsync -a --exclude build --exclude __pycache__ ../ hsim-gpu:~/humanoid-sim-stack/training/manipulation/
+rsync -a --exclude build --exclude __pycache__ ../ hsim-gpu:~/robot/training/manipulation/
 # VM
-~/humanoid-sim-stack/training/manipulation/datagen/setup_env.sh                 # once
-~/humanoid-sim-stack/training/manipulation/datagen/generate.sh v1 1000 3        # -> ~/hsim_data/manip/v1/raw/
+~/robot/training/manipulation/datagen/setup_env.sh                 # once
+~/robot/training/manipulation/datagen/generate.sh v1 1000 3        # -> ~/hsim_data/manip/v1/raw/
 ```
 
 ## Design notes

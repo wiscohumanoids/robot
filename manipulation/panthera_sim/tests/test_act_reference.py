@@ -1,3 +1,4 @@
+"""The original ACT transfer-cube benchmark: data preparation, split and loading."""
 import tempfile
 import unittest
 import shutil
@@ -13,7 +14,9 @@ from tools.act_reference_data import ReferenceACTDataset, reference_split
 
 
 class ReferenceDatasetTests(unittest.TestCase):
+    """Reference dataset loading and the 40/10 split."""
     def setUp(self):
+        """Write two tiny HDF5 episodes."""
         self.directory = tempfile.TemporaryDirectory()
         self.root = Path(self.directory.name)
         for episode, length in ((0, 4), (1, 3)):
@@ -23,6 +26,7 @@ class ReferenceDatasetTests(unittest.TestCase):
                 f.create_dataset("observations/images/top", data=np.full((length, 8, 10, 3), 128, dtype=np.uint8))
 
     def tearDown(self):
+        """Remove the temporary folder."""
         self.directory.cleanup()
 
     def test_same_timestep_alignment_zero_padding_and_image_layout(self):

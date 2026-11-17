@@ -1,3 +1,4 @@
+"""First-pickup experiment: dataset cropping, relative actions and the success check."""
 import unittest
 from types import SimpleNamespace
 from pathlib import Path
@@ -11,6 +12,7 @@ from train_act import rollout_score
 
 
 class PickupExperimentTest(unittest.TestCase):
+    """Pickup dataset, relative-chunk execution and the sustained-pickup rule."""
     def test_uncached_initialization_defers_image_transform_until_sampling(self):
         from datasets import Dataset
         from lerobot.datasets.lerobot_dataset import LeRobotDataset

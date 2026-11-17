@@ -11,6 +11,7 @@ import base64
 import hashlib
 import io
 import json
+import os
 import math
 from pathlib import Path
 import sys
@@ -32,16 +33,19 @@ class BackendChanged(RuntimeError):
 
 
 def canonical_hash(value):
+    """Stable hash of a JSON value."""
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
                                     allow_nan=False).encode()).hexdigest()
 
 
 def _finite_vector(values, length):
+    """Whether `values` is a list of `length` finite numbers."""
     return (isinstance(values, list) and len(values) == length and
             all(type(value) in (int, float) and math.isfinite(value) for value in values))
 
 
 def read_manifest(path):
+    """Load and check a verified frozen-base manifest."""
     manifest = json.loads(Path(path).resolve(strict=True).read_text())
     if (manifest.get('schema_version') != 1 or manifest.get('synthetic') is not False or
             manifest.get('verified') is not True or
@@ -88,13 +92,16 @@ def read_manifest(path):
 
 
 class _NoRedirect(HTTPRedirectHandler):
+    """Refuses HTTP redirects from the backend."""
     def redirect_request(self, request, fp, code, message, headers, newurl):
+        """Refuse every redirect."""
         raise BackendChanged('Backend redirects are forbidden')
 
 
 class BackendClient:
     """Bounded loopback-only requests; environment proxies and redirects disabled."""
     def __init__(self, backend, timeout=30.):
+        """Localhost-only backend URL."""
         parsed = urlsplit(backend)
         if (parsed.scheme != 'http' or parsed.hostname not in ('127.0.0.1', '::1', 'localhost') or
                 parsed.username is not None or parsed.password is not None or
@@ -107,6 +114,7 @@ class BackendClient:
         self.opener = build_opener(ProxyHandler({}), _NoRedirect())
 
     def request(self, path, body=None):
+        """Request /health or /infer."""
         if path not in ('/health', '/infer'):
             raise ValueError('Unsupported backend endpoint')
         data = None if body is None else json.dumps(body, allow_nan=False).encode()
@@ -122,7 +130,9 @@ class BackendClient:
 
 
 class Runtime:
+    """Proxy to a frozen base policy whose manifest and identity are checked on every call."""
     def __init__(self, manifest, backend='http://127.0.0.1:8765', *, client=None, timeout=30., prefix_length=1):
+        """Manifest, backend and prefix length."""
         if type(prefix_length) is not int or not 1 <= prefix_length <= HORIZON:
             raise ValueError('Prefix length must be an integer from 1 to 50')
         self.chunk_size = prefix_length
@@ -142,6 +152,7 @@ class Runtime:
             rl_model_id=None, C=self.chunk_size, collection_candidates=1))
 
     def _verify_backend(self):
+        """Check the manifest file and the backend health still match."""
         if hashlib.sha256(Path(self.manifest_path).read_bytes()).hexdigest() != self.manifest_sha256:
             raise BackendChanged('Frozen-base manifest changed after proxy startup')
         health = self.client.request('/health')
@@ -162,6 +173,7 @@ class Runtime:
         return health
 
     def health(self):
+        """Health with the checkpoint identity."""
         backend_health = self._verify_backend()
         return dict(status='ready', checkpoint=self.checkpoint, contract=CONTRACT, names=NAMES,
             checkpoint_id=self.checkpoint_id, processor_id=self.processor_id,
@@ -178,6 +190,7 @@ class Runtime:
             seed_controlled=False, action_transform='checkpoint_postprocess_and_source_gripper_clamp')
 
     def _observation(self, payload):
+        """Check an inference request."""
         if not isinstance(payload, dict) or 'sequence' not in payload:
             raise ValueError('Expected an inference request with sequence')
         if not _finite_vector(payload.get('state'), ACTION_DIM):
@@ -206,6 +219,7 @@ class Runtime:
         return forwarded, observation_id, digest
 
     def _chunk(self, response, sequence):
+        """Check a backend reply."""
         if (response.get('sequence') != sequence or response.get('fps') != CONTRACT['fps'] or
                 response.get('mock') is not False or response.get('checkpoint') != self.checkpoint):
             raise BackendChanged('Inference checkpoint/sequence/rate/mock status mismatch')
@@ -271,10 +285,12 @@ class Runtime:
             self.lock.release()
 
     def infer(self, payload):
+        """One chunk (a single candidate)."""
         return self.sample_candidates(payload, num_candidates=1)
 
 
 def make_handler(runtime):
+    """HTTP handler for the proxy."""
     class Handler(BaseHTTPRequestHandler):
         def send(self, status, body):
             data = json.dumps(body, allow_nan=False).encode()
@@ -309,12 +325,14 @@ def make_handler(runtime):
 
 
 def main():
+    """Run the proxy."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--backend', default='http://127.0.0.1:8765')
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--manifest', help='Verified local frozen-base JSON manifest')
     mode.add_argument('--follow-checkpoint', type=Path, help='Automatically verify deployed checkpoints; cache directory')
-    parser.add_argument('--ssh-host', default='admin@3.83.15.102', help='Read-only checkpoint verification host')
+    parser.add_argument('--ssh-host', default=os.environ.get('PANTHERA_SSH_HOST'),
+                        help='Read-only checkpoint verification host (default: PANTHERA_SSH_HOST from the environment)')
     parser.add_argument('--port', type=int, default=8767)
     parser.add_argument('--prefix-length', type=int, default=17, help='Executed prefix length 1..50 (default: 17)')
     parser.add_argument('--timeout', type=float, default=30., help='Bounded backend inference timeout seconds')
@@ -322,6 +340,8 @@ def main():
     if args.port in (8765, 8766):
         parser.error('Use a separate proxy port; 8765/8766 belong to existing inference services')
     if args.follow_checkpoint:
+        if not args.ssh_host:
+            parser.error('--follow-checkpoint needs --ssh-host or PANTHERA_SSH_HOST in the environment')
         from .auto_remote import AutoRuntime
         runtime = AutoRuntime(args.follow_checkpoint, args.backend, ssh_host=args.ssh_host,
                               timeout=args.timeout, prefix_length=args.prefix_length)

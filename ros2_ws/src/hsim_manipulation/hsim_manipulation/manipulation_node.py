@@ -35,7 +35,11 @@ ARM = ('shoulder_pitch', 'shoulder_roll', 'shoulder_yaw', 'elbow', 'wrist_roll',
 
 
 class ManipulationNode(Node):
+    """Node `manipulation`: serves /skills/manipulate by running VLA action chunks on /arm/joint_targets."""
     def __init__(self):
+        """Declare parameters, connect the VLA client, subscribe to the camera, joint states and object memory,
+        create the action server.
+        """
         super().__init__('manipulation')
         p = self.declare_parameter
         p('vla_url', 'http://host.docker.internal:8200')
@@ -45,12 +49,12 @@ class ManipulationNode(Node):
         p('objects_topic', '/world/objects')
         p('control_hz', 20.0)
         p('max_duration_s', 40.0)
-        p('image_width', 320)                       # training images (F1 ego camera) are 320x240
+        p('image_width', 320)                       # training images (ego camera) are 320x240
         p('image_height', 240)
         p('waist_state', 'zeros')                   # training data has the waist welded at zero
         p('gripper_joints', ['left_dex1_finger_joint_1', 'left_dex1_finger_joint_2',
                              'right_dex1_finger_joint_1', 'right_dex1_finger_joint_2'])
-        p('gripper_open', 0.0245)                   # Dex1-1 finger joint: open / closed (F1's model)
+        p('gripper_open', 0.0245)                   # Dex1-1 finger joint: open / closed (the training model)
         p('gripper_closed', -0.020)
         p('prefetch_steps', 6)                      # request the next chunk this many steps early (>= server latency / 50 ms)
         p('success_xy_scale', 0.75)                 # object centre within this x target half-size of the target centre
@@ -77,6 +81,7 @@ class ManipulationNode(Node):
 
     # ------------------------------------------------------------------ inputs
     def on_image(self, msg):
+        """Keep the latest head-camera frame as an RGB array (rgb8 or bgr8 only)."""
         if msg.encoding not in ('rgb8', 'bgr8'):
             return
         a = np.frombuffer(msg.data, np.uint8).reshape(msg.height, msg.step)[:, : msg.width * 3].reshape(msg.height, msg.width, 3)
@@ -86,11 +91,13 @@ class ManipulationNode(Node):
             self.image = a.copy()
 
     def on_joints(self, msg):
+        """Keep the latest position of every joint by name."""
         with self.lock:
             for n, x in zip(msg.name, msg.position):
                 self.q[n] = x
 
     def on_objects(self, msg):
+        """Keep the object memory (label, centre, size) for the success check."""
         objs = []
         for d in msg.detections:
             label = d.results[0].hypothesis.class_id if d.results else d.id
@@ -101,10 +108,14 @@ class ManipulationNode(Node):
 
     # ------------------------------------------------------------------ helpers
     def grip_frac(self, side):
+        """Gripper opening on one side, 0 closed to 1 open."""
         j = self.grip_joints[side][0]
         return float(np.clip((self.q.get(j, self.g_open) - self.g_closed) / (self.g_open - self.g_closed), 0.0, 1.0))
 
     def state(self):
+        """The current image and arm/gripper/waist state in the server format, or (None, None) while inputs are
+        missing.
+        """
         with self.lock:
             missing = [j for s in ('left', 'right') for j in self.arm_joints[s] if j not in self.q]
             if self.image is None or missing:
@@ -118,6 +129,7 @@ class ManipulationNode(Node):
             return img, st
 
     def publish(self, chunk, i):
+        """Publish step `i` of an action chunk as arm and gripper joint targets."""
         names, pos = [], []
         for side in ('left', 'right'):
             names += self.arm_joints[side]
@@ -148,12 +160,14 @@ class ManipulationNode(Node):
 
     # ------------------------------------------------------------------ action
     def on_goal(self, goal):
+        """Accept a goal unless one is already running."""
         if self.busy:
             self.get_logger().warn('manipulate: already running a goal; rejecting')
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
 
     def execute(self, handle):
+        """Run an accepted goal; the busy flag is always cleared afterwards."""
         self.busy = True
         try:
             return self._run(handle)
@@ -161,6 +175,9 @@ class ManipulationNode(Node):
             self.busy = False
 
     def _run(self, handle):
+        """Request and execute action chunks at the control rate until the success check passes, the time limit, or
+        a cancel.
+        """
         goal = handle.request
         res, fb = Manipulate.Result(), Manipulate.Feedback()
         limit = goal.max_duration_s if goal.max_duration_s > 0 else self.get_parameter('max_duration_s').value
@@ -253,6 +270,7 @@ class ManipulationNode(Node):
 
 
 def main():
+    """Entry point: spin the node on two threads (action loop + subscriptions) until Ctrl-C."""
     rclpy.init()
     node = ManipulationNode()
     ex = MultiThreadedExecutor(num_threads=2)            # action loop + subscriptions; more threads = more GIL contention

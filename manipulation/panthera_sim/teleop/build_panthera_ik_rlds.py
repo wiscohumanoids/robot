@@ -18,6 +18,7 @@ CAMERAS = ("observation.images.shoulder", "observation.images.wrist")
 
 
 def dataset_info(root, hz=30):
+    """Check a published IK dataset is complete and return its metadata."""
     root = Path(root)
     if not (root / "COMPLETE").is_file():
         raise ValueError("IK dataset publication is incomplete")
@@ -67,6 +68,7 @@ def iter_episodes(root, info):
 
 
 def episode_steps(rows, instruction):
+    """RLDS steps of one episode (state and action shapes checked)."""
     states = np.asarray([row["observation.state"] for row in rows], dtype=np.float32)
     actions = np.asarray([row["action"] for row in rows], dtype=np.float32)
     if (states.shape != (len(rows), 7) or actions.shape != (len(rows), 7)
@@ -102,6 +104,7 @@ class PantheraIkThreeBlock(tfds.core.GeneratorBasedBuilder):
 
     def __init__(self, *args, dataset_dir, instruction="stack the three colored cubes",
                  hz=30, val_fraction=0.1, split_seed=20260920, **kwargs):
+        """RLDS builder over the IK three-block dataset with an episode-level validation split."""
         self.dataset_dir = Path(dataset_dir)
         self.source_info = dataset_info(self.dataset_dir, hz)
         self.instruction = instruction
@@ -114,6 +117,7 @@ class PantheraIkThreeBlock(tfds.core.GeneratorBasedBuilder):
         super().__init__(*args, **kwargs)
 
     def _info(self):
+        """RLDS feature schema."""
         return tfds.core.DatasetInfo(builder=self, features=tfds.features.FeaturesDict({
             "steps": tfds.features.Dataset({
                 "observation": {
@@ -130,10 +134,12 @@ class PantheraIkThreeBlock(tfds.core.GeneratorBasedBuilder):
         }), description=__doc__)
 
     def _split_generators(self, dl_manager):
+        """Training and validation splits."""
         del dl_manager
         return {"train": self._generate_examples(False), "val": self._generate_examples(True)}
 
     def _generate_examples(self, validation):
+        """Episodes of the training or validation split."""
         for episode_id, rows in iter_episodes(self.dataset_dir, self.source_info):
             if (episode_id in self.val_episodes) != validation:
                 continue
@@ -144,6 +150,7 @@ class PantheraIkThreeBlock(tfds.core.GeneratorBasedBuilder):
 
 
 def main():
+    """Build the RLDS dataset."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-dir", type=Path, required=True)
     parser.add_argument("--data-dir", type=Path, required=True)

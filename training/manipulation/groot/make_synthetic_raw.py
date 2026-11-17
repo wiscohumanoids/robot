@@ -1,4 +1,4 @@
-"""Write synthetic episodes in the raw format F1's generator produces (docs/runs/2026-11-10_overnight_plan.md),
+"""Write synthetic episodes in the raw format the generator produces (sim/episode_io.py),
 so the converter, fine-tune and server can be tested before real data exists. Not training data.
 
 Each episode: a coloured "cup" square moves on a counter-coloured image while the arms follow smooth
@@ -14,12 +14,14 @@ import numpy as np
 
 
 def smooth(rng, T, dims, scale):
+    """Smooth random trajectories."""
     k = rng.normal(size=(T // 10 + 2, dims)) * scale
     t = np.linspace(0, len(k) - 1, T)
     return np.stack([np.interp(t, np.arange(len(k)), k[:, d]) for d in range(dims)], 1).astype(np.float32)
 
 
 def episode(rng, T, H, W):
+    """One synthetic episode with a moving blob in the image."""
     q_l = smooth(rng, T, 7, 0.3); q_r = smooth(rng, T, 7, 0.3)
     act_l = np.vstack([q_l[1:], q_l[-1:]]); act_r = np.vstack([q_r[1:], q_r[-1:]])
     grip = np.ones(T, np.float32); grip[T // 3: 2 * T // 3] = 0.0
@@ -34,6 +36,7 @@ def episode(rng, T, H, W):
 
 
 def main():
+    """Write synthetic raw episodes."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--episodes", type=int, default=6)

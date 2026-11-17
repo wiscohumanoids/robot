@@ -1,4 +1,4 @@
-"""Phase B step 1, on the VM: build the real mjlab environment and check it before any training.
+"""On the GPU machine: build the real mjlab environment and check it before any training.
 
 Checks (prints PASS/FAIL per line, writes check_env_result.json next to this file):
   1. task builds; 15 actions (arms-free recipe: legs + waist); observation sizes; reward / event / termination terms present
@@ -35,6 +35,7 @@ out, ok_all = {}, True
 
 
 def report(name, ok, detail):
+  """Record and print one check result."""
   global ok_all
   ok_all &= bool(ok)
   out[name] = {"pass": bool(ok), **detail}

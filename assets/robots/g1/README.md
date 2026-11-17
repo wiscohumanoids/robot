@@ -7,7 +7,8 @@
 | scene.xml | `export-scene Mjlab-Velocity-Flat-Unitree-G1` from mjlab 1.6.0, unmodified: G1, 29 position actuators with training PD gains, IMU + contact sensors, floor, `init_state` keyframe |
 | assets/ | the 35 G1 meshes from mjlab's asset_zoo (Unitree, via MuJoCo Menagerie) |
 
-Checked on 2026-11-08 against `models/locomotion/g1_velocity_flat_snapshot/manifest.yaml`: all 29 joints present, kp/kd match within rounding, base starts at 0.76 m.
+Checked against `models/locomotion/g1_velocity_all_joints/manifest.yaml`: all 29 joints present, kp/kd match within
+1 %, base starts at 0.76 m.
 
 Things a deploy loop must get right:
 - Names carry a `robot/` prefix (`robot/left_hip_pitch_joint`, `robot/imu_ang_vel`).

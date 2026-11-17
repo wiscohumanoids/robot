@@ -46,7 +46,9 @@ def load_policy(checkpoint):
 
 
 class Runtime:
+    """The pi0.5 policy behind /infer (or a mock)."""
     def __init__(self, checkpoint, mock=False, allow_training=False):
+        """Checkpoint and mode."""
         self.checkpoint = checkpoint
         self.mock = mock
         self.allow_training = allow_training
@@ -57,6 +59,7 @@ class Runtime:
             threading.Thread(target=self.load, daemon=True).start()
 
     def load(self):
+        """Load the policy and processors."""
         try:
             # Wait by default; concurrent startup is an explicit operator choice.
             # Resolve the checkpoint once so requests never follow a moving `last`.
@@ -68,9 +71,12 @@ class Runtime:
             from lerobot.policies.factory import make_pre_post_processors
             self.checkpoint = str(Path(self.checkpoint).resolve(strict=True))
             meta = json.loads((Path(self.checkpoint) / 'deployment.json').read_text())
-            for key in ('fps', 'task', 'dataset_repo', 'dataset_revision'):
+            for key in ('fps', 'task', 'dataset_revision'):
                 if meta.get(key) != CONTRACT[key]:
                     raise ValueError(f'Checkpoint deployment mismatch: {key}')
+            # The contract names the dataset without its Hub namespace (HF_NAMESPACE lives in .env).
+            if str(meta.get('dataset_repo', '')).split('/')[-1] != CONTRACT['dataset_repo']:
+                raise ValueError('Checkpoint deployment mismatch: dataset_repo')
             if meta.get('action_representation') != 'absolute':
                 raise ValueError('Only absolute joint actions are supported')
             self.policy = load_policy(self.checkpoint)
@@ -88,6 +94,7 @@ class Runtime:
             self.status = 'failed'
 
     def infer(self, payload):
+        """One action chunk for a request (grippers clamped, corrections reported)."""
         import numpy as np
         from PIL import Image
         state = np.asarray(payload['state'], dtype=np.float32)
@@ -125,6 +132,7 @@ class Runtime:
 
 
 def main():
+    """Serve the policy on localhost."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--checkpoint', required=True)
     p.add_argument('--port', type=int, default=8765)

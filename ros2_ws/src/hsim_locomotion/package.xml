@@ -3,13 +3,14 @@
         <name>hsim_locomotion</name>
         <version>0.1.0</version>
         <description>Locomotion policy node: ONNX policy (policy_node) and a stub (locomotion_stub)</description>
-        <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+        <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
         <license>MIT</license>
         <exec_depend>rclpy</exec_depend>
 <exec_depend>sensor_msgs</exec_depend>
 <exec_depend>geometry_msgs</exec_depend>
 <exec_depend>diagnostic_msgs</exec_depend>
 <exec_depend>nav_msgs</exec_depend>
+<exec_depend>tf2_ros</exec_depend>
 <exec_depend>python3-yaml</exec_depend>
         <test_depend>python3-pytest</test_depend>
         <export>

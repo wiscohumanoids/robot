@@ -16,10 +16,12 @@ from hitl_recording import data_timestamp, data_origin
 
 
 def rows(path):
+    """JSON lines of a file."""
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def select_intervals(metadata, states):
+    """Human-controlled intervals of a kept rollout."""
     if (metadata.get('label') != 'kept' or metadata.get('complete') is not True or
             metadata.get('context', {}).get('mode') != 'human_in_the_loop'):
         return []
@@ -54,6 +56,7 @@ def select_intervals(metadata, states):
 
 
 def prepare(source, output, template, minimum_seconds=.6):
+    """Write an annotations file from human-in-the-loop rollouts."""
     if output.exists():
         raise FileExistsError('Choose a new annotations file')
     spec = json.loads(template.read_text())
@@ -100,7 +103,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=ROOT / 'data/hitl/kept')
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--template', type=Path, default=ROOT / 'config/postprocessing-gear-pin-sept30.json')
+    parser.add_argument('--template', type=Path, default=ROOT / 'config/postprocessing-template.json')
     args = parser.parse_args()
     result = prepare(args.source, args.output, args.template)
     print(f"Selected {len(result['episodes'])} training episodes; skipped {len(result['selection_skipped'])} short segments")

@@ -20,16 +20,20 @@ HIDDEN_GROUP = 5
 
 
 def robot_yaw(d: mujoco.MjData, qpos_quat_adr: int = 3) -> float:
+    """Robot heading, degrees."""
     w, x, y, z = d.qpos[qpos_quat_adr:qpos_quat_adr + 4]
     return math.degrees(math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)))
 
 
 def wrap180(a):
+    """Angle wrapped to [-180, 180)."""
     return (a + 180.0) % 360.0 - 180.0
 
 
 class FollowCam:
+    """Camera that follows the robot, optionally turning with its heading."""
     def __init__(self, elevation=-55.0, distance=5.0):
+        """Elevation and distance; azimuth and target set on the first update."""
         self.el, self.dist = elevation, distance
         self.az = None
         self.lookat = None
@@ -62,12 +66,15 @@ class FollowCam:
         self.last_set = (cam.azimuth, cam.elevation, cam.distance)
 
     def toggle_heading(self, d):
+        """Toggle turning with the robot."""
         self.follow_heading = not self.follow_heading
         return self.follow_heading
 
 
 class Cutaway:
+    """Hides room geoms between the camera and the robot so it stays visible."""
     def __init__(self, m: mujoco.MjModel, min_top=1.2, linger_s=0.6):
+        """Candidate geoms: drawn, not the robot, not a plane."""
         self.m = m
         robot = np.array([m.body(m.geom_bodyid[g]).name.startswith(ROBOT_PREFIX) for g in range(m.ngeom)])
         drawn = m.geom_group <= 2
@@ -78,6 +85,7 @@ class Cutaway:
         self.last_hit = {}                           # geom -> time it last blocked the view
 
     def update(self, d: mujoco.MjData, cam: mujoco.MjvCamera, targets, now: float):
+        """Hide geoms that block the view of the targets; they reappear after `linger_s`."""
         m, g = self.m, self.cand
         if len(g) == 0:
             return

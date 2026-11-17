@@ -1,3 +1,4 @@
+"""Package setup: installs the leg odometry and stub nodes and the EKF config."""
 from glob import glob
 from setuptools import setup
 

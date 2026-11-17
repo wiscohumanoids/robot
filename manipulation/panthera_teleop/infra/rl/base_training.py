@@ -200,6 +200,7 @@ def main(argv=None):
 
 
 def _run_training(args, output, resource_report):
+    """Supervised fine-tuning of the base policy on a prepared batch."""
     import json
     from pathlib import Path
     batch, labels, source_ids = load_supervised_batch(args.batch)

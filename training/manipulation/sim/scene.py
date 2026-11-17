@@ -36,6 +36,7 @@ def obj_path(entry):
 
 
 def resolve_objects(entries):
+    """Object model paths in the RoboCasa library (raises if missing)."""
     out = []
     for e in entries:
         p = obj_path(e)
@@ -46,6 +47,7 @@ def resolve_objects(entries):
 
 
 def version_objects(cat, version):
+    """Objects and targets of a dataset version."""
     v = cat["versions"][version]
     objs, tgts = [], []
     for c, lst in v["objects"].items():
@@ -85,6 +87,7 @@ def robot_pelvis_height():
 
 
 def build(scene_name, version):
+    """Compile a scene: kitchen, robot and every object of a version, parked off the counter."""
     cat = yaml.safe_load(CATALOG.read_text())
     sc = cat["scenes"][scene_name]
     spec = mujoco.MjSpec.from_file(str(ROOT / sc["room"]))

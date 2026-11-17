@@ -17,6 +17,7 @@ MANIFEST = "BACKUP_MANIFEST.json"
 
 
 def sha256(path):
+    """SHA-256 of a file."""
     result = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(8 * 1024**2), b""):
@@ -25,6 +26,7 @@ def sha256(path):
 
 
 def copy_file(source, destination):
+    """Copy a file, returning its hash and size."""
     destination.parent.mkdir(parents=True, exist_ok=True)
     result = hashlib.sha256()
     size = 0
@@ -39,12 +41,14 @@ def copy_file(source, destination):
 
 
 def write_json(path, value):
+    """Write JSON atomically."""
     temp = path.with_name(path.name + ".tmp")
     temp.write_text(json.dumps(value, indent=2) + "\n")
     os.replace(temp, path)
 
 
 def read_manifest(directory):
+    """A backup's manifest (format checked)."""
     manifest = json.loads((directory / MANIFEST).read_text())
     if manifest["format"] != FORMAT:
         raise ValueError("Unrecognized checkpoint backup format")
@@ -56,6 +60,7 @@ def read_manifest(directory):
 
 
 def backup_checkpoint(checkpoint, backup_root):
+    """Copy a completed checkpoint into the backup and point latest.json at it."""
     checkpoint, backup_root = Path(checkpoint), Path(backup_root)
     if not checkpoint.name.isdecimal() or not (checkpoint / "PI05_COMPLETE").is_file():
         raise ValueError("Only a completed numbered pi05 checkpoint can be backed up")
@@ -106,6 +111,7 @@ def backup_checkpoint(checkpoint, backup_root):
 
 
 def restore_latest_checkpoint(backup_root, restore_root):
+    """Restore the newest backup, verifying every file."""
     backup_root, restore_root = Path(backup_root), Path(restore_root)
     pointer = json.loads((backup_root / "latest.json").read_text())
     name = pointer["checkpoint"]

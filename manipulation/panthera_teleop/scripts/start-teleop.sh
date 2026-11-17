@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Start Quest teleop (app/launch-teleop.py), one instance at a time (control lock).
 set -euo pipefail
 task_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 mkdir -p "$task_dir/logs"

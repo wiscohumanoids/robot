@@ -16,25 +16,29 @@ without ROS.
   checked when something is publishing it (teleop, Nav2 or the stereo camera may not be running).
 - Nodes talk only through these interfaces, never by importing each other's code.
 - All nodes use sim time in simulation (`use_sim_time: true`); `/clock` comes from `sim`.
-- **Phase 1 topics, TF edges and `/sim/reset` are frozen (2026-11-08).** Changing a frozen entry needs a decision
-  record in `docs/decisions/`. Later-phase entries freeze at the end of their phase.
+- The phase-1 entries (the robot core: clock, joint states, IMU, velocity commands, locomotion, odometry,
+  the `map → odom → base_footprint` edges and `/sim/reset`) are
+  **frozen**: every layer depends on them, so changing one means updating every consumer in the same change and saying
+  why in the pull request. The phase column also selects what `contract_check --phase N` checks.
 - `/sim/ground_truth/*` is **privileged**: only graders (`tools/eval/`) and explicitly labeled stubs may read it,
-  never the robot stack (decision 0007).
+  never the robot stack, so what works in simulation only uses what real sensors give.
 
 ## Topics
 
 <!-- BEGIN GENERATED:topics -->
 | Topic | Type | Owner (only publisher) | Rate | Phase | Required |
 |---|---|---|---|---|---|
-| `/clock` | `rosgraph_msgs/msg/Clock` | `sim` | 200 Hz | 1 | yes |
+| `/clock` | `rosgraph_msgs/msg/Clock` | `sim`, `mujoco_ros2_control_node` | 200 Hz | 1 | yes |
 | `/cmd_vel` | `geometry_msgs/msg/TwistStamped` | `twist_mux` | - | 1 | yes |
 | `/cmd_vel_teleop` | `geometry_msgs/msg/TwistStamped` | `teleop` | - | 1 | no |
-| `/imu` | `sensor_msgs/msg/Imu` | `sim` | 200 Hz | 1 | yes |
-| `/joint_states` | `sensor_msgs/msg/JointState` | `sim` | 200 Hz | 1 | yes |
+| `/imu` | `sensor_msgs/msg/Imu` | `sim`, `imu_sensor_broadcaster` | 200 Hz | 1 | yes |
+| `/joint_states` | `sensor_msgs/msg/JointState` | `sim`, `joint_state_broadcaster` | 200 Hz | 1 | yes |
+| `/joint_targets_controller/commands` | `std_msgs/msg/Float64MultiArray` | `joint_target_bridge` | - | 1 | no |
 | `/locomotion/joint_targets` | `sensor_msgs/msg/JointState` | `locomotion` | 50 Hz | 1 | yes |
 | `/locomotion/status` | `diagnostic_msgs/msg/DiagnosticArray` | `locomotion` | 1 Hz | 1 | yes |
 | `/odometry/filtered` | `nav_msgs/msg/Odometry` | `state_estimation` | 50 Hz | 1 | yes |
-| `/sim/ground_truth/odom` | `nav_msgs/msg/Odometry` | `sim` | 200 Hz | 1 | yes |
+| `/robot_description` | `std_msgs/msg/String` | `joint_target_bridge` | - | 1 | no |
+| `/sim/ground_truth/odom` | `nav_msgs/msg/Odometry` | `sim`, `mujoco_ros2_control_node` | 200 Hz | 1 | yes |
 | `/sim/viewer/image_raw` | `sensor_msgs/msg/Image` | `sim` | - | 1 | no |
 | `/map` | `nav_msgs/msg/OccupancyGrid` | `map_server`, `localization` | - | 2 | yes |
 | `/battery` | `sensor_msgs/msg/BatteryState` | `sim` | 1 Hz | 3 | yes |
@@ -118,5 +122,5 @@ The simulator (and later the hardware backend) takes joint targets from exactly 
 
 So a joint has one writer at a time: the policy for policy joints, the latest `/arm/joint_targets` for held ones.
 `locomotion` ignores names on `/arm/joint_targets` that are not held joints (warned once). Policies that drive every
-joint (manifest v1, e.g. `g1_velocity_all_joints`) have no held joints and cannot be combined with manipulation; see
-`docs/decisions/0002-two-locomotion-policies.md`.
+joint (manifest v1, e.g. `g1_velocity_all_joints`) have no held joints and cannot be combined with manipulation; the
+arms-free policies (manifest v2) are the ones that can.

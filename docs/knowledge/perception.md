@@ -101,7 +101,7 @@ Does it fit the parallel-development structure? Perfectly — arguably better th
 
 SLAM solves the chicken-and-egg of needing a map to localize and needing to localize to map, by tracking sparse ORB feature points across frames and jointly solving for camera trajectory and 3D map. ORB-SLAM3 runs three threads — fast tracking at framerate, slower local mapping with bundle adjustment per keyframe, and event-driven loop closing. Drift accumulates frame to frame without bound, and loop closure fixes it by recognizing revisited places via bag-of-words matching and redistributing the error through pose graph optimization, snapping the map back into consistency. Objects get placed in the room by composing SLAM's camera-in-map pose with a detector's object-in-camera pose, building a semantic map the planner can reason about. In ROS, SLAM owns the map → odom TF edge (slow drift correction) while state estimation owns odom → base_link (fast smooth local motion), giving you both smoothness for control and global consistency for navigation without the two writers conflicting. A perception team uses ORB-SLAM3, FoundationPose, and detectors as libraries — building calibration, ROS integration, the semantic layer, and tuning rather than the algorithms themselves — and can develop the whole thing in isolation against a real camera or a recorded bag, visualizing it live in RViz, then drop their node into the scaffold in place of the stub with zero disruption downstream. It's one of the most independently-developable and library-heavy layers in the entire stack.
 
-## In our stack (2026-11)
+## In our stack
 
 | Concept above | What Wisco V1 uses (this repo) |
 |---|---|
@@ -112,6 +112,5 @@ SLAM solves the chicken-and-egg of needing a map to localize and needing to loca
 | Placing objects in the room | `world_model`: detections → map frame with the robot's own pose, tracked and merged over views → `/world/objects`, `/world/summary` (what the planner reads) |
 | Stubbing for parallel work | `perception:=stub`: line-of-sight detections from the simulator (privileged positions, honest visibility), same topic and node name |
 
-Measured in sim: 3D error 1–4 cm median, 0.4–0.8 s per frame; wrong labels are the weak spot
-(`docs/runs/2026-11-10_worklog_E.md`). Topics and frames: `docs/interface_contract.md`.
+Measured in sim: 3D error 1–4 cm median, 0.4–0.8 s per frame; wrong labels are the weak spot. Topics and frames: `docs/interface_contract.md`.
 

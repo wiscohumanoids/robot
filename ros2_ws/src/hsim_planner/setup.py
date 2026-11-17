@@ -1,3 +1,4 @@
+"""Package setup: installs the planner node and the `ask` command."""
 from setuptools import setup
 
 setup(

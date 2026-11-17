@@ -30,6 +30,8 @@ NAV_NODES = ['controller_server', 'planner_server', 'behavior_server', 'bt_navig
 
 
 def nodes(context):
+    """Localization for the chosen `mapping` (AMCL, slam_toolbox or RTAB-Map) plus Nav2 and the velocity smoother.
+    """
     cfg = os.path.join(get_package_share_directory('hsim_navigation'), 'config')
     mapping = LaunchConfiguration('mapping').perform(context)
     env = LaunchConfiguration('env').perform(context).strip()
@@ -142,6 +144,7 @@ def nodes(context):
 
 
 def generate_launch_description():
+    """Declare the navigation arguments and defer the node list to `nodes`."""
     return LaunchDescription([
         DeclareLaunchArgument('mapping', default_value='map', description='map (AMCL on known map) | slam | rtabmap'),
         DeclareLaunchArgument('env', default_value=''),

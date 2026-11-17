@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 
 def parser():
+    """Command-line options."""
     p = argparse.ArgumentParser(description=__doc__)
     source = p.add_mutually_exclusive_group(required=True)
     source.add_argument('--replay', type=Path)
@@ -37,6 +38,7 @@ def parser():
 
 
 def main():
+    """Train the EXPO learner on a replay buffer."""
     args = parser().parse_args()
     if min(args.batch_size, args.steps, args.utd_ratio, args.hidden_dim, args.save_every) < 1:
         raise ValueError('Batch size, steps, update ratio, hidden size, and save interval must be positive')

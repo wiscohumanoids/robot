@@ -1,4 +1,4 @@
-# vla_server (Phase 5)
+# vla_server
 
 GR00T policy behind a small HTTP API, on the GPU VM. Used by `ros2_ws/src/hsim_manipulation` (/skills/manipulate)
 and by `training/manipulation/groot/eval_closed_loop.py`.

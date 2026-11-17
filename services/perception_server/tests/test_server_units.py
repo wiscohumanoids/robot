@@ -88,6 +88,7 @@ def test_map_phrase_and_nms():
 
 
 def make_request(depth_ds=2, with_pose=True):
+    """A synthetic request with a box in front of the camera."""
     depth, mask = scene(box_c=(0.0, 0.0, 1.5))
     rgb = np.full((H, W, 3), 128, np.uint8)
     rgb[mask] = (200, 30, 30)

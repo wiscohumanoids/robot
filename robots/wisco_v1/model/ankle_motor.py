@@ -17,6 +17,7 @@ GRID = {s: np.array(_INFO["sides"][s]["grid"]) for s in ("left", "right")}
 
 
 def jacobian(side, pitch, roll):
+    """Crank-to-joint Jacobian at (pitch, roll), bilinearly interpolated from the precomputed grid."""
     g = GRID[side]
     p = np.clip(pitch, PITCH[0], PITCH[-1]); r = np.clip(roll, ROLL[0], ROLL[-1])
     i = min(np.searchsorted(PITCH, p) - 1, len(PITCH) - 2); i = max(i, 0)
@@ -27,5 +28,6 @@ def jacobian(side, pitch, roll):
 
 
 def motor_torques(side, pitch, roll, tau_pitch, tau_roll):
+    """Per-motor torques for ankle joint torques."""
     J = jacobian(side, pitch, roll)
     return np.linalg.solve(J.T, np.array([tau_pitch, tau_roll]))

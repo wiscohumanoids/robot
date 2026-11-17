@@ -1,3 +1,4 @@
+"""Finding the robot boards on USB."""
 from contextlib import redirect_stderr
 import io
 from pathlib import Path
@@ -13,7 +14,9 @@ setup = hand_guide.setup
 
 
 class RobotConnectionTests(unittest.TestCase):
+    """Board resolution by USB topology."""
     def setUp(self):
+        """A fake sysfs tree."""
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         root = Path(self.directory.name)
@@ -31,9 +34,11 @@ class RobotConnectionTests(unittest.TestCase):
         self.mapping = dict(usb_path='1-1.2', pci_controller='0000:06:00.3')
 
     def resolve(self):
+        """Resolve the board in the fake tree."""
         return setup.resolve_board(self.mapping, self.ttys, self.usb, self.dev)
 
     def add_tty(self, interface='1-1.2:1.0'):
+        """Add a serial device under the board."""
         endpoint = self.board / interface / 'tty/ttyACM0'
         endpoint.mkdir(parents=True)
         (self.ttys / 'ttyACM0').symlink_to(endpoint)

@@ -17,6 +17,7 @@ from sim.stack_task import ordered_two_stack_metrics
 
 
 class ScriptedCollectionTest(unittest.TestCase):
+    """Scripted demonstrations: fixed starts, layouts and replay."""
     def test_two_blocks_fixed_start_and_replay(self):
         initial = []
         layouts = []

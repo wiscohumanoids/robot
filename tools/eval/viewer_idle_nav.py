@@ -25,6 +25,7 @@ running = True
 
 
 def fake_viewer():
+    """Send viewer key packets at 30 Hz, like the Mac viewer."""
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while running:
@@ -49,6 +50,7 @@ n.create_subscription(TwistStamped, "/cmd_vel", lambda m: seen.append((time.mono
 
 
 def spin_for(t):
+    """Spin the node for `t` seconds."""
     end = time.monotonic() + t
     while time.monotonic() < end:
         rclpy.spin_once(n, timeout_sec=0.02)

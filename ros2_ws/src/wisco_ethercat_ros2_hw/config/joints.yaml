@@ -1,0 +1,24 @@
+# Joint table: which URDF joint is wired to which drive on the EtherCAT ring.
+#
+# bus_position is the drive's physical position on the ring (0 = first drive
+# after the master), NOT its place in any list. Positions must run 0..N-1.
+# URDF joints that are not listed here run on mock hardware.
+#
+# After wiring or re-cabling, run scripts/bringup_check.py: it jogs each
+# drive in turn and asks you to confirm the named joint is the one that moved.
+#
+# Optional per-joint overrides (otherwise taken from actuator_models.yaml and
+# the URDF): max_velocity_rad_s, max_effort_nm, max_torque_permille,
+# damping_nm_s_per_rad, soft_limits_rad: [lower, upper], k_stiction (Nm, used
+# by the effort-mode demo; measured values below came from
+# scripts/multiple_act_command.py).
+
+# velocity: CSV (mode 9), commands in rad/s on /velocity_controller/commands
+# effort:   CST (mode 10), commands in Nm on /effort_controller/commands
+control_mode: velocity
+
+joints:
+  - {name: left_shoulder_pitch, bus_position: 0, model: x4_10, direction: 1, k_stiction: 5.3}
+  - {name: left_shoulder_roll,  bus_position: 1, model: x4_10, direction: 1, k_stiction: 0.869}
+  - {name: left_shoulder_yaw,   bus_position: 2, model: x4_36, direction: 1, k_stiction: 1.5725}
+  - {name: left_elbow,          bus_position: 3, model: x4_36, direction: 1, k_stiction: 1.952}

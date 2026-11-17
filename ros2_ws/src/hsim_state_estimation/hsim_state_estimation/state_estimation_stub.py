@@ -1,6 +1,6 @@
 """STUB state estimator (node name: `state_estimation`).
 
-Stands in for the IEKF (Phase 3). Copies the sim's ground-truth pose to
+Stands in for the real estimator (leg odometry + EKF) in the stub stack. Copies the sim's ground-truth pose to
 /odometry/filtered and broadcasts the odom -> base_footprint TF (2D), which this node owns.
 """
 
@@ -14,7 +14,9 @@ from tf2_ros import TransformBroadcaster
 
 
 class StateEstimationStub(Node):
+    """Node `state_estimation` for debugging: passes the ground-truth odometry through as the estimate."""
     def __init__(self):
+        """Create the odometry publisher, the TF broadcaster and the ground-truth subscription."""
         super().__init__('state_estimation')
         self.pub = self.create_publisher(Odometry, '/odometry/filtered', 10)
         self.tf = TransformBroadcaster(self)
@@ -22,6 +24,7 @@ class StateEstimationStub(Node):
         self.get_logger().info('STUB state estimation: passing through ground truth')
 
     def on_truth(self, msg: Odometry):
+        """Republish every fourth ground-truth message (50 Hz) as /odometry/filtered and odom -> base_footprint."""
         self.n = getattr(self, 'n', 0) + 1
         if self.n % 4:                 # 50 Hz, like the real EKF
             return
@@ -41,6 +44,7 @@ class StateEstimationStub(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = StateEstimationStub()
     try:

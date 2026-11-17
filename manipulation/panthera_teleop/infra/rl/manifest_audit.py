@@ -45,6 +45,7 @@ print(json.dumps({'schema_version':1,'synthetic':False,'verified':True,'source_k
 
 
 def audit_manifest(checkpoint, directory, ssh_host):
+    """Check over SSH that the backend's checkpoint matches its manifest."""
     if not re.fullmatch(r'[A-Za-z0-9_@.][A-Za-z0-9_@.-]*', ssh_host):
         raise ValueError('Invalid configured SSH host')
     result = subprocess.run(['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8',

@@ -12,13 +12,17 @@ dual=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dual)
 
 class FakeRobot:
-    def gripper_control_MIT(self,*args): pass
+    """Robot stand-in that records the IK target."""
+    def gripper_control_MIT(self,*args):
+        """Ignore gripper commands."""
     def inverse_kinematics(self,**kwargs):
+        """Record the IK target."""
         self.target=kwargs
         return None
 
 
 def simulate(rotation, displacement=np.zeros(3)):
+    """Map a controller rotation and displacement through the teleop code."""
     robot=FakeRobot()
     start=np.array([0.2,1.0,-0.3])
     initial_hand={'pos':start,'rot':[0,0,0,1],'pose_valid':1,'squeeze':1.0,'trigger':0.0,'primary':0}

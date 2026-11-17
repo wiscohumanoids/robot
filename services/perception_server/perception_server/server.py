@@ -22,6 +22,7 @@ STATE = {"backend": None, "verifier": None, "lock": threading.Lock(), "n": 0, "s
 
 
 def run_detect(req: dict) -> dict:
+    """Handle one /detect request: decode, detect, lift to 3D, post-process, encode the reply."""
     be = STATE["backend"]
     t0 = time.perf_counter()
     rgb = protocol.decode_rgb(req)
@@ -90,6 +91,7 @@ def run_detect(req: dict) -> dict:
 
 
 def make_app():
+    """FastAPI app with /health and /detect."""
     from fastapi import FastAPI, HTTPException
 
     app = FastAPI(title="hsim perception server")
@@ -113,6 +115,7 @@ def make_app():
 
 
 def load_backend(args):
+    """The fake or the real detection backend, with the post-processing options."""
     from .models import FakeBackend, GroundedSam2Backend
     if args.backend == "fake":
         STATE["post"] = {"mask_nms": True, "priors": True, "verify": False}
@@ -129,9 +132,10 @@ def load_backend(args):
 
 
 def main():
+    """Parse the options, load the backend and serve on localhost."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--backend", choices=["real", "fake"], default="real")
-    # Defaults chosen by bench/compare_configs.sh (docs/runs/2026-11-10_worklog_E.md): base + tiny ensemble at 0.30
+    # Defaults chosen on a kitchen benchmark: base + tiny ensemble at 0.30
     # finds fridges (8/13 views vs 2/13 for base alone) and small objects (45 %) at 45 % precision, ~0.6 s/frame.
     ap.add_argument("--dino", default="IDEA-Research/grounding-dino-base,IDEA-Research/grounding-dino-tiny",
                     help="one id, or comma-separated ids for an ensemble")

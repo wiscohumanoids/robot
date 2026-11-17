@@ -12,12 +12,14 @@ from postprocess_kept import sha256, write_json
 
 
 def iter_rows(root):
+    """Rows of every Parquet file under a dataset."""
     for path in sorted((root / 'data').rglob('*.parquet')):
         for batch in pq.ParquetFile(path).iter_batches(batch_size=64):
             yield from batch.to_pylist()
 
 
 def merge(roots, output, repo_id, source):
+    """Merge processed datasets into a new one."""
     if output.exists():
         raise FileExistsError(output)
     manifests = [json.loads((r / 'processing/manifest.json').read_text()) for r in roots]

@@ -22,6 +22,7 @@ ARM = ("shoulder", "elbow", "wrist")
 
 
 def default_of(n):
+    """The default angle of a joint."""
     if n in DEFAULT:
         return DEFAULT[n]
     for k, v in DEFAULT.items():
@@ -31,6 +32,7 @@ def default_of(n):
 
 
 def main():
+    """Sample arm targets both ways and print how often an arm touches the body."""
     ap = argparse.ArgumentParser(); ap.add_argument("--n", type=int, default=3000); a = ap.parse_args()
     m = mujoco.MjModel.from_xml_path(str(SCENE))
     m.body("robot/pelvis").pos[:] = [0, 0, 1.5]            # hold the pelvis up, out of the floor

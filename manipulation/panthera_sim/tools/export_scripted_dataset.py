@@ -34,6 +34,7 @@ from sim.panthera_env import PantheraSim
 
 
 def init_renderer(scene):
+    """Worker setup: a simulator and two renderers."""
     global render_sim, renderers, cameras
     render_sim = PantheraSim(scene)
     renderers = [mujoco.Renderer(render_sim.model, height=256, width=256) for _ in range(2)]
@@ -41,6 +42,7 @@ def init_renderer(scene):
 
 
 def render_job(source, dest, settings):
+    """Render one episode and encode it for the dataset."""
     count = render_episode(source, dest, render_sim, renderers, cameras, 30, 92, settings)
     image_features = {k:v for k,v in features(256,256).items() if v['dtype']=='image'}
     image_buffer = {key:[str(dest/key.rsplit('.',1)[-1]/f'{j:05d}.jpg')
@@ -71,6 +73,7 @@ def save_prepared_episode(dataset, image_stats):
 
 
 def main():
+    """Render and export scripted demonstrations as a LeRobot dataset."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, default=ROOT/'data/scripted_stack')
     parser.add_argument('--rendered', type=Path, default=ROOT/'outputs/scripted_stack_rendered_30hz')

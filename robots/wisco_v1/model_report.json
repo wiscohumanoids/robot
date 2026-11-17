@@ -248,7 +248,7 @@
    "lower": -2.35619449,
    "upper": 3.14159265,
    "motor": "X6",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 40.0,
    "kd": 3.7
   },
@@ -262,7 +262,7 @@
    "lower": -0.436332313,
    "upper": 2.96705973,
    "motor": "X6",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 40.0,
    "kd": 3.42
   },
@@ -276,7 +276,7 @@
    "lower": -2.61799388,
    "upper": 2.61799388,
    "motor": "X4-36",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 40.0,
    "kd": 1.53
   },
@@ -290,7 +290,7 @@
    "lower": 0.0,
    "upper": 2.61799388,
    "motor": "X4-36",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 30.0,
    "kd": 1.73
   },
@@ -304,7 +304,7 @@
    "lower": -2.61799388,
    "upper": 2.61799388,
    "motor": "X4-36",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 20.0,
    "kd": 0.9
   },
@@ -318,7 +318,7 @@
    "lower": -0.610865238,
    "upper": 0.610865238,
    "motor": "X4-10",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 20.0,
    "kd": 0.58
   },
@@ -332,7 +332,7 @@
    "lower": -1.57079633,
    "upper": 1.57079633,
    "motor": "X4-10",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 20.0,
    "kd": 0.39
   },
@@ -346,7 +346,7 @@
    "lower": -2.35619449,
    "upper": 3.14159265,
    "motor": "X6",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 40.0,
    "kd": 3.7
   },
@@ -360,7 +360,7 @@
    "lower": -0.436332313,
    "upper": 2.96705973,
    "motor": "X6",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 40.0,
    "kd": 3.42
   },
@@ -374,7 +374,7 @@
    "lower": -2.61799388,
    "upper": 2.61799388,
    "motor": "X4-36",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 40.0,
    "kd": 1.53
   },
@@ -388,7 +388,7 @@
    "lower": 0.0,
    "upper": 2.61799388,
    "motor": "X4-36",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 30.0,
    "kd": 1.73
   },
@@ -402,7 +402,7 @@
    "lower": -2.61799388,
    "upper": 2.61799388,
    "motor": "X4-36",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 20.0,
    "kd": 0.9
   },
@@ -416,7 +416,7 @@
    "lower": -0.610865238,
    "upper": 0.610865238,
    "motor": "X4-10",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 20.0,
    "kd": 0.58
   },
@@ -430,7 +430,7 @@
    "lower": -1.57079633,
    "upper": 1.57079633,
    "motor": "X4-10",
-   "control_mode": "EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)",
+   "control_mode": "EtherCAT CSP + torque offset or CST: arm controller (gravity compensation + PD)",
    "kp": 20.0,
    "kd": 0.39
   }
@@ -728,5 +728,5 @@
   "right_wrist_pitch": 11.087509654560462,
   "right_wrist_roll": -2.078878220273561
  },
- "_updated": "Joint effort/rated/vel/fric/damp/arm from MyActuator datasheets (robots/wisco_v1/model/robot_numbers.yaml), kp/kd from its control section, ankle pitch lower limit from the linkage reach analysis, control_mode per joint group. Generated by robots/wisco_v1/model/sync_robot_folder.py; original in original_from_team/."
+ "_updated": "Joint effort/rated/vel/fric/damp/arm from MyActuator datasheets (robots/wisco_v1/model/robot_numbers.yaml), kp/kd from its control section, ankle pitch lower limit from the linkage reach analysis, control_mode per joint group. Written by robots/wisco_v1/model/sync_robot_folder.py."
 }

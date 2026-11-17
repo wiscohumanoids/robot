@@ -1,3 +1,4 @@
+"""Holding both arms at neutral."""
 import json
 from pathlib import Path
 import sys
@@ -12,7 +13,9 @@ import test_recording as helpers
 
 
 class HoldTests(unittest.TestCase):
+    """Readiness of the neutral hold."""
     def setUp(self):
+        """Hold settings and targets."""
         self.settings=json.loads((ROOT/'config/recording.json').read_text())['neutral_return']
         self.targets={s:np.array([0,.25,.25,0,0,0]) for s in ('left','right')}
         self.hold=NeutralHold(self.targets,self.settings,0)
@@ -65,6 +68,7 @@ class HoldTests(unittest.TestCase):
 
 
 class HoldRecordingTests(unittest.TestCase):
+    """Recording while holding."""
     setUp=helpers.EpisodeTests.setUp
     tearDown=helpers.EpisodeTests.tearDown
     sample=helpers.EpisodeTests.sample

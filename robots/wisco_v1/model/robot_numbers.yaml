@@ -1,7 +1,7 @@
 _about: 'All numbers for the Wisco V1 sim in one file. Every value has a source. ''datasheet'' = MyActuator official parameter sheet (images in
   motor_datasheets/). ''derived'' = computed from datasheet values. ''estimate'' = not measured yet (bench tests / PACE / weighing will replace
   it). ''decision'' = a choice we made. To change a number: edit it here (value + source), then run sync_robot_folder.py and build_training_model.py,
-  rerun phase_a, retrain.'
+  rerun the checks (checks/run_checks.py), retrain.'
 motors:
   X4-10:
     full_name: 'RMD-X4-P12.5-10 (C: CAN, E: EtherCAT)'
@@ -50,7 +50,7 @@ motors:
       value: 0.0
       upper_bound: 0.0
       source: 'derived: (V*I_noload/w_noload - backdrive)/w_noload <= 0; datasheet leaves no room for viscous loss'
-    status_note: Non-L variant listed as discontinued on myactuator.com; X4-10-L is current. Confirm installed variant (H6).
+    status_note: Non-L variant listed as discontinued on myactuator.com; X4-10-L is current. Confirm installed variant (hardware_observations.md, Rotor inertia).
   X4-36:
     full_name: 'RMD-X4-P36-36 (C: CAN, E: EtherCAT)'
     datasheet_file: motor_datasheets/RMD-X4-P36-36_params_260901.jpg
@@ -98,7 +98,7 @@ motors:
       value: 0.031
       upper_bound: 0.062
       source: 'derived: half of upper bound (V*I_noload/w_noload - backdrive)/w_noload'
-    status_note: Non-L variant listed as discontinued; X4-36-L is current. Confirm installed variant (H6).
+    status_note: Non-L variant listed as discontinued; X4-36-L is current. Confirm installed variant (hardware_observations.md, Rotor inertia).
   X6-60:
     full_name: 'RMD-X6-P20-60 (C: CAN, E: EtherCAT)'
     datasheet_file: motor_datasheets/RMD-X6-P20-60_params_260901.jpg
@@ -190,8 +190,8 @@ motors:
       - 2.0
       source: 'estimate. Datasheet prints ''Moment of Inertia 0.001023 kg.m2'' (=10.23 kg.cm2), physically impossible for this actuator''s rotor
         (a solid cylinder of the whole 1.33 kg actuator at 96 mm diameter is only 15.3 kg.cm2); most likely a 10x typo for 1.023 kg.cm2. Other
-        X8-family listings: X8 0.805, X8 Pro 1.45, X8-120 1.5 kg.cm2 (distributor pages, 2026-11-10 search). Nominal 1.2 sits between the typo-corrected
-        1.02 and 1.5; training randomizes 0.8-2.0. Confirm with MyActuator (H6).'
+        X8-family listings: X8 0.805, X8 Pro 1.45, X8-120 1.5 kg.cm2 (distributor pages). Nominal 1.2 sits between the typo-corrected
+        1.02 and 1.5; training randomizes 0.8-2.0. Confirm with MyActuator (hardware_observations.md, Rotor inertia).'
     mass_kg:
       value: 1.33
       source: datasheet
@@ -252,15 +252,15 @@ delay:
 bus:
   type:
     value: EtherCAT
-    source: team (2026-11-10)
+    source: hardware design
   cycle_hz:
     value: null
-    source: not decided/measured (HARDWARE_ISSUES H11)
+    source: not measured yet (hardware_observations.md, Drive mode, gains and delay); 100 Hz today, 1 kHz planned
   supply_voltage_v:
     value: null
-    source: 'unknown per motor group: X4 rated 24 V, X6/X8 rated 48 V (HARDWARE_ISSUES H13)'
+    source: 'unknown per motor group: X4 rated 24 V, X6/X8 rated 48 V (hardware_observations.md, Supply voltage and heating)'
 masses:
-  _about: Measured or better link masses (HARDWARE_ISSUES H1). Each entry replaces that link's mass and scales its inertia by the same factor;
+  _about: Measured or better link masses (hardware_observations.md, Masses). Each entry replaces that link's mass and scales its inertia by the same factor;
     'com' (m, link frame) optional. Empty until there is real data.
   _example:
     left_knee_link:
@@ -269,14 +269,14 @@ masses:
       - 0.0
       - 0.0
       - -0.12
-      source: weighed 2026-12-01, scale +/-5 g
+      source: weighed on a scale, +/-5 g
   overrides: {}
 control:
   modes:
     legs_waist_head: 'MyActuator EtherCAT mode 5 (PVT/MIT): position target + kp/kd per cycle, PD on the driver'
-    arms: 'MyActuator EtherCAT mode 10 (CST): torque from the ROS controls stack (gravity compensation + PD)'
-    source: decision 2026-11-10 (HARDWARE_ISSUES H11, robot/CHANGES.md)
-  gains_source: 'decision 2026-11-10: RP1-style kp (hips/knee 120, hip yaw 50, ankles 35 joint space, waist 100; arms in sim ~RP1 arm values as
+    arms: 'MyActuator EtherCAT CSP with a gravity torque offset (0x60B2), or CST torque: the arm controller (gravity compensation + PD)'
+    source: decision (hardware_observations.md, Drive mode, gains and delay)
+  gains_source: 'decision: RP1-style kp (hips/knee 120, hip yaw 50, ankles 35 joint space, waist 100; arms in sim ~RP1 arm values as
     a stand-in for the controls stack). kd = 2*zeta*sqrt(kp*I_eff) with zeta = 0.5, I_eff = joint inertia at the home pose with the base fixed
     (armature + limb). Critical damping (zeta 1) on swing-limb inertia gives hips kd 21-24, 3x RP1''s 7.5, and would use most of the motor torque
     at walking speeds; zeta 0.5 lands near RP1''s kd (rp1_kd for comparison). Keys apply to left_ and right_ joints.'
@@ -393,7 +393,7 @@ control:
     right_shoulder_roll: 0.2
     left_elbow: 0.5
     right_elbow: 0.5
-    source: 'decision: knees-bent like the G1 recipe''s KNEES_BENT pose; arms clear the hips (H5)'
+    source: 'decision: knees-bent like the G1 recipe''s KNEES_BENT pose; arms clear the hips (hardware_observations.md, Grippers and hips)'
 sensors:
   imu:
     board: EVAL_HI05 (34 x 24 x 3 mm) on the 'IMU Mount', back of pelvis, chip facing backward
@@ -412,7 +412,7 @@ sensors:
     - 0.5
     - -0.5
     axes: board x -> robot right (-y), y -> down (-z), z -> forward (+x)
-    source: Legs V2 CAD (team, 2026-11-10); still check printed board axes (H7)
+    source: legs CAD (IMU mount); still check the printed board axes (hardware_observations.md, IMU orientation)
   head_camera:
     model: ZED X
     parent_link: head
@@ -421,4 +421,4 @@ sensors:
     - -4.88679e-06
     - 0.0152735
     tilt_rad: 0.0
-    source: position from CAD head_camera frame; model confirmed by team; tilt not confirmed (H8), assumed level
+    source: position from CAD head_camera frame; model confirmed by the hardware team; tilt not confirmed, assumed level

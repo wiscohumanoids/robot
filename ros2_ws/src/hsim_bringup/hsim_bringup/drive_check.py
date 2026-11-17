@@ -23,6 +23,7 @@ DRIVE_S = 2.0
 
 
 def main():
+    """Drive the robot forward through /cmd_vel_teleop, then check it moved and that it stops once commands stop."""
     ap = argparse.ArgumentParser()
     ap.add_argument('--stop-tolerance', type=float, default=0.02,
                     help='max drift (m) in the 1 s after commands stop; a walking robot needs more than the stub')

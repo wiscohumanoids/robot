@@ -29,13 +29,16 @@ from expo_recording import ExplorationRolloutStore
 
 
 class BackendFixture:
+    """Backend stand-in that can change checkpoint mid-run."""
     def __init__(self, checkpoint):
+        """Checkpoint and call log."""
         self.checkpoint = checkpoint
         self.calls = []
         self.draws = 0
         self.change_after = None
 
     def request(self, path, body=None):
+        """Fake /health and /infer replies."""
         self.calls.append((path, copy.deepcopy(body)))
         if path == '/health':
             changed = self.change_after is not None and self.draws >= self.change_after
@@ -57,7 +60,9 @@ class BackendFixture:
 
 
 class RemoteFrozenBaseTests(unittest.TestCase):
+    """The frozen-base proxy end to end."""
     def setUp(self):
+        """Fresh temporary folder for the test."""
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
@@ -81,6 +86,7 @@ class RemoteFrozenBaseTests(unittest.TestCase):
         self.client = BackendFixture(self.checkpoint)
 
     def payload(self):
+        """A valid inference request."""
         stream = io.BytesIO()
         Image.new('RGB', (256, 256), (12, 34, 56)).save(stream, format='JPEG')
         encoded = base64.b64encode(stream.getvalue()).decode()

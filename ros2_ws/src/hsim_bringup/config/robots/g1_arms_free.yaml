@@ -6,7 +6,7 @@
 name: g1_arms_free
 world: /hsim/assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml   # bare training world (no env)
 env_build_dir: build                 # assets/envs/<env>/<this>/  (tools/env_build.py --robot g1)
-policy: /hsim/models/locomotion/g1_velocity_arms_free      # J1v model_11900 (anti-rocking fine-tune, 2026-11-11; earlier: J1r 11500 in g1_velocity_arms_free_J1r11500, J1r 10150 in _J1r10150, J1j 6550 in _J1j): legs + waist, arms held (manifest v2)
+policy: /hsim/models/locomotion/g1_velocity_arms_free      # legs + waist, arms held (manifest v2); fine-tuned against rocking
 default_sensors: lidar               # lidar | stereo
 bodies:
   root: pelvis                       # MuJoCo body = ROS base_link

@@ -1,6 +1,6 @@
 """Wisco V1 robot for mjlab: the counterpart of mjlab's asset_zoo/robots/unitree_g1/g1_constants.py.
 
-All numbers come from model/robot_params.py (shared with the Phase A checks) and
+All numbers come from model/robot_params.py (shared with the pre-training checks in robots/wisco_v1/checks/) and
 model/train_model_info.json (written by model/build_training_model.py).
 """
 from __future__ import annotations
@@ -25,6 +25,7 @@ PARAMS = P.joint_params()
 
 
 def get_spec() -> mujoco.MjSpec:
+  """The training model as an MjSpec."""
   return mujoco.MjSpec.from_file(str(P.TRAIN_XML))
 
 
@@ -37,7 +38,7 @@ DELAY_MAX_STEPS = int(round(P.command_delay_ms()[1] / 1000 / SIM_DT))
 # clipped to the motor's back-EMF torque-speed line, max torque = min(peak, sat * (1 - |w| / w_noload)).
 # Values from model/robot_numbers.yaml (MyActuator datasheets, RP1-style gains) via robot_params.joint_params().
 # Joint friction (datasheet backdrive torque) and viscous damping live in the model XML.
-# Phase A checked this model is stable with our gains at 5 ms, including a 10 ms delay.
+# The pre-training checks found this model stable with these gains at 5 ms, including a 10 ms delay.
 ANKLE_JOINTS = ("left_ankle_pitch", "left_ankle_roll", "right_ankle_pitch", "right_ankle_roll")
 ACTUATORS = tuple(
   DcMotorActuatorCfg(
@@ -53,7 +54,7 @@ ACTUATORS = tuple(
   )
   for name, p in PARAMS.items() if name not in ANKLE_JOINTS
 )
-# Ankles (fix 4): one actuator for the 4 ankle joints that clamps each X4-36 MOTOR (peak + torque-speed line)
+# Ankles: one actuator for the 4 ankle joints that clamps each X4-36 MOTOR (peak + torque-speed line)
 # through the rod linkage, like the real drivers (ankle_actuator.py). Armature stays per joint from the model XML
 # (cfg armature is a single value). Base-class stiffness/saturation are placeholders; per-joint kp/kd below.
 _x4 = P.motor("X4-36")
@@ -95,7 +96,7 @@ ARM_JOINTS = tuple(n for n in PARAMS if n not in LOCOMOTION_ACTION_JOINTS)
 ARM_JOINT_NAMES = tuple(f"^{n}$" for n in ARM_JOINTS)
 HAND_BODIES = ("left_hand", "right_hand")
 ARM_BODY_EXCLUDE = (".*shoulder.*", ".*elbow.*", ".*forearm.*", ".*wrist.*", ".*hand.*")   # arm links (self-collision exclusion)
-# Bodies the walking policy moves (angular momentum term, fix 3): everything except arm links and hands.
+# Bodies the walking policy moves (angular momentum term): everything except arm links and hands.
 import re as _re
 _m = get_spec().compile()
 POLICY_BODIES = tuple(_m.body(i).name for i in range(1, _m.nbody)
@@ -103,16 +104,16 @@ POLICY_BODIES = tuple(_m.body(i).name for i in range(1, _m.nbody)
 del _m
 # Random arm targets (controls-stack stand-in): per joint type, (fraction toward the lower soft limit, fraction toward the
 # upper soft limit) around default, scaled by the curriculum level. Chosen with a MuJoCo contact sweep (3000 random poses,
-# legs at home and walking-like): old rule 60 %/60 % on every arm joint -> 5.3 % of poses touch the body; this -> 0.0 %.
-# shoulder roll only outward (H9: inward hits the torso near -0.17 rad); shoulder yaw toward the upper limit swings the
+# legs at home and walking-like): 60 % of the range on every arm joint touches the body in 5.3 % of poses; this in 0.0 %.
+# shoulder roll only outward (inward hits the torso near -0.17 rad); shoulder yaw toward the upper limit swings the
 # forearm into the torso (23 % of poses when moved alone) -> 0.1 there.
 ARM_TARGET_FRACS = {
   "shoulder_pitch": (0.25, 0.6), "shoulder_roll": (0.0, 0.6), "shoulder_yaw": (0.25, 0.1), "elbow": (0.3, 0.6),
   "forearm_yaw": (0.3, 0.3), "wrist_pitch": (0.3, 0.3), "wrist_roll": (0.3, 0.3),
 }
-PD_GAIN_SCALE = (0.9, 1.1)             # driver kp/kd implementation uncertainty (units / loop rate not yet bench-checked, H11)
+PD_GAIN_SCALE = (0.9, 1.1)             # driver kp/kd implementation uncertainty (units / loop rate not yet bench-checked; hardware_observations.md)
 
-# Knees-bent home pose (same posture as the G1 recipe's KNEES_BENT pose; see WORK_LOG).
+# Knees-bent home pose (the same posture as mjlab's G1 KNEES_BENT pose).
 HOME_KEYFRAME = EntityCfg.InitialStateCfg(
   pos=(0.0, 0.0, INFO["default_pelvis_height"]),
   joint_pos={f"^{name}$": p["default"] for name, p in PARAMS.items()},

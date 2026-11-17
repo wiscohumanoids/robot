@@ -3,7 +3,9 @@ import math
 
 
 class ResetGrippers:
+    """Open both grippers to a target travel before a new episode."""
     def __init__(self, settings, limits, now):
+        """Targets from the gripper limits and travel fraction."""
         self.settings = settings
         self.started = now
         fraction = float(settings.get('travel_fraction', 1.0))
@@ -17,6 +19,7 @@ class ResetGrippers:
         self.status = {side: 'opening' for side in limits}
 
     def tick(self, now, arms, released):
+        """Gripper commands until each is open."""
         commands = {}
         for side, target in self.targets.items():
             if self.status[side] != 'opening':
@@ -35,6 +38,7 @@ class ResetGrippers:
 
 
 def command_gripper(robot, arm, command=None):
+    """Send a gripper MIT command (passive when none is given)."""
     if command is None:
         accepted = robot.gripper_control_MIT(0, 0, 0, 0, 0)
         arm['gripper']['command'] = [0.0]*5

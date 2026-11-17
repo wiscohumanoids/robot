@@ -1,3 +1,4 @@
+"""Package setup: installs the bring-up helpers, launch files and config."""
 from glob import glob
 from setuptools import setup
 

@@ -23,7 +23,9 @@ from scripts.prepare_expo_replay import prepare, rows
 
 
 class PrepareReplayTests(unittest.TestCase):
+    """Building replay buffers from recorded sessions."""
     def fixture(self, root, *, success=True, assisted=False, training_objective='gear_insertion'):
+        """A recorded session with candidates and normalization."""
         normalization = dict(checkpoint_id='fixture-checkpoint', processor_id='fixture-processor',
             state={'q01': [-2.] * 14, 'q99': [2.] * 14},
             action={'q01': [-1.] * 14, 'q99': [1.] * 14})

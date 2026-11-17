@@ -20,6 +20,7 @@ from remote_inference import image_payload
 
 
 def wait_for(predicate, timeout=3):
+    """Wait until `predicate` holds (fails after `timeout`)."""
     deadline = time.monotonic() + timeout
     while not predicate():
         if time.monotonic() > deadline:
@@ -28,17 +29,21 @@ def wait_for(predicate, timeout=3):
 
 
 def jpeg_payload():
+    """A small JPEG as base64."""
     stream = io.BytesIO()
     Image.new('RGB', (256, 256), '#176543').save(stream, format='JPEG')
     return base64.b64encode(stream.getvalue()).decode()
 
 
 def rows(path):
+    """JSON lines of a file."""
     return [json.loads(row) for row in path.read_text().splitlines() if row]
 
 
 class StoreTests(unittest.TestCase):
+    """Exploration rollout recording."""
     def setUp(self):
+        """A store in a temporary folder."""
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.store = ExplorationRolloutStore(self.tmp.name, dict(checkpoint_id='weights', processor_id='stats'))
@@ -47,10 +52,12 @@ class StoreTests(unittest.TestCase):
         self.encoded = jpeg_payload()
 
     def request(self):
+        """Record one inference request."""
         self.store.requested(3, [0.] * 14, dict(overhead=self.encoded), 101,
                              dict(overhead=dict(sequence=4, monotonic_ns=99)))
 
     def complete(self, response=None):
+        """Record one complete request/command/observation cycle."""
         response = response or dict(actions=[[.01] * 14], checkpoint='saved')
         self.store.accepted(response, [[.01] * 14])
         self.store.command([.005] * 14, 102, .025)
@@ -162,7 +169,9 @@ class StoreTests(unittest.TestCase):
 
 
 class ImageDemoHardware(DemoHardware):
+    """Demo hardware that returns recording images."""
     def expo_images(self):
+        """Images and frame metadata for recording."""
         frames = self.cameras.recording_frames()
         return ({name: image_payload(frame['jpeg'], name) for name, frame in frames.items()},
                 {name: {key: value for key, value in frame.items() if key != 'jpeg'}
@@ -170,7 +179,9 @@ class ImageDemoHardware(DemoHardware):
 
 
 class MultiActionStoreTests(unittest.TestCase):
+    """Recording with several actions per request."""
     def create(self):
+        """A store with a fixed prefix length."""
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         store = ExplorationRolloutStore(temporary.name, dict(fixed_prefix_length=17,
@@ -223,7 +234,9 @@ class MultiActionStoreTests(unittest.TestCase):
 
 
 class ControllerTests(unittest.TestCase):
+    """Controller-level EXPO recording."""
     def create(self, expo_objective='gear_and_pin'):
+        """A controller on demo hardware recording EXPO rollouts."""
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)

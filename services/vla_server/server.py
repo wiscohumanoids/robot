@@ -12,7 +12,7 @@ the ROS container then uses http://host.docker.internal:8200).
 Actions are ABSOLUTE joint targets (GR00T converts its relative arm actions back using the state you send);
 grippers 0 = closed, 1 = open. Execute the first `execution_horizon` steps at 20 Hz, then ask again.
 
-  python server.py --model-path ~/hsim_runs/M1_finetune_v1/checkpoint-20000
+  python server.py --model-path ~/hsim_runs/groot_finetune_v1/checkpoint-20000
   python server.py --mock            # no GPU / model: returns "hold the current state" chunks (client testing)
 """
 import argparse
@@ -31,12 +31,15 @@ MOCK_ACTION = {"left_arm": 7, "right_arm": 7, "left_gripper": 1, "right_gripper"
 
 
 def decode_image(b64):
+    """Base64 image to an RGB array."""
     from PIL import Image
     return np.asarray(Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB"), dtype=np.uint8)
 
 
 class Backend:
+    """The GR00T policy (or a mock that holds the current state) behind /act."""
     def __init__(self, args):
+        """Load the checkpoint and its modality layout, or set up the mock."""
         self.lock = threading.Lock()
         self.mock = args.mock
         self.exec_h = args.execution_horizon
@@ -69,11 +72,13 @@ class Backend:
               f"action {self.action_keys} horizon {self.horizon}", flush=True)
 
     def health(self):
+        """Model, layout and horizons."""
         return {"ok": True, "model": self.model, "mock": self.mock, "state": self.state_dims or None,
                 "action": self.action_dims or None, "horizon": self.horizon, "execution_horizon": self.exec_h,
                 "video": self.video_keys, "language_key": self.lang_key}
 
     def act(self, req):
+        """One action chunk for an image, state and instruction."""
         state = {k: np.asarray(v, np.float32).reshape(-1) for k, v in req["state"].items()}
         if self.mock:
             acts = {k: np.repeat(state.get(k, np.zeros(d, np.float32))[None], self.horizon, 0) for k, d in MOCK_ACTION.items()}
@@ -96,6 +101,7 @@ class Backend:
 
 
 def make_handler(backend):
+    """HTTP handler class for /health and /act."""
     class H(BaseHTTPRequestHandler):
         def _send(self, code, obj):
             body = json.dumps(obj).encode()
@@ -130,6 +136,7 @@ def make_handler(backend):
 
 
 def main():
+    """Parse the options, load the policy and serve."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--model-path")
     ap.add_argument("--embodiment-tag", default="NEW_EMBODIMENT")

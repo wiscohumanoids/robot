@@ -155,6 +155,7 @@ def randomize_arm_start(sim: PantheraSim, start_range, rng=None) -> None:
 
 
 def _add_geom(scene, geom_type, size, pos, rgba) -> None:
+    """Add a decoration geom to the scene."""
     if scene.ngeom >= scene.maxgeom:
         return
     geom = scene.geoms[scene.ngeom]
@@ -165,12 +166,14 @@ def _add_geom(scene, geom_type, size, pos, rgba) -> None:
 
 
 def _add_box(scene, lo, hi, rgba) -> None:
+    """Add a box between two corners."""
     lo, hi = np.asarray(lo, float), np.asarray(hi, float)
     _add_geom(scene, mujoco.mjtGeom.mjGEOM_BOX, (hi - lo) / 2,
               (hi + lo) / 2, rgba)
 
 
 def _add_sphere(scene, pos, radius, rgba) -> None:
+    """Add a sphere decoration."""
     _add_geom(scene, mujoco.mjtGeom.mjGEOM_SPHERE,
               (radius, radius, radius), pos, rgba)
 
@@ -286,6 +289,7 @@ class Input:
     """
 
     def __init__(self, window):
+        """Track keys, mouse buttons, mouse look and scroll for `window`."""
         self.window = window
         self.taps: list[int] = []
         self._last = (0.0, 0.0)
@@ -309,10 +313,12 @@ class Input:
         self.tiles: list = []
 
     def _on_key(self, window, key, scancode, action, mods):
+        """Key callback: remember presses."""
         if action == glfw.PRESS:
             self.taps.append(key)
 
     def _on_button(self, window, button, action, mods):
+        """Mouse button callback."""
         self._buttons["left"] = glfw.get_mouse_button(
             window, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS
         self._buttons["middle"] = glfw.get_mouse_button(
@@ -344,6 +350,7 @@ class Input:
         return None
 
     def _on_move(self, window, x, y):
+        """Mouse move callback (look in mouse-look mode, orbit otherwise)."""
         dx, dy = x - self._last[0], y - self._last[1]
         self._last = (x, y)
         if self.fps_look:
@@ -370,6 +377,7 @@ class Input:
         mujoco.mjv_moveCamera(self.model, act, dx / h, dy / h, self.scene, cam)
 
     def _on_scroll(self, window, dx, dy):
+        """Scroll callback: zoom, or roll the gripper with a side scroll."""
         # GLFW reports horizontal and vertical scrolling independently. Keep
         # vertical scrolling for camera zoom, and make a horizontal wheel or
         # two-finger side-scroll roll the commanded gripper in either mode.
@@ -399,27 +407,33 @@ class Input:
             glfw.set_input_mode(self.window, glfw.CURSOR, glfw.CURSOR_NORMAL)
 
     def drain_look(self) -> np.ndarray:
+        """Mouse-look motion since the last call."""
         d = self.look_delta.copy()
         self.look_delta[:] = 0
         return d
 
     def drain_roll(self) -> float:
+        """Gripper roll since the last call."""
         d = self.roll_delta
         self.roll_delta = 0.0
         return d
 
     def held(self, key) -> bool:
+        """Whether `key` is held."""
         return glfw.get_key(self.window, key) == glfw.PRESS
 
     def button(self, name: str) -> bool:
+        """Whether a mouse button is held."""
         return self._buttons[name]
 
     def drain(self) -> list[int]:
+        """Key presses since the last call."""
         taps, self.taps = self.taps, []
         return taps
 
 
 def axis_angle_quat(axis: int, angle: float) -> np.ndarray:
+    """Quaternion for `angle` about axis `axis` (0 x, 1 y, 2 z)."""
     q = np.zeros(4)
     v = np.zeros(3)
     v[axis] = 1.0
@@ -428,6 +442,7 @@ def axis_angle_quat(axis: int, angle: float) -> np.ndarray:
 
 
 def quat_to_mat(q: np.ndarray) -> np.ndarray:
+    """Rotation matrix of a quaternion (w, x, y, z)."""
     m = np.zeros(9)
     mujoco.mju_quat2Mat(m, np.asarray(q, dtype=float))
     return m.reshape(3, 3)
@@ -512,6 +527,7 @@ def read_frame(ctx, viewport) -> np.ndarray:
 
 
 def main() -> None:
+    """Keyboard teleoperation with recording."""
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)

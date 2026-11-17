@@ -1,7 +1,7 @@
 {
   "fps": 20,
   "task": "put the gear in the carrier and put a pin in it",
-  "dataset_repo": "FoxNerdSaysMoo/panthera-today202-hitl153-20261007",
+  "dataset_repo": "panthera-today202-hitl153-20261007",
   "dataset_revision": null,
   "image_size": 256,
   "image_crops_xyxy": {

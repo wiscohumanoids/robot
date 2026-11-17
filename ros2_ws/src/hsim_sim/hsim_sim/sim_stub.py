@@ -1,6 +1,6 @@
 """STUB simulation node (node name: `sim`).
 
-Stands in for the MuJoCo node until Phase 1 replaces it. No physics: the robot
+Stands in for the MuJoCo node (`stub_stack.launch.py`, wiring checks). No physics: the robot
 "walks" by integrating the commanded velocity, and joints sit wherever the
 locomotion targets put them. It publishes exactly what the real sim will:
 /clock, /joint_states, /imu, /sim/ground_truth/odom.
@@ -25,13 +25,16 @@ GRAVITY = 9.81
 
 
 def to_time(t: float) -> Time:
+    """ROS Time from seconds."""
     # whole nanoseconds first, then split: t = 5.9999999999 must become 6.000000000, not 5.0
     sec, nsec = divmod(int(round(t * 1e9)), 1_000_000_000)
     return Time(sec=sec, nanosec=nsec)
 
 
 class SimStub(Node):
+    """Node `sim` without physics: integrates the velocity command and publishes what the real sim publishes."""
     def __init__(self):
+        """Read the joint list and default pose, create publishers and subscriptions, start the step timer."""
         super().__init__('sim')
         self.declare_parameter('joint_names', Parameter.Type.STRING_ARRAY)
         self.declare_parameter('default_joint_pos', Parameter.Type.DOUBLE_ARRAY)
@@ -62,16 +65,20 @@ class SimStub(Node):
             f'STUB sim: {len(self.joint_names)} joints, dt={self.dt}s (kinematic, no physics)')
 
     def on_targets(self, msg: JointState):
+        """Set joint positions straight from the targets (no dynamics)."""
         for name, pos in zip(msg.name, msg.position):
             if name in self.q:
                 self.q[name] = pos
 
     def on_cmd(self, msg: TwistStamped):
+        """Store the latest velocity command."""
         tw = msg.twist
         self.cmd = (tw.linear.x, tw.linear.y, tw.angular.z)
         self.cmd_t = self.t
 
     def step(self):
+        """Advance time, integrate the command into the base pose, and publish clock, joints, IMU and ground truth.
+        """
         self.t += self.dt
         vx, vy, wz = self.cmd if self.t - self.cmd_t < CMD_TIMEOUT_S else (0.0, 0.0, 0.0)
         c, s = math.cos(self.yaw), math.sin(self.yaw)
@@ -111,6 +118,7 @@ class SimStub(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = SimStub()
     try:

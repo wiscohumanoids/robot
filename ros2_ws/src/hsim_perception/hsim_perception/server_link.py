@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 
 # What the robot asks the detector for by default (open vocabulary: any name works). Kept short on purpose:
-# every extra name costs latency and adds false labels (bench sweep 2026-11-10). The environment's own labels
+# every extra name costs latency and adds false labels (measured on the kitchen benchmark). The environment's own labels
 # and the planner's targets are added on top.
 DEFAULT_VOCAB = ["fridge", "sink", "stove", "microwave", "cabinet", "counter", "table",
                  "cup", "mug", "plate", "bowl", "bottle"]
@@ -66,6 +66,9 @@ def image_to_numpy(msg):
 
 def build_request(rgb, depth, K, T_map_cam, prompts, frame_id, stamp, jpeg_quality=90, depth_downsample=2,
                   box_threshold=None, text_threshold=None, priority=None):
+    """Encode one detection request: JPEG colour, downsampled depth in mm, intrinsics, camera pose, prompts and
+    thresholds.
+    """
     ok, jpg = cv2.imencode(".jpg", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
     d = depth[::depth_downsample, ::depth_downsample] if depth_downsample > 1 else depth
     mm = np.where(np.isfinite(d) & (d > 0), np.clip(d * 1000.0, 1, 65535), 0).astype(np.uint16)
@@ -86,12 +89,14 @@ def build_request(rgb, depth, K, T_map_cam, prompts, frame_id, stamp, jpeg_quali
 
 
 def post_json(url, body, timeout):
+    """POST `body` as JSON to `url` and return the decoded reply."""
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
 
 def get_json(url, timeout):
+    """GET a URL and decode its JSON."""
     with urllib.request.urlopen(url, timeout=timeout) as r:
         return json.loads(r.read())
 

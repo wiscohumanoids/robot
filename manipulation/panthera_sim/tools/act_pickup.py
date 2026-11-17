@@ -20,12 +20,14 @@ from tools.lerobot_image_cache import _dataset_signature
 class SustainedPickup:
     """Require one particular cube to be held above the table continuously."""
     def __init__(self, hz, count=3):
+        """Pickup succeeds once a block stays grasped and lifted for 0.5 s."""
         self.required = max(1, round(.5 * hz))
         self.ticks = np.zeros(count, dtype=int)
         self.success = False
         self.first_success_step = None
 
     def update(self, heights, grasp_flags, step):
+        """Update with block heights and grasp flags."""
         self.ticks = np.where((np.asarray(heights) > .0975) & np.asarray(grasp_flags), self.ticks + 1, 0)
         if np.any(self.ticks >= self.required):
             self.success = True
@@ -35,6 +37,7 @@ class SustainedPickup:
 
 
 def scalar_data(dataset):
+    """State, action and index columns of a LeRobot dataset."""
     import pyarrow.parquet as pq
     columns = ("index", "episode_index", "frame_index", "observation.state", "action")
     tables = [pq.read_table(path, columns=list(columns)) for path in sorted((dataset / "data").glob("**/*.parquet"))]
@@ -45,6 +48,7 @@ def scalar_data(dataset):
 
 
 def build_manifest(output, dataset=DEFAULT_DATASET, rendered=DEFAULT_RENDERED):
+    """Crop every episode at its first sustained lift; write the manifest."""
     render = validate_rendered(rendered)
     scalars = scalar_data(dataset)
     episodes = {}
@@ -80,6 +84,7 @@ def build_manifest(output, dataset=DEFAULT_DATASET, rendered=DEFAULT_RENDERED):
 
 
 def load_manifest(path, dataset):
+    """Load a pickup manifest (must match the dataset)."""
     manifest = json.loads(path.read_text())
     if manifest["fps"] != 30 or manifest["dataset_signature"] != _dataset_signature(dataset):
         raise ValueError("Pickup manifest does not match this 30 Hz dataset")
@@ -106,7 +111,9 @@ def crop_action_chunk(action, padding, state, remaining, representation):
 
 
 class PickupDataset(torch.utils.data.Dataset):
+    """LeRobot samples limited to each episode's pickup, in absolute or relative actions."""
     def __init__(self, base, manifest, representation):
+        """Wrap `base` with the manifest's crop points."""
         self.base, self.representation = base, representation
         self.ends = {int(key): value["end_exclusive"] for key, value in manifest["episodes"].items()}
         scalars = base.hf_dataset.select_columns(["index", "episode_index"]).with_format(None).to_dict()
@@ -149,6 +156,7 @@ def pickup_stats(dataset, manifest, training_episodes, chunk_size, representatio
 class RelativeChunkExecutor:
     """Decode to physical absolute targets before queueing or temporal averaging."""
     def __init__(self, policy, postprocessor):
+        """Execute relative action chunks anchored at the chunk's start pose."""
         self.policy, self.postprocessor = policy, postprocessor
         self.queue = deque()
         self.ensembler = None
@@ -157,11 +165,13 @@ class RelativeChunkExecutor:
             self.ensembler = ACTTemporalEnsembler(policy.config.temporal_ensemble_coeff, policy.config.chunk_size)
 
     def reset(self):
+        """Clear the queue."""
         self.queue.clear()
         if self.ensembler is not None:
             self.ensembler.reset()
 
     def select_action(self, observation, physical_state):
+        """Next absolute action, querying a new chunk when the queue is empty."""
         if self.ensembler is not None or not self.queue:
             chunk = self.postprocessor(self.policy.predict_action_chunk(observation)).clone()
             anchor = torch.as_tensor(physical_state[:6], device=chunk.device, dtype=chunk.dtype)
@@ -173,7 +183,9 @@ class RelativeChunkExecutor:
 
 
 class PhysicalErrors:
+    """Validation errors in physical units: tool position (mm) and joint angle (deg)."""
     def __init__(self, representation):
+        """A simulator for forward kinematics."""
         import mujoco
         from sim.panthera_env import PantheraSim
         self.mujoco, self.sim = mujoco, PantheraSim()
@@ -182,6 +194,7 @@ class PhysicalErrors:
         self.positions, self.joints, self.grippers = [], [], []
 
     def add(self, prediction, target, state):
+        """Accumulate the errors of one batch."""
         prediction, target, state = [x.detach().cpu().numpy().copy() for x in (prediction, target, state)]
         if self.representation == "relative":
             prediction[:, :6] += state[:, :6]
@@ -197,6 +210,7 @@ class PhysicalErrors:
             self.positions.append(np.linalg.norm(positions[0]-positions[1])*1000)
 
     def summary(self):
+        """Mean and 95th-percentile errors."""
         return {"validation_first_target_mm": float(np.mean(self.positions)),
                 "validation_first_target_p95_mm": float(np.percentile(self.positions, 95)),
                 "validation_first_joint_mae_deg": float(np.mean(self.joints)),

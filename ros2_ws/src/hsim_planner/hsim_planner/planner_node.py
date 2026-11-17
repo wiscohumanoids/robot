@@ -52,7 +52,13 @@ def call_claude(client, model: str, effort: str, command: str, summary, history)
 
 
 class Planner(Node):
+    """Node `planner`: plans with Claude from the object memory, sends the plan to the behavior tree, replans on
+    failure.
+    """
     def __init__(self, client=None):
+        """Declare the model parameters, create the Claude client, subscriptions, the behavior-tree action client
+        and the poll timer.
+        """
         super().__init__('planner')
         self.declare_parameter('model', 'claude-opus-5-5')
         self.declare_parameter('effort', 'low')
@@ -80,14 +86,18 @@ class Planner(Node):
 
     # ------------------------------------------------------------------ helpers
     def reply(self, text):
+        """Publish a reply to the user."""
         self.get_logger().info(f'REPLY: {text}')
         self.pub_reply.publish(String(data=text))
 
     def status(self, state, **extra):
+        """Publish the planner state."""
         self.pub_status.publish(String(data=json.dumps({'state': state, **extra})))
 
     # ------------------------------------------------------------------ flow
     def on_command(self, msg: String):
+        """Handle a new request: stop words cancel the running task; anything else replaces it and starts planning.
+        """
         command = msg.data.strip()
         if not command:
             return
@@ -106,6 +116,7 @@ class Planner(Node):
         self.plan_next()
 
     def plan_next(self):
+        """Ask Claude for a plan in a worker thread (with the history of failed attempts)."""
         t = self.task
         self.status('planning', command=t['command'], attempt=len(t['history']) + 1)
         t['future'] = self.pool.submit(call_claude, self.client, self.model, self.effort,
@@ -113,11 +124,15 @@ class Planner(Node):
         t['t0'] = time.monotonic()
 
     def cancel_running(self, why):
+        """Cancel the running behavior-tree goal, if any, and forget the task."""
         if self.task and self.task.get('goal_handle'):
             self.task['goal_handle'].cancel_goal_async()
         self.task = None
 
     def poll(self):
+        """Timer: pick up a finished Claude call and act on it (reply, execute, or give up), and enforce the
+        timeout.
+        """
         t = self.task
         if not t:
             return
@@ -156,6 +171,7 @@ class Planner(Node):
             self.retry(t['plan']['skills'], r.message)
 
     def retry(self, skills, failure):
+        """Record a failed attempt and plan again, or give up after `max_replans`."""
         t = self.task
         t['history'].append({'skills': skills, 'failure': failure})
         if len(t['history']) > self.max_replans:
@@ -164,6 +180,7 @@ class Planner(Node):
         self.plan_next()
 
     def execute(self, plan):
+        """Send a plan to the behavior tree as an ExecutePlan goal and follow its result."""
         t = self.task
         goal = ExecutePlan.Goal()
         goal.plan.task, goal.plan.reasoning = t['command'], plan['reasoning']
@@ -184,12 +201,14 @@ class Planner(Node):
         self.bt.send_goal_async(goal).add_done_callback(on_goal)
 
     def finish(self, message, success=False):
+        """Reply to the user, publish the final status, and clear the task."""
         self.reply(message)
         self.status('done' if success else 'failed', message=message)
         self.task = None
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = Planner()
     try:

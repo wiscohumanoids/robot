@@ -15,6 +15,7 @@ DEFAULT_CHECKPOINT = ROOT / 'outputs/act/panthera_stack_30hz'
 
 
 def file_hash(path: Path) -> str:
+    """SHA-256 of a file."""
     digest = hashlib.sha256()
     with path.open('rb') as source:
         for block in iter(lambda: source.read(1024 * 1024), b''):
@@ -23,10 +24,12 @@ def file_hash(path: Path) -> str:
 
 
 def source_signature(path: Path) -> dict:
+    """Hashes of a take's data.npz and meta.json."""
     return {name: file_hash(path / name) for name in ('data.npz', 'meta.json')}
 
 
 def render_signature(hz: float, size: int, quality: int) -> dict:
+    """Fingerprint of the rendering code, scene and settings; renders are valid only while it matches."""
     files = [ROOT / 'teleop/render_vla_dataset.py', Path(__file__),
              ROOT / 'sim/panthera_env.py', ROOT / 'sim/dynamics.py',
              *sorted((ROOT / 'sim/panthera').glob('*.xml'))]
@@ -36,6 +39,7 @@ def render_signature(hz: float, size: int, quality: int) -> dict:
 
 
 def validate_rendered(root: Path) -> dict:
+    """Check a rendered folder against the current render signature; returns its manifest."""
     manifest = json.loads((root / 'manifest.json').read_text())
     settings = manifest['render_signature']
     if settings != render_signature(settings['sample_hz'], settings['image_size'][0], settings['jpeg_quality']):
@@ -48,6 +52,7 @@ def validate_rendered(root: Path) -> dict:
 
 
 def resolve_control_hz(checkpoint: Path, requested: float | None, dataset_hz: float) -> float:
+    """Control rate for a checkpoint: its trained rate (a different request is refused)."""
     path = checkpoint / 'deployment.json'
     # Historical ACT checkpoints in this project were trained at 10 Hz.
     trained_hz = float(json.loads(path.read_text())['fps']) if path.exists() else 10.0
@@ -61,6 +66,7 @@ def resolve_control_hz(checkpoint: Path, requested: float | None, dataset_hz: fl
 class PhysicsClock:
     """Distribute fractional physics ticks without long-term control-rate drift."""
     def __init__(self, hz: float, dt: float):
+        """Physics steps per control tick at `hz` with physics step `dt` (may be fractional)."""
         if not np.isfinite(hz) or hz <= 0 or hz * dt > 1:
             raise ValueError('Control rate must be positive and no faster than physics.')
         self.ratio = 1.0 / (hz * dt)
@@ -68,6 +74,7 @@ class PhysicsClock:
         self.steps = 0
 
     def next_steps(self) -> int:
+        """Physics steps for the next tick, so the rate never drifts."""
         self.ticks += 1
         target = round(self.ticks * self.ratio)
         count = target - self.steps

@@ -11,7 +11,9 @@ import cv2
 
 
 class Cameras:
+    """USB cameras captured in background threads; the latest JPEG per camera is kept and sent to the recorder."""
     def __init__(self, store, config):
+        """Camera settings and the recorder they feed."""
         self.store = store
         self.config = config
         self.stop = threading.Event()
@@ -25,6 +27,7 @@ class Cameras:
             self.threads.append(thread)
 
     def capture(self, name, device):
+        """Capture loop for one camera device."""
         cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
         try:
             if not cap.isOpened():
@@ -59,6 +62,7 @@ class Cameras:
             cap.release()
 
     def status(self):
+        """Per-camera device, frame rate and age of the latest frame."""
         now = time.monotonic_ns()
         with self.lock:
             return {name: dict(device=device,
@@ -70,14 +74,17 @@ class Cameras:
                     for name, device in self.config['cameras'].items()}
 
     def jpeg(self, name):
+        """Latest JPEG of a camera."""
         with self.lock:
             return self.latest.get(name, {}).get('jpeg')
 
     def recording_frames(self):
+        """Latest frame of every camera."""
         with self.lock:
             return dict(self.latest)
 
     def wait_ready(self, timeout=10):
+        """Wait until every camera delivers frames (raises after `timeout`)."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             state = self.status()
@@ -89,13 +96,16 @@ class Cameras:
         raise RuntimeError(f'Camera preflight timed out: {self.status()}')
 
     def close(self):
+        """Stop the capture threads."""
         self.stop.set()
         for thread in self.threads:
             thread.join(timeout=2)
 
 
 class Dashboard:
+    """Local web dashboard for teleop recording: status, live cameras and operator controls (token protected)."""
     def __init__(self, store, cameras, port, demo=False):
+        """Recorder, cameras, port and a random access token."""
         self.token = secrets.token_urlsafe(32)
         self.store = store
         self.cameras = cameras
@@ -163,5 +173,6 @@ class Dashboard:
         self.thread.start()
 
     def close(self):
+        """Stop the web server."""
         self.server.shutdown()
         self.server.server_close()

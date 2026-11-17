@@ -29,14 +29,17 @@ from scripts.prepare_expo_replay import prepare
 
 
 def read_rows(path):
+    """JSON lines of a file."""
     return [json.loads(line) for line in path.read_text().splitlines() if line]
 
 
 class FixtureHardware(DemoHardware):
+    """Demo hardware treated as real for this integration test only."""
     # Only this temporary integration fixture bypasses the simulation gate.
     simulated = False
 
     def expo_images(self):
+        """Images and frame metadata for recording."""
         frames = self.cameras.recording_frames()
         return ({name: image_payload(frame['jpeg'], name) for name, frame in frames.items()},
                 {name: {key: value for key, value in frame.items() if key != 'jpeg'}
@@ -44,12 +47,15 @@ class FixtureHardware(DemoHardware):
 
 
 class FixtureBackend:
+    """Backend stand-in returning deterministic chunks."""
     def __init__(self, checkpoint):
+        """Checkpoint and call log."""
         self.checkpoint = checkpoint
         self.draws = 0
         self.calls = []
 
     def request(self, path, body=None):
+        """Fake /health and /infer replies."""
         self.calls.append((path, copy.deepcopy(body)))
         if path == '/health':
             return dict(status='ready', checkpoint=self.checkpoint, contract=CONTRACT, names=NAMES)
@@ -61,7 +67,9 @@ class FixtureBackend:
 
 
 class Chunk17PipelineTests(unittest.TestCase):
+    """Record, prepare and train end to end with 17-action chunks."""
     def setUp(self):
+        """Fresh temporary folder for the test."""
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
@@ -86,6 +94,7 @@ class Chunk17PipelineTests(unittest.TestCase):
         self.runtime = Runtime(self.manifest, client=self.backend, prefix_length=17)
 
     def wait(self, controller, predicate, timeout=4, allowed_error=None):
+        """Wait until `predicate` holds, keeping the controller alive."""
         deadline = time.monotonic() + timeout
         while not predicate():
             controller.heartbeat()
@@ -97,6 +106,7 @@ class Chunk17PipelineTests(unittest.TestCase):
             time.sleep(.005)
 
     def connect_controller(self):
+        """A connected controller on fixture hardware."""
         controller = Controller('in-memory-only', FixtureHardware,
             log_path=self.root / 'steps.jsonl', data_dir=self.root / 'fixture-hitl',
             expo_record_dir=self.root / 'fixture-expo', expo_objective='gear_insertion',
@@ -111,9 +121,11 @@ class Chunk17PipelineTests(unittest.TestCase):
         return controller
 
     def dispatch(self, base, path, body=None, timeout=3):
+        """Route a request to the in-memory runtime."""
         return self.runtime.health() if path == '/health' else self.runtime.infer(body)
 
     def collect_complete(self):
+        """Collect a successful and a failed rollout."""
         with patch('inference_dashboard.request', self.dispatch):
             controller = self.connect_controller()
             for success, count in ((True, 1), (False, 2)):

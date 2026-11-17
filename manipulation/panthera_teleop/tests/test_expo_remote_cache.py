@@ -24,6 +24,7 @@ from scripts.cache_expo_candidates import cache_candidates
 
 
 def jpeg(color):
+    """A JPEG of one colour."""
     output = io.BytesIO()
     Image.new('RGB', (256, 256), color).save(output, format='JPEG', quality=95)
     return output.getvalue()
@@ -32,12 +33,14 @@ def jpeg(color):
 class BackendFixture:
     """Explicit arithmetic fixture: every request has a distinct real response."""
     def __init__(self, manifest):
+        """Backend stand-in for a manifest."""
         self.manifest = manifest
         self.requests = []
         self.draws = 0
         self.changed_after = None
 
     def request(self, path, body=None):
+        """Fake /health and /infer replies (optionally changing checkpoint)."""
         self.requests.append((path, deepcopy(body)))
         checkpoint = self.manifest['checkpoint']
         if self.changed_after is not None and self.draws >= self.changed_after:
@@ -55,7 +58,9 @@ class BackendFixture:
 
 
 class RemoteCacheTests(unittest.TestCase):
+    """Candidate caching against a remote backend."""
     def setUp(self):
+        """Fresh temporary folder for the test."""
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
@@ -99,9 +104,11 @@ class RemoteCacheTests(unittest.TestCase):
         self.output = self.root / 'candidate-cache'
 
     def runtime(self, manifest, backend):
+        """A runtime on the fixture backend."""
         return Runtime(manifest, backend=backend, client=self.client)
 
     def cache(self):
+        """Cache candidates for the session."""
         return cache_candidates([self.session], None, self.output, backend='http://127.0.0.1:8765',
                                 manifest=self.manifest_path, remote_runtime_factory=self.runtime)
 

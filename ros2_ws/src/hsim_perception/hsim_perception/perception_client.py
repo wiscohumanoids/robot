@@ -42,6 +42,7 @@ from .perception_stub import PerceptionStub
 
 
 def quat_to_mat(x, y, z, w):
+    """Rotation matrix from a quaternion (x, y, z, w)."""
     return np.array([
         [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
@@ -49,7 +50,12 @@ def quat_to_mat(x, y, z, w):
 
 
 class PerceptionClient(PerceptionStub):
+    """Node `perception` backed by the GPU detection server; falls back to the stub while the server is unreachable.
+    """
     def __init__(self):
+        """Set up the stub fallback, the server parameters, camera subscriptions, TF, and the background request
+        loop.
+        """
         super().__init__()                    # stub: params world/objects/..., GT subscription, fallback tick
         for name, default in (('server_url', 'http://host.docker.internal:8100'), ('request_hz', 1.5),
                               ('timeout_s', 3.0), ('min_score', 0.3), ('fallback', 'stub'), ('max_failures', 3),
@@ -101,6 +107,7 @@ class PerceptionClient(PerceptionStub):
 
     # ------------------------------------------------------------------ inputs
     def on_image(self, msg, store):
+        """Store a colour or depth frame by stamp, keeping the newest four."""
         key = Time.from_msg(msg.header.stamp).nanoseconds
         with self.lock:
             store[key] = msg
@@ -108,10 +115,12 @@ class PerceptionClient(PerceptionStub):
                 del store[k]
 
     def on_info(self, msg):
+        """Store the camera intrinsics."""
         k = msg.k
         self.K = {'fx': k[0], 'fy': k[4], 'cx': k[2], 'cy': k[5], 'width': msg.width, 'height': msg.height}
 
     def on_planner(self, msg):
+        """Add the current plan's object names to the prompt vocabulary and give them their own detector pass."""
         names = sl.planner_targets(msg.data)
         new = [n for n in names if n not in self.base_vocab and n not in self.plan_vocab]
         if names:
@@ -123,11 +132,13 @@ class PerceptionClient(PerceptionStub):
 
     # ------------------------------------------------------------------ fallback
     def tick(self):                                       # stub timer: only publishes in fallback mode
+        """Stub timer: publish stub detections only in fallback mode."""
         if self.mode == 'fallback':
             super().tick()
 
     # ------------------------------------------------------------------ server loop
     def latest_pair(self):
+        """The newest colour/depth pair with the same stamp that has not been processed yet, or None."""
         with self.lock:
             common = sorted(set(self.rgb) & set(self.depth))
             if not common or common[-1] == self.last_done:
@@ -136,6 +147,9 @@ class PerceptionClient(PerceptionStub):
             return k, self.rgb[k], self.depth[k]
 
     def camera_pose(self, frame, stamp):
+        """Map-from-camera transform at `stamp` (falling back to the latest), as (R, t), or None while not
+        localized.
+        """
         try:
             tf = self.tf2.lookup_transform(self.map_frame, frame, Time.from_msg(stamp), Duration(seconds=0.2))
         except Exception:
@@ -150,6 +164,9 @@ class PerceptionClient(PerceptionStub):
         return T
 
     def loop(self):
+        """Background loop: send the newest frame pair to the server at the request rate, or probe it while in
+        fallback.
+        """
         while rclpy.ok():
             self.wake.wait(self.period)
             self.wake.clear()
@@ -182,6 +199,9 @@ class PerceptionClient(PerceptionStub):
                     self.get_logger().warn('perception server unreachable: falling back to the line-of-sight stub')
 
     def process(self, key, rgb_msg, dep_msg):
+        """Send one frame pair with the camera pose and prompts, and publish the returned detections in the camera
+        frame.
+        """
         rgb = sl.image_to_numpy(rgb_msg)
         depth = sl.image_to_numpy(dep_msg)
         T = self.camera_pose(rgb_msg.header.frame_id, rgb_msg.header.stamp)
@@ -214,11 +234,13 @@ class PerceptionClient(PerceptionStub):
         self.pub.publish(out)
 
     def publish_status(self):
+        """Publish /perception/status."""
         self.pub_status.publish(String(data=json.dumps({'mode': self.mode, 'server': self.url, 'failures': self.failures,
                                                         'prompts': len(self.base_vocab) + len(self.plan_vocab), **self.stats})))
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = PerceptionClient()
     try:

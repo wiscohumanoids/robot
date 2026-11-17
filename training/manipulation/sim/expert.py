@@ -22,10 +22,12 @@ PITCH_DEG = 15.0
 
 
 def min_jerk(s):
+    """Minimum-jerk profile at phase `s`."""
     return 10 * s ** 3 - 15 * s ** 4 + 6 * s ** 5
 
 
 def slerp(q0, q1, s):
+    """Spherical interpolation of quaternions."""
     q0, q1 = np.asarray(q0, float), np.asarray(q1, float)
     dot = float(np.dot(q0, q1))
     if dot < 0:
@@ -38,6 +40,7 @@ def slerp(q0, q1, s):
 
 
 def pose_mat(pos, quat):
+    """Transform from position and quaternion."""
     T = np.eye(4)
     T[:3, :3] = quat_to_mat(quat)
     T[:3, 3] = pos
@@ -45,6 +48,7 @@ def pose_mat(pos, quat):
 
 
 def mat_pose(T):
+    """Position and quaternion of a transform."""
     return T[:3, 3].copy(), mat_to_quat(T[:3, :3])
 
 
@@ -82,6 +86,7 @@ PITCHES = (15.0, 0.0, 30.0)
 
 
 def _feasible(env, side, poses, allow):
+    """Whether every pose has a collision-free IK solution."""
     ik = env.ik[side]
     base_q = env.d.qpos.copy()
     q = env.ready_q[side]
@@ -157,6 +162,7 @@ def to_relative(wps, ref_obj, ref_tgt):
 
 
 def from_relative(rel_wps, ref_obj, ref_tgt):
+    """Absolute waypoints from object- or target-relative ones."""
     To, Tt = pose_mat(ref_obj[:3], ref_obj[3:]), pose_mat(ref_tgt[:3], ref_tgt[3:])
     out = []
     for w in rel_wps:

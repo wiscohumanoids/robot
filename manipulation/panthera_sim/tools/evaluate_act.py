@@ -12,6 +12,7 @@ from teleop.dataset_contract import DEFAULT_CHECKPOINT, DEFAULT_DATASET
 
 
 def main():
+    """Closed-loop success rates of an ACT checkpoint over fixed seeds."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--checkpoint', type=Path, default=DEFAULT_CHECKPOINT / 'best')
     parser.add_argument('--dataset', type=Path, default=DEFAULT_DATASET)

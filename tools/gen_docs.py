@@ -22,16 +22,19 @@ TARGETS = [ROOT / 'docs' / 'interface_contract.md']
 
 
 def md_table(header, rows):
+    """Markdown table from a header and rows."""
     out = ['| ' + ' | '.join(header) + ' |', '|' + '|'.join('---' for _ in header) + '|']
     out += ['| ' + ' | '.join(str(c) for c in row) + ' |' for row in rows]
     return '\n'.join(out)
 
 
 def _owners(o):
+    """Owners as markdown code."""
     return ', '.join(f'`{x}`' for x in (o if isinstance(o, list) else [o]))
 
 
 def block_topics(c):
+    """The topics table."""
     rows = []
     for name, s in sorted(c['topics'].items(), key=lambda kv: (kv[1]['phase'], kv[0])):
         rate = '-' if s.get('rate_hz') is None else f"{s['rate_hz']:g} Hz"
@@ -41,6 +44,7 @@ def block_topics(c):
 
 
 def block_tf(c):
+    """The TF edges table."""
     rows = [(f"`{e['parent']}` → `{e['child']}`", f"`{e['owner']}`",
              {True: 'static', False: 'dynamic', None: 'static or live'}[e['static']], e['phase'])
             for e in c['tf_edges']]
@@ -48,12 +52,14 @@ def block_tf(c):
 
 
 def _calls(c, key):
+    """The actions or services table."""
     rows = [(f'`{n}`', f"`{s['type']}`", f"`{s['server']}`", ', '.join(f'`{x}`' for x in s['clients']), s['phase'])
             for n, s in sorted(c.get(key, {}).items(), key=lambda kv: (kv[1]['phase'], kv[0]))]
     return md_table(['Name', 'Type', 'Server', 'Clients', 'Phase'], rows)
 
 
 def block_shared(c):
+    """The shared-topics list."""
     return ', '.join(f'`{t}`' for t in c.get('shared_topics', []))
 
 
@@ -62,6 +68,7 @@ BLOCKS = {'topics': block_topics, 'tf': block_tf, 'actions': lambda c: _calls(c,
 
 
 def render(text, contract):
+    """Replace every generated block in `text` with its table."""
     def repl(m):
         name = m.group(1)
         if name not in BLOCKS:
@@ -71,6 +78,7 @@ def render(text, contract):
 
 
 def main():
+    """Regenerate the tables (or with --check, exit 1 if any is stale)."""
     ap = argparse.ArgumentParser()
     ap.add_argument('--check', action='store_true', help='exit 1 if a generated block is stale')
     args = ap.parse_args()

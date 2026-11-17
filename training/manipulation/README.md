@@ -10,9 +10,8 @@ Scripted demonstrations → LeRobot dataset → GR00T fine-tune → served by `s
 | [`datagen/`](datagen/README.md) | parallel scripted + MimicGen-style episode generation → raw episodes |
 | [`groot/`](groot/README.md) | raw → LeRobot (GR00T modality config), fine-tune (`finetune.sh`), closed-loop evaluation through the VLA server |
 
-Result (2026-11-11): GR00T N1.6, 20,000 steps, final checkpoint **26/50 = 52 %** success on held-out layouts
-(checkpoint 15,000: 50 %, 10,000: 27 %, 5,000: 0 %); server latency ~96 ms. Details: `training/locomotion/wisco_v1/WORK_LOG.md`
-and `docs/runs/2026-11-10_worklog_F1.md` / `_F2.md`.
+Result so far: GR00T N1.6, 20,000 steps, final checkpoint **26/50 = 52 %** success on held-out layouts
+(checkpoint 15,000: 50 %, 10,000: 27 %, 5,000: 0 %); server latency about 96 ms.
 
 Built scenes (`sim/build/`), datasets and checkpoints are not in the repo (regenerate, or copy from the VM: `~/hsim_data/`,
 `~/hsim_runs/`).

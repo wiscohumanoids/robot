@@ -18,6 +18,7 @@ spec.loader.exec_module(remote)
 
 
 class ServiceErrorTests(unittest.TestCase):
+    """Server error reporting."""
     def test_reports_backend_reason_for_503(self):
         error = HTTPError('http://127.0.0.1/health', 503, 'Unavailable', {},
                           io.BytesIO(b'{"error":"Backend checkpoint changed"}'))
@@ -34,11 +35,14 @@ class ServiceErrorTests(unittest.TestCase):
 
 
 class ChunkSafetyTests(unittest.TestCase):
+    """Chunk validation."""
     def check(self, response, sequence=1):
+        """Validate a reply with simple limits."""
         return remote.validate_chunk(response, sequence, np.zeros(14),
                                      np.full(14, -1.0), np.ones(14))
 
     def response(self):
+        """A valid reply."""
         return dict(sequence=1, fps=20, mock=False, actions=[[0.01]*14]*50)
 
     def test_accepts_valid_chunk(self):
@@ -144,6 +148,7 @@ class ChunkSafetyTests(unittest.TestCase):
 
 
 class ServerClampingTests(unittest.TestCase):
+    """Server-side gripper clamping."""
     def test_server_clamps_grippers_and_reports_raw_corrections(self):
         spec = importlib.util.spec_from_file_location('inference_server',
                                                      ROOT / 'infra/inference/server.py')
@@ -169,6 +174,7 @@ class ServerClampingTests(unittest.TestCase):
 
 
 class SmoothTrajectoryTests(unittest.TestCase):
+    """Smooth execution of chunks."""
     def test_large_motion_reaches_each_waypoint_in_order_with_bounded_derivatives(self):
         actions = np.array([[.5]*14, [-.2]*14, [.1]*14])
         trajectory = remote.SmoothActionTrajectory(actions, 0.)
@@ -312,17 +318,21 @@ class SmoothTrajectoryTests(unittest.TestCase):
 
 
 class ChunkStreamTests(unittest.TestCase):
+    """Background chunk requests."""
     def setUp(self):
+        """A stream with simple limits."""
         self.stream = remote.InferenceChunkStream()
         self.target = np.zeros(14)
         self.lower, self.upper = np.full(14, -1.), np.ones(14)
 
     def response(self, **changes):
+        """A server reply with overrides."""
         result = dict(sequence=0, fps=20, mock=False, actions=[[.01] * 14] * 50)
         result.update(changes)
         return result
 
     def complete_request(self, response, observed_at=0.):
+        """Simulate a finished request."""
         self.stream.observed_at = observed_at
         self.stream.future = Future()
         self.stream.future.set_result(response)

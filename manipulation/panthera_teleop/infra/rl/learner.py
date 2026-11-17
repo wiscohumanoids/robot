@@ -23,6 +23,7 @@ from .models import QEnsemble, SquashedGaussianEditor
 
 @dataclass(frozen=True)
 class EXPOConfig:
+    """EXPO learner settings."""
     obs_dim: int = 2318
     action_dim: int = 14
     chunk_size: int = 1
@@ -128,6 +129,7 @@ class EXPOLearner:
     CHECKPOINT_VERSION = 1
 
     def __init__(self, config: EXPOConfig, device: str | torch.device = "cpu"):
+        """Residual action editor and critic ensemble."""
         self.config = config
         self.device = torch.device(device)
         flat_dim = config.chunk_size * config.action_dim
@@ -179,12 +181,15 @@ class EXPOLearner:
 
     @property
     def temperature(self) -> Tensor:
+        """Entropy temperature."""
         return self.log_temperature.exp()
 
     def _tensor(self, value: Any) -> Tensor:
+        """Value as a float tensor on the learner's device."""
         return torch.as_tensor(value, dtype=torch.float32, device=self.device).detach()
 
     def _check_obs_candidates(self, obs: Tensor, base_actions: Tensor) -> None:
+        """Check observation and candidate shapes."""
         cfg = self.config
         if obs.ndim != 2 or obs.shape[1] != cfg.obs_dim or len(obs) < 1:
             raise ValueError(f"Expected observation shape [B,{cfg.obs_dim}]")
@@ -195,6 +200,7 @@ class EXPOLearner:
             raise ValueError("Observations and base actions must be finite")
 
     def _subset(self, deterministic: bool = False) -> Tensor:
+        """Critic subset used for the target."""
         cfg = self.config
         if deterministic:
             return torch.arange(cfg.target_subset_size, device=self.device)
@@ -205,6 +211,7 @@ class EXPOLearner:
     def _select(self, obs: Tensor, base_actions: Tensor,
                 deterministic: bool = False,
                 candidate_transform: Callable[[Tensor], Tensor] | None = None) -> dict[str, Tensor]:
+        """Pick the best edited candidate per observation."""
         self._check_obs_candidates(obs, base_actions)
         b, n, c, a = base_actions.shape
         repeated_obs = obs.repeat_interleave(n, dim=0)
@@ -234,6 +241,7 @@ class EXPOLearner:
                             candidate_transform)
 
     def _batch(self, batch: Mapping[str, Any]) -> dict[str, Tensor]:
+        """Training batch as tensors (fields checked)."""
         names = ("obs", "next_obs", "actions", "base_actions", "next_base_actions",
                  "reward_return", "bootstrap_discount")
         missing = set(names) - set(batch)
@@ -265,6 +273,7 @@ class EXPOLearner:
 
     def update(self, batch: Mapping[str, Any],
                candidate_transform: Callable[[Tensor], Tensor] | None = None) -> dict[str, float]:
+        """One critic and editor update; returns the losses."""
         data = self._batch(batch)
         valid = data["transition_valid"]
         editor_valid = data["editor_train_valid"]
@@ -382,6 +391,7 @@ class EXPOLearner:
 
     @classmethod
     def load(cls, path: str | Path, device: str | torch.device = "cpu") -> "EXPOLearner":
+        """Load a saved learner."""
         # Only primitive values and tensors are serialized; weights_only keeps
         # a checkpoint from executing arbitrary pickle objects during loading.
         payload = torch.load(path, map_location=device, weights_only=True)

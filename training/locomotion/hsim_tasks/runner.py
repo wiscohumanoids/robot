@@ -11,7 +11,9 @@ from mjlab.tasks.velocity.rl import VelocityOnPolicyRunner
 
 
 class SubsetVelocityRunner(VelocityOnPolicyRunner):
+  """Velocity runner that writes which joints the policy drives into the ONNX metadata."""
   def save(self, path: str, infos=None):
+    """Save as usual, then add the driven joint names to the exported ONNX."""
     super().save(path, infos)
     try:
       _, _, onnx_path = self._get_export_paths(path)

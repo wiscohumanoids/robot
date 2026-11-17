@@ -4,7 +4,7 @@ What changes, and why:
   - remove floor, light, motors, keyframes, sensors: mjlab adds its own terrain and its own
     position actuators (gains from robot_params.py), like the G1 model file it ships
   - head_yaw / head_pitch removed (head welded to the torso): the policy drives 29 joints
-  - ankle pitch lower limit -> training value from ankle_linkage.json (HARDWARE_ISSUES H2)
+  - ankle pitch lower limit -> training value from ankle_linkage.json (hardware_observations.md, Ankle reach)
   - joint friction, viscous damping, armature -> from robot_numbers.yaml (robot_params.joint_params)
   - link masses -> robot_numbers.yaml masses.overrides where given (inertia scaled with the mass)
   - collision geoms renamed <body>_collision, feet left/right_foot_collision (mjlab matches
@@ -29,6 +29,9 @@ INFO_OUT = P.HERE / "train_model_info.json"
 
 
 def build():
+    """robot.xml stripped to what mjlab needs: no actuators, sensors, keys, floor or lights; training limits and
+    sites.
+    """
     spec = mujoco.MjSpec.from_file(str(P.SOURCE_XML))
     spec.modelname = "wisco_v1_train"
 
@@ -118,6 +121,7 @@ def pelvis_height(model):
 
 
 def main():
+    """Write model/wisco_v1_train.xml and train_model_info.json."""
     spec, renamed = build()
     xml = spec.to_xml()                            # compiles with meshes resolved against robots/wisco_v1/
     # point the saved file at robots/wisco_v1/meshes relative to this folder (works on the VM too)

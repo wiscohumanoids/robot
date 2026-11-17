@@ -17,6 +17,7 @@ from prepare_hitl import select_intervals
 
 
 def wait_for(predicate, timeout=3):
+    """Wait until `predicate` holds (fails after `timeout`)."""
     end = time.monotonic() + timeout
     while not predicate():
         if time.monotonic() > end:
@@ -25,7 +26,9 @@ def wait_for(predicate, timeout=3):
 
 
 class HandoffTests(unittest.TestCase):
+    """Handing control between policy and operator."""
     def setUp(self):
+        """A controller on demo hardware with the demo server."""
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         patcher = patch('inference_dashboard.request', demo_request)
@@ -44,12 +47,14 @@ class HandoffTests(unittest.TestCase):
         self.controller.hardware.config['takeover_hold'].update(baseline_seconds=.05, pull_confirm_seconds=.06)
 
     def pull(self, sides=('left', 'right')):
+        """Simulate the operator pulling on the arms."""
         wait_for(lambda: self.controller.snapshot()['handoff_baseline_ready'])
         for side in sides:
             self.controller.hardware.pull_torque[side] = [.9] + [0.]*5
         wait_for(lambda: all(self.controller.snapshot()['handoff_ready'].get(s) for s in sides))
 
     def begin(self):
+        """Begin a recorded rollout."""
         self.controller.collection('begin', dict(operator='tester', scene='test'))
         wait_for(lambda: self.controller.snapshot()['rollout_active'])
         wait_for(lambda: self.controller.recorder.snapshot()['active'] is not None)
@@ -334,6 +339,7 @@ class HandoffTests(unittest.TestCase):
 
 
 class HardwareHandoffTests(unittest.TestCase):
+    """Hardware commands during a handoff."""
     def test_held_joints_use_position_and_both_grippers_are_passive_when_armed(self):
         hardware = RobotHardware()
         hardware.robots = {side: Mock() for side in ('left', 'right')}
@@ -357,11 +363,14 @@ class HardwareHandoffTests(unittest.TestCase):
 
 
 class SelectionTests(unittest.TestCase):
+    """Which recorded steps are selected for training."""
     def metadata(self, success=True):
+        """Metadata of a kept human-in-the-loop rollout."""
         return dict(label='kept', complete=True, context=dict(mode='human_in_the_loop'),
                     outcome=dict(success=success))
 
     def states(self, sources):
+        """States with the given control sources, one second apart."""
         return [dict(monotonic_ns=(i+1)*1000000000, control_source=s) for i,s in enumerate(sources)]
 
     def test_only_corrections_from_assisted_rollouts_and_never_cross_handoffs(self):

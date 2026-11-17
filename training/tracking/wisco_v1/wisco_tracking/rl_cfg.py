@@ -3,6 +3,7 @@ from mjlab.rl import RslRlModelCfg, RslRlOnPolicyRunnerCfg, RslRlPpoAlgorithmCfg
 
 
 def wisco_tracking_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """PPO settings for Wisco tracking."""
   return RslRlOnPolicyRunnerCfg(
     actor=RslRlModelCfg(
       hidden_dims=(512, 256, 128), activation="elu", obs_normalization=True,

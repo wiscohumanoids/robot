@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT/'app'))
 
 @unittest.skipUnless(importlib.util.find_spec('lerobot'), 'Run with work/postprocess-venv/bin/python for LeRobot export')
 class ExportTests(unittest.TestCase):
+    """Exporting human-in-the-loop corrections."""
     def test_corrections_export_and_audit_without_crossing_policy_boundaries(self):
         self.export_fixture(False)
 
@@ -23,6 +24,7 @@ class ExportTests(unittest.TestCase):
         self.export_fixture(True)
 
     def export_fixture(self, slowed):
+        """Record, annotate and export a fixture (optionally slowed)."""
         from PIL import Image
         from prepare_hitl import prepare
         from postprocess_kept import export, validate_hitl_selection, source_path
@@ -73,7 +75,7 @@ class ExportTests(unittest.TestCase):
             for name, values in [('states',states),('frames',frames)]:
                 (episode/f'{name}.jsonl').write_text(''.join(json.dumps(v)+'\n' for v in values))
             annotations=root/'annotations.json'
-            selected=prepare(source,annotations,ROOT/'config/postprocessing-gear-pin-sept30.json')
+            selected=prepare(source,annotations,ROOT/'config/postprocessing-template.json')
             self.assertEqual(len(selected['episodes']),1 if slowed else 2)
             self.assertEqual({s['source_id'] for s in selected['episodes']},{'rollout1'})
             self.assertEqual({s['selection'] for s in selected['episodes']},

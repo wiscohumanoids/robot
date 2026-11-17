@@ -34,7 +34,7 @@ POLICY = ROOT / "models/locomotion/wisco_v1_velocity_arms_free"
 OUT = WISCO / "hardware" / "current_draw"
 
 # --------------------------------------------------------------------------------------------- motor data
-# Every number: MyActuator parameter sheets in robots/wisco_v1/model/motor_datasheets/ (read 2026-11-12).
+# Every number: MyActuator parameter sheets in robots/wisco_v1/model/motor_datasheets/.
 # torque_current: (output torque N*m, phase current A rms) points from the sheet: rated, peak and the stall table.
 # Current between points is interpolated linearly (through 0, 0); this captures the torque constant dropping at high
 # torque (magnetic saturation), which a single Kt would miss.
@@ -113,7 +113,7 @@ def current_from_torque(motor, tau):
     return np.where(tau <= t[-1], np.interp(tau, t, i), i[-1] + (tau - t[-1]) * slope_end)
 
 
-# Calibration from the X8 load test (least squares over its 14 rows, 2026-11-12): spinning loss is 1.55x the sheet's
+# Calibration from the X8 load test (least squares over its 14 rows): spinning loss is 1.55x the sheet's
 # V_rated * I_noload at the same speed, and load-dependent gearbox/bearing loss is 5.4 % of |tau * omega|. Applied to
 # all four motor types (same MyActuator planetary family); only the X8 sheet has a load test.
 NOLOAD_FACTOR = 1.55
@@ -134,6 +134,7 @@ def motor_power(motor, tau, w, idle_w):
 
 
 def check_against_x8_load_test(idle_w):
+    """Compare the motor power model with the X8 load-test rows."""
     rows = []
     for T, rpm, pout, v, i_in, pin in X8_LOAD_TEST:
         w = rpm * 2 * np.pi / 60
@@ -147,6 +148,7 @@ class Mapper:
     """Joint torques/speeds (MuJoCo) -> per-motor torques/speeds."""
 
     def __init__(self, m):
+        """Map joint names to qpos/qvel addresses and actuators in the scene."""
         self.m = m
         jid = lambda n: mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, PREFIX + n)
         self.qadr = {n: m.jnt_qposadr[jid(n)] for n in self._all_joints()}
@@ -163,6 +165,7 @@ class Mapper:
 
     @staticmethod
     def _all_joints():
+        """Every joint the estimate covers."""
         return ([j for js in SINGLE.values() for j in js] + ["torso_roll", "torso_pitch"]
                 + [f"{s}_ankle_{a}" for s in ("left", "right") for a in ("pitch", "roll")])
 
@@ -188,6 +191,7 @@ class Mapper:
 
 
 def run_test(name, script, opts, seed, idle_w):
+    """Run one walking test with the policy and record torque, speed and power per motor."""
     rng = np.random.default_rng(seed)
     m = mujoco.MjModel.from_xml_path(str(SCENE))
     if opts.get("payload_kg"):
@@ -237,6 +241,7 @@ def run_test(name, script, opts, seed, idle_w):
 
 
 def window_max(x, n):
+    """Largest moving average of `x` over `n` samples."""
     if n <= 1 or len(x) < n:
         return float(np.max(x)) if len(x) else 0.0
     c = np.convolve(x, np.ones(n) / n, mode="valid")
@@ -244,6 +249,7 @@ def window_max(x, n):
 
 
 def summarize(r, args):
+    """Peak and RMS current per motor and on the bus, and time above rated, for one test."""
     dt = r["dt"]
     n10, n100, n1000 = int(0.010 / dt), int(0.100 / dt), int(1.0 / dt)
     P = r["P"]
@@ -283,6 +289,7 @@ LEG_GROUPS = [("Hips + knees (X8)", ("hip_pitch", "hip_roll", "knee")), ("Ankles
 
 
 def _style(plt):
+    """Matplotlib style for the report plots."""
     plt.rcParams.update({"figure.facecolor": SURF, "axes.facecolor": SURF, "axes.edgecolor": GRID, "axes.labelcolor": INK2,
                          "xtick.color": INK2, "ytick.color": INK2, "text.color": INK, "axes.grid": True, "grid.color": GRID,
                          "grid.linewidth": 0.6, "axes.spines.top": False, "axes.spines.right": False, "font.size": 9,
@@ -290,6 +297,7 @@ def _style(plt):
 
 
 def plots(results, summaries, out):
+    """Write the report plots."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -406,6 +414,7 @@ def plots(results, summaries, out):
 
 
 def write_report(results, summaries, val, files, args, out):
+    """Write REPORT.md: sizing numbers, worst cases and warnings."""
     S = {s["name"]: s for s in summaries}
     fallen = [s["name"] for s in summaries if s["fell"]]
     summaries = [s for s in summaries if not s["fell"]]     # worst cases: only tests the robot completed
@@ -418,7 +427,7 @@ def write_report(results, summaries, val, files, args, out):
         w(f"**Fell (not used for worst cases):** {', '.join(fallen)}. The robot fell in the plain-MuJoCo model at that "
           "command; its current spikes come from the fall, not from walking. Treat it as beyond the usable range of "
           "this policy in this model (training used extra motor limits; see section 6).\n")
-    w("**Speed range.** All tests stay inside what this walking policy (checkpoint J3h model_4650) was trained on: "
+    w("**Speed range.** All tests stay inside what this walking policy (models/locomotion/wisco_v1_velocity_arms_free) was trained on: "
       "forward up to **1.0 m/s**, backward 0.4 m/s, sidestep, and turning in place. 1.0 m/s is the design walking speed "
       "of this policy; faster walking would need a policy trained for it (and the ankle findings below get worse).\n")
     w("**Read this first.** These are simulation estimates built from datasheet numbers, before any bench data. "
@@ -470,7 +479,7 @@ def write_report(results, summaries, val, files, args, out):
                          f"of rated ({wr[0]}): watch heating in long runs.")
     w("**Motors near or past their datasheet limits** (worst case over the completed tests):\n")
     w("\n".join(flags) if flags else "- none")
-    w("\nThe ankle limits are the known weak point (HARDWARE_ISSUES H3): training clamps each ankle motor to 34 N*m "
+    w("\nThe ankle limits are the known weak point (hardware_observations.md, 'Ankle torque'): training clamps each ankle motor to 34 N*m "
       "through the linkage, but this plain-MuJoCo model only limits the joint, so it shows how hard the policy would "
       "like to push the ankles. On the robot those motors will saturate; currents there are capped near the X4-36 "
       "peak phase current (21.5 A).\n")
@@ -633,6 +642,7 @@ def to_pdf(out):
 
 
 def main():
+    """Run every test and write the current-draw report."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--bus-v", type=float, default=48.0)
     ap.add_argument("--regen", type=float, default=0.0, help="fraction of braking power returned to the battery")

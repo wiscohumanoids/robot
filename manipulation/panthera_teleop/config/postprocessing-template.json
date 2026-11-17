@@ -1,0 +1,55 @@
+{
+  "processing_version": 2,
+  "task": "put the gear in the carrier and put a pin in it",
+  "fps": 20,
+  "image_size": 256,
+  "image_crops_xyxy": {
+    "overhead": [
+      176,
+      224,
+      432,
+      480
+    ],
+    "wrist_port2": [
+      40,
+      0,
+      520,
+      480
+    ],
+    "wrist_port3": [
+      80,
+      0,
+      560,
+      480
+    ]
+  },
+  "image_resize": "Fixed square task-area crops, then Pillow LANCZOS resize to 256x256; no padding, stretching or dynamic crop. Overhead 256x256 crop retains native source pixel resolution.",
+  "image_encoding": "embedded RGB JPEG, quality=95, chroma_subsampling=0",
+  "sampling": "Regular 50ms host-monotonic grid; nearest measured state and nearest frame per camera within the annotated crop; ties select earlier samples. No interpolation, numerical low-pass filter, or duplicated synthetic states. Some camera frames repeat because achieved capture rate is below 20 Hz; counts are reported per episode.",
+  "action_semantics": "absolute measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad at the NEXT grid tick (t+0.05s). Kinesthetic next-pose proxy, not sent motor commands. Final observation is omitted if its next state would leave the crop.",
+  "state_semantics": "measured left joints 1..6, left gripper rad, right joints 1..6, right gripper rad. Both joint and gripper values remain native radians.",
+  "state_names": [
+    "left.joint1",
+    "left.joint2",
+    "left.joint3",
+    "left.joint4",
+    "left.joint5",
+    "left.joint6",
+    "left.gripper_rad",
+    "right.joint1",
+    "right.joint2",
+    "right.joint3",
+    "right.joint4",
+    "right.joint5",
+    "right.joint6",
+    "right.gripper_rad"
+  ],
+  "max_state_alignment_s": 0.01,
+  "max_camera_alignment_s": 0.04,
+  "camera_assignment": "Wrist-to-arm assignments are unverified; preserve USB-port names rather than inventing left/right labels.",
+  "timing": "Host receive timestamps, not hardware exposure timestamps. Offline nearest-frame alignment may choose a frame slightly later than the grid tick; all actual offsets are retained.",
+  "trim_method": "Manual visual review of both wrist-camera tails, assisted by gripper position and tool-motion plots; conservative contact-boundary cuts before the assembly becomes unsupported. No automatic contact sensor or exact release event exists.",
+  "trim_uncertainty_s": 0.15,
+  "episodes": [],
+  "crop_rationale": "Overhead isolates the tabletop parts and assembly area. Wider wrist crops retain the approach, gear pickup, pin insertion and contact positions across the session; wrist-to-arm assignment remains unverified."
+}

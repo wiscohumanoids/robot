@@ -51,6 +51,7 @@ KITCHEN_SEGMENTS = [  # --script kitchen: what the ROS stack sends (Nav2 legs, s
 
 
 def main():
+    """Evaluate a velocity-policy checkpoint on a command script and print the tracking results."""
     ap = argparse.ArgumentParser()
     ap.add_argument("checkpoint")
     ap.add_argument("--task", required=True)

@@ -19,6 +19,7 @@ from teleop.dataset_contract import DEFAULT_RENDERED, PhysicsClock
 
 
 def replay(path: Path, max_joint_step: float | None = None) -> dict:
+    """Replay a dataset episode's actions open loop and measure how the stack turns out."""
     data = np.load(path / 'trajectory.npz')
     source = json.loads((path / 'source.json').read_text())
     raw = np.load(Path(source['source']) / 'data.npz')
@@ -57,6 +58,7 @@ def replay(path: Path, max_joint_step: float | None = None) -> dict:
 
 
 def main():
+    """Replay several episodes and report."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--rendered', type=Path, default=DEFAULT_RENDERED)
     parser.add_argument('--episodes', type=int, default=8)

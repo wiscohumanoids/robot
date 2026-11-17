@@ -22,6 +22,7 @@ from scripts.cache_expo_candidates import cache_candidates, read_observations
 
 
 def jpeg():
+    """A small JPEG."""
     stream = io.BytesIO()
     Image.new('RGB', (256, 256), (12, 34, 56)).save(stream, format='JPEG')
     return stream.getvalue()
@@ -34,15 +35,18 @@ class FakeAdapter:
     constructed = 0
 
     def __init__(self, checkpoint, device):
+        """pi0.5 adapter stand-in."""
         type(self).constructed += 1
         self.normalization = dict(checkpoint_id=self.checkpoint_id, processor_id=self.processor_id,
             action=dict(q01=[-1.] * 14, q99=[1.] * 14, mode='QUANTILES', eps=1e-8),
             state=dict(q01=[-2.] * 14, q99=[2.] * 14, mode='QUANTILES', eps=1e-8))
 
     def load(self):
+        """Already loaded."""
         return self
 
     def infer_candidates(self, payload, n, seed):
+        """Zero candidates of the right shape."""
         if set(payload['images']) != set(CAMERAS):
             raise ValueError('Missing camera')
         physical = np.zeros((n, 50, 14), dtype=np.float32)
@@ -53,11 +57,14 @@ class FakeAdapter:
             observation_id='fixture-observation-digest', seed=seed)
 
     def denormalize_actions(self, values):
+        """Identity."""
         return np.asarray(values)
 
 
 class ServerContractTests(unittest.TestCase):
+    """The RL server's request and reply contract."""
     def setUp(self):
+        """A fake checkpoint in a temporary folder."""
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
@@ -67,6 +74,7 @@ class ServerContractTests(unittest.TestCase):
 
     @contextmanager
     def guard(self, **kwargs):
+        """Resource guard stand-in that records leases."""
         self.leases.append('enter')
         try:
             yield {'allowed': True, 'device': kwargs['device']}
@@ -74,12 +82,14 @@ class ServerContractTests(unittest.TestCase):
             self.leases.append('exit')
 
     def runtime(self, path=None, **kwargs):
+        """A runtime on the fake adapter."""
         runtime = Runtime(path or self.checkpoint, device='cpu', guard=self.guard,
                           adapter_factory=FakeAdapter, **kwargs)
         self.addCleanup(runtime.close)
         return runtime
 
     def payload(self):
+        """A valid request."""
         return dict(sequence=7, observation_id='recorded-observation', state=[0.] * 14,
                     images={camera: base64.b64encode(jpeg()).decode() for camera in CAMERAS})
 
@@ -255,6 +265,7 @@ class ServerContractTests(unittest.TestCase):
             invalid.load()
 
     def make_session(self):
+        """A recorded session folder."""
         session = self.root / 'session-uuid'
         session.mkdir()
         observations = []

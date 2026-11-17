@@ -19,18 +19,21 @@ WISCO_JOINTS = json.loads((MODEL_DIR / "train_model_info.json").read_text())["po
 
 
 def g1_model():
+    """mjlab's G1 model."""
     import mjlab
     from mjlab.asset_zoo.robots.unitree_g1 import g1_constants as G
     return mujoco.MjSpec.from_file(str(G.G1_XML))
 
 
 def scene(spec):
+    """Compile a model with a floor and light."""
     spec.worldbody.add_geom(type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 0.05], rgba=[0.55, 0.6, 0.65, 1])
     spec.worldbody.add_light(pos=[0, 0, 4], dir=[0, 0, -1], diffuse=[0.8, 0.8, 0.8])
     return spec.compile()
 
 
 def render_rows(m, joints, csv, frames, size=(320, 400)):
+    """Render chosen frames of a clip."""
     data = np.loadtxt(csv, delimiter=",")
     d = mujoco.MjData(m); r = mujoco.Renderer(m, size[1], size[0])
     qadr = [m.jnt_qposadr[m.joint(n).id] for n in joints]
@@ -50,6 +53,7 @@ def render_rows(m, joints, csv, frames, size=(320, 400)):
 
 
 def main():
+    """Side-by-side frames of the G1 and Wisco retargets of the same clip."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--g1", required=True); ap.add_argument("--wisco", required=True); ap.add_argument("--out", required=True)
     ap.add_argument("--times", default="0,2,4,6,8"); ap.add_argument("--start-frame", type=int, default=0)

@@ -21,6 +21,7 @@ from teleop.dataset_contract import PhysicsClock
 
 
 def replay(path: Path) -> dict:
+    """Replay one scripted episode and check it reproduces its stack."""
     meta = json.loads((path / 'meta.json').read_text())
     sim = PantheraSim(ROOT / meta.get('scene', 'sim/panthera/scene.xml'),
                       dynamics=recorded_dynamics(meta))
@@ -57,6 +58,7 @@ def replay(path: Path) -> dict:
 
 
 def main():
+    """Validate every collected episode in parallel."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, default=ROOT / 'data/scripted_stack')
     parser.add_argument('--workers', type=int, default=4)

@@ -3,7 +3,7 @@
   <name>hsim_planner</name>
   <version>0.1.0</version>
   <description>LLM task planner (Claude): sentence + object memory -> skill plan for the behavior tree; replans on failure</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>

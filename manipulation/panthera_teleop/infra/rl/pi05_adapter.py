@@ -26,6 +26,7 @@ ACTION_DIM = 14
 
 
 def _digest_file(path):
+    """SHA-256 of a file."""
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
@@ -34,12 +35,14 @@ def _digest_file(path):
 
 
 def _file_signature(path):
+    """File identity and timestamps, to detect changes."""
     stat = path.stat()
     return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
 
 
 @dataclass(frozen=True)
 class CandidateBatch:
+    """Sampled base-policy action chunks, normalized and physical."""
     normalized: object
     physical: object
     checkpoint_id: str
@@ -57,6 +60,7 @@ class PI05Adapter:
     """
 
     def __init__(self, checkpoint, device="cuda"):
+        """Load a frozen pi0.5 checkpoint and record its file signatures."""
         self.checkpoint = Path(checkpoint).expanduser().resolve(strict=True)
         if not self.checkpoint.is_dir():
             raise ValueError("Expected a local pretrained checkpoint directory")
@@ -88,6 +92,7 @@ class PI05Adapter:
         self._lock = threading.RLock()
 
     def _assert_unchanged(self):
+        """Refuse if checkpoint files changed since loading."""
         files = tuple(sorted(path for path in self.checkpoint.rglob("*")
                              if path.is_file() and path.suffix in (".json", ".safetensors")))
         if files != self._files or any(_file_signature(path) != self._signatures[path] for path in files):
@@ -99,6 +104,7 @@ class PI05Adapter:
 
     @staticmethod
     def _verify_runtime_revision():
+        """Check the installed lerobot revision."""
         import lerobot
         for directory in Path(lerobot.__file__).resolve().parents:
             if (directory / ".git").exists():
@@ -113,6 +119,7 @@ class PI05Adapter:
 
     @staticmethod
     def _validate_config(config):
+        """Check the checkpoint's horizon, action names and cameras."""
         if (config.type != "pi05" or config.chunk_size != HORIZON or config.use_relative_actions
                 or tuple(config.action_feature_names or ()) != ACTION_NAMES
                 or set(config.image_features) != set(IMAGE_KEYS)
@@ -205,6 +212,7 @@ class PI05Adapter:
             return self.postprocessor(actions.clone()).detach().cpu().clone()
 
     def _observation(self, observation):
+        """Policy input batch from an observation."""
         import torch
         if set(key for key in observation if key.startswith("observation.images.")) != set(IMAGE_KEYS):
             raise ValueError("All three exact named camera observations are required")

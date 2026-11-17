@@ -16,6 +16,7 @@ from lerobot.configs.types import FeatureType, PolicyFeature
 
 
 def reference_metadata(root: Path):
+    """Metadata of the prepared reference dataset (must be complete)."""
     manifest = root / "provenance.json"
     if not (root / "COMPLETE").is_file() or not manifest.is_file():
         raise ValueError("Run tools/prepare_act_reference.py to completion first")
@@ -58,13 +59,16 @@ def reference_metadata(root: Path):
 
 
 def reference_split():
+    """The original 40/10 episode split (seed 1)."""
     # Upstream main calls set_seed(1) before load_data, independently of model seed.
     ids = np.random.RandomState(1).permutation(50)
     return ids[:40].tolist(), ids[40:].tolist()
 
 
 class ReferenceACTDataset(torch.utils.data.Dataset):
+    """Frames and action chunks of the reference HDF5 episodes."""
     def __init__(self, root, episodes, chunk_size, training):
+        """Episodes, chunk size and training/validation mode."""
         self.root = Path(root)
         self.episodes = list(episodes)
         self.chunk_size = chunk_size
@@ -88,6 +92,7 @@ class ReferenceACTDataset(torch.utils.data.Dataset):
         return self.frame(episode_index, timestep)
 
     def frame(self, episode_index, timestep):
+        """One frame: image, state and the next action chunk."""
         path = self.root / f"episode_{self.episodes[episode_index]}.hdf5"
         with h5py.File(path, "r") as f:
             state = torch.from_numpy(f["observations/qpos"][timestep]).float()

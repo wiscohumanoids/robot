@@ -17,7 +17,9 @@ import test_expo_prepare as prepare_fixture
 
 
 class Chunk17Tests(unittest.TestCase):
+    """Replay and training with 17-action chunks."""
     def replay(self):
+        """A tiny replay with 17-action chunks."""
         spec = ReplaySpec(C=17, N=8, obs_dim=8, checkpoint_id='fixed', processor_id='saved')
         rewards = np.zeros((2, 17), np.float32)
         rewards[-1, -1] = 1.
@@ -67,6 +69,7 @@ class Chunk17Tests(unittest.TestCase):
                 validate_replay(wrong, metadata)
 
     def fixture17(self, root):
+        """A prepared session with 17-action chunks."""
         session, cache, normalization = prepare_fixture.PrepareReplayTests().fixture(root)
         manifest_path = session / 'manifest.json'
         manifest = json.loads(manifest_path.read_text())

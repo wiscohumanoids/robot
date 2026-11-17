@@ -1,3 +1,4 @@
+"""Package setup: installs the simulation nodes."""
 from glob import glob
 from setuptools import setup
 
@@ -15,5 +16,7 @@ setup(
         'sim_stub = hsim_sim.sim_stub:main',
         'mujoco_sim = hsim_sim.mujoco_sim:main',
         'stereo_camera = hsim_sim.stereo_camera:main',
+        'ros2_control_backend = hsim_sim.ros2_control_backend:main',
+        'joint_target_bridge = hsim_sim.joint_target_bridge:main',
     ]},
 )

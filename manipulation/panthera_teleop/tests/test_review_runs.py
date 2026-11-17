@@ -1,3 +1,4 @@
+"""The run review page and its annotations."""
 import importlib.util
 import json
 from pathlib import Path
@@ -14,7 +15,9 @@ spec.loader.exec_module(module)
 
 
 class ReviewTests(unittest.TestCase):
+    """Review store and page."""
     def setUp(self):
+        """Recorded runs in a temporary folder."""
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)

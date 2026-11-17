@@ -8,7 +8,7 @@ services:
     container_name: hsim-ros
     init: true                 # reap exited processes (no zombies from test runs)
     shm_size: "1gb"            # DDS shared-memory transport; Docker's 64 MB default fills up after many launches
-                               # (2026-11-10: 828 stale segments -> 100 % full -> slow/failed discovery in tests)
+                               # (828 stale segments filled it once: slow or failed discovery in tests)
     volumes:
       - ../..:/hsim              # the whole repo, live-edited from the Mac
     working_dir: /hsim/ros2_ws

@@ -13,7 +13,7 @@ robot_params.joint_params(): kp, kd) and the per-joint effort limit as forcerang
 
 Not reproduced in plain MuJoCo (training-only, Python side): the X-series torque-speed line, the ankle per-motor
 clamp through the rod linkage (34 N*m per X4-36), and the 0-10 ms command delay. The joint-space effort limits
-still apply. hsim_sim can add the ankle model later (HARDWARE_ISSUES H3).
+still apply. hsim_sim could add the ankle model (hardware_observations.md, Ankle torque).
 """
 from __future__ import annotations
 
@@ -52,6 +52,7 @@ def physics_options(task: str) -> str:
 
 
 def main(robot: str):
+  """Export the robot's training scene from mjlab with the trained gains as position actuators."""
   r = ROBOTS[robot]
   sys.path.insert(0, str(r["import_path"]))
   sys.path.insert(0, str(r["params_path"]))

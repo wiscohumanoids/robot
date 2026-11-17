@@ -15,6 +15,7 @@ from rollout import (
 
 
 def archive_files(full=True):
+    """Contents of a fake full or LoRA checkpoint archive."""
     names = FULL_CHECKPOINT_FILES if full else REQUIRED_CHECKPOINT_FILES
     contents = {name: b"{}" for name in names}
     key = JOINT_UNNORM_KEY if full else UNNORM_KEY

@@ -23,6 +23,7 @@ MESH_DIR = pathlib.Path(__file__).parent / "panthera" / "meshes"
 
 
 def prep(target_faces: int, hull_faces: int) -> None:
+    """Decimate visual meshes and build convex collision hulls."""
     out_vis = MESH_DIR / "visual"
     out_col = MESH_DIR / "collision"
     out_vis.mkdir(parents=True, exist_ok=True)

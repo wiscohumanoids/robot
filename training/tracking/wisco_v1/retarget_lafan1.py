@@ -51,6 +51,7 @@ R_CONV = np.array([[1.0, 0, 0], [0, 0, -1.0], [0, 1.0, 0]])
 
 # ----------------------------------------------------------------------------------------------- BVH
 def _rot(axis, deg):
+    """Rotation matrix about a BVH axis by `deg` degrees."""
     a = np.radians(deg); c, s = np.cos(a), np.sin(a)
     if axis == "X":
         return np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
@@ -114,7 +115,9 @@ def bvh_fk(names, parents, offsets, channels, data):
 
 # ----------------------------------------------------------------------------------------------- robot
 class Robot:
+    """Wisco V1 training model for retargeting."""
     def __init__(self):
+        """Load the model and joint addresses and limits."""
         self.m = mujoco.MjModel.from_xml_path(str(TRAIN_XML))
         self.d = mujoco.MjData(self.m)
         self.qadr = np.array([self.m.jnt_qposadr[self.m.joint(n).id] for n in JOINTS])
@@ -154,16 +157,19 @@ class Robot:
         return self.d.geom_xpos[g] + R @ np.array([h[0], 0, -h[2]])
 
     def sole_corners(self, side):
+        """World positions of a sole's four corners."""
         g = self.m.geom(f"{side}_foot_collision").id
         R = self.d.geom_xmat[g].reshape(3, 3); h = self.m.geom_size[g]
         c = np.array([[x, y, -1] for x in (-1, 1) for y in (-1, 1)]) * h
         return c @ R.T + self.d.geom_xpos[g]
 
     def sole_lowest(self, side=None):
+        """Lowest sole corner height."""
         sides = (side,) if side else ("left", "right")
         return min(self.sole_corners(s)[:, 2].min() for s in sides)
 
     def set(self, root_pos, root_quat, q):
+        """Set the pose and update kinematics."""
         self.d.qpos[0:3] = root_pos; self.d.qpos[3:7] = root_quat; self.d.qpos[self.qadr] = q
         mujoco.mj_kinematics(self.m, self.d); mujoco.mj_comPos(self.m, self.d)
 
@@ -185,6 +191,7 @@ def rot_from_fwd_flat(fwd):
 
 
 def mat2quat(R):
+    """Quaternion (w, x, y, z) of a rotation matrix."""
     q = np.zeros(4); mujoco.mju_mat2Quat(q, R.reshape(9)); return q   # wxyz
 
 
@@ -196,6 +203,9 @@ def rot_err(R_target, R_cur):
 
 # ----------------------------------------------------------------------------------------------- main
 def retarget(bvh_path, frames=None, iters=12, verbose=True, calib_frame=0, debug_frames=()):
+    """Retarget a LAFAN1 BVH: scale, root, joint IK per frame, foot contact fixes; returns the trajectory and
+    quality.
+    """
     names, parents, offsets, channels, data, ft = load_bvh(bvh_path)
     _, HP_all, _ = bvh_fk(names, parents, offsets, channels, data[calib_frame:calib_frame + 1])
     if frames is not None:
@@ -392,6 +402,7 @@ def quality(rb, root_pos, root_quat, qs, fps):
 
 
 def render_video(rb, root_pos, root_quat, qs, path, fps=30, every=1, size=(640, 480)):
+    """Render a retargeted clip."""
     import mediapy as media
     spec = mujoco.MjSpec.from_file(str(TRAIN_XML))
     spec.worldbody.add_geom(type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 0.05], rgba=[0.55, 0.6, 0.65, 1])
@@ -411,6 +422,7 @@ def render_video(rb, root_pos, root_quat, qs, path, fps=30, every=1, size=(640, 
 
 
 def main():
+    """Retarget a clip, write the CSV and its quality report (and a video)."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--bvh", required=True)
     ap.add_argument("--out", required=True, help="output CSV (30 fps)")

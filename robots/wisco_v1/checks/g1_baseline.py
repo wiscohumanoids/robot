@@ -14,12 +14,13 @@ import mujoco
 import numpy as np
 
 sys.dont_write_bytecode = True
-OUT = Path(__file__).resolve().parent / "results" / "initial_model_2026-11-10"
+OUT = Path(__file__).resolve().parent / "results" / "g1_baseline"
 W = 10 * 2 * math.pi
 ZETA = 2.0
 
 
 def two_stage(rot, gear):
+    """Reflected inertia of a two-stage gear train."""
     return rot[0] * (gear[1] * gear[2]) ** 2 + rot[1] * gear[2] ** 2 + rot[2]
 
 
@@ -40,6 +41,7 @@ POSE = {"hip_pitch_joint": -0.312, "knee_joint": 0.669, "ankle_pitch_joint": -0.
 
 
 def group(name):
+    """Actuator parameters for a G1 joint, by name suffix."""
     for suf, arm, eff in GROUPS:
         if any(name.endswith(s) for s in suf):
             return arm, eff
@@ -47,6 +49,7 @@ def group(name):
 
 
 def default(name):
+    """The G1 default angle of a joint."""
     if name in POSE:
         return POSE[name]
     for k, v in POSE.items():
@@ -56,6 +59,7 @@ def default(name):
 
 
 def build(xml_dir, fixed=False):
+    """G1 MuJoCo model with mjlab's actuator settings (optionally fixed base)."""
     spec = mujoco.MjSpec.from_file(str(Path(xml_dir) / "g1.xml"))
     spec.option.timestep = 0.005
     spec.option.iterations, spec.option.ls_iterations = 10, 20
@@ -83,6 +87,7 @@ def build(xml_dir, fixed=False):
 
 
 def main(xml_dir):
+    """Run the stand and step-response tests on the G1 and write the reference numbers."""
     m, names = build(xml_dir)
     d = mujoco.MjData(m)
     qadr = [m.jnt_qposadr[m.joint(n).id] for n in names]

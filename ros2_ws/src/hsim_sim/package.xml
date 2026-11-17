@@ -2,8 +2,8 @@
       <package format="3">
         <name>hsim_sim</name>
         <version>0.1.0</version>
-        <description>Simulation node: MuJoCo (mujoco_sim) and a kinematic stub (sim_stub)</description>
-        <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+        <description>Simulation: the MuJoCo sim node (mujoco_sim), a kinematic stub (sim_stub), and the files and target bridge for the ros2_control backend (mujoco_ros2_control)</description>
+        <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
         <license>MIT</license>
         <exec_depend>rclpy</exec_depend>
 <exec_depend>rosgraph_msgs</exec_depend>
@@ -15,6 +15,14 @@
 <exec_depend>hsim_interfaces</exec_depend>
 <exec_depend>rtabmap_util</exec_depend>
 <exec_depend>pointcloud_to_laserscan</exec_depend>
+<exec_depend>std_msgs</exec_depend>
+<exec_depend>python3-yaml</exec_depend>
+<exec_depend>mujoco_ros2_control</exec_depend>
+<exec_depend>mujoco_ros2_control_msgs</exec_depend>
+<exec_depend>controller_manager</exec_depend>
+<exec_depend>joint_state_broadcaster</exec_depend>
+<exec_depend>imu_sensor_broadcaster</exec_depend>
+<exec_depend>forward_command_controller</exec_depend>
         <test_depend>python3-pytest</test_depend>
         <export>
           <build_type>ament_python</build_type>

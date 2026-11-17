@@ -3,7 +3,7 @@
   <name>hsim_navigation</name>
   <version>0.1.0</version>
   <description>Nav2 + localization (RTAB-Map visual SLAM, slam_toolbox, or AMCL on a known map) for a walking humanoid, any robot profile</description>
-  <maintainer email="sohamhomework@gmail.com">Soham</maintainer>
+  <maintainer email="wiscohumanoids@gmail.com">WiscoHumanoids</maintainer>
   <license>MIT</license>
   <exec_depend>nav2_bringup</exec_depend>
   <exec_depend>nav2_amcl</exec_depend>

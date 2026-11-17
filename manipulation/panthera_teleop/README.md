@@ -44,6 +44,9 @@ The checked-in USB mapping and camera paths describe the original laptop. On ano
 
 - `config/robot-configs/arm-mapping.json`: set each arm's `usb_path` and `pci_controller` from its Linux USB topology. Inspect `readlink -f /sys/class/tty/ttyACM*/device` and identify which physical arm is left/right. The tested boards share a serial number, so serial-number links cannot distinguish them.
 - `config/recording.json`: set the three `cameras` paths using `ls -l /dev/v4l/by-path/` and confirm each view. Close other applications using the cameras.
+- The repo's `.env` (copy `.env.example`): `PANTHERA_SSH_HOST`, the `user@host` of the policy inference machine, used by the deploy and tunnel scripts.
+
+The per-arm runtime configs (`config/robot-configs/left.yaml`, `right.yaml` and their `-motors.yaml`) are written by the launcher on every start and are not kept in the repo.
 
 Check the mappings and URDFs without opening motor devices:
 
@@ -131,9 +134,9 @@ in the combined export. Original kept recordings are preserved.
 The export uses LeRobot v3.0, 20 Hz, three 256 × 256 RGB views,
 and native 14D bimanual joint/gripper states and next-pose actions. Images use
 fixed square crops without padding; the overhead view keeps a tight 256 × 256
-work area at native pixel resolution. `config/postprocessing-gear-pin.json`
-records the original 30 visual release cutoffs, crop coordinates and timing/action
-contract; `config/postprocessing-gear-pin-sept30.json` annotates the new 72.
+work area at native pixel resolution. `config/postprocessing-template.json` holds the crop coordinates and the
+timing/action contract; per-batch annotation files (episode trims and labels) are made from it and stay local, since
+they describe the team's private recordings.
 
 Rebuild into new output directories with `scripts/postprocess_kept.py` and audit
 with `scripts/verify_processed.py` and `scripts/verify_full_rate.py`, using
@@ -145,7 +148,21 @@ the previous release.
 The dataset README contains the full commands, source limitations and inference
 crop requirements. These scripts only process saved files and never send motor
 commands. The Hugging Face destination is
-https://huggingface.co/datasets/FoxNerdSaysMoo/panthera-gear-carrier-pin-real-20hz.
+`https://huggingface.co/datasets/$HF_NAMESPACE/panthera-gear-carrier-pin-real-20hz` (`HF_NAMESPACE` from the repo's `.env`).
+
+### Train pi0.5 on an export
+
+On the GPU machine, with LeRobot at the pinned commit and the base or resume checkpoint downloaded:
+
+```bash
+manipulation/finetune.sh pi05 panthera_bimanual --config_path=<checkpoint>/pretrained_model/train_config.json \
+  --resume=true --dataset.root=<export> --dataset.repo_id=$HF_NAMESPACE/<dataset> --expect_resume_step=<step>
+```
+
+The `panthera_bimanual` profile (`manipulation/profiles/`) fixes the cameras, 14-D state and action, 20 Hz and the
+task; the trainer checks the export's manifest (against `PI05_TRAINING_MANIFEST_SHA256` when set) and verification
+reports, that every exported frame is trained on, and the resume step, then writes the deployment contract the
+inference server checks into each checkpoint. Use `--dataset.episodes=[...]` to train on part of an export.
 
 ## Trim recovery clips from flagged runs
 
@@ -175,12 +192,13 @@ Moved runs remain accessible in the queue, including through category filters.
 Discarding removes the run from the crop export list; moving it back does not
 automatically approve it again.
 
-Edits are atomically saved to `config/postprocessing-review.json` in the same
+Edits are atomically saved to `config/postprocessing-review.json` (created from the
+template on the first save; it holds your team's annotations, so it is gitignored) in the same
 annotation format as the regular postprocessor. Only saved runs appear in that
 file; crop saves leave original recordings and their labels unchanged. Category
 changes update their folder and label; saved crops track that source category. The default
 processing settings and image crops come from
-`config/postprocessing-gear-pin-sept30.json`. Override `--template`, `--source`,
+`config/postprocessing-template.json`. Override `--template`, `--source`,
 `--annotations`, or `--port` for a different task or recording folder.
 
 Export the saved selections using new output directories:
@@ -191,7 +209,7 @@ work/postprocess-venv/bin/python scripts/postprocess_kept.py \
   --annotations config/postprocessing-review.json \
   --output data/processed/review-recoveries-20hz \
   --trimmed-output data/processed/review-recoveries-full-rate \
-  --repo-id FoxNerdSaysMoo/panthera-review-recoveries
+  --repo-id "$HF_NAMESPACE/panthera-review-recoveries"
 ```
 
 The exporter requires explicit `review_approved: true` annotations for review

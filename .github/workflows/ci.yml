@@ -15,11 +15,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pytest pyyaml "numpy<2" opencv-python-headless
+      # Pinocchio 3+ (the arm toolkit's API) is only on pip with NumPy 2, so this job runs NumPy 2; the ros job below
+      # covers the ROS image's NumPy 1.26. mcap, fastapi, httpx and uvicorn let the logging and perception-link tests run.
+      - run: pip install pytest pyyaml opencv-python-headless "pin>=3" scipy "mujoco==3.11.0" pyarrow mcap fastapi httpx uvicorn
       - name: Generated docs are up to date
         run: python tools/gen_docs.py --check
       - name: Contract, consistency and unit tests
-        run: python -m pytest -q tests ros2_ws/src/*/test
+        run: python -m pytest -q tests ros2_ws/src/*/test training/sim2real manipulation/finetune
 
   # Real ROS 2 Jazzy in the same container the stack is developed in (infra/docker): build the
   # workspace, then bring up the stub stack and the MuJoCo + policy stack, check each against the
@@ -43,6 +45,8 @@ jobs:
               colcon build --symlink-install --event-handlers console_cohesion+ &&
               source install/setup.bash &&
               (cd /hsim && python3 tools/env_build.py assets/envs/test/table_room --robot wisco --no-render) &&
+              colcon test --packages-select wisco_ethercat_ros2_hw --event-handlers console_cohesion+ &&
+              colcon test-result --verbose &&
               STACK=stub /hsim/tools/stack_smoke_test.sh &&
               STACK=sim ENV=test/table_room /hsim/tools/stack_smoke_test.sh &&
               STACK=sim ROBOT=g1 /hsim/tools/stack_smoke_test.sh'

@@ -1,19 +1,21 @@
-"""Custom terms for the arms-free locomotion recipe (docs/runs/2026-11-10_overnight_plan.md) that mjlab 1.6.0 lacks.
+"""Custom terms for the Wisco V1 arms-free locomotion recipe that mjlab 1.6.0 lacks.
 
 1. YawInPlaceVelocityCommand: like mjlab's UniformVelocityCommand, plus a fraction of samples that are
    pure turns in place (zero linear velocity, |yaw| in a set range). Those envs are taken out of
-   heading / world-frame / forward modes so nothing overwrites the yaw. (decision 0004: the all-joints policy ignored small
-   turns and undershot turn-in-place.)
+   heading / world-frame / forward modes so nothing overwrites the yaw. (Velocity policies otherwise ignore small
+   turns and undershoot turns in place.)
 2. Arm targets: the arms are not policy actions (the ROS controls stack owns them on the robot). In sim
    they are held by their PD actuators while their position targets move toward a goal that is resampled
    every 1-3 s: 30 % of goals are the default pose, 70 % are uniform within (range_frac x level) of each arm
    joint's soft range around default; each goal is approached at a random speed. Runs every env step.
-3. Difficulty curriculum (coordinator fix 2026-11-10, same design as the G1 arms-free task): a performance-gated level
+3. Difficulty curriculum (the same design as the G1 arms-free task): a performance-gated level
    L in [0, 1] scales the disturbances (arm target range 0 -> 60 %, hand payload max 0 -> 1 kg, push 0.5 -> 0.8 m/s);
    once L = 1 a second level L2 tightens velocity-tracking std from the G1 defaults (0.5 / 0.707) to 0.25 / 0.35.
    Gate, evaluated on episode resets over recent finished episodes: +0.05 when mean episode length > 0.8 x max AND the
    linear-tracking reward rate > 50 % of its weight AND the angular-tracking rate > 40 % of its weight, at most once per
-   50 training iterations (24 x 50 env steps); -0.1 when mean episode length < 0.4 x max (fix 2, 2026-11-10).
+   50 training iterations (24 x 50 env steps); -0.1 when mean episode length < 0.4 x max.
+4. Reward terms: self-collision without the arms, angular momentum of the policy-controlled bodies, yaw-rate
+   tracking, ankle motor overload (see linkage_penalty.py).
 """
 from __future__ import annotations
 
@@ -30,13 +32,16 @@ if TYPE_CHECKING:
 
 # ---------------------------------------------------------------------------------------- commands
 class YawInPlaceVelocityCommand(UniformVelocityCommand):
+  """mjlab's velocity command plus pure turns in place."""
   cfg: "YawInPlaceVelocityCommandCfg"
 
   def __init__(self, cfg: "YawInPlaceVelocityCommandCfg", env: ManagerBasedRlEnv):
+    """Track which environments have a pure turn."""
     super().__init__(cfg, env)
     self.is_yaw_only_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
   def _resample_command(self, env_ids: torch.Tensor) -> None:
+    """Resample, then turn a fraction of the non-standing commands into pure yaw."""
     super()._resample_command(env_ids)
     r = torch.rand(len(env_ids), device=self.device)
     yaw_only = (r < self.cfg.rel_yaw_only_envs) & ~self.is_standing_env[env_ids]
@@ -58,18 +63,22 @@ class YawInPlaceVelocityCommand(UniformVelocityCommand):
 
 @dataclass(kw_only=True)
 class YawInPlaceVelocityCommandCfg(UniformVelocityCommandCfg):
+  """Config for YawInPlaceVelocityCommand."""
   rel_yaw_only_envs: float = 0.15
   """Fraction of command samples that are pure turns in place (zero linear velocity)."""
   yaw_only_range: tuple[float, float] = (0.3, 1.5)
   """|yaw rate| range (rad/s) for the turn-in-place samples."""
 
   def build(self, env: ManagerBasedRlEnv) -> YawInPlaceVelocityCommand:
+    """Create the command term."""
     return YawInPlaceVelocityCommand(self, env)
 
 
 # ---------------------------------------------------------------------------------------- arm targets
 class _ArmTargetState:
+  """Per-environment arm target state shared by the arm events."""
   def __init__(self, env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg, fracs: dict):
+    """Arm joints and their target ranges from the per-joint fractions."""
     asset = env.scene[asset_cfg.name]
     self.asset = asset
     self.joint_ids, names = asset.find_joints(asset_cfg.joint_names, preserve_order=True)
@@ -94,6 +103,7 @@ class _ArmTargetState:
 
 
 def _state(env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg, fracs: dict) -> _ArmTargetState:
+  """The environment's arm target state, created on first use."""
   st = getattr(env, "_wisco_arm_state", None)
   if st is None:
     st = _ArmTargetState(env, asset_cfg, fracs)
@@ -141,10 +151,12 @@ def arm_targets_step(env: ManagerBasedRlEnv, env_ids: torch.Tensor | None, asset
 
 # ---------------------------------------------------------------------------------------- curriculum
 class _Curriculum:
+  """Curriculum levels L and L2, shared by the terms that use them."""
   def __init__(self):
+    """Start levels (resumed runs set them through the environment)."""
     import os
     # Resumed runs keep their progress: WISCO_START_LEVEL / WISCO_START_LEVEL2 (default 0) set the initial levels; the
-    # first raise from there still waits the dwell time (fix 3).
+    # first raise from there still waits the dwell time.
     self.L = float(os.environ.get("WISCO_START_LEVEL", "0"))
     self.L2 = float(os.environ.get("WISCO_START_LEVEL2", "0"))
     self.n = 0
@@ -159,6 +171,7 @@ class _Curriculum:
 
 
 def _curr(env) -> _Curriculum:
+  """The environment's curriculum state, created on first use."""
   c = getattr(env, "_wisco_curr", None)
   if c is None:
     c = _Curriculum()
@@ -167,10 +180,12 @@ def _curr(env) -> _Curriculum:
 
 
 def level(env) -> float:
+  """Current curriculum level L."""
   return _curr(env).L
 
 
 def _lerp(a, b, t):
+  """Linear interpolation."""
   return a + (b - a) * t
 
 
@@ -208,7 +223,7 @@ def difficulty_level(env: ManagerBasedRlEnv, env_ids, **params) -> torch.Tensor:
   done = lens > 0
   if bool(done.any()):
     secs = lens[done] * env.step_dt
-    # J3f: gate on fixed-std copies of the tracking rewards (L2 tightening must not lower its own gate score)
+    # Gate on fixed-std copies of the tracking rewards (L2 tightening must not lower its own gate score)
     rate = env.reward_manager._episode_sums[cfg["lin_gate"]][env_ids][done] / secs
     ang = env.reward_manager._episode_sums[cfg["ang_gate"]][env_ids][done] / secs
     c.n += int(done.sum())
@@ -278,16 +293,16 @@ def fixed_level(env: ManagerBasedRlEnv, env_ids, L: float = 1.0, L2: float = 1.0
 
 
 def self_collision_cost_multi(env: ManagerBasedRlEnv, sensor_names: tuple[str, ...], force_threshold: float = 10.0) -> torch.Tensor:
-  """mjlab's self_collision_cost summed over several contact sensors (non-arm body groups, fix 2)."""
+  """mjlab's self_collision_cost summed over several contact sensors (non-arm body groups, so the scripted arms are never penalized)."""
   from mjlab.tasks.velocity import mdp
   return sum(mdp.self_collision_cost(env, sensor_name=n, force_threshold=force_threshold) for n in sensor_names)
 
 
 def policy_body_angular_momentum_sq(env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
-  """|L|^2 of the policy-controlled bodies only (fix 3): pelvis, legs, torso links and the welded head, NOT arms/hands.
+  """|L|^2 of the policy-controlled bodies only: pelvis, legs, torso links and the welded head, NOT arms/hands.
 
   mjlab's angular_momentum_penalty uses the whole-body subtree angular momentum, which is dominated by the scripted
-  arms + hand payload as the curriculum scales them up (J3c: -0.02 -> -1.10 per second at weight -0.005).
+  arms + hand payload as the curriculum scales them up (it grew from -0.02 to -1.10 per second at weight -0.005).
   L = sum_i m_i (p_i - c) x (v_i - v_c) + R_i diag(I_i) R_i^T w_i, about the selected bodies' common COM c.
   """
   from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse

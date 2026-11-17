@@ -32,7 +32,11 @@ PACKET = struct.Struct('<4s3fB')
 
 
 class ViewerTeleop(Node):
+    """Node `teleop`: turns the viewer's UDP key packets into /cmd_vel_teleop and its typed text into planner
+    commands.
+    """
     def __init__(self):
+        """Open the UDP socket, create the publishers, and start the receive and hello timers."""
         super().__init__('teleop')
         self.declare_parameter('port', 9871)
         self.declare_parameter('timeout', 0.3)
@@ -63,6 +67,7 @@ class ViewerTeleop(Node):
         self.get_logger().info(f'listening for viewer commands on udp/{port}')
 
     def hello(self):
+        """Tell the viewer where to send keys (it may have started after this node)."""
         if self.hello_addr:
             try:
                 self.sock.sendto(b'HELO', self.hello_addr)
@@ -70,6 +75,9 @@ class ViewerTeleop(Node):
                 pass                                   # viewer not running
 
     def tick(self):
+        """Drain the socket: publish typed text as a planner command and keys as a velocity command; stop after the
+        timeout.
+        """
         while True:
             try:
                 data, _ = self.sock.recvfrom(4096)
@@ -109,6 +117,7 @@ class ViewerTeleop(Node):
 
 
 def main():
+    """Entry point: spin the node until Ctrl-C."""
     rclpy.init()
     node = ViewerTeleop()
     try:

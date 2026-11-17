@@ -32,20 +32,24 @@ except ImportError:          # server installs opencv-python-headless; clients i
 
 
 def b64(data: bytes) -> str:
+    """Bytes to base64 text."""
     return base64.b64encode(data).decode("ascii")
 
 
 def unb64(s: str) -> bytes:
+    """Base64 text to bytes."""
     return base64.b64decode(s)
 
 
 def encode_rgb_jpeg(rgb: np.ndarray, quality: int = 90) -> str:
+    """RGB image as base64 JPEG."""
     ok, buf = cv2.imencode(".jpg", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, quality])
     assert ok
     return b64(buf.tobytes())
 
 
 def encode_depth_png16(depth_m: np.ndarray, downsample: int = 1) -> str:
+    """Depth in metres as a base64 16-bit PNG in millimetres (0 = no data)."""
     d = depth_m[::downsample, ::downsample] if downsample > 1 else depth_m
     mm = np.where(np.isfinite(d) & (d > 0), np.clip(d * 1000.0, 1, 65535), 0).astype(np.uint16)
     ok, buf = cv2.imencode(".png", mm)
@@ -54,12 +58,14 @@ def encode_depth_png16(depth_m: np.ndarray, downsample: int = 1) -> str:
 
 
 def decode_rgb(req: dict) -> np.ndarray:
+    """RGB image from a request (JPEG or PNG)."""
     raw = np.frombuffer(unb64(req.get("rgb_jpeg_b64") or req["rgb_png_b64"]), np.uint8)
     bgr = cv2.imdecode(raw, cv2.IMREAD_COLOR)
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
 
 def decode_depth(req: dict) -> np.ndarray:
+    """Depth in metres from a request (NaN where there is no data)."""
     raw = np.frombuffer(unb64(req["depth_png16_b64"]), np.uint8)
     mm = cv2.imdecode(raw, cv2.IMREAD_UNCHANGED).astype(np.float32)
     return np.where(mm > 0, mm / 1000.0, np.nan).astype(np.float32)

@@ -2,7 +2,7 @@
 
 Generated 2026-11-12 by `robots/wisco_v1/tools/current_estimate.py` (policy `models/locomotion/wisco_v1_velocity_arms_free`, plain MuJoCo, flat empty floor). Re-run the script to regenerate.
 
-**Speed range.** All tests stay inside what this walking policy (checkpoint J3h model_4650) was trained on: forward up to **1.0 m/s**, backward 0.4 m/s, sidestep, and turning in place. 1.0 m/s is the design walking speed of this policy; faster walking would need a policy trained for it (and the ankle findings below get worse).
+**Speed range.** All tests stay inside what this walking policy (models/locomotion/wisco_v1_velocity_arms_free) was trained on: forward up to **1.0 m/s**, backward 0.4 m/s, sidestep, and turning in place. 1.0 m/s is the design walking speed of this policy; faster walking would need a policy trained for it (and the ankle findings below get worse).
 
 **Read this first.** These are simulation estimates built from datasheet numbers, before any bench data. Use the averages for battery/energy planning with about +/-25 % uncertainty and the 10 ms / 100 ms peaks (plus margin) for driver, fuse, connector and BMS sizing. Section 6 lists what is assumed and how to firm it up.
 
@@ -41,7 +41,7 @@ Energy at 0.5 m/s: **164 Wh/km** (cost of transport 1.48); at 1.0 m/s: **124 Wh/
 - **right_ankle_motor_2 (X4-36): torque above the motor's peak rating**: 34.2 N*m vs 34 N*m peak (walk_1.00).
 - right_ankle_motor_2 (X4-36): RMS current 8.3 A = 136 % of rated (walk_1.00): watch heating in long runs.
 
-The ankle limits are the known weak point (HARDWARE_ISSUES H3): training clamps each ankle motor to 34 N*m through the linkage, but this plain-MuJoCo model only limits the joint, so it shows how hard the policy would like to push the ankles. On the robot those motors will saturate; currents there are capped near the X4-36 peak phase current (21.5 A).
+The ankle limits are the known weak point (hardware_observations.md, 'Ankle torque'): training clamps each ankle motor to 34 N*m through the linkage, but this plain-MuJoCo model only limits the joint, so it shows how hard the policy would like to push the ankles. On the robot those motors will saturate; currents there are capped near the X4-36 peak phase current (21.5 A).
 
 **Sizing numbers with margin** (at 48 V, motors only; add electronics):
 

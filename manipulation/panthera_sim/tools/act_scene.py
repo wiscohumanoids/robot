@@ -11,6 +11,7 @@ from sim.dynamics import recorded_dynamics
 
 
 def fixed_environment(provenance: dict) -> dict | None:
+    """Fixed-start settings recovered from the source episodes, or None."""
     metadata = [json.loads((Path(source['source']) / 'meta.json').read_text())
                 for source in provenance['sources'].values()]
     for meta in metadata:
@@ -28,6 +29,7 @@ def fixed_environment(provenance: dict) -> dict | None:
 
 
 def reset_fixed_arm(sim, environment: dict) -> None:
+    """Put the arm at the fixed start with the gripper open."""
     import mujoco
     q = np.asarray(environment['initial_arm_q'], dtype=float)
     opening = float(environment['gripper_open_m'])
@@ -40,6 +42,7 @@ def reset_fixed_arm(sim, environment: dict) -> None:
 
 
 def rollout_metrics(positions: np.ndarray) -> dict:
+    """Stacking metrics for two or three blocks."""
     if len(positions) != 2:
         metrics = stack_metrics(positions)
         return {**metrics, 'task_stack': metrics['three_stack']}

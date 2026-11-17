@@ -30,6 +30,7 @@ LEASE_SECONDS = 2.0
 class CollectionReset:
     """Collection's measured-start trajectory, capped to inference speeds."""
     def __init__(self, settings, lower, upper, initial, now):
+        """Return both arms to the neutral pose between collected rollouts."""
         from neutral_return import NeutralReturn
         self.settings = dict(settings, release_delay_seconds=0,
                              max_joint_speed_rad_s=min(settings['max_joint_speed_rad_s'],
@@ -42,6 +43,7 @@ class CollectionReset:
         self.started = now
 
     def tick(self, now, dt, measured, target):
+        """Next joint targets toward neutral, and whether both arms have settled."""
         arms = {s: dict(position_rad=measured[o:o+6], velocity_rad_s=[0]*6)
                 for s, o in [('left', 0), ('right', 7)]}
         joints, settled, _ = self.neutral.tick(now, arms)
@@ -62,12 +64,14 @@ class CollectionReset:
 
 
 def action_count(value):
+    """Check the number of actions executed per step (1-50)."""
     if type(value) is not int or not 1 <= value <= 50:
         raise ValueError('Actions per step must be an integer from 1 to 50')
     return value
 
 
 def blend_count(value):
+    """Check the number of blended actions (0-50)."""
     if type(value) is not int or not 0 <= value <= 50:
         raise ValueError('Blend actions must be an integer from 0 to 50')
     return value
@@ -95,6 +99,7 @@ def blend_predictions(actions, previous_tail, count):
 class ActionStep(SmoothActionTrajectory):
     """Blend exactly N policy waypoints, then stop and hold the last target."""
     def __init__(self, actions, count, started):
+        """The first `count` actions of a predicted chunk, executed from `started`."""
         selected = actions[:action_count(count)]
         if len(selected) != count:
             raise ValueError('Prediction contains fewer actions than requested')
@@ -104,6 +109,7 @@ class ActionStep(SmoothActionTrajectory):
 class RobotHardware:
     """All SDK/camera access belongs to the single control worker."""
     def __init__(self):
+        """No devices opened yet."""
         self.robots = {}
         self.cameras = None
         self.lock_file = None
@@ -112,6 +118,7 @@ class RobotHardware:
         self.check_active = lambda: None
 
     def open(self):
+        """Open both arms and the cameras, keep USB awake, and take the process lock."""
         from hand_guide import setup
         from dashboard import Cameras
         from usb_stability import keep_usb_awake
@@ -150,6 +157,7 @@ class RobotHardware:
                                      for s in ('left', 'right')])
 
     def read(self):
+        """Measured state of both arms (14 values)."""
         from hand_guide import feedback
         arms = {s: feedback(r, s, self.stale)[1] for s, r in self.robots.items()}
         measured = np.asarray([v for s in ('left', 'right') for v in
@@ -161,6 +169,7 @@ class RobotHardware:
         return measured, arms, camera_state
 
     def images(self):
+        """Cropped camera images in the server format."""
         with self.cameras.lock:
             return {n: image_payload(self.cameras.latest[n]['jpeg'], n)
                     for n in CONTRACT['image_crops_xyxy']}
@@ -174,10 +183,12 @@ class RobotHardware:
                      for n, frame in frames.items()})
 
     def command(self, target):
+        """Command both arms."""
         for offset, side in ((0, 'left'), (7, 'right')):
             self.command_arm(side, offset, target)
 
     def command_arm(self, side, offset, target, hold_gripper=True):
+        """Send one arm a position/velocity target (holding the gripper unless told otherwise)."""
         robot = self.robots[side]
         if not robot.Joint_Pos_Vel(target[offset:offset + 6],
                                    np.full(6, CONTRACT['max_joint_speed_rad_s']),
@@ -189,6 +200,7 @@ class RobotHardware:
             raise RuntimeError(f'{side}: gripper command rejected')
 
     def recording_context(self, checkpoint):
+        """Recording metadata: mode, checkpoint, contract and limits."""
         from hand_guide import setup, TORQUE_LIMIT
         import yaml
         return dict(mode='human_in_the_loop', checkpoint=checkpoint, contract=CONTRACT,
@@ -202,6 +214,7 @@ class RobotHardware:
                                   for s, p in self.configs.items()})
 
     def guide(self, arms, target, released):
+        """Hand-guiding: released arms float in compensation, held arms keep position."""
         from hand_guide import ZERO
         from reset_grippers import command_gripper
         for side, robot in self.robots.items():
@@ -219,6 +232,7 @@ class RobotHardware:
             arms[side]['command'] = dict(mode='gravity_assist', torque_nm=torque.tolist())
 
     def validate_reset_path(self, initial, targets):
+        """Check both arms' reset paths before moving."""
         from hand_guide import validate_return_path
         for side, offset in [('left', 0), ('right', 7)]:
             validate_return_path(self.robots[side], initial[offset:offset+6], targets[side], side)
@@ -246,6 +260,7 @@ class RobotHardware:
             raise RuntimeError('; '.join(errors))
 
     def close(self):
+        """Stop the arms and release devices and the lock."""
         from hand_guide import stop_robots
         stop_robots(self.robots)
         try:
@@ -258,8 +273,10 @@ class RobotHardware:
 
 
 class Controller:
+    """One robot session: policy playback, stepping, human takeover and recording."""
     def __init__(self, url, hardware_factory=RobotHardware, log_path=None, data_dir=None, expo_record_dir=None,
                  expo_objective='gear_and_pin', expo_prefix_length=1):
+        """Server URL, hardware, logs and the recording options."""
         self.url = url
         self.data_dir = Path(data_dir) if data_dir else ROOT / 'data/hitl'
         self.recorder = None
@@ -292,20 +309,24 @@ class Controller:
                               expo_objective=expo_objective)
 
     def check_expo_configuration(self, count, blend):
+        """EXPO recording needs one fixed prefix length and no blending."""
         if self.expo_record_dir is not None and (count != self.expo_prefix_length or blend != 0):
             raise ValueError(f'EXPO collection requires exactly {self.expo_prefix_length} actions per step and 0 blended actions')
 
     @staticmethod
     def expo_images(hardware, cameras):
+        """Images and frame metadata for EXPO recording."""
         if hasattr(hardware, 'expo_images'):
             return hardware.expo_images()
         return hardware.images(), dict(camera_frame_metadata_exact=False, status=cameras)
 
     def update(self, **values):
+        """Update the session state."""
         with self.lock:
             self.state.update(values)
 
     def snapshot(self):
+        """Copy of the session state for the dashboard."""
         with self.lock:
             state = json.loads(json.dumps(self.state))
             state['connected'] = self.worker is not None and self.worker.is_alive()
@@ -316,10 +337,12 @@ class Controller:
             return state
 
     def heartbeat(self):
+        """Mark the dashboard as alive."""
         with self.lock:
             self.heartbeat_at = time.monotonic()
 
     def connect(self, reset_pose=True):
+        """Start the session worker (one at a time)."""
         with self.lock:
             if self.worker is not None and self.worker.is_alive():
                 raise RuntimeError('A robot session is already active')
@@ -342,6 +365,7 @@ class Controller:
         self.worker.start()
 
     def configure(self, count, blend):
+        """Set actions per step and blending."""
         count, blend = action_count(count), blend_count(blend)
         self.check_expo_configuration(count, blend)
         with self.lock:
@@ -350,6 +374,7 @@ class Controller:
             self.state.update(actions_per_step=count, blend_actions=blend)
 
     def submit(self, kind, count=1, blend=10):
+        """Queue a step, play, predict or reset command."""
         if kind not in ('step', 'play', 'predict', 'reset'):
             raise ValueError('Unknown inference command')
         count = action_count(count)
@@ -378,6 +403,7 @@ class Controller:
                 self.state.update(actions_per_step=count, blend_actions=blend)
 
     def collection(self, action, payload=None):
+        """Begin, end or label a collected rollout."""
         payload = payload or {}
         if self.expo_record_dir is not None and any(payload.get(key, self.expo_objective) != self.expo_objective
                 for key in ('objective', 'training_objective')):
@@ -443,10 +469,12 @@ class Controller:
         self.stop_event.set()
 
     def check_active(self):
+        """Raise if the operator stopped the session."""
         if self.stop_event.is_set():
             raise RuntimeError('Operator stopped the session')
 
     def clear_commands(self):
+        """Drop queued commands."""
         while True:
             try:
                 self.commands.get_nowait()
@@ -454,10 +482,12 @@ class Controller:
                 return
 
     def jpeg(self, name):
+        """Latest JPEG of a camera, if connected."""
         hardware = self.hardware
         return hardware.cameras.jpeg(name) if hardware and hardware.cameras else None
 
     def collection_reset(self, hardware, measured):
+        """Start the return to neutral after a rollout, if configured."""
         if 'neutral_return' not in hardware.config:
             return None
         reset = CollectionReset(hardware.config['neutral_return'], hardware.lower,
@@ -467,6 +497,7 @@ class Controller:
         return reset
 
     def run(self, reset_pose=True):
+        """Session worker: open the hardware, then run the control loop until stopped."""
         hardware = self.hardware_factory()
         hardware.check_active = self.check_active
         self.hardware = hardware
@@ -945,8 +976,10 @@ def session_process(pipe, url, hardware_factory, health_request=None, data_dir=N
 
 
 class SessionSupervisor:
+    """Runs the robot session in a child process and recovers it after a crash."""
     def __init__(self, url, hardware_factory=RobotHardware, health_request=None, data_dir=None, expo_record_dir=None,
                  expo_objective='gear_and_pin', expo_prefix_length=1):
+        """Settings for the child session."""
         self.url = url
         self.hardware_factory = hardware_factory
         self.health_request = health_request
@@ -963,6 +996,7 @@ class SessionSupervisor:
         self.spawn()
 
     def spawn(self):
+        """Start the child session process."""
         context = multiprocessing.get_context('spawn')
         self.pipe, child_pipe = context.Pipe()
         self.process = context.Process(target=session_process,
@@ -973,6 +1007,7 @@ class SessionSupervisor:
         child_pipe.close()
 
     def rpc(self, method, *args):
+        """Call a session method in the child (raises if the child exited)."""
         with self.lock:
             if self.process is None or not self.process.is_alive():
                 raise RuntimeError('Robot session exited. Support both arms and use Reconnect.')
@@ -990,6 +1025,7 @@ class SessionSupervisor:
             return result
 
     def snapshot(self):
+        """Session state (or recovery state)."""
         with self.lock:
             recovering = self.recovery_worker is not None and self.recovery_worker.is_alive()
             if not recovering:
@@ -1003,39 +1039,46 @@ class SessionSupervisor:
             return state
 
     def update(self, **values):
+        """Update the supervisor state."""
         with self.lock:
             self.state.update(values)
 
     def connect(self):
+        """Connect the robot session."""
         with self.lock:
             if self.recovery_worker and self.recovery_worker.is_alive():
                 raise RuntimeError('Connection recovery is already running')
             self.rpc('connect')
 
     def heartbeat(self):
+        """Keep the session alive."""
         with self.lock:
             if not (self.recovery_worker and self.recovery_worker.is_alive()):
                 self.rpc('heartbeat')
 
     def configure(self, count, blend):
+        """Forward a playback configuration."""
         with self.lock:
             if self.recovery_worker and self.recovery_worker.is_alive():
                 raise RuntimeError('Wait for recovery before configuring playback')
             self.rpc('configure', count, blend)
 
     def submit(self, kind, count=1, blend=10):
+        """Forward a command."""
         with self.lock:
             if self.recovery_worker and self.recovery_worker.is_alive():
                 raise RuntimeError('Wait for recovery before taking a step')
             self.rpc('submit', kind, count, blend)
 
     def collection(self, action, payload=None):
+        """Forward a collection action."""
         with self.lock:
             if self.recovery_worker and self.recovery_worker.is_alive():
                 raise RuntimeError('Wait for recovery before collecting')
             self.rpc('collection', action, payload)
 
     def jpeg(self, name):
+        """Latest JPEG of a camera."""
         with self.lock:
             if self.recovery_worker and self.recovery_worker.is_alive():
                 return None
@@ -1045,12 +1088,14 @@ class SessionSupervisor:
                 return None
 
     def stop(self):
+        """Stop the session."""
         self.recovery_cancel.set()
         with self.lock:
             if not (self.recovery_worker and self.recovery_worker.is_alive()):
                 self.rpc('stop')
 
     def recover(self, arms_supported=False):
+        """Restart a crashed session (the operator must support both arms first)."""
         if arms_supported is not True:
             raise ValueError('Support both arms before reconnecting: powered hold will be released')
         with self.lock:
@@ -1065,6 +1110,7 @@ class SessionSupervisor:
             self.recovery_worker.start()
 
     def release_process(self):
+        """Terminate the child process."""
         # Used only after explicit support confirmation, or ordinary shutdown of
         # a disconnected dashboard. Never automatically replace a powered session.
         if self.process and self.process.is_alive():
@@ -1082,6 +1128,7 @@ class SessionSupervisor:
             self.pipe.close()
 
     def finish_recovery(self):
+        """Recovery worker: release the old process and start a new one."""
         try:
             # HTTP Stop remains responsive while waiting for native cleanup.
             self.release_process()
@@ -1096,6 +1143,7 @@ class SessionSupervisor:
             self.update(mode='fault', error=f'Reconnection failed: {exc}', hold_status='unverified')
 
     def shutdown(self):
+        """Stop recovery and the session."""
         self.recovery_cancel.set()
         if self.recovery_worker:
             self.recovery_worker.join(timeout=8)
@@ -1103,6 +1151,7 @@ class SessionSupervisor:
 
 
 def make_server(controller, port):
+    """Local HTTP server for the inference dashboard (token and origin checked)."""
     token = secrets.token_urlsafe(32)
     html_path = Path(__file__).parent / 'web/inference.html'
 
@@ -1182,6 +1231,7 @@ def make_server(controller, port):
 
 
 def main():
+    """Run the inference dashboard."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8091)
     parser.add_argument('--url', default='http://127.0.0.1:8765')

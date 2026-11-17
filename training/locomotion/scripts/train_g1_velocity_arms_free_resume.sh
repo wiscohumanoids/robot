@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# J1c: G1 velocity arms-free, resumed from an existing checkpoint into a NEW log root.
+# G1 velocity arms-free, resumed from an existing checkpoint into a NEW log root.
 # mjlab resumes from <log-root>/g1_velocity_arms_free/<load-run>/<load-checkpoint>, so this copies the source
 # checkpoint there first (run dir "resume_<source run>"), then trains with --agent.resume True.
 # The new run is written next to it (<log-root>/g1_velocity_arms_free/<timestamp>/). The curriculum level restarts at 0.
 # Usage:
-#   scripts/train_g1_velocity_arms_free_resume.sh --from ~/hsim_runs/J1b_g1_vel_arms_free/g1_velocity_arms_free/<run>/model_500.pt \
-#       --log-root ~/hsim_runs/J1c_g1_vel_arms_free [extra mjlab train flags...]
+#   scripts/train_g1_velocity_arms_free_resume.sh --from ~/hsim_runs/g1_velocity_arms_free_run1/g1_velocity_arms_free/<run>/model_500.pt \
+#       --log-root ~/hsim_runs/g1_velocity_arms_free_resumed [extra mjlab train flags...]
 #   NUM_ENVS (default 4096) and ITERS (default 20000) as in train_g1_velocity_arms_free.sh. PYTHON overrides the interpreter.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 [[ -f "$FROM" ]] || { echo "--from checkpoint not found: $FROM" >&2; exit 1; }
-LOG_ROOT="${LOG_ROOT:-$HOME/hsim_runs/J1c_g1_vel_arms_free}"
+LOG_ROOT="${LOG_ROOT:-$HOME/hsim_runs/g1_velocity_arms_free_resumed}"
 SRC_RUN="$(basename "$(dirname "$FROM")")"
 CKPT="$(basename "$FROM")"
 RUN="resume_${SRC_RUN}"

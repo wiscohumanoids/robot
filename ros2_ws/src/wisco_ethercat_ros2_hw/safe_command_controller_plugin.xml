@@ -1,0 +1,26 @@
+<class_libraries>
+<library path="wisco_ethercat_ros2_hw_controllers">
+  <class name="wisco_ethercat_ros2_hw/SafeCommandController"
+         type="wisco_ethercat_ros2_hw::SafeCommandController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      Forwards Float64MultiArray commands on ~/commands to one command interface per
+      joint, with a command timeout, per-joint magnitude limits, soft position limits,
+      NaN rejection and a stop on deactivate.
+    </description>
+  </class>
+</library>
+<library path="wisco_ethercat_ros2_hw_arm_controller">
+  <class name="wisco_ethercat_ros2_hw/ArmController"
+         type="wisco_ethercat_ros2_hw::ArmController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      The arm's RT loop: Mode P (CSP target + 0x60B2 gravity/friction torque offset) and
+      Mode T (CST host PD + feedforward), Pinocchio gravity from robot_description plus
+      the calibration file, bumpless mode switching, and a 50 ms watchdog that drops to
+      gravity comp + damping. Commands on ~/command, state on ~/state.
+    </description>
+  </class>
+</library>
+
+</class_libraries>

@@ -16,6 +16,7 @@ from pathlib import Path
 
 
 def main():
+    """Record a video of a checkpoint playing its task."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", required=True)
     ap.add_argument("--checkpoint", required=True)

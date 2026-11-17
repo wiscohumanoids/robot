@@ -35,6 +35,7 @@ class StackScore:
     grasped_blocks: set = field(default_factory=set)
 
     def update(self, positions, holding, step):
+        """Update the episode's progress from block positions and grasp state."""
         p = np.asarray(positions)
         if p.shape != (3, 3) or not np.isfinite(p).all():
             raise ValueError("Invalid three-block state")
@@ -59,6 +60,7 @@ class StackScore:
         return stable
 
     def record(self):
+        """The episode result."""
         return {"success": self.success, "grasped": self.grasped, "lifted": self.lifted,
                 "two_stacked": self.two_stacked, "grasped_blocks": sorted(self.grasped_blocks),
                 "max_stable_seconds": self.max_stable_steps / FPS,
@@ -66,6 +68,7 @@ class StackScore:
 
 
 def wilson_interval(successes, total, z=1.959963984540054):
+    """Wilson score confidence interval of a success rate."""
     if total <= 0:
         raise ValueError("At least one episode is required")
     p = successes / total
@@ -76,6 +79,7 @@ def wilson_interval(successes, total, z=1.959963984540054):
 
 
 def reset_scene(sim, seed, distribution):
+    """Reset blocks and arm for a seed and start distribution."""
     import mujoco
     from sim.panthera_env import mat_to_quat
     rng = np.random.default_rng(seed)
@@ -115,6 +119,7 @@ def reset_scene(sim, seed, distribution):
 
 def run_episode(sim, renderers, cameras, select_action, *, seed, distribution, seconds,
                 output, save_video=True, save_trace=False):
+    """Roll out one episode and record its result (and video and trace)."""
     import cv2
     import imageio.v2 as imageio
     from teleop.dataset_contract import PhysicsClock
@@ -187,6 +192,7 @@ def run_episode(sim, renderers, cameras, select_action, *, seed, distribution, s
 
 
 def summarize(records):
+    """Success rates and intervals over episodes."""
     total = len(records)
     successes = sum(r["success"] for r in records)
     return {"episodes": total, "successes": successes, "success_rate": successes / total,
@@ -196,6 +202,7 @@ def summarize(records):
 
 
 def wandb_metrics(report):
+    """Flattened metrics for W&B."""
     metrics = {}
     for distribution, result in report["by_distribution"].items():
         for key in ("episodes", "successes", "success_rate", "error_episodes"):
@@ -208,6 +215,7 @@ def wandb_metrics(report):
 
 
 def main():
+    """Evaluate a pi0.5 checkpoint over fixed seeds and write the report."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

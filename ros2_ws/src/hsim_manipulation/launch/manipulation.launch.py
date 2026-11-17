@@ -9,6 +9,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Start the manipulation node with its config and the VLA server URL."""
     cfg = os.path.join(get_package_share_directory('hsim_manipulation'), 'config', 'manipulation.yaml')
     return LaunchDescription([
         DeclareLaunchArgument('vla_url', default_value='http://host.docker.internal:8200'),
