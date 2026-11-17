@@ -1,0 +1,10 @@
+<library path="hsim_virtual_robot">
+  <class name="hsim_mujoco_plugins/VirtualRobotSystem"
+         type="hsim_mujoco_plugins::VirtualRobotSystem"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      The robot's EtherCAT hardware, simulated: simulated CiA402 drives (MyActuator mode 5) on a virtual bus, the
+      master's EcCiA402Drive logic, and MuJoCo as the robot (two-motor mechanisms through their rod geometry).
+    </description>
+  </class>
+</library>

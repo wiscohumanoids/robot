@@ -1,5 +1,8 @@
 # Manipulation
 
+New to the team? Start with [`GETTING_STARTED.md`](GETTING_STARTED.md): robust block pick-and-place, in simulation and
+on the real arms.
+
 Everything about using arms and hands: on a real arm, in simulation, and as a skill of the humanoid stack. The
 concepts (IK, ACT, diffusion policy, VLAs, RL fine-tuning) are explained in
 [`docs/knowledge/manipulation.md`](../docs/knowledge/manipulation.md).

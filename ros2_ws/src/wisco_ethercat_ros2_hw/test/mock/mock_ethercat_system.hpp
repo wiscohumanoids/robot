@@ -33,9 +33,9 @@
 #include <string>
 #include <vector>
 
-#include "cia402_master.hpp"
+#include "wisco_ethercat_ros2_hw/mock/cia402_master.hpp"
 #include "hardware_interface/system_interface.hpp"
-#include "rmdx_mock_slave.hpp"
+#include "wisco_ethercat_ros2_hw/mock/rmdx_mock_slave.hpp"
 
 namespace wisco_ethercat_ros2_hw
 {

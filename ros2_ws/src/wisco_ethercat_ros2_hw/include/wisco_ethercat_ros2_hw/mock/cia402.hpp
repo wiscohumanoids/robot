@@ -1,5 +1,6 @@
 // CiA402 (IEC 61800-7-201) definitions shared by the mock drive and the
-// mirrored master-side logic. Test-only.
+// mirrored master-side logic (the controller tests and the simulated robot,
+// hsim_virtual_robot).
 #ifndef WISCO_ETHERCAT_ROS2_HW__MOCK__CIA402_HPP_
 #define WISCO_ETHERCAT_ROS2_HW__MOCK__CIA402_HPP_
 
@@ -26,9 +27,13 @@ constexpr uint16_t kTorqueActual = 0x6077;
 constexpr uint16_t kTargetPosition = 0x607A;
 constexpr uint16_t kTorqueOffset = 0x60B2;
 constexpr uint16_t kTargetVelocity = 0x60FF;
+// MyActuator vendor objects for mode 5 (ESI MT-Device 26042402, RxPDO 0x1601, int32; units undocumented)
+constexpr uint16_t kMitKp = 0x2000;
+constexpr uint16_t kMitKd = 0x2001;
 
 // 0x6060 / 0x6061
 constexpr int8_t kModeNone = 0;
+constexpr int8_t kModeMit = 5;   // MyActuator mode 5 "PVT/MIT" (vendor-specific value): position + kp + kd
 constexpr int8_t kModeCsp = 8;
 constexpr int8_t kModeCsv = 9;
 constexpr int8_t kModeCst = 10;
@@ -47,7 +52,7 @@ constexpr uint16_t kSwVoltageEnabled = 0x0010;
 constexpr uint16_t kSwWarning = 0x0080;
 constexpr uint16_t kSwRemote = 0x0200;
 constexpr uint16_t kSwTargetReached = 0x0400;
-constexpr uint16_t kSwFollowingCommand = 0x1000;   // CSP/CST: drive follows the command value
+constexpr uint16_t kSwFollowingCommand = 0x1000;   // CSP/CST/mode 5: drive follows the command value
 constexpr uint16_t kSwFollowingError = 0x2000;     // CSP
 
 // Error codes (0x603F) the mock raises. CiA402 / CiA301 generic codes; the

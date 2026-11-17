@@ -1,7 +1,7 @@
-// RmdxMockSlave: an RMD-X drive as a CiA 402 slave (state machine, CSP/CST, torque cap, one-joint
-// dynamics, injectable faults and lost frames).
+// RmdxMockSlave: an RMD-X drive as a CiA 402 slave (state machine, CSP/CSV/CST and mode 5, torque cap, one-joint
+// dynamics or a simulator's joint, injectable faults and lost frames).
 
-#include "rmdx_mock_slave.hpp"
+#include "wisco_ethercat_ros2_hw/mock/rmdx_mock_slave.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -147,7 +147,7 @@ void RmdxMockSlave::update_mode(int8_t requested)
 {
   // Guess: a mode the drive does not support is ignored (0x6061 keeps the old one).
   if (requested != cia402::kModeCsp && requested != cia402::kModeCsv &&
-    requested != cia402::kModeCst)
+    requested != cia402::kModeCst && requested != cia402::kModeMit)
   {
     return;
   }
@@ -199,16 +199,12 @@ double RmdxMockSlave::drive_torque()
         const double off = p_.supports_torque_offset ? rx_.torque_offset * nmpm : 0.0;
         if (mode_active_ == cia402::kModeCsp) {
           const double qt = rx_.target_position * rad_per_count();
-          if (!have_prev_target_) {
-            vt_filtered_ = 0.0;
-          } else {
-            const double raw = (qt - prev_target_) / p_.dt;
-            vt_filtered_ += (raw - vt_filtered_) * p_.dt / (p_.velocity_feedforward_filter_s + p_.dt);
-          }
           const double vt = p_.csp_velocity_feedforward * vt_filtered_;
-          prev_target_ = qt;
-          have_prev_target_ = true;
           tau = p_.csp_kp * (qt - qm) + p_.csp_kd * (vt - qd_) + off;
+        } else if (mode_active_ == cia402::kModeMit) {
+          // the drive's PD on the host's target, gains and feedforward (no torque offset: 0x6071 is the feedforward)
+          tau = rx_.kp * p_.kp_per_raw * (rx_.target_position * rad_per_count() - qm) +
+            rx_.kd * p_.kd_per_raw * (rx_.target_velocity * rad_per_count() - qd_) + rx_.target_torque * nmpm;
         } else if (mode_active_ == cia402::kModeCsv) {
           tau = p_.csv_kv * (rx_.target_velocity * rad_per_count() - qd_) + off;
         } else if (mode_active_ == cia402::kModeCst) {
@@ -249,6 +245,29 @@ double RmdxMockSlave::drive_torque()
   return std::clamp(tau, -cap, cap);
 }
 
+// CSP velocity feedforward: d(0x607A)/dt, low-passed. Once per bus cycle (the target changes only with a new frame).
+void RmdxMockSlave::update_target_velocity()
+{
+  if (state_ != State::kOperationEnabled || mode_active_ != cia402::kModeCsp) {return;}
+  const double qt = rx_.target_position * rad_per_count();
+  if (!have_prev_target_) {
+    vt_filtered_ = 0.0;
+  } else {
+    const double raw = (qt - prev_target_) / p_.dt;
+    vt_filtered_ += (raw - vt_filtered_) * p_.dt / (p_.velocity_feedforward_filter_s + p_.dt);
+  }
+  prev_target_ = qt;
+  have_prev_target_ = true;
+}
+
+// One servo step on a simulator's joint (external physics).
+double RmdxMockSlave::servo(double position, double velocity)
+{
+  measure(position, velocity);
+  tau_ = drive_torque();
+  return tau_;
+}
+
 // Integrate the one-joint dynamics.
 void RmdxMockSlave::step_joint(double tau_motor)
 {
@@ -272,8 +291,8 @@ TxPdo RmdxMockSlave::latch() const
   if (state_ != State::kNotReadyToSwitchOn && state_ != State::kStart) {
     sw |= cia402::kSwVoltageEnabled | cia402::kSwRemote;
   }
-  if (state_ == State::kOperationEnabled &&
-    (mode_active_ == cia402::kModeCsp || mode_active_ == cia402::kModeCst))
+  if (state_ == State::kOperationEnabled && (mode_active_ == cia402::kModeCsp ||
+    mode_active_ == cia402::kModeCst || mode_active_ == cia402::kModeMit))
   {
     sw |= cia402::kSwFollowingCommand;
   }
@@ -287,10 +306,11 @@ TxPdo RmdxMockSlave::latch() const
   return tx;
 }
 
-// One bus cycle: apply the RxPDO (or a lost frame), step, and latch the reply.
+// One bus cycle: apply the RxPDO (or a lost frame), step, and latch the reply. With external physics the reply is
+// latched now, from the simulator's latest state (the sync instant), and the joint is not stepped here.
 TxPdo RmdxMockSlave::cycle(const RxPdo * rx)
 {
-  const TxPdo out = latched_;
+  const TxPdo out = p_.external_physics ? latch() : latched_;
   ++cycle_count_;
   ++state_cycles_;
 
@@ -327,8 +347,11 @@ TxPdo RmdxMockSlave::cycle(const RxPdo * rx)
     }
   }
 
-  step_joint(drive_torque());
-  latched_ = latch();
+  update_target_velocity();
+  if (!p_.external_physics) {
+    step_joint(drive_torque());
+    latched_ = latch();
+  }
   return out;
 }
 

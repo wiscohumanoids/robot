@@ -17,6 +17,7 @@ setup(
         'mujoco_sim = hsim_sim.mujoco_sim:main',
         'stereo_camera = hsim_sim.stereo_camera:main',
         'ros2_control_backend = hsim_sim.ros2_control_backend:main',
-        'joint_target_bridge = hsim_sim.joint_target_bridge:main',
+        'ethercat_sim_backend = hsim_sim.ethercat_sim_backend:main',
+        'backend_supervisor = hsim_sim.backend_supervisor:main',
     ]},
 )

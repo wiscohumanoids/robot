@@ -8,7 +8,7 @@
 //   TRACK  pass the targets through, clamped to the joint limits (URDF, minus `limit_margin`), with each joint's kp and
 //          kd: the trained policy's, from its manifest.yaml, so the drives run the PD the policy was trained with
 //          (joints the policy does not train, like Wisco's head, take `gain_override_*`)
-//   SAFE   no new message for `timeout` (central computer gone, DDS stall): `damp` (kp 0, kd `damping_kd`, Unitree's
+//   SAFE   no new message for `timeout` of control-loop time (central computer gone, DDS stall): `damp` (kp 0, kd `damping_kd`, Unitree's
 //          exit command) or `hold` (stay at the measured pose); when messages return, RAMP again
 //
 // Joints listed in `chained_joints` are the two-motor ones (ankles, waist roll/pitch): their position goes to
@@ -16,11 +16,16 @@
 // (never damp) in SAFE. Other joints get `<joint>/position` and, if `gain_interfaces` names them (MyActuator mode 5),
 // `<joint>/kp`, `<joint>/kd`.
 //
+// Service ~/hold (std_srvs/Trigger): back to HOLD at the measured pose, ignoring messages received before the
+// request, then RAMP again from there when new ones arrive. For after the robot is moved by something else (the
+// simulator's world reset, an operator), so the controller never pulls it back to the pose it held before.
+//
 // One instance per policy output: locomotion → legs, waist, head; a manipulation policy's targets would get their own
 // instance (or the ArmController) for the arms. Joints a message leaves out keep their last target.
 #ifndef WISCO_ETHERCAT_ROS2_HW__JOINT_TARGET_CONTROLLER_HPP_
 #define WISCO_ETHERCAT_ROS2_HW__JOINT_TARGET_CONTROLLER_HPP_
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -33,6 +38,7 @@
 #include "realtime_tools/realtime_buffer.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_srvs/srv/trigger.hpp"
 
 namespace wisco_ethercat_ros2_hw
 {
@@ -86,10 +92,14 @@ private:
   Phase phase_ = Phase::kHold;
   double ramp_elapsed_ = 0.0;
   int64_t last_seen_ns_ = 0;        // receive time of the newest message the loop has taken
+  int64_t hold_floor_ns_ = 0;       // messages received before the last ~/hold request do not count
+  double since_fresh_ = 0.0;        // control-loop time since the newest message, s (update periods)
   uint64_t clamped_ = 0, cycles_ = 0;
 
   realtime_tools::RealtimeBuffer<std::shared_ptr<Targets>> buffer_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr subscription_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr hold_service_;
+  std::atomic<int64_t> hold_request_ns_{0};   // set by ~/hold, taken by the real-time loop
   std::shared_ptr<realtime_tools::RealtimePublisher<diagnostic_msgs::msg::DiagnosticArray>> status_;
 };
 

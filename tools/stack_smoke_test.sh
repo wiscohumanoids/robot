@@ -5,6 +5,7 @@
 #   ENV=test/table_room  -> load that environment and also check /map (contract phase 2)
 #   ROBOT=g1             -> robot profile (default wisco: stereo camera, build_wisco/ envs; also g1, g1_arms_free)
 #   BACKEND=ros2_control -> STACK=sim through the ros2_control backend (no ENV: it runs the bare training world)
+#   BACKEND=ethercat_sim -> the same, one layer down: simulated EtherCAT drives under the robot's controller chain
 set -uo pipefail
 STACK="${STACK:-stub}"
 LOG=/tmp/${STACK}_stack.log

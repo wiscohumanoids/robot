@@ -28,17 +28,16 @@ without ROS.
 <!-- BEGIN GENERATED:topics -->
 | Topic | Type | Owner (only publisher) | Rate | Phase | Required |
 |---|---|---|---|---|---|
-| `/clock` | `rosgraph_msgs/msg/Clock` | `sim`, `mujoco_ros2_control_node` | 200 Hz | 1 | yes |
+| `/clock` | `rosgraph_msgs/msg/Clock` | `sim`, `mujoco_ros2_control_node`, `virtual_robot` | 200 Hz | 1 | yes |
 | `/cmd_vel` | `geometry_msgs/msg/TwistStamped` | `twist_mux` | - | 1 | yes |
 | `/cmd_vel_teleop` | `geometry_msgs/msg/TwistStamped` | `teleop` | - | 1 | no |
 | `/imu` | `sensor_msgs/msg/Imu` | `sim`, `imu_sensor_broadcaster`, `imu` | 200 Hz | 1 | yes |
-| `/joint_states` | `sensor_msgs/msg/JointState` | `sim`, `joint_state_broadcaster` | 200 Hz | 1 | yes |
-| `/joint_targets_controller/commands` | `std_msgs/msg/Float64MultiArray` | `joint_target_bridge` | - | 1 | no |
+| `/joint_states` | `sensor_msgs/msg/JointState` | `sim`, `joint_state_broadcaster`, `joint_states` | 200 Hz | 1 | yes |
 | `/locomotion/joint_targets` | `sensor_msgs/msg/JointState` | `locomotion` | 50 Hz | 1 | yes |
 | `/locomotion/status` | `diagnostic_msgs/msg/DiagnosticArray` | `locomotion` | 1 Hz | 1 | yes |
 | `/odometry/filtered` | `nav_msgs/msg/Odometry` | `state_estimation` | 50 Hz | 1 | yes |
-| `/robot_description` | `std_msgs/msg/String` | `joint_target_bridge` | - | 1 | no |
-| `/sim/ground_truth/odom` | `nav_msgs/msg/Odometry` | `sim`, `mujoco_ros2_control_node` | 200 Hz | 1 | yes |
+| `/robot_description` | `std_msgs/msg/String` | `backend_supervisor` | - | 1 | no |
+| `/sim/ground_truth/odom` | `nav_msgs/msg/Odometry` | `sim`, `mujoco_ros2_control_node`, `virtual_robot` | 200 Hz | 1 | yes |
 | `/sim/viewer/image_raw` | `sensor_msgs/msg/Image` | `sim` | - | 1 | no |
 | `/map` | `nav_msgs/msg/OccupancyGrid` | `map_server`, `localization` | - | 2 | yes |
 | `/battery` | `sensor_msgs/msg/BatteryState` | `sim` | 1 Hz | 3 | yes |
@@ -57,7 +56,7 @@ without ROS.
 | `/safety/estop_request` | `std_msgs/msg/Bool` | `operator` | - | 3 | no |
 | `/safety/status` | `diagnostic_msgs/msg/DiagnosticArray` | `safety` | 2 Hz | 3 | yes |
 | `/scan` | `sensor_msgs/msg/LaserScan` | `sim`, `depth_to_scan` | - | 3 | yes |
-| `/sim/ground_truth/state` | `std_msgs/msg/Float64MultiArray` | `sim` | 20 Hz | 3 | yes |
+| `/sim/ground_truth/state` | `std_msgs/msg/Float64MultiArray` | `sim`, `mujoco_ros2_control_node`, `virtual_robot` | 20 Hz | 3 | yes |
 | `/world/objects` | `vision_msgs/msg/Detection3DArray` | `world_model` | 2 Hz | 3 | yes |
 | `/world/summary` | `std_msgs/msg/String` | `world_model` | 2 Hz | 3 | yes |
 | `/perception/status` | `std_msgs/msg/String` | `perception` | - | 4 | no |

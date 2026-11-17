@@ -1,14 +1,15 @@
-// The mock RMD-X drive (test/mock/rmdx_mock_slave.*) on its own and under the
-// mirrored master-side CiA402 logic (test/mock/cia402_master.hpp): enable
-// sequencing, the strict CiA402 state machine, quick stop, fault reaction
-// and reset, CSP <-> CST, following error, 0x6072 and lost frames.
+// The mock RMD-X drive (include/.../mock/rmdx_mock_slave.hpp) on its own and
+// under the mirrored master-side CiA402 logic (mock/cia402_master.hpp):
+// enable sequencing, the strict CiA402 state machine, quick stop, fault
+// reaction and reset, CSP <-> CST, following error, 0x6072, lost frames,
+// mode 5 (PD in the drive) and external physics (a simulator's joint).
 #include <gtest/gtest.h>
 
 #include <cmath>
 #include <vector>
 
-#include "cia402_master.hpp"
-#include "rmdx_mock_slave.hpp"
+#include "wisco_ethercat_ros2_hw/mock/cia402_master.hpp"
+#include "wisco_ethercat_ros2_hw/mock/rmdx_mock_slave.hpp"
 
 using wisco_ethercat_ros2_hw::mock::Cia402DriveMaster;
 using wisco_ethercat_ros2_hw::mock::DriveCommands;
@@ -390,4 +391,77 @@ TEST(MockSlave, LostFramesKeepLastOutputsThenTripWatchdog)
   EXPECT_EQ(bus.slave.applied_torque(), 0.0);
   for (int k = 0; k < 5; ++k) {bus.cycle();}
   EXPECT_EQ(bus.master.state(), State::kFault);
+}
+
+// Mode 5: the drive runs kp (0x607A - q) + kd (0x60FF - qd) + 0x6071 with the gains from the bus; the master lets
+// 0x607A through in mode 5. Under a 0.5 Nm load the joint sags by load / kp, and a 0.5 Nm feedforward cancels that.
+TEST(MockSlave, ModeFiveRunsThePdInTheDrive)
+{
+  Bus bus(params());
+  bus.master.mode_of_operation = cia402::kModeMit;
+  bus.slave.set_load_torque(0.5);
+  ASSERT_GT(bus.enable(), 0);
+  EXPECT_EQ(bus.st.mode_of_operation, cia402::kModeMit);
+  bus.cmd.position = 0.3;
+  bus.cmd.kp = 20.0;
+  bus.cmd.kd = 1.0;
+  for (int k = 0; k < 3000; ++k) {bus.cycle();}
+  EXPECT_EQ(bus.master.rx().kp, 20000);                     // 0.001 Nm/rad per raw unit
+  EXPECT_EQ(bus.master.rx().kd, 1000);
+  EXPECT_NEAR(bus.slave.position(), 0.3 - 0.5 / 20.0, 2e-3);
+  bus.cmd.effort = 0.5;                                     // 0x6071: torque feedforward
+  for (int k = 0; k < 3000; ++k) {bus.cycle();}
+  EXPECT_NEAR(bus.slave.position(), 0.3, 2e-3);
+  EXPECT_NEAR(bus.slave.applied_torque(), 0.5, 0.02);
+}
+
+// Upstream EcCiA402Drive overrides 0x607A with the actual position in every mode but CSP: a mode-5 drive behind it
+// only ever holds where it is. mit_position_passthrough = false reproduces that.
+TEST(MockSlave, UpstreamPositionOverrideFreezesModeFive)
+{
+  Bus bus(params());
+  bus.master.mode_of_operation = cia402::kModeMit;
+  bus.master.mit_position_passthrough = false;
+  ASSERT_GT(bus.enable(), 0);
+  bus.cmd.position = 0.3;
+  bus.cmd.kp = 20.0;
+  bus.cmd.kd = 1.0;
+  for (int k = 0; k < 1000; ++k) {bus.cycle();}
+  EXPECT_NEAR(bus.slave.position(), 0.0, 1e-3);
+}
+
+// External physics: cycle() latches the state given to measure() at that cycle (not one cycle older) and does not
+// move the joint; servo() returns the drive's torque for the simulator, here a 1-joint model stepped 4x per cycle.
+TEST(MockSlave, ExternalPhysicsLatchesTheMeasurementAndServos)
+{
+  RmdxParams p = params();
+  p.external_physics = true;
+  Bus bus(p);
+  bus.master.mode_of_operation = cia402::kModeMit;
+  double q = 0.0, qd = 0.0;
+  const double h = p.dt / 4.0, inertia = 0.05;
+  auto step = [&]() {
+      bus.slave.measure(q, qd);
+      bus.cycle();
+      for (int s = 0; s < 4; ++s) {
+        const double tau = bus.slave.servo(q, qd);
+        qd += tau / inertia * h;
+        q += qd * h;
+      }
+    };
+  for (int k = 0; k < 50 && !cia402::operation_enabled(static_cast<uint16_t>(bus.st.status_word)); ++k) {step();}
+  ASSERT_TRUE(cia402::operation_enabled(static_cast<uint16_t>(bus.st.status_word)));
+  EXPECT_EQ(q, 0.0);                                        // no torque before the gains arrive
+
+  bus.slave.measure(0.123, 0.0);                            // latched by this very cycle
+  const TxPdo tx = bus.slave.cycle(&bus.master.rx());
+  EXPECT_NEAR(tx.position_actual * 2 * M_PI / p.counts_per_rev, 0.123, 1e-4);
+  EXPECT_EQ(bus.slave.position(), 0.123);                   // the drive did not move the joint itself
+
+  bus.cmd.position = -0.2;
+  bus.cmd.kp = 10.0;
+  bus.cmd.kd = 0.8;
+  for (int k = 0; k < 2000; ++k) {step();}
+  EXPECT_NEAR(q, -0.2, 1e-3);
+  EXPECT_NEAR(bus.st.position, -0.2, 1e-3);
 }

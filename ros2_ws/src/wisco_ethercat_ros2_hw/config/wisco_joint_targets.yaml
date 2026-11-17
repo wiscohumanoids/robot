@@ -7,6 +7,8 @@
 #
 # The arms are not here: the walking policy only holds them, and a manipulation policy's arm targets go to the arms'
 # own controller. Load together with wisco_parallel_joints.yaml (the chained joints need it active first).
+# /joint_states then comes from ChainedJointStateBroadcaster (the URDF's joints, ankles and waist read from
+# parallel_joints), not the upstream joint_state_broadcaster, which would publish the motors.
 leg_targets:
   ros__parameters:
     type: wisco_ethercat_ros2_hw/JointTargetController

@@ -21,3 +21,9 @@ mounts:
                                      # inside ~0.6 m and a table inside ~0.8 m, so the final approach is blind.
 footprint_radius: 0.30               # same as the G1 (torso ~0.3 m wide, arms in)
 reach_standoff: 0.30                 # arm reach comparable to the G1's; revisit with the manipulation work
+# backend:=ethercat_sim (hsim_sim/ethercat_sim_backend.py): the two-motor mechanisms behind simulated EtherCAT drives,
+# configured as on the robot computer (ParallelLinkageController's file, the CAD rod geometry)
+ethercat_sim:
+  parallel_joints: /hsim/ros2_ws/src/wisco_ethercat_ros2_hw/config/wisco_parallel_joints.yaml
+  linkage_file: /hsim/robots/wisco_v1/linkage.json
+  linkage_motor_peak_nm: {left_ankle: 34.0, right_ankle: 34.0, waist: 60.0}   # X4-36, X6-60 (actuator_models.yaml)

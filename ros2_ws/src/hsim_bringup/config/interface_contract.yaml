@@ -6,18 +6,17 @@
 # required  = false: only checked if something is publishing it (e.g. teleop, Nav2 not running)
 version: 1   # phase-1 entries (the robot core) are frozen: see docs/interface_contract.md
 topics:
-  /clock:                    {type: rosgraph_msgs/msg/Clock,          owner: [sim, mujoco_ros2_control_node], rate_hz: 200,  phase: 1}
-  /joint_states:             {type: sensor_msgs/msg/JointState,       owner: [sim, joint_state_broadcaster], rate_hz: 200,  phase: 1}
+  /clock:                    {type: rosgraph_msgs/msg/Clock,          owner: [sim, mujoco_ros2_control_node, virtual_robot], rate_hz: 200,  phase: 1}
+  /joint_states:             {type: sensor_msgs/msg/JointState,       owner: [sim, joint_state_broadcaster, joint_states], rate_hz: 200,  phase: 1}
   /imu:                      {type: sensor_msgs/msg/Imu,              owner: [sim, imu_sensor_broadcaster, imu], rate_hz: 200,  phase: 1}   # imu: the robot's IMU driver (wisco_hipnuc_imu)
-  /sim/ground_truth/odom:    {type: nav_msgs/msg/Odometry,            owner: [sim, mujoco_ros2_control_node], rate_hz: 200,  phase: 1}   # PRIVILEGED
+  /sim/ground_truth/odom:    {type: nav_msgs/msg/Odometry,            owner: [sim, mujoco_ros2_control_node, virtual_robot], rate_hz: 200,  phase: 1}   # PRIVILEGED
   /sim/viewer/image_raw:     {type: sensor_msgs/msg/Image,            owner: sim,              rate_hz: null, phase: 1, required: false}
   /cmd_vel_teleop:           {type: geometry_msgs/msg/TwistStamped,   owner: teleop,           rate_hz: null, phase: 1, required: false}
   /cmd_vel_nav:              {type: geometry_msgs/msg/TwistStamped,   owner: velocity_smoother, rate_hz: null, phase: 3, required: false}
   /cmd_vel_approach:         {type: geometry_msgs/msg/TwistStamped,   owner: behavior,         rate_hz: null, phase: 3, required: false}   # final step to arm's reach
   /cmd_vel:                  {type: geometry_msgs/msg/TwistStamped,   owner: twist_mux,        rate_hz: null, phase: 1}
   /locomotion/joint_targets: {type: sensor_msgs/msg/JointState,       owner: locomotion,       rate_hz: 50,   phase: 1}
-  /robot_description:        {type: std_msgs/msg/String,             owner: joint_target_bridge, rate_hz: null, phase: 1, required: false}   # backend:=ros2_control only (latched)
-  /joint_targets_controller/commands: {type: std_msgs/msg/Float64MultiArray, owner: joint_target_bridge, rate_hz: null, phase: 1, required: false}   # backend:=ros2_control only
+  /robot_description:        {type: std_msgs/msg/String,             owner: backend_supervisor, rate_hz: null, phase: 1, required: false}   # backend:=ros2_control / ethercat_sim only (latched)
   /locomotion/status:        {type: diagnostic_msgs/msg/DiagnosticArray, owner: locomotion,    rate_hz: 1,    phase: 1}
   /odometry/filtered:        {type: nav_msgs/msg/Odometry,            owner: state_estimation, rate_hz: 50,   phase: 1}
   /leg_odometry:             {type: nav_msgs/msg/Odometry,            owner: leg_odometry,     rate_hz: 50,   phase: 3, required: false}
@@ -42,7 +41,7 @@ topics:
   # phase 5: manipulation. Targets for the held (arm/hand) joints; locomotion merges them into /locomotion/joint_targets
   /arm/joint_targets:        {type: sensor_msgs/msg/JointState,       owner: manipulation,     rate_hz: null, phase: 5, required: false}
   # PRIVILEGED (evaluation only): graders, tests, and explicitly-labeled stubs may read it, the robot stack may not
-  /sim/ground_truth/state:   {type: std_msgs/msg/Float64MultiArray,   owner: sim,              rate_hz: 20,   phase: 3}
+  /sim/ground_truth/state:   {type: std_msgs/msg/Float64MultiArray,   owner: [sim, mujoco_ros2_control_node, virtual_robot], rate_hz: 20,   phase: 3}   # ros2_control: GroundTruthPlugin; ethercat_sim: VirtualRobotSystem
 # Many nodes may publish these by ROS convention; not single-owner. Wildcards allowed.
 # /bond and */transition_event are Nav2 lifecycle bookkeeping.
 shared_topics: [/diagnostics, /bond, '/*/transition_event',

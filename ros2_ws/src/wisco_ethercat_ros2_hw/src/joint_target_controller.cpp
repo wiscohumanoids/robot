@@ -207,6 +207,13 @@ CallbackReturn JointTargetController::on_configure(const rclcpp_lifecycle::State
       t->received_ns = steady_now_ns();
       buffer_.writeFromNonRT(t);
     });
+  hold_service_ = node->create_service<std_srvs::srv::Trigger>(
+    "~/hold", [this](const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> res) {
+      hold_request_ns_.store(steady_now_ns());
+      res->success = true;
+      res->message = "holding the measured pose; ramping in again when new targets arrive";
+    });
   status_ = std::make_shared<realtime_tools::RealtimePublisher<diagnostic_msgs::msg::DiagnosticArray>>(
     node->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("~/status", 10));
   RCLCPP_INFO(log, "%zu joints (%zu through %s), timeout %.0f ms, ramp %.1f s, on timeout: %s",
@@ -258,6 +265,9 @@ CallbackReturn JointTargetController::on_activate(const rclcpp_lifecycle::State 
   buffer_.writeFromNonRT(nullptr);
   phase_ = Phase::kHold;
   last_seen_ns_ = 0;
+  hold_floor_ns_ = 0;
+  since_fresh_ = std::numeric_limits<double>::infinity();
+  hold_request_ns_.store(0);
   clamped_ = cycles_ = 0;
   hold_measured();
   return CallbackReturn::SUCCESS;
@@ -290,11 +300,21 @@ void JointTargetController::hold_measured()
 
 return_type JointTargetController::update(const rclcpp::Time &, const rclcpp::Duration & period)
 {
+  const int64_t hold_ns = hold_request_ns_.exchange(0);
+  if (hold_ns != 0) {                                     // ~/hold: re-arm at the measured pose
+    hold_measured();
+    phase_ = Phase::kHold;
+    last_seen_ns_ = std::max(last_seen_ns_, hold_ns);     // only messages after the request count
+    hold_floor_ns_ = hold_ns;
+    since_fresh_ = std::numeric_limits<double>::infinity();
+  }
   const auto latest = buffer_.readFromRT();
   const std::shared_ptr<Targets> msg = latest ? *latest : nullptr;
-  const int64_t now = steady_now_ns();
   const bool fresh = msg && msg->received_ns > last_seen_ns_;
-  const bool alive = msg && now - msg->received_ns <= timeout_ns_;
+  // the timeout counts the control loop's own time (its update periods): real time on the robot, simulated time in
+  // simulation, where a busy computer slows the world and the policy together
+  since_fresh_ = fresh ? 0.0 : since_fresh_ + period.seconds();
+  const bool alive = msg && msg->received_ns > hold_floor_ns_ && since_fresh_ * 1e9 <= static_cast<double>(timeout_ns_);
 
   if (fresh) {
     last_seen_ns_ = msg->received_ns;

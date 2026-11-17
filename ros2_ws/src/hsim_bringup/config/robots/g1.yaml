@@ -19,3 +19,5 @@ mounts:                              # x y z [m], pitch [rad] (+ = down)
   camera: [0.08, 0.0, 0.45, 0.4363]  # head camera in torso_link, pitched 25 deg down
 footprint_radius: 0.30               # m, Nav2 robot_radius (nav2.yaml)
 reach_standoff: 0.30                 # m, how far into a surface's edge the BT stops (arms reach ~0.5 m)
+# ethercat_sim: optional, for backend:=ethercat_sim: two-motor mechanisms (see wisco.yaml). Without it (the G1 here)
+# every actuated joint has its own simulated drive.

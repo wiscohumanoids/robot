@@ -32,6 +32,7 @@ find_package(pinocchio REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(urdf REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # --- SafeCommandController: the command controller the launch file loads ---
 add_library(wisco_ethercat_ros2_hw_controllers SHARED src/safe_command_controller.cpp)
@@ -72,12 +73,30 @@ target_include_directories(wisco_ethercat_ros2_hw_joint_target_controller PUBLIC
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 ament_target_dependencies(wisco_ethercat_ros2_hw_joint_target_controller
   controller_interface hardware_interface pluginlib rclcpp rclcpp_lifecycle realtime_tools sensor_msgs
-  diagnostic_msgs urdf)
+  diagnostic_msgs urdf std_srvs)
 target_link_libraries(wisco_ethercat_ros2_hw_joint_target_controller yaml-cpp)
+
+# --- JointStateBroadcaster for a robot with chained joints: /joint_states in the URDF's joints ---
+add_library(wisco_ethercat_ros2_hw_joint_state_broadcaster SHARED src/joint_state_broadcaster.cpp)
+target_compile_features(wisco_ethercat_ros2_hw_joint_state_broadcaster PUBLIC cxx_std_17)
+target_include_directories(wisco_ethercat_ros2_hw_joint_state_broadcaster PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+ament_target_dependencies(wisco_ethercat_ros2_hw_joint_state_broadcaster
+  controller_interface hardware_interface pluginlib rclcpp rclcpp_lifecycle realtime_tools sensor_msgs)
+
+# --- Simulated RMD-X drives and the master's CiA402 logic (include/.../mock/): the controller tests' mock bus and
+#     the simulated robot (hsim_virtual_robot) ---
+add_library(wisco_ethercat_ros2_hw_mock_drives SHARED src/mock/rmdx_mock_slave.cpp)
+target_compile_features(wisco_ethercat_ros2_hw_mock_drives PUBLIC cxx_std_17)
+target_include_directories(wisco_ethercat_ros2_hw_mock_drives PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 
 pluginlib_export_plugin_description_file(controller_interface safe_command_controller_plugin.xml)
 install(TARGETS wisco_ethercat_ros2_hw_controllers wisco_ethercat_ros2_hw_arm_controller
   wisco_ethercat_ros2_hw_linkage_controller wisco_ethercat_ros2_hw_joint_target_controller
+  wisco_ethercat_ros2_hw_joint_state_broadcaster wisco_ethercat_ros2_hw_mock_drives
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -155,7 +174,7 @@ if(BUILD_TESTING)
   ament_add_gtest(test_joint_target_controller test/test_joint_target_controller.cpp)
   target_link_libraries(test_joint_target_controller wisco_ethercat_ros2_hw_joint_target_controller)
   ament_target_dependencies(test_joint_target_controller
-    controller_interface hardware_interface rclcpp rclcpp_lifecycle sensor_msgs)
+    controller_interface hardware_interface rclcpp rclcpp_lifecycle sensor_msgs std_srvs)
   target_compile_definitions(test_joint_target_controller PRIVATE
     MANIFEST="${CMAKE_CURRENT_SOURCE_DIR}/../../../models/locomotion/wisco_v1_velocity_arms_free/manifest.yaml"
     WISCO_URDF="${CMAKE_CURRENT_SOURCE_DIR}/../../../robots/wisco_v1/robot.urdf")
@@ -167,15 +186,14 @@ if(BUILD_TESTING)
   target_compile_definitions(test_parallel_linkage_controller PRIVATE
     LINKAGE_JSON="${CMAKE_CURRENT_SOURCE_DIR}/../../../robots/wisco_v1/linkage.json")
 
-  # Mock RMD-X drives on a mock EtherCAT ring (test/mock/), so the CiA402
+  # Mock RMD-X drives (the mock_drives library) on a mock EtherCAT ring (test/mock/), so the CiA402
   # state machine and the RT core run before the drives arrive.
-  add_library(wisco_mock_ethercat STATIC
-    test/mock/rmdx_mock_slave.cpp
-    test/mock/mock_ethercat_system.cpp)
+  add_library(wisco_mock_ethercat STATIC test/mock/mock_ethercat_system.cpp)
   set_target_properties(wisco_mock_ethercat PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_compile_features(wisco_mock_ethercat PUBLIC cxx_std_17)
   target_include_directories(wisco_mock_ethercat PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/test/mock ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  target_link_libraries(wisco_mock_ethercat wisco_ethercat_ros2_hw_mock_drives)
   ament_target_dependencies(wisco_mock_ethercat hardware_interface rclcpp)
 
   ament_add_gtest(test_mock_slave test/test_mock_slave.cpp)
@@ -203,5 +221,5 @@ endif()
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(controller_interface hardware_interface pluginlib rclcpp
-  rclcpp_lifecycle realtime_tools std_msgs pinocchio yaml-cpp)
+  rclcpp_lifecycle realtime_tools std_msgs sensor_msgs diagnostic_msgs urdf std_srvs pinocchio yaml-cpp)
 ament_package()

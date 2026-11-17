@@ -125,6 +125,13 @@ controller manager on mock motors (hold, ramp at the expected rate, exact final 
 Wisco's 17 non-arm joints: `config/wisco_joint_targets.yaml`. The two computers' network and clock:
 [`infra/robot_network/`](../../../infra/robot_network/README.md).
 
+`/joint_states` on the robot: the hardware's joints are the motors, so the upstream joint_state_broadcaster would
+publish `left_ankle_motor_a` where the policy, leg odometry and the rest expect `left_ankle_pitch`.
+`ChainedJointStateBroadcaster` publishes the URDF's joints in one message, reading the two-motor joints from
+`parallel_joints`' exported states (`joints`, `chained_joints`, `chain_prefix`, `topic`; load it after
+`parallel_joints`). The whole chain runs in simulation on simulated drives: `sim_stack.launch.py
+backend:=ethercat_sim` (`hsim_sim/README.md`).
+
 ## Parallel joints: ankles and waist ("PR mode")
 
 Each ankle (pitch, roll) and the waist (roll, pitch) is driven by **two motors through push rods**, but the URDF,
@@ -144,7 +151,12 @@ leg controller ──joint references──► ParallelLinkageController ──m
   step limited so a bad guess cannot overshoot. Velocities go through the Jacobian J, torques through Jᵀ.
 - **Gains**: a joint-space PD seen at the motors is `J⁻ᵀ K J⁻¹`. In `pd_in_drive` mode (MyActuator mode 5) each drive
   gets its diagonal, and the dropped coupling term is reported; `torque` mode computes the exact joint PD here and
-  sends motor torques.
+  sends motor torques. **At the ankles the diagonal is not enough:** the coupling is about 70 % of the diagonal, so
+  with the trained 35 / 35 Nm/rad the ankle becomes about 124 Nm/rad in pitch and 20 in roll (the rod geometry fixes
+  the ratio; no per-motor gains fix it). On simulated drives (`backend:=ethercat_sim`) the robot walks at 0.38 m/s
+  instead of 0.55 for 0.5 commanded in `pd_in_drive`, and at 0.54 in `torque` mode. The waist's coupling is about
+  7 % and harmless. Options for the ankles: `torque` mode (needs a steady bus at a high enough rate), or mode 5 with
+  the coupling sent as torque feedforward each cycle (not implemented).
 - **Safety**: references are clamped to the joint limits. A motor reading the rods cannot produce, or one that only
   fits a physically impossible configuration (another rod assembly, a pose past the limits), holds the motors where
   they are and is counted. The controller will not activate on such readings: that is the check that the motors are
@@ -277,12 +289,24 @@ stops the sequence.
 
 ## Mock EtherCAT
 
-`test/mock/`: `RmdxMockSlave` is an RMD-X drive as a CiA 402 slave (0x6040/0x6041 state machine, CSP and CST, the
-0x6072 torque cap, a one-joint dynamics model, injectable faults and lost frames); `Cia402DriveMaster` reproduces the
-`EcCiA402Drive` per-cycle logic of `ethercat_driver_ros2`; `MockEthercatSystem` is a `ros2_control` hardware interface
-over both. `test_arm_controller_mock` runs the real `ArmController` and `SafeCommandController` against it: enable,
-fault and reset, CSP/CST switching, the watchdog, torque clamps, rejected commands, the payload. The mock's assumptions
-about the drive are the `RmdxParams` fields marked "guess".
+The simulated drive and master (`include/wisco_ethercat_ros2_hw/mock/`, library `wisco_ethercat_ros2_hw_mock_drives`):
+`RmdxMockSlave` is an RMD-X drive as a CiA 402 slave (0x6040/0x6041 state machine, CSP, CSV, CST and MyActuator mode
+5 with kp / kd from 0x2000 / 0x2001, the 0x6072 torque cap, injectable faults and lost frames), with either its own
+one-joint model or a simulator's joint (`external_physics`: `measure()` before each bus cycle, `servo()` at every
+physics step); `Cia402DriveMaster` reproduces the `EcCiA402Drive` per-cycle logic of `ethercat_driver_ros2`. The
+mock's assumptions about the drive are the `RmdxParams` fields marked "guess".
+
+- Tests (`test/mock/`): `MockEthercatSystem` is a `ros2_control` hardware interface over both, on the toy joint.
+  `test_arm_controller_mock` runs the real `ArmController` and `SafeCommandController` against it: enable, fault and
+  reset, CSP/CST switching, the watchdog, torque clamps, rejected commands, the payload. `test_mock_slave` covers the
+  drive on its own.
+- Simulation: `hsim_mujoco_plugins`' `VirtualRobotSystem` puts a drive on every motor of the MuJoCo robot
+  (`backend:=ethercat_sim`).
+
+**Mode 5 and upstream `EcCiA402Drive`**: upstream overwrites 0x607A with the actual position whenever 0x6061 is not
+CSP, so a mode-5 drive behind it would only ever hold where it is (`UpstreamPositionOverrideFreezesModeFive` shows
+it). The mock master lets 0x607A through in mode 5 too (`mit_position_passthrough`); the robot's `EcCiA402Drive` needs
+the same exception before the legs can run mode 5.
 
 ## Safety
 
