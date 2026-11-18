@@ -11,10 +11,10 @@ import json
 from pathlib import Path
 import fcntl
 import signal
-import subprocess
 import queue
 import sys
 import time
+import webbrowser
 
 import numpy as np
 import yaml
@@ -183,7 +183,7 @@ def main():
         dashboard = Dashboard(store, cameras, config['port'], demo=args.demo)
         print(f'Episode dashboard: {dashboard.url}', flush=True)
         if not args.no_browser:
-            subprocess.Popen(['xdg-open', dashboard.url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            webbrowser.open(dashboard.url)              # xdg-open on Linux, open on macOS
         if not args.demo:
             sys.path.insert(0, str(setup.SDK/'scripts'))
             from Panthera_lib import Panthera

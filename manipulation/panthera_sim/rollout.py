@@ -744,7 +744,8 @@ def parse_args() -> argparse.Namespace:
         "--no-realtime", action="store_true",
         help="run as fast as possible instead of pacing control steps",
     )
-    parser.add_argument("--mujoco-gl", default="egl", choices=("egl", "glfw", "osmesa"))
+    parser.add_argument("--mujoco-gl", default="cgl" if sys.platform == "darwin" else "egl",
+                        choices=("egl", "cgl", "glfw", "osmesa"))
     args = parser.parse_args()
     if args.steps < 0 or (args.hz is not None and (not np.isfinite(args.hz) or args.hz <= 0)) or args.action_scale <= 0:
         parser.error("--steps must be nonnegative; --hz and --action-scale must be positive")
