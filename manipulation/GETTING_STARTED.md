@@ -49,10 +49,12 @@ teleop, a scripted demonstration generator (inverse kinematics through waypoints
 and pi0.5 training, and closed-loop evaluation, all for **stacking**. The first members turn that into the any-to-any
 pick-and-place task.
 
-**Day 1: set up and look around**
+**Day 1: set up and look around** (macOS or Linux; tested on an Apple-silicon Mac)
 ```bash
 cd manipulation/panthera_sim
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt     # the simulator and teleop
+uv venv --python 3.10 .venv-act && uv pip install --python .venv-act/bin/python -r requirements-train.txt
+                                                    # datasets and training (LeRobot); uv: brew install uv
 .venv/bin/python teleop/keyboard.py                 # drive the arm (w/a/s/d, space/shift, o/l gripper; e saves a take)
 .venv/bin/python teleop/replay.py data/episode_000  # replay what you recorded
 .venv/bin/python tools/collect_scripted.py --episodes 20 --workers 2 --output data/try_scripted   # scripted demos
@@ -72,8 +74,9 @@ Read `sim/stack_task.py` (how a stacking task is defined and judged) and `sim/pa
 **Make the dataset and hand it over**
 ```bash
 .venv/bin/python tools/validate_scripted_dataset.py --input data/<collection>
-.venv/bin/python tools/export_scripted_dataset.py --input data/<collection> --output outputs/lerobot/<name> --workers 4
-.venv/bin/python tools/publish_pi05_dataset.py --source outputs/lerobot/<name> --repo-id $HF_NAMESPACE/<name> --push
+.venv-act/bin/python tools/export_scripted_dataset.py --input data/<collection> --output outputs/lerobot/<name> --workers 4
+.venv-act/bin/hf auth login                         # once: a token with write access to the team's account
+.venv-act/bin/python tools/publish_pi05_dataset.py --source outputs/lerobot/<name> --repo-id $HF_NAMESPACE/<name> --push
 ```
 `HF_NAMESPACE` is the team's Hugging Face account, from the repo's `.env`. Then tell the lead the dataset name and the
 arm profile it matches (`manipulation/profiles/`; a new task gets a new profile: cameras, state and action sizes, rate,
@@ -88,12 +91,16 @@ by its handle while it compensates its own weight), optional Meta Quest teleoper
 a live dashboard to run it on the arms, and human-in-the-loop correction recording. It was all built on a gear-and-pin
 assembly task; DUPLO pick-and-place reuses every piece.
 
-**Before you touch the arms**: do Track A's day 1 first, then run the dashboard with no motors:
+**Before you touch the arms**: do Track A's day 1 first, then run the dashboard with simulated arms. That works on
+any laptop, without the arms' SDK:
 ```bash
 cd manipulation/panthera_teleop
-# one-time setup: README "1. Install the software" (SDK, Python environment in work/)
+uv venv --python 3.10 work/teleop-venv
+uv pip install --python work/teleop-venv/bin/python numpy pyyaml 'pin==4.1.0' -r requirements-recording.txt
 ./start.sh --demo --data-dir /tmp/panthera-demo        # simulated arms, real dashboard: http://127.0.0.1:8090
 ```
+The rig's own computer (Linux x86_64: the arms' SDK ships a Linux-only wheel) is set up once with the README's "1.
+Install the software" and "2. Configure your hardware".
 Work with someone who has run the rig before for your first live session. Support both arms before stopping anything.
 
 **Set up the DUPLO task on the table**

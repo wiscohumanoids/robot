@@ -79,7 +79,8 @@ def main() -> None:
     parser.add_argument("--trace", type=Path, help="save physical states for failure inspection and corrective demonstrations")
     parser.add_argument("--no-display", action="store_true")
     parser.add_argument("--no-realtime", action="store_true")
-    parser.add_argument("--mujoco-gl", default="egl", choices=("egl", "glfw", "osmesa"))
+    parser.add_argument("--mujoco-gl", default="cgl" if sys.platform == "darwin" else "egl",
+                        choices=("egl", "cgl", "glfw", "osmesa"))
     args = parser.parse_args()
     if args.steps < 0 or (args.hz is not None and args.hz <= 0) or (args.max_joint_step is not None and args.max_joint_step <= 0):
         parser.error("--steps must be nonnegative; --hz and --max-joint-step must be positive")
