@@ -1,0 +1,7 @@
+# Python 3.10+. The sim pins match ../panthera_sim/requirements.txt (NumPy 1.x, OpenCV < 4.12).
+mujoco
+numpy<2
+opencv-contrib-python<4.12      # contrib: the ChArUco board for the rig's calibration tools
+pyyaml
+anthropic                       # the planner (llm/claude.py)
+pytest

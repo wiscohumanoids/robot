@@ -1,0 +1,84 @@
+# The real rig: one Panthera arm driven by the agent (the other stays still), its wrist camera and the centre camera.
+# Everything marked R0 is measured during calibration (README, "Then the real Panthera"); robots/real_robot.py refuses
+# to start until the calibration files exist. Lengths in metres, angles in degrees.
+
+arm: left                             # which arm the agent drives: left | right (arm-mapping.json in panthera_teleop)
+
+overhead_orientation: "R0: say how the centre camera's image is oriented, e.g. up is +x (away from the robot) and left is +y"
+
+cameras:                              # devices are the USB paths in ../panthera_teleop/config/recording.json
+  overhead:
+    device_key: overhead
+    width: 1280                       # the perception step uses the full image; ELP: up to 1920 x 1080 MJPEG at 30 fps
+    height: 720
+    calibration: config/calibration/overhead.json      # written by tools/calibrate_intrinsics.py + calibrate_extrinsics.py
+  wrist:
+    device_key: wrist_port2           # R0: which wrist camera is on the driven arm (recording.json leaves it unverified)
+    width: 1280
+    height: 720
+    calibration: config/calibration/wrist_left.json
+
+table:                                # R0: tools/table_plane.py (z) and the reachable rectangle on it
+  z: 0.0
+  x: [0.20, 0.55]
+  y: [-0.25, 0.25]
+
+objects:
+  duplo_2x2:
+    words: [duplo, brick, block, square]
+    height: 0.0192                    # body without studs
+    footprint: [0.0318, 0.0318]
+    symmetry: 90
+  duplo_2x4:
+    words: [long, rectangle, rectangular]
+    height: 0.0192
+    footprint: [0.0636, 0.0318]
+    symmetry: 180
+
+gripper:                              # R0: read the gripper motor at both ends and measure the jaw gap at "open"
+  closed_rad: 0.0
+  open_rad: 1.0
+  open_width: 0.08
+  speed_rad_s: 0.8                    # recording.json neutral_return.gripper_open
+  torque_limit_nm: 0.5
+
+grasp:
+  pitch: 55
+  tcp_offset: 0.010
+  pregrasp_height: 0.08
+  travel_height: 0.10
+  min_width: 0.008
+  lower_pregrasp: [0.05, 0.035]
+  clearance: 0.010
+  gripper_boxes:                      # R0: measure the open gripper (TCP frame, as in sim.yaml); these are the sim's
+    - [-0.095, 0.000,  0.039,  0.075, -0.015, 0.015]
+    - [-0.095, 0.000, -0.075, -0.039, -0.015, 0.015]
+    - [-0.165, -0.085, -0.080,  0.080, -0.020, 0.021]
+    - [-0.215, -0.160, -0.025,  0.025, -0.035, 0.040]
+  close_s: 0.8
+
+place:
+  gap: 0.004
+
+refine:
+  max_iterations: 3
+  tolerance: 0.002
+  max_correction: 0.04
+  size_tolerance: 0.15
+
+find:
+  size_tolerance: 0.35
+
+motion:
+  speed: 0.05                         # slow while it is new
+  control_hz: 30
+  max_tracking_error: 0.012
+  max_joint_speed_rad_s: 0.6          # recording.json neutral_return
+  torque_limits_nm: [5, 8, 8, 3, 2, 2]
+  settle_timeout_s: 3.0
+
+safety:                               # every commanded TCP must lie in this box (base frame), or the move is refused
+  x: [0.15, 0.60]
+  y: [-0.30, 0.30]
+  z_floor: 0.005                      # above the table plane
+  z_max: 0.40

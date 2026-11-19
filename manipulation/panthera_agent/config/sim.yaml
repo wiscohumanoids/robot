@@ -1,0 +1,60 @@
+# The sim (../panthera_sim): one Panthera arm, a table and 45 mm cubes. Lengths in metres, angles in degrees.
+
+scene: scene.xml                      # in ../panthera_sim/sim/panthera/ (scene_two_blocks.xml: red and green only)
+
+cameras:                              # MuJoCo cameras in the scene, rendered at these sizes
+  overhead: {width: 960, height: 720} # straight down from 0.85 m over the table (the rig's centre camera)
+  wrist: {width: 640, height: 480}    # on link6, looking at the jaws (the rig's wrist cameras)
+
+overhead_orientation: up is +x (away from the robot) and left is +y     # told to the LLM
+
+table:
+  z: 0.05                             # table top
+  x: [0.18, 0.62]                     # extent in the robot's base frame (also the grid drawn for the LLM)
+  y: [-0.32, 0.32]
+
+objects:                              # what `find` can measure: the top face sits at table_z + height
+  cube:                               # the sim's cubes
+    words: [cube, block, brick, box]
+    height: 0.045
+    footprint: [0.045, 0.045]         # long, short
+    symmetry: 90                      # yaw repeats every 90 degrees
+  # duplo_2x2:                        # for a DUPLO scene: body height 19.2 mm (without studs), 31.8 mm square
+  #   words: [duplo, brick]
+  #   height: 0.0192
+  #   footprint: [0.0318, 0.0318]
+  #   symmetry: 90
+
+grasp:
+  pitch: 55                           # approach tipped 55 deg below horizontal (the scripted collector's)
+  tcp_offset: 0.018                   # grasp point: the object's centre + this along the approach axis
+  pregrasp_height: 0.08               # above the grasp point (the arm's pitched approach loses reach above ~0.15 m)
+  travel_height: 0.10                 # above the table, minimum for moves across it (clears the other blocks)
+  min_width: 0.010                    # jaws closer than this after closing: nothing in them
+  lower_pregrasp: [0.05, 0.035]       # tried in turn when the pre-grasp / pre-place is out of reach (tall stacks)
+  clearance: 0.008                    # other objects must stay this far from the gripper's boxes (below)
+  gripper_boxes:                      # the open gripper's collision geometry, boxes in the TCP frame (x along the
+                                      # approach, y along the jaws' closing axis): [x0, x1, y0, y1, z0, z1], metres
+    - [-0.095, 0.000,  0.039,  0.075, -0.015, 0.015]   # left finger (pad and bulk, open)
+    - [-0.095, 0.000, -0.075, -0.039, -0.015, 0.015]   # right finger
+    - [-0.165, -0.085, -0.080,  0.080, -0.020, 0.021]   # gripper housing (link6)
+    - [-0.215, -0.160, -0.025,  0.025, -0.035, 0.040]   # wrist (link5)
+  close_s: 0.5                        # time to close / open
+
+place:
+  gap: 0.010                          # released with the held object's bottom this far above the support
+
+refine:                               # wrist-camera correction at the pre-grasp / pre-place pose
+  max_iterations: 3
+  tolerance: 0.002                    # stop when a correction is smaller than this
+  max_correction: 0.05                # a bigger jump means the wrist saw something else: keep the old estimate
+  size_tolerance: 0.15                # a wrist measurement is used only within 15 % of the expected size (a held
+                                      # block or the jaws hiding part of the target shrink it)
+
+find:
+  size_tolerance: 0.35                # flagged as partly hidden or merged beyond 35 % of the expected size
+
+motion:
+  speed: 0.12                         # m/s along straight lines
+  control_hz: 30
+  max_tracking_error: 0.012           # a move ending further than this from its target failed
