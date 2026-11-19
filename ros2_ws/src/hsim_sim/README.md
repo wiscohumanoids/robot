@@ -92,19 +92,21 @@ the robot computer's `ParallelLinkageController` file and the rod geometry; the 
 `update_rate:=` is the bus rate: a whole number of the model's 5 ms physics steps, or faster, which shortens the
 physics step to the bus cycle.
 
-**What it found.** In the test room at 0.5 m/s commanded, after the first 3 s (all at real time):
+**What it found.** In the test room at 0.5 m/s commanded, after the first 3 s (all at real time), and after
+commands stop (`drive_check`):
 
-| Path | Speed | Lowest pelvis |
-|---|---|---|
-| ros2_control backend (MuJoCo's PD) | 0.55 m/s | 0.67 m |
-| ethercat_sim, a drive on every joint (no linkage) | 0.54 m/s | 0.67 m |
-| ethercat_sim, `parallel_joints` in `pd_in_drive` (the robot's configuration) | 0.38 m/s | 0.68 m |
-| the same, linkage motors strong enough never to saturate | 0.33 m/s | fell |
-| ethercat_sim, `parallel_joints` in `torque` (joint-space PD on the host) | 0.54 m/s | 0.67 m |
+| Path | Speed | Lowest pelvis | After the stop |
+|---|---|---|---|
+| ros2_control backend (MuJoCo's PD) | 0.55 m/s | 0.67 m | stands |
+| ethercat_sim, a drive on every joint (no linkage) | 0.54 m/s | 0.67 m | |
+| ethercat_sim, `parallel_joints` in `pd_in_drive` (the robot computer's file) | 0.38 m/s | 0.68 m | steps in place, sidesteps, falls at ~2 s |
+| the same, linkage motors strong enough never to saturate | 0.33 m/s | fell | |
+| ethercat_sim, `parallel_joints` in `torque` (joint-space PD on the host; what the profile runs) | 0.54 m/s | 0.67 m | stands |
 
 So the bus delay, the drives' PD and the scaling cost nothing, and the ankle's mode-5 gains do. A per-motor PD can only
 apply the diagonal of the motor-space stiffness `J⁻ᵀKJ⁻¹`, and at the ankle the coupling is about 70 % of the
 diagonal (about [[38, 27], [27, 38]] Nm/rad for the trained 35 / 35): the ankle ends up about 124 Nm/rad stiff in
 pitch and 20 in roll. No choice of per-motor gains fixes that, since the ratio is set by the rod geometry. The waist's
-coupling is small (about 7 %).
+coupling is small (about 7 %). The profile therefore sets `ethercat_sim.command_mode: torque`; delete it to simulate
+the file's `pd_in_drive`. Which mode the robot computer runs is open (wisco_ethercat_ros2_hw README, "Parallel joints").
 

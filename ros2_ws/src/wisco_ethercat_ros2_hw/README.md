@@ -154,7 +154,9 @@ leg controller ──joint references──► ParallelLinkageController ──m
   sends motor torques. **At the ankles the diagonal is not enough:** the coupling is about 70 % of the diagonal, so
   with the trained 35 / 35 Nm/rad the ankle becomes about 124 Nm/rad in pitch and 20 in roll (the rod geometry fixes
   the ratio; no per-motor gains fix it). On simulated drives (`backend:=ethercat_sim`) the robot walks at 0.38 m/s
-  instead of 0.55 for 0.5 commanded in `pd_in_drive`, and at 0.54 in `torque` mode. The waist's coupling is about
+  instead of 0.55 for 0.5 commanded in `pd_in_drive`, and falls about 2 s after it stops; in `torque` mode it walks
+  at 0.54 and stops cleanly (so the simulated robot runs `torque`: `ethercat_sim.command_mode` in hsim_bringup's
+  `config/robots/wisco.yaml`; this file keeps `pd_in_drive` until the choice is made). The waist's coupling is about
   7 % and harmless. Options for the ankles: `torque` mode (needs a steady bus at a high enough rate), or mode 5 with
   the coupling sent as torque feedforward each cycle (not implemented).
 - **Safety**: references are clamped to the joint limits. A motor reading the rods cannot produce, or one that only

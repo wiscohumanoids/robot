@@ -92,6 +92,15 @@ def test_mechanism_motors_and_chain(scene, tmp_path, ethercat):
     assert files['controllers_to_spawn'][:2] == ['parallel_joints', 'leg_targets']
 
 
+def test_profile_command_mode_replaces_the_files(scene, tmp_path, ethercat):
+    """The profile's command_mode wins over the controller file's; without one the file's stands."""
+    def mode(**extra):
+        files = ecs.build(scene, str(tmp_path / 'out'), ethercat={**ethercat, **extra})
+        return yaml.safe_load(open(files['controllers']))['parallel_joints']['ros__parameters']['command_mode']
+    assert mode() == 'pd_in_drive'
+    assert mode(command_mode='torque') == 'torque'
+
+
 def test_bus_cycle_against_physics_step(scene, tmp_path):
     """A bus cycle of whole physics steps keeps the model's step, a shorter one becomes the step, others fail."""
     m = mujoco.MjModel.from_xml_string(SCENE)               # 5 ms physics step

@@ -25,7 +25,9 @@ world_ros2_control/world.xml). The robot profile's `ethercat_sim` section names 
 
 The same JointTargetController / ParallelLinkageController configuration runs on the RK3588
 (wisco_ethercat_ros2_hw/config/wisco_joint_targets.yaml, wisco_parallel_joints.yaml); here the gains come from the
-simulated model and the timeout holds rather than damps, as on the ros2_control backend.
+simulated model and the timeout holds rather than damps, as on the ros2_control backend. The profile's
+`ethercat_sim.command_mode`, if set, replaces the file's ParallelLinkageController command mode (Wisco runs `torque`:
+the file's `pd_in_drive` loses the ankles' gain coupling, and the robot falls about 2 s after it stops walking).
 """
 
 import argparse
@@ -157,6 +159,8 @@ def controllers(model, joints, mechs, update_rate, ethercat=None, imu_frame='imu
     if mechs:
         cfg = yaml.safe_load(open(ethercat['parallel_joints']))['parallel_joints']['ros__parameters']
         cfg['linkage_file'] = ethercat['linkage_file']
+        if ethercat.get('command_mode'):                    # the profile's choice over the robot computer's file
+            cfg['command_mode'] = ethercat['command_mode']
         for m in mechs:
             kp, kd = zip(*(gains(model, act[j]) for j in m['joints']))
             cfg[m['name']].update(kp=list(kp), kd=list(kd))

@@ -27,3 +27,7 @@ ethercat_sim:
   parallel_joints: /hsim/ros2_ws/src/wisco_ethercat_ros2_hw/config/wisco_parallel_joints.yaml
   linkage_file: /hsim/robots/wisco_v1/linkage.json
   linkage_motor_peak_nm: {left_ankle: 34.0, right_ankle: 34.0, waist: 60.0}   # X4-36, X6-60 (actuator_models.yaml)
+  # Replaces the file's pd_in_drive: mode 5's per-motor gains lose the ankles' coupling (roll ~20 vs 35 Nm/rad
+  # trained), and the robot falls ~2 s after it stops walking. Torque mode is exact. Which one the robot computer runs
+  # is still open (wisco_ethercat_ros2_hw README, "Parallel joints"); delete this line to simulate pd_in_drive.
+  command_mode: torque
