@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   # Fast, no ROS. Docs-only changes run just the docs checks. Other non-runtime changes
   # (training, manipulation, services, hardware, non-docker infra, tests) run the full
@@ -12,68 +16,52 @@ jobs:
   static:
     runs-on: ubuntu-latest
     outputs:
-      docs_only: ${{ steps.changes.outputs.docs_only }}
-      ros_needed: ${{ steps.changes.outputs.ros_needed }}
+      docs_only: ${{ steps.changes.outputs.non_docs == 'false' }}
+      ros_needed: ${{ steps.changes.outputs.ros }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Classify changed files
         id: changes
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          set -euo pipefail
-          if [ -z "${BASE_SHA:-}" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            echo "ros_needed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          changed="$RUNNER_TEMP/changed-files.txt"
-          if ! git diff --name-only "$BASE_SHA"..HEAD > "$changed"; then
-            echo "docs_only=false" >> "$GITHUB_OUTPUT"
-            echo "ros_needed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          docs_only=true
-          ros_needed=false
-          while IFS= read -r file; do
-            if [ -z "$file" ]; then
-              continue
-            fi
-            case "$file" in
-              *.md|docs/*) ;;
-              *) docs_only=false ;;
-            esac
-            case "$file" in
-              *.md|docs/*|training/*|manipulation/*|services/*|hardware/*|tests/*|conftest.py|LICENSE|.gitignore|.gitattributes|.env.example) ;;
-              infra/docker/*) ros_needed=true ;;
-              infra/*) ;;
-              *) ros_needed=true ;;
-            esac
-          done < "$changed"
-          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "ros_needed=$ros_needed" >> "$GITHUB_OUTPUT"
-          echo "docs_only=$docs_only ros_needed=$ros_needed"
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          # some-with-excludes makes the negated patterns actually exclude files.
+          predicate-quantifier: some-with-excludes
+          filters: |
+            # Any changed file that is not Markdown or under docs/.
+            non_docs:
+              - '**'
+              - '!**/*.md'
+              - '!docs/**'
+            # Any changed file that can affect the ROS build or smoke tests.
+            ros:
+              - 'ros2_ws/**'
+              - 'assets/**'
+              - 'models/**'
+              - 'robots/**'
+              - 'tools/**'
+              - 'infra/docker/**'
+              - '.github/workflows/**'
+              - '!**/*.md'
+              - '!docs/**'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install docs-only test deps
-        if: steps.changes.outputs.docs_only == 'true'
+        if: steps.changes.outputs.non_docs == 'false'
         run: pip install pytest pyyaml
       - name: Docs checks
-        if: steps.changes.outputs.docs_only == 'true'
+        if: steps.changes.outputs.non_docs == 'false'
         run: python -m pytest -q tests/test_docs.py
       # Pinocchio 3+ (the arm toolkit's API) is only on pip with NumPy 2, so this job runs NumPy 2; the ros job below
       # covers the ROS image's NumPy 1.26. mcap, fastapi, httpx and uvicorn let the logging and perception-link tests run.
       - name: Install full test deps
-        if: steps.changes.outputs.docs_only != 'true'
+        if: steps.changes.outputs.non_docs != 'false'
         run: pip install pytest pyyaml opencv-python-headless "pin>=3" scipy "mujoco==3.11.0" pyarrow mcap fastapi httpx uvicorn
       - name: Generated docs are up to date
-        if: steps.changes.outputs.docs_only != 'true'
+        if: steps.changes.outputs.non_docs != 'false'
         run: python tools/gen_docs.py --check
       - name: Contract, consistency and unit tests
-        if: steps.changes.outputs.docs_only != 'true'
+        if: steps.changes.outputs.non_docs != 'false'
         run: python -m pytest -q tests ros2_ws/src/*/test training/sim2real manipulation/finetune
 
   # Real ROS 2 Jazzy in the same container the stack is developed in (infra/docker): build the
