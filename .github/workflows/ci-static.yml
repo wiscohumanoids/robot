@@ -1,0 +1,31 @@
+name: ci-static
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Pinocchio 3+ (the arm toolkit's API) is only on pip with NumPy 2, so this job runs NumPy 2.
+      # mcap, fastapi, httpx and uvicorn let the logging and perception-link tests run.
+      - run: pip install pytest pyyaml opencv-python-headless "pin>=3" scipy "mujoco==3.11.0" pyarrow mcap fastapi httpx uvicorn
+      - name: Generated docs are up to date
+        run: python tools/gen_docs.py --check
+      - name: Contract, consistency and unit tests
+        run: python -m pytest -q tests ros2_ws/src/*/test training/sim2real manipulation/finetune
