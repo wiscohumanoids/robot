@@ -91,18 +91,21 @@ def resolve_board(mapping, sys_tty=Path('/sys/class/tty'),
     return device
 
 
-def prepare():
-    """Resolve both arms' devices and write their runtime configs."""
+def prepare(sides=('left', 'right'), output_dir=None, motor_timeout_ms=None):
+    """Resolve the requested arms and write SDK configs for their current serial ports."""
+    output_dir = CONFIG if output_dir is None else Path(output_dir)
     mappings = json.loads((CONFIG/'arm-mapping.json').read_text())
     configs = {}
     devices = {}
-    for side in ('left', 'right'):
+    for side in sides:
         device = resolve_board(mappings[side])
         devices[side] = str(device)
         motor = yaml.safe_load((SDK/'robot_param/motor_param/6dof_Panthera_params_follower.yaml').read_text())
         motor['robot']['Serial_Type'] = str(device)
         motor['robot']['CANboard']['No_1_CANboard']['CANport']['CANport_1']['serial_id'] = 1
-        motor_path = CONFIG/f'{side}-motors.yaml'
+        if motor_timeout_ms is not None:
+            motor['robot']['motor_timeout_ms'] = motor_timeout_ms
+        motor_path = output_dir/f'{side}-motors.yaml'
         motor_path.write_text(yaml.safe_dump(motor, sort_keys=False))
         config = yaml.safe_load((SDK/'robot_param/Follower.yaml').read_text())
         config['robot'].update(name=side, robot_name=side, param_file=str(motor_path))
@@ -110,10 +113,10 @@ def prepare():
         config['urdf']['file_path'] = str(model_path)
         model = pin.buildModelFromUrdf(str(model_path))
         assert model.nq == 6 and model.existFrame(config['urdf']['end_effector_link'])
-        configs[side] = CONFIG/f'{side}.yaml'
+        configs[side] = output_dir/f'{side}.yaml'
         configs[side].write_text(yaml.safe_dump(config, sort_keys=False))
         print(f'{side.title()} controller -> USB {mappings[side]["usb_path"]} -> {device}', flush=True)
-    if len(set(devices.values())) != 2:
+    if len(set(devices.values())) != len(sides):
         raise RuntimeError('Left and right must address different robot devices')
     return configs
 

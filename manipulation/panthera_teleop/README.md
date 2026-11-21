@@ -68,6 +68,23 @@ The dashboard opens at http://127.0.0.1:8090. Guide the arms by their physical h
 
 For optional Quest controller operation, also clone [Quest_controller_stream](https://github.com/HighTorque-Robotics/Quest_controller_stream) into `work/Quest_controller_stream`, install its Python/UI dependencies into the same environment, and install Android `adb`. Follow [the Quest guide](docs/quest-quick-start.md); the preserved passthrough changes are in `archive/setup/quest-passthrough.patch`. Physical handle mode uses the Panthera SDK without a headset or Quest bridge.
 
+## Stack two Mega Bloks with IK
+
+Run `./scripts/start-stack-dashboard.sh` from this folder to open the offline interface at [127.0.0.1:8093](http://127.0.0.1:8093). Starting without a config leaves hardware access disabled.
+
+For a physical stack, use one Panthera arm, its wrist camera, the overhead camera and two upright 2×1 Mega Bloks on a clear, level bench. Copy the [automatic calibration template](config/calibration/stack.example.json) to `config/calibration/stack.json`. Fill in the wrist camera assignment, table height and gripper travel, and check the lens fields of view against your camera specifications. The dashboard estimates both camera poses from live images and arm encoders. The [bench guide](docs/stack-calibration.md) covers the expected mount layout, collecting calibration views and using an existing fixed calibration.
+
+From this folder, install MuJoCo in the SDK environment for IK. Set up the separate [DINO environment and detector checkpoints](../panthera_sim/perception/README.md) for vision. The dashboard uses `../panthera_sim/.venv-dino/bin/python` by default. Pass `--vision-python PATH` to select another interpreter.
+
+```bash
+uv pip install --python work/teleop-venv/bin/python 'mujoco==3.11.0'
+./scripts/start-stack-dashboard.sh --config config/calibration/stack.json
+```
+
+Open [the dashboard](http://127.0.0.1:8093). Set the selected arm at a survey pose that stays still under its own weight or with passive support clear of the travel path. **Connect** opens the cameras and initializes the motor controller. In automatic mode, use **Capture pose** at different stationary arm poses, then choose **Finish calibration** at the pose you will use to view the blocks. The dashboard starts sending position targets only after **Run stack**. In the frozen overhead image, click the block to lift and then its base. Choose **Preview plan** to see the planned tool path on the overhead image and the block centers in arm-base coordinates. Check the selection and clear the travel path, then choose **Run stack**. The dashboard measures both blocks again before the first command. During transfer it tracks the joint and gripper encoders. Inspect the seated block after retreat.
+
+Keep the dashboard open during motion and the hold that follows retreat. Support the arm, choose **Stop motion**, then disconnect. A control fault or a lost browser heartbeat also sends the SDK motor-stop command, after which the arm can settle under its own weight.
+
 ## Recording and control
 
 Run `./start.sh` from this workspace. It checks all three cameras and both arm configurations, enables independent gravity assistance, and opens http://127.0.0.1:8090. Grippers are passive during demonstrations and open to 60% during each reset. There is no starting-pose or exit trajectory. Episode decisions return both arms to a raised neutral pose. The session started by Codex runs as the user service `panthera-gravity-assist`; inspect it with `systemctl --user status panthera-gravity-assist` and support both arms before running `./scripts/stop-gravity-assist.sh` to stop it. A running session must be stopped before launching another.

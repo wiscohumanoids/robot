@@ -79,31 +79,10 @@ class PantheraSim:
         self.model = mujoco.MjModel.from_xml_path(str(scene))
         self.model.opt.impratio = 100 if dynamics == CONTACT_DYNAMICS else 10
         self.data = mujoco.MjData(self.model)
-        self.ee_site = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_SITE, ee_site)
-        if self.ee_site < 0:
-            raise SystemExit(f"no site named {ee_site!r} in {scene}")
-
-        self.arm_qadr = np.array([
-            self.model.jnt_qposadr[
-                mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, j)]
-            for j in ARM_JOINTS])
-        self.arm_dofadr = np.array([
-            self.model.jnt_dofadr[
-                mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, j)]
-            for j in ARM_JOINTS])
-        self.arm_range = np.array([
-            self.model.jnt_range[
-                mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, j)]
-            for j in ARM_JOINTS])
-        self.finger_qadr = np.array([
-            self.model.jnt_qposadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)]
-            for name in ("L_finger_joint", "R_finger_joint")])
-        self.finger_dofadr = np.array([
-            self.model.jnt_dofadr[mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)]
-            for name in ("L_finger_joint", "R_finger_joint")])
-        self.grip_act = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, "gripper")
+        self._left_site_name = ee_site
+        self.available_arms = ("left", "right") if self._id(
+            mujoco.mjtObj.mjOBJ_SITE, "right_grip_site") >= 0 else ("left",)
+        self.active_arm = None
 
         # Free bodies in the scene -- the cubes on the table. Found by joint
         # type rather than by name so any scene works, and kept in model order
@@ -117,21 +96,12 @@ class PantheraSim:
         self.object_names = [
             mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, b)
             for b in self.object_bodies]
-        self._link6 = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_BODY, "link6")
-        self._pad_L = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_GEOM, "L_finger_pad")
-        self._pad_R = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_GEOM, "R_finger_pad")
         self._cube_geoms = {}
-        self._grasp_eq = []
         for name in self.object_names:
             gid = mujoco.mj_name2id(
                 self.model, mujoco.mjtObj.mjOBJ_GEOM, name)
             if gid >= 0:
                 self._cube_geoms[gid] = name
-            self._grasp_eq.append(mujoco.mj_name2id(
-                self.model, mujoco.mjtObj.mjOBJ_EQUALITY, f"pad_grasp_{name}"))
         # Scratch state for IK. Allocated once: MjData is expensive to create
         # and the solver is called every control tick.
         self._ik_data = mujoco.MjData(self.model)
@@ -139,12 +109,74 @@ class PantheraSim:
         self._jacr = np.zeros((3, self.model.nv))
         self._grasp_contact_time = np.zeros(len(self.object_names))
         self._grasp_flags = np.zeros(len(self.object_names), dtype=bool)
+        self.select_arm("left")
         self.reset()
-        # Posture the nullspace bias pulls toward. The home keyframe rather
-        # than the midpoint of each range: joints 2 and 3 are one-sided, so
-        # their midpoints are a folded-up pose, and home is a known-good,
-        # well-conditioned configuration away from every limit.
-        self._q_nominal = self.q
+
+    def _id(self, kind, name: str) -> int:
+        return mujoco.mj_name2id(self.model, kind, name)
+
+    def select_arm(self, arm: str) -> None:
+        """Choose which arm IK, commands and observations use.
+
+        Select before commanding motion. Both arms start at home after reset.
+        Selecting an arm leaves physics state and actuator targets intact.
+        """
+        if arm not in self.available_arms:
+            raise ValueError(f"Arm {arm!r} unavailable in {self.scene_path}")
+        if arm == self.active_arm:
+            return
+
+        prefix = "right_" if arm == "right" else ""
+        site_name = "right_grip_site" if arm == "right" else self._left_site_name
+        site = self._id(mujoco.mjtObj.mjOBJ_SITE, site_name)
+        if site < 0:
+            raise SystemExit(f"no site named {site_name!r} in {self.scene_path}")
+        joint_kind = mujoco.mjtObj.mjOBJ_JOINT
+        actuator_kind = mujoco.mjtObj.mjOBJ_ACTUATOR
+        names = [prefix + name for name in ARM_JOINTS]
+        joints = [self._id(joint_kind, name) for name in names]
+        fingers = [self._id(joint_kind, prefix + name)
+                   for name in ("L_finger_joint", "R_finger_joint")]
+        arm_act = [self._id(actuator_kind, name) for name in names]
+        grip_act = self._id(actuator_kind, prefix + "gripper")
+        if min(*joints, *fingers, *arm_act, grip_act) < 0:
+            raise ValueError(f"Incomplete {arm} arm in {self.scene_path}")
+
+        self.ee_site = site
+        self.arm_qadr = self.model.jnt_qposadr[joints]
+        self.arm_dofadr = self.model.jnt_dofadr[joints]
+        self.arm_range = self.model.jnt_range[joints]
+        self.arm_act = np.array(arm_act)
+        self.finger_qadr = self.model.jnt_qposadr[fingers]
+        self.finger_dofadr = self.model.jnt_dofadr[fingers]
+        self.grip_act = grip_act
+        self._link6 = self._id(mujoco.mjtObj.mjOBJ_BODY, prefix + "link6")
+        self._pad_L = self._id(mujoco.mjtObj.mjOBJ_GEOM, prefix + "L_finger_pad")
+        self._pad_R = self._id(mujoco.mjtObj.mjOBJ_GEOM, prefix + "R_finger_pad")
+        self._grasp_eq = [
+            self._id(mujoco.mjtObj.mjOBJ_EQUALITY, prefix + f"pad_grasp_{name}")
+            for name in self.object_names
+        ]
+
+        site_bodies = set()
+        body = int(self.model.site_bodyid[self.ee_site])
+        while body:
+            site_bodies.add(body)
+            body = int(self.model.body_parentid[body])
+        joint_qpos_ends = np.append(self.model.jnt_qposadr[1:], self.model.nq)
+        site_qadr = [
+            adr
+            for joint, start in enumerate(self.model.jnt_qposadr)
+            if self.model.jnt_bodyid[joint] in site_bodies
+            for adr in range(start, joint_qpos_ends[joint])
+        ]
+        self._ik_site_qadr = np.setdiff1d(np.array(site_qadr, dtype=int), self.arm_qadr)
+        # Home is a better nominal posture than the joint range midpoints,
+        # which fold up the arm at the one-sided shoulder and elbow joints.
+        home = self.model.key_qpos[0] if self.model.nkey else self.model.qpos0
+        self._q_nominal = home[self.arm_qadr]
+        self.active_arm = arm
+        self.sync_control_state()
 
     # ---------- state ----------
     def reset(self, *, randomize: bool = True, rng=None) -> None:
@@ -288,7 +320,8 @@ class PantheraSim:
            q_init: np.ndarray | None = None) -> tuple[np.ndarray, float, float]:
         """Solve for arm joints reaching the target. Returns (q, pos_err, rot_err).
 
-        Runs on a scratch copy so a failed solve never disturbs the live sim.
+        Runs in scratch state initialized from the site's kinematic chain
+        and the arm seed, so a failed solve never disturbs the live sim.
         `rot_weight` below 1 tells the solver to give up orientation before
         position when it cannot have both -- for teleoperated grasping, being in
         the right place matters more than being at exactly the right angle.
@@ -326,9 +359,8 @@ class PantheraSim:
         disable (the self-test does, to measure raw convergence).
         """
         d = self._ik_data
-        d.qpos[:] = self.data.qpos
-        if q_init is not None:
-            d.qpos[self.arm_qadr] = q_init
+        d.qpos[self._ik_site_qadr] = self.data.qpos[self._ik_site_qadr]
+        d.qpos[self.arm_qadr] = self.q if q_init is None else q_init
         q_start = d.qpos[self.arm_qadr].copy()
         mujoco.mj_kinematics(self.model, d)
         mujoco.mj_comPos(self.model, d)
@@ -423,13 +455,13 @@ class PantheraSim:
         immediate is for initialization after explicitly restoring qpos.
         Outside step(), data.ctrl holds the endpoint for action logging.
         """
-        self.data.ctrl[:6] = np.clip(q, self.arm_range[:, 0], self.arm_range[:, 1])
+        self.data.ctrl[self.arm_act] = np.clip(q, self.arm_range[:, 0], self.arm_range[:, 1])
         if immediate:
-            self._applied_arm_ctrl = self.data.ctrl[:6].copy()
+            self._applied_arm_ctrl = self.data.ctrl[self.arm_act].copy()
 
     def sync_control_state(self) -> None:
         """Call after restoring qpos/ctrl from a recording or reset snapshot."""
-        self._applied_arm_ctrl = self.data.ctrl[:6].copy()
+        self._applied_arm_ctrl = self.data.ctrl[self.arm_act].copy()
         self._grasp_contact_time[:] = 0
         self._grasp_flags[:] = False
 
@@ -539,14 +571,14 @@ class PantheraSim:
         if not n:
             return  # Preserve pending targets and the last applied command.
         n = int(n)
-        target = self.data.ctrl[:6].copy()
+        target = self.data.ctrl[self.arm_act].copy()
         start = self._applied_arm_ctrl.copy()
         physical = self.dynamics == CONTACT_DYNAMICS
         if physical:
             self._release_grasps()
         for j in range(1, n + 1):
             if physical:
-                self.data.ctrl[:6] = start + (target - start) * (j / n)
+                self.data.ctrl[self.arm_act] = start + (target - start) * (j / n)
             else:
                 self._update_grasp()
             mujoco.mj_step(self.model, self.data)
@@ -554,7 +586,7 @@ class PantheraSim:
                 loaded = np.all(self.pad_normal_forces() > .01, axis=1)
                 self._grasp_contact_time = np.where(loaded, self._grasp_contact_time + self.dt, 0.)
                 self._grasp_flags = self._grasp_contact_time >= .020 - 1e-12
-        self.data.ctrl[:6] = target
+        self.data.ctrl[self.arm_act] = target
         self._applied_arm_ctrl = target
 
     @property

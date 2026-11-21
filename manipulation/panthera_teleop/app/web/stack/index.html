@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panthera · Block stacking</title>
+<style>
+:root {
+  color-scheme: dark;
+  font: 15px/1.5 Inter, system-ui, sans-serif;
+  background: #10151a;
+  color: #edf2f4;
+  --muted: #a4b0b8;
+  --line: #34404a;
+  --panel: #1a2129;
+  --source: #85dfc2;
+  --base: #fac574;
+}
+* {box-sizing: border-box}
+body {margin: 0}
+main {max-width: 1420px; margin: auto; padding: 20px clamp(14px,3.5vw,54px) 40px}
+header, .row, .connection, .camera-title {display: flex; align-items: center; gap: 12px}
+header {justify-content: space-between; margin-bottom: 22px}
+h1, h2, h3, p {margin: 0}
+h1 {font-size: clamp(1.55rem,3vw,2.25rem); letter-spacing: -.045em; line-height: 1.15}
+h2 {font-size: 1.1rem; letter-spacing: -.02em}
+h3 {font-size: .86rem}
+.brand {font-size: .74rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--source); margin-bottom: 5px}
+.panel, .connection {background: var(--panel); border: 1px solid var(--line); border-radius: 12px}
+.connection {flex-wrap: wrap; padding: 12px 17px; margin-bottom: 16px}
+.connection label {font-weight: 600}
+.link-state {display: inline-flex; align-items: center; gap: 8px; color: var(--muted); margin-left: auto; font-size: .89rem}
+.link-state::before {content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor}
+.link-state.online {color: var(--source)}
+button, select {font: inherit; color: inherit; min-height: 44px; border-radius: 7px; padding: 8px 14px; border: 1px solid #576570; background: #293540}
+button {font-weight: 600; cursor: pointer}
+button:hover:enabled, select:hover:enabled {filter: brightness(1.15)}
+button:disabled, select:disabled {color: #8b979f; border-color: #3a454d; background: #242c33; cursor: default}
+button:focus-visible, select:focus-visible, [tabindex]:focus-visible {outline: 3px solid #a7ceff; outline-offset: 3px}
+.stop {background: #942f3d; border-color: #ef777f; color: white; display: inline-flex; gap: 9px; align-items: center}
+.stop::before {content: ""; width: .7rem; height: .7rem; background: currentColor; border-radius: 2px}
+.workspace {display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(290px, 1fr); gap: 16px; align-items: start}
+.panel {overflow: hidden}
+.camera-title {padding: 13px 17px; justify-content: space-between}
+.camera-title small, .hint, .feed-note, .position {color: var(--muted); font-size: .85rem}
+.feed {position: relative; background: #0d1217; display: grid; place-items: center; overflow: hidden}
+.feed img {width: 100%; height: auto; display: block}
+.feed img[hidden], [hidden] {display: none !important}
+.feed-note {aspect-ratio: 4 / 3; width: 100%; display: grid; place-content: center; padding: 18px; text-align: center}
+#overhead.selectable {cursor: crosshair}
+#overhead:focus-visible {outline-offset: -4px}
+#plan-overlay {position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; fill: none; stroke-linejoin: round; stroke-linecap: round}
+#route-geometry {stroke: #141f2b; stroke-width: 5px}
+#plan-overlay use {stroke: #9ccbff; stroke-width: 2px}
+#overhead-mode.with-path::before {content: ""; display: inline-block; width: 16px; height: 2px; background: #9ccbff; vertical-align: middle; margin-right: 5px}
+.mark {position: absolute; transform: translate(-50%,-50%); border: 2px solid; width: 22px; height: 22px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 1px #111, inset 0 0 0 1px #111}
+.mark::after {content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; position: absolute; left: 7px; top: 7px}
+.source {color: var(--source)} .base {color: var(--base)}
+.camera-footer {border-top: 1px solid var(--line); padding: 13px 17px}
+aside {display: grid; gap: 16px}
+.controls {padding: 16px}
+#camera-calibration p {margin-top: 8px}
+#camera-calibration .actions {margin-top: 12px}
+#calibration-details {white-space: pre-line}
+.selection {display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 16px}
+.target {text-align: left; padding: 9px 12px; border-color: var(--line); background: #131a21}
+.target[aria-pressed=true]:enabled {border-color: currentColor}
+.position {display: block; margin-top: 2px; font-size: .78rem; font-variant-numeric: tabular-nums; font-weight: 400}
+.run {background: var(--source); color: #0d3029; border-color: var(--source)}
+.actions {display: grid; grid-template-columns: 1fr 1fr; gap: 8px}
+.status {border-top: 1px solid var(--line); padding-top: 14px; margin-top: 16px}
+.status h3 {margin-bottom: 4px}
+.status p, #preview-details {font-size: .88rem; color: var(--muted); overflow-wrap: anywhere}
+#preview-details {white-space: pre-line; margin-top: 8px}
+#error {border-left: 3px solid #ec8f83; background: #39252a; color: #ffd3c9; padding: 10px 14px; margin: 0 0 14px; overflow-wrap: anywhere}
+@media (max-width: 800px) {
+  .workspace {grid-template-columns: 1fr}
+  .link-state {margin-left: 0}
+  main {padding-top: 14px}
+  header {margin-bottom: 15px}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><p class="brand">Panthera</p><h1>IK block stacking</h1></div>
+    <button type="button" id="stop" class="stop" disabled>Stop motion</button>
+  </header>
+  <section class="connection" aria-label="Hardware connection">
+    <label for="arm">Active arm</label>
+    <select id="arm"><option value="left">Left arm</option><option value="right">Right arm</option></select>
+    <button type="button" id="connection" disabled>Connect</button>
+    <span id="link-state" class="link-state">Checking connection</span>
+  </section>
+  <p id="error" hidden role="alert"></p>
+  <div class="workspace">
+    <section class="panel">
+      <div class="camera-title"><h2>Overhead camera</h2><small id="overhead-mode"></small></div>
+      <div class="feed" id="overhead" role="button" tabindex="-1" aria-disabled="true" aria-label="Select block in overhead image" aria-describedby="image-hint">
+        <div class="feed-note">Connect an arm to view the bench.</div>
+        <img alt="Overhead view of the stacking workspace" hidden>
+        <svg id="plan-overlay" aria-hidden="true" hidden>
+          <defs><path id="route-line" vector-effect="non-scaling-stroke"/></defs>
+          <use id="route-geometry" href="#route-line"/>
+          <use href="#route-line"/>
+        </svg>
+        <span hidden class="mark source" id="source-mark"></span>
+        <span hidden class="mark base" id="base-mark"></span>
+      </div>
+      <p class="camera-footer hint" id="image-hint">Choose the block to lift, then the base it will sit on.</p>
+    </section>
+    <aside>
+      <section class="panel controls">
+        <div id="camera-calibration" hidden>
+          <h2>Camera calibration</h2>
+          <p class="hint">Position the arm by hand. Keep it still while you capture each pose. Vary the wrist angle and the arm’s position between captures.</p>
+          <p id="sample-count"></p>
+          <p class="hint" id="calibration-details"></p>
+          <div class="actions">
+            <button type="button" id="sample" disabled>Capture pose</button>
+            <button type="button" id="finish_calibration" class="run" disabled>Finish calibration</button>
+          </div>
+        </div>
+        <div id="stack-controls">
+          <h2>Stack controls</h2>
+          <div class="selection" aria-label="Block to select">
+            <button type="button" class="target source" id="source" aria-pressed="true" disabled>Source block<span class="position" id="source-pos">Choose in image</span></button>
+            <button type="button" class="target base" id="base" aria-pressed="false" disabled>Base block<span class="position" id="base-pos">Choose in image</span></button>
+          </div>
+          <div class="actions">
+            <button type="button" id="preview" disabled>Preview plan</button>
+            <button type="button" id="run" class="run" disabled>Run stack</button>
+          </div>
+        </div>
+        <div class="status" role="status">
+          <h3 id="phase">Waiting for dashboard</h3>
+          <p id="message"></p>
+          <p id="preview-details" hidden></p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="camera-title"><h2>Wrist camera</h2><small id="wrist-arm"></small></div>
+        <div class="feed" id="wrist"><div class="feed-note">Connect an arm to view its gripper.</div><img alt="View from the active wrist camera" hidden></div>
+      </section>
+    </aside>
+  </div>
+</main>
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const roles = ['source', 'base'];
+const operatorId = crypto.randomUUID();
+const selectionPhases = ['select', 'ready', 'preview_error'];
+const surveyPhases = [...selectionPhases, 'previewing'];
+let state = null;
+let online = false;
+let pending = 0;
+let stopping = false;
+let role = 'source';
+let cursor = null;
+let statusRequest = 0;
+let commandError = '';
+let statusError = '';
+let leaseError = '';
+const frames = Object.fromEntries(['overhead', 'wrist'].map(name => [
+  name, {image: byId(name).querySelector('img'), note: byId(name).querySelector('.feed-note'), url: null}
+]));
+
+function canSelect() {
+  return online && state?.connected && selectionPhases.includes(state.phase)
+    && !state.running && !pending && !frames.overhead.image.hidden;
+}
+function drawPreviewPath(image) {
+  const overlay = byId('plan-overlay');
+  const points = state?.preview_path;
+  const commands = [];
+  let penDown = false;
+  let hasSegment = false;
+  if (state?.phase === 'ready' && !image.hidden && image.naturalWidth && Array.isArray(points)) {
+    for (const point of points) {
+      if (!Array.isArray(point) || point.length !== 2 || !point.every(Number.isFinite)) {
+        penDown = false;
+        continue;
+      }
+      commands.push((penDown ? 'L' : 'M') + point.join(' '));
+      if (penDown) hasSegment = true;
+      penDown = true;
+    }
+  }
+  overlay.toggleAttribute('hidden', !hasSegment);
+  if (hasSegment) {
+    overlay.setAttribute('viewBox', `-0.5 -0.5 ${image.naturalWidth} ${image.naturalHeight}`);
+    byId('route-line').setAttribute('d', commands.join(' '));
+  }
+  return hasSegment;
+}
+function draw() {
+  const connected = Boolean(state?.connected);
+  const busy = pending > 0 || state?.running;
+  const selected = state?.selected || {};
+  const image = frames.overhead.image;
+  const available = state?.available_arms || [];
+  const configured = available.length > 0;
+  const arm = byId('arm');
+  for (const option of arm.options) option.disabled = !available.includes(option.value);
+  arm.disabled = !online || !configured || connected || busy;
+  if (connected || state?.phase === 'connecting') arm.value = state.arm;
+  else if (!available.includes(arm.value)) arm.value = available[0] || '';
+  byId('connection').textContent = connected ? 'Disconnect' : 'Connect';
+  byId('connection').disabled = !online || busy || (!connected && !configured);
+  byId('link-state').textContent = !online ? 'Dashboard offline' : state.phase === 'connecting' ? 'Connecting…' : connected ? 'Arm connected' : 'Disconnected';
+  byId('link-state').classList.toggle('online', online && connected);
+  byId('stop').disabled = (!connected && state?.phase !== 'connecting') || stopping;
+  byId('stop').textContent = stopping ? 'Stopping…' : 'Stop motion';
+  const calibrating = connected && state.calibration_mode === 'auto'
+    && ['calibrating', 'sampling'].includes(state.phase);
+  byId('camera-calibration').hidden = !calibrating;
+  byId('stack-controls').hidden = calibrating;
+  const canSample = online && calibrating && state.phase === 'calibrating' && !busy;
+  byId('sample').disabled = !canSample;
+  byId('finish_calibration').disabled = !canSample || !state?.calibration_ready;
+  const count = state?.calibration_samples || 0;
+  byId('sample-count').textContent = `${count} pose${count === 1 ? '' : 's'} captured`;
+  byId('calibration-details').textContent = state?.calibration_details || '';
+  byId('calibration-details').hidden = !state?.calibration_details;
+  byId('preview').disabled = !online || !connected || !selectionPhases.includes(state.phase) || busy || !selected.source || !selected.base;
+  byId('run').disabled = !online || !connected || busy || !state?.preview_ready || Boolean(leaseError);
+  byId('phase').textContent = state?.phase ? state.phase.replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()) : 'Waiting for dashboard';
+  byId('message').textContent = online && !configured
+    ? 'No arms configured. ' + (state.message || 'Provide your bench configuration using --config.')
+    : state?.message || '';
+  byId('preview-details').textContent = state?.preview_details || '';
+  byId('preview-details').hidden = !state?.preview_details;
+  byId('error').textContent = [statusError, commandError, leaseError].filter(Boolean).join(' ');
+  byId('error').hidden = !byId('error').textContent;
+
+  const survey = connected && surveyPhases.includes(state.phase);
+  const hasPath = drawPreviewPath(image);
+  byId('overhead-mode').textContent = hasPath ? 'Planned tool-center path · Frozen survey'
+    : connected ? (survey ? 'Frozen survey' : 'Live view') : '';
+  byId('overhead-mode').classList.toggle('with-path', hasPath);
+  byId('wrist-arm').textContent = connected
+    ? (state.arm === 'right' ? 'Right arm' : 'Left arm') + (survey ? ' · Frozen survey' : ' · Live view') : '';
+  const enabled = canSelect();
+  const feed = byId('overhead');
+  feed.setAttribute('aria-disabled', String(!enabled));
+  feed.tabIndex = enabled ? 0 : -1;
+  feed.classList.toggle('selectable', enabled);
+  for (const target of roles) {
+    const point = selected[target];
+    byId(target).disabled = !enabled;
+    byId(target).setAttribute('aria-pressed', String(role === target));
+    byId(target + '-pos').textContent = point ? `${point.x}, ${point.y} px` : 'Choose in image';
+    const mark = byId(target + '-mark');
+    const shown = role === target && cursor ? cursor : point;
+    mark.hidden = !shown || image.hidden || !image.naturalWidth || !survey;
+    if (!mark.hidden) {
+      mark.style.left = (shown.x + 0.5) * 100 / image.naturalWidth + '%';
+      mark.style.top = (shown.y + 0.5) * 100 / image.naturalHeight + '%';
+    }
+  }
+  byId('image-hint').textContent = enabled
+    ? `Click the ${role} block to ${role === 'source' ? 'pick it up' : 'stack on it'}. Use arrow keys and Enter for keyboard selection.`
+    : calibrating ? (state.calibration_ready
+      ? 'For the survey, position the wrist so both cameras see both stud rows. Hold the pose and finish calibration.'
+      : 'Keep the active arm visible overhead and the blocks visible in both camera views.')
+    : state?.phase === 'executing' ? 'Watch the transfer. Use Stop motion to interrupt it.'
+    : state?.phase === 'holding' ? 'Check the two camera views for a seated, upright stack.'
+    : connected && !survey ? 'Disconnect and reconnect to capture a new survey.'
+    : 'Choose the block to lift, then the base it will sit on.';
+}
+async function request(path, body) {
+  const options = {cache: 'no-store'};
+  if (body !== undefined) {
+    options.method = 'POST';
+    options.headers = {'Content-Type': 'application/json', 'X-Session-Token': state?.token || '', 'X-Operator-ID': operatorId};
+    options.body = JSON.stringify(body);
+  }
+  const response = await fetch('/api/' + path, options);
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || result.message || `Request failed (${response.status})`);
+  return result;
+}
+async function poll() {
+  const generation = ++statusRequest;
+  try {
+    const next = await request('status');
+    if (generation !== statusRequest) return;
+    if (!next.connected || state?.arm !== next.arm) {
+      cursor = null;
+      role = 'source';
+      for (const name of Object.keys(frames)) hideFrame(name);
+      leaseError = '';
+    }
+    state = next;
+    online = true;
+    statusError = '';
+  } catch (error) {
+    if (generation !== statusRequest) return;
+    online = false;
+    statusError = 'Dashboard connection lost. ' + error.message;
+  }
+  draw();
+}
+async function command(path, body = {}) {
+  if (path === 'stop') stopping = true;
+  pending++;
+  commandError = '';
+  draw();
+  try {
+    await request(path, body);
+    return true;
+  } catch (error) {
+    commandError = error.message;
+    return false;
+  } finally {
+    await poll();
+    pending--;
+    if (path === 'stop') stopping = false;
+    draw();
+  }
+}
+function hideFrame(name) {
+  const frame = frames[name];
+  frame.image.hidden = true;
+  frame.note.hidden = false;
+  if (frame.url) {
+    frame.image.removeAttribute('src');
+    URL.revokeObjectURL(frame.url);
+    frame.url = null;
+  }
+}
+async function refreshFrame(name) {
+  const frame = frames[name];
+  const arm = state?.arm;
+  if (online && state?.connected) {
+    let nextUrl = null;
+    try {
+      const response = await fetch('/api/frame/' + name, {cache: 'no-store'});
+      if (!response.ok) throw new Error();
+      nextUrl = URL.createObjectURL(await response.blob());
+      const next = new Image();
+      next.src = nextUrl;
+      await next.decode();
+      if (online && state?.connected && state.arm === arm) {
+        const old = frame.url;
+        frame.url = nextUrl;
+        nextUrl = null;
+        frame.image.src = frame.url;
+        frame.image.hidden = false;
+        frame.note.hidden = true;
+        if (old) URL.revokeObjectURL(old);
+      }
+    } catch {
+      hideFrame(name);
+      frame.note.textContent = 'Waiting for a camera frame…';
+    } finally {
+      if (nextUrl) URL.revokeObjectURL(nextUrl);
+    }
+  } else {
+    hideFrame(name);
+    frame.note.textContent = name === 'overhead' ? 'Connect an arm to view the bench.' : 'Connect an arm to view its gripper.';
+  }
+  draw();
+}
+function loop(work, delay) {
+  async function tick() {
+    try {await work();} finally {setTimeout(tick, delay);}
+  }
+  tick();
+}
+async function selectPoint(x, y) {
+  if (!canSelect()) return;
+  const selectedRole = role;
+  cursor = null;
+  if (await command('select', {role: selectedRole, x, y}) && selectedRole === 'source' && !state?.selected?.base) role = 'base';
+  draw();
+}
+byId('connection').onclick = () => state?.connected ? command('disconnect') : command('connect', {arm: byId('arm').value});
+for (const action of ['sample', 'finish_calibration', 'preview', 'run', 'stop']) {
+  byId(action).onclick = () => command(action);
+}
+for (const target of roles) byId(target).onclick = () => {role = target; cursor = null; draw();};
+byId('overhead').onclick = event => {
+  if (!canSelect()) return;
+  const image = frames.overhead.image;
+  const box = image.getBoundingClientRect();
+  const x = Math.floor((event.clientX - box.left) * image.naturalWidth / box.width);
+  const y = Math.floor((event.clientY - box.top) * image.naturalHeight / box.height);
+  if (x >= 0 && x < image.naturalWidth && y >= 0 && y < image.naturalHeight) selectPoint(x, y);
+};
+byId('overhead').onkeydown = event => {
+  if (!canSelect()) return;
+  const key = event.key;
+  if (!['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Enter',' '].includes(key)) return;
+  event.preventDefault();
+  const image = frames.overhead.image;
+  const point = cursor || state?.selected?.[role] || {x: Math.floor(image.naturalWidth / 2), y: Math.floor(image.naturalHeight / 2)};
+  if (key === 'Enter' || key === ' ') {selectPoint(point.x, point.y); return;}
+  const step = event.shiftKey ? 10 : 1;
+  cursor = {
+    x: Math.max(0, Math.min(image.naturalWidth - 1, point.x + (Number(key === 'ArrowRight') - Number(key === 'ArrowLeft')) * step)),
+    y: Math.max(0, Math.min(image.naturalHeight - 1, point.y + (Number(key === 'ArrowDown') - Number(key === 'ArrowUp')) * step))
+  };
+  draw();
+};
+for (const name of Object.keys(frames)) {
+  frames[name].image.onload = draw;
+  loop(() => refreshFrame(name), 400);
+}
+loop(poll, 600);
+loop(async () => {
+  if (!state?.connected) return;
+  try {
+    await request('heartbeat', {});
+    leaseError = '';
+  } catch (error) {
+    leaseError = 'Motion heartbeat failed. ' + error.message;
+  }
+  draw();
+}, 1000);
+</script>
+</body>
+</html>

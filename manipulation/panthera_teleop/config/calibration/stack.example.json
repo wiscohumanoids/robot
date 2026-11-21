@@ -1,0 +1,22 @@
+{
+  "arms": {
+    "left": {
+      "wrist_camera": null,
+      "gripper_open_rad": null,
+      "gripper_closed_rad": null,
+      "vision": {
+        "auto_calibrate": true,
+        "checkpoint": "../../../panthera_sim/outputs/megabloks_dinov3/adapter.pt",
+        "table_z_m": null,
+        "overhead": {
+          "resolution": [640, 480],
+          "fovy_deg": 80
+        },
+        "wrist": {
+          "resolution": [640, 480],
+          "fovy_deg": 70
+        }
+      }
+    }
+  }
+}
