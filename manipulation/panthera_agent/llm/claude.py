@@ -5,7 +5,8 @@ PANTHERA_AGENT_EFFORT (default medium). The key is ANTHROPIC_API_KEY, from the r
 
 Every request:
 - one tool call per turn (`disable_parallel_tool_use`): the robot does one thing, then the model sees what happened;
-- adaptive thinking (the model's default), effort from `output_config`;
+- adaptive thinking (the model's default), effort from `output_config`, with the thinking returned summarized
+  (`display: "summarized"`; the default on this model is to omit it) so the logs and the viewer can show it;
 - prompt caching on the request (the system prompt and tool list stay identical, so each turn re-reads the
   growing history from the cache);
 - server-side refusal fallback (`fallbacks: "default"`): if a safety classifier declines a turn, the API re-runs it
@@ -36,11 +37,17 @@ class ClaudePlanner:
             client = anthropic.Anthropic()
         self.client = client
 
-    def create(self, system: str, tools: list[dict], messages: list):
-        """One model turn."""
-        kw = dict(model=self.model, max_tokens=self.max_tokens, system=system, tools=tools, messages=messages,
+    def request_options(self) -> dict:
+        """Everything in a request except the system prompt, tools and messages."""
+        kw = dict(model=self.model, max_tokens=self.max_tokens,
                   tool_choice={'type': 'auto', 'disable_parallel_tool_use': True},
+                  thinking={'type': 'adaptive', 'display': 'summarized'},
                   output_config={'effort': self.effort}, cache_control={'type': 'ephemeral'})
         if self.fallback:
             kw.update(betas=[FALLBACK_BETA], fallbacks='default')
-        return self.client.beta.messages.create(**kw)
+        return kw
+
+    def create(self, system: str, tools: list[dict], messages: list):
+        """One model turn."""
+        return self.client.beta.messages.create(system=system, tools=tools, messages=messages,
+                                                **self.request_options())

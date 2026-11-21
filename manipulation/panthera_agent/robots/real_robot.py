@@ -29,7 +29,7 @@ import numpy as np
 
 from core.camera import Camera
 from core.geometry import gripper_rotation
-from robots.base import MoveResult, Observation
+from robots.base import MoveResult, Observation, go_home
 from robots.sim_robot import SIM_ROOT
 
 sys.path.insert(0, str(SIM_ROOT))
@@ -223,13 +223,8 @@ class RealRobot:
         return float(self.arm.get_current_state_gripper().torque)
 
     def home(self) -> MoveResult:
-        """Up, then to the start pose, jaws open."""
-        self.set_gripper(1.0)
-        pos, _ = self.ee_pose()
-        up = pos.copy()
-        up[2] = max(up[2], START_POSITION[2])
-        r = self.move_linear(up, self.start_rotation)
-        return self.move_linear(START_POSITION, self.start_rotation) if r.ok else r
+        """Up as far as reachable, then to the start pose, jaws open."""
+        return go_home(self, START_POSITION, self.start_rotation)
 
     def flange_pose(self) -> np.ndarray:
         """4x4 pose of link6 (the wrist camera's mount) from the measured joints."""

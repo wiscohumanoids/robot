@@ -3,7 +3,7 @@
 truth: the overhead estimate, the wrist-refined estimate, and the final stack.
 
     .venv/bin/python tools/run_scripted.py --seeds 20                                  # S1: ground-truth masks
-    .venv/bin/python tools/run_scripted.py --seeds 20 --segmenter server               # S2: the perception server
+    .venv/bin/python tools/run_scripted.py --seeds 20 --segmenter dino_sam2            # S2: real masks (or sam3)
     .venv/bin/python tools/run_scripted.py --seeds 20 --camera-error 0.005 1.0         # S3: overhead off 5 mm / 1 deg
 
 Tasks: stack_red_on_green (pick red, place on green) and stack_three (red on green, then blue on red).
@@ -21,7 +21,7 @@ import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from core.build import load_config, make_segmenter, make_skills  # noqa: E402
+from core.build import SEGMENTERS, load_config, make_segmenter, make_skills  # noqa: E402
 from core.camera import pose_error  # noqa: E402
 from core.tasks import TASKS  # noqa: E402
 from robots.sim_robot import SimRobot  # noqa: E402
@@ -85,7 +85,7 @@ def main():
     ap.add_argument('--task', choices=sorted(PLANS), default='stack_red_on_green')
     ap.add_argument('--seeds', type=int, default=10)
     ap.add_argument('--first-seed', type=int, default=0)
-    ap.add_argument('--segmenter', default='sim_truth', choices=['sim_truth', 'server'])
+    ap.add_argument('--segmenter', default='sim_truth', choices=list(SEGMENTERS))
     ap.add_argument('--camera-error', type=float, nargs=2, metavar=('METRES', 'DEGREES'),
                     help="the overhead camera's calibrated pose off by this much (S3); the image is unchanged")
     ap.add_argument('--config', default='config/sim.yaml')

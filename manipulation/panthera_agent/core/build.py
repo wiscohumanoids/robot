@@ -24,20 +24,28 @@ def load_dotenv(path: pathlib.Path = REPO / '.env') -> None:
         line = line.strip()
         if line and not line.startswith('#') and '=' in line:
             k, v = line.split('=', 1)
-            v = v.strip().strip('"').strip("'")
+            v = v.strip()
+            if v[:1] in ('"', "'") and v[0] in v[1:]:          # quoted: up to the closing quote
+                v = v[1:v.index(v[0], 1)]
+            else:                                               # unquoted: drop an inline " # comment"
+                v = v.split(' #', 1)[0].split('\t#', 1)[0].strip()
             if v:
                 os.environ.setdefault(k.strip(), v)
 
 
+# Where object masks come from: the sim's own (perfect) ones, or one of the GPU VM's perception servers.
+SEGMENTERS = {'sim_truth': 'MuJoCo ground truth', 'dino_sam2': 'Grounding DINO + SAM 2.1 (VM)', 'sam3': 'SAM 3 (VM)'}
+
+
 def make_segmenter(name: str, config: dict):
-    """'sim_truth' (the sim's masks) or 'server' (the GPU VM's perception server)."""
+    """One of SEGMENTERS."""
     if name == 'sim_truth':
         from perception.sim_truth import SimTruthSegmenter
         return SimTruthSegmenter(config['objects'])
-    if name == 'server':
+    if name in ('dino_sam2', 'sam3'):
         from perception.server_client import ServerSegmenter
-        return ServerSegmenter()
-    raise ValueError(f'unknown segmenter {name!r} (sim_truth, server)')
+        return ServerSegmenter(name, **(config.get('segmenters') or {}).get(name, {}))
+    raise ValueError(f'unknown segmenter {name!r} ({", ".join(SEGMENTERS)})')
 
 
 def make_skills(robot, segmenter, config: dict):

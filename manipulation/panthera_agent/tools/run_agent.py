@@ -3,7 +3,7 @@
 
     .venv/bin/python tools/run_agent.py "stack the red cube on the green cube"
     .venv/bin/python tools/run_agent.py --task stack_three --seed 4          # a test task, judged from ground truth
-    .venv/bin/python tools/run_agent.py --task unstack --segmenter server    # real segmentation (VM tunnel up)
+    .venv/bin/python tools/run_agent.py --task unstack --segmenter sam3      # real segmentation (tools/tunnel.sh up)
     python tools/run_agent.py --robot rig "put the red brick on the blue one"  # the real arm (R3; rig computer)
 
 Needs ANTHROPIC_API_KEY (the repo's .env). PANTHERA_AGENT_MODEL / PANTHERA_AGENT_EFFORT or --model / --effort pick
@@ -19,7 +19,7 @@ import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from core.build import load_config, load_dotenv, make_segmenter, make_skills  # noqa: E402
+from core.build import SEGMENTERS, load_config, load_dotenv, make_segmenter, make_skills  # noqa: E402
 from core.camera import pose_error  # noqa: E402
 from core.tasks import TASKS  # noqa: E402
 from llm.claude import ClaudePlanner  # noqa: E402
@@ -54,7 +54,7 @@ def run_rig(args, config):
     planner = ClaudePlanner(model=args.model, effort=args.effort)
     robot = RealRobot(config)
     try:
-        skills = make_skills(robot, make_segmenter('server', config), config)
+        skills = make_skills(robot, make_segmenter(args.segmenter or 'dino_sam2', config), config)
         print(f'{planner.model} ({planner.effort}): {args.instruction}\nlog: {log_dir}', flush=True)
         outcome = AgentRun(skills, planner, config, log_dir, max_turns=args.max_turns).run(args.instruction)
         print(json.dumps(outcome, indent=2, default=str))
@@ -67,7 +67,7 @@ def main():
     ap.add_argument('instruction', nargs='?', help='what to do (or --task)')
     ap.add_argument('--task', choices=sorted(TASKS))
     ap.add_argument('--seed', type=int, default=0)
-    ap.add_argument('--segmenter', default='sim_truth', choices=['sim_truth', 'server'])
+    ap.add_argument('--segmenter', choices=list(SEGMENTERS), help='default: sim_truth in the sim, dino_sam2 on the rig')
     ap.add_argument('--camera-error', type=float, nargs=2, metavar=('METRES', 'DEGREES'))
     ap.add_argument('--model')
     ap.add_argument('--effort', choices=['low', 'medium', 'high', 'xhigh', 'max'])
@@ -82,14 +82,16 @@ def main():
     if args.robot == 'rig':
         if args.task:
             ap.error('--task is for the sim (it is judged from the simulator\'s ground truth)')
+        if args.segmenter == 'sim_truth':
+            ap.error('the rig has no ground-truth masks: --segmenter dino_sam2 or sam3')
         return run_rig(args, config)
     task = TASKS[args.task] if args.task else None
     instruction = args.instruction or task.instruction
     log_dir = ROOT / 'runs' / f'agent_{time.strftime("%Y%m%d_%H%M%S")}'
     planner = ClaudePlanner(model=args.model, effort=args.effort)
     print(f'{planner.model} ({planner.effort}): {instruction}\nlog: {log_dir}', flush=True)
-    outcome = run_one(instruction, task, args.seed, config, args.segmenter, planner, log_dir, args.camera_error,
-                      args.max_turns)
+    outcome = run_one(instruction, task, args.seed, config, args.segmenter or 'sim_truth', planner, log_dir,
+                      args.camera_error, args.max_turns)
     print(json.dumps(outcome, indent=2, default=str))
 
 

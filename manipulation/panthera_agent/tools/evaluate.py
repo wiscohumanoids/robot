@@ -18,7 +18,7 @@ import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from core.build import load_config, load_dotenv  # noqa: E402
+from core.build import SEGMENTERS, load_config, load_dotenv  # noqa: E402
 from core.tasks import TASKS  # noqa: E402
 from llm.claude import ClaudePlanner  # noqa: E402
 from tools.run_agent import run_one  # noqa: E402
@@ -38,7 +38,7 @@ def main():
     ap.add_argument('--tasks', nargs='+', choices=sorted(TASKS), default=sorted(TASKS))
     ap.add_argument('--seeds', type=int, default=5)
     ap.add_argument('--first-seed', type=int, default=100)      # away from the seeds used while developing
-    ap.add_argument('--segmenter', default='sim_truth', choices=['sim_truth', 'server'])
+    ap.add_argument('--segmenter', default='sim_truth', choices=list(SEGMENTERS))
     ap.add_argument('--camera-error', type=float, nargs=2, metavar=('METRES', 'DEGREES'))
     ap.add_argument('--model')
     ap.add_argument('--effort', choices=['low', 'medium', 'high', 'xhigh', 'max'])

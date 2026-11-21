@@ -80,3 +80,71 @@ def test_a_pick_that_would_hit_a_neighbour_is_refused_not_attempted():
     r = s.pick(blue.number)
     assert not r.ok and 'would hit' in r.message
     assert TASKS['stack_red_on_green'].check(robot.truth_objects())['success']     # the tower is untouched
+
+
+class TowerMasks:
+    """Ground truth merged the way DINO + SAM 2.1 and SAM 3 segment a tower: one mask over a block and every block
+    under it (the top face and all the side faces the camera sees)."""
+
+    name = 'tower_masks'
+
+    def __init__(self, robot, cfg):
+        self.robot, self.truth = robot, make_segmenter('sim_truth', cfg)
+
+    def segment(self, obs, query):
+        poses = self.robot.truth_objects()
+        every = {i.label: i.mask for i in self.truth.segment(obs, 'cube')}
+        out = []
+        for inst in self.truth.segment(obs, query):
+            p = poses[inst.label][0]
+            under = [n for n, (q, _) in poses.items() if n != inst.label and np.linalg.norm(q[:2] - p[:2]) < 0.02
+                     and q[2] < p[2] and n in every]
+            if any(n for n, (q, _) in poses.items() if n != inst.label and np.linalg.norm(q[:2] - p[:2]) < 0.02
+                   and q[2] > p[2]):
+                continue                                   # covered by the block on top: part of its mask
+            out.append(type(inst)(np.logical_or.reduce([inst.mask] + [every[n] for n in under]), inst.label, 1.0))
+        return out
+
+
+def test_a_tower_the_agent_built_keeps_its_height_with_tower_masks():
+    """Tower masks make a 2-high stack look 3 high from its size (the viewer's three-cube run said "3 high" after
+    one place). The agent remembers the stacks it built: 2 then 3 high, on the true top face within a few mm."""
+    cfg = load_config()
+    task = TASKS['stack_three']
+    robot = SimRobot({**cfg, 'scene': task.scene}, seed=2)
+    s = make_skills(robot, TowerMasks(robot, cfg), cfg)
+    s.find('red cube')
+    s.find('green cube')
+    by = {f.query: f.number for f in s.world.objects.values()}
+    assert s.pick(by['red cube']).ok and s.place_on(by['green cube']).ok and s.home().ok
+    for levels, top in ((2, 'cube_red'), (3, 'cube_blue')):
+        if levels == 3:
+            s.find('blue cube')
+            blue = [f for f in s.world.objects.values() if f.query == 'blue cube'][-1]
+            tower = [f for f in s.world.objects.values() if f.level == 2][-1]
+            assert s.pick(blue.number).ok and s.place_on(tower.number).ok and s.home().ok
+        r = s.find('cube')
+        tower = max(s.world.objects.values(), key=lambda f: f.top[2])
+        assert tower.level == levels and tower.level_known and 'a stack I built' in r.message, r.message
+        true_top = robot.truth_objects()[top][0] + np.array([0, 0, 0.0225])
+        assert np.linalg.norm(tower.top - true_top) < 0.005
+    assert task.check(robot.truth_objects())['success']
+
+
+def test_a_built_stack_that_lost_its_top_block_is_measured_again():
+    """Red goes on green, then falls off: find measures green one high, says so, and forgets the stack."""
+    cfg = load_config()
+    robot = SimRobot({**cfg, 'scene': 'scene_two_blocks.xml'}, seed=0)
+    s = make_skills(robot, TowerMasks(robot, cfg), cfg)
+    s.find('red cube')
+    s.find('green cube')
+    red, green = sorted(s.world.objects)
+    assert s.pick(red).ok and s.place_on(green).ok and s.home().ok
+    pos, quat = robot.sim.object_poses()
+    names = robot.sim.object_names
+    pos[names.index('cube_red')] += np.array([0.0, 0.12, -0.045])      # knocked off onto the table beside it
+    robot.sim.set_object_poses(pos, quat)
+    robot.settle()
+    r = s.find('green cube')
+    g = [f for f in s.world.objects.values() if f.query == 'green cube'][-1]
+    assert g.level == 1 and 'did the top block fall' in r.message and not s.world.stacks

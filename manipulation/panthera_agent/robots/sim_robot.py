@@ -20,7 +20,7 @@ import numpy as np  # noqa: E402
 
 from core.camera import Camera  # noqa: E402
 from core.geometry import gripper_rotation  # noqa: E402
-from robots.base import MoveResult, Observation  # noqa: E402
+from robots.base import MoveResult, Observation, go_home  # noqa: E402
 
 SIM_ROOT = pathlib.Path(__file__).resolve().parents[2] / 'panthera_sim'
 sys.path.insert(0, str(SIM_ROOT))
@@ -40,7 +40,12 @@ class SimRobot:
         self.table_z = float(config['table']['z'])
         self.camera_sizes = {name: (int(c['width']), int(c['height'])) for name, c in config['cameras'].items()}
         self._renderers: dict[tuple[int, int], mujoco.Renderer] = {}
+        # Camera images show what a real camera would: no sites (grip_site is drawn as a red ball at the TCP, which
+        # the segmenters took for a red object in the wrist view).
+        self._camera_option = mujoco.MjvOption()
+        self._camera_option.sitegroup[:] = 0
         self.camera_errors: dict[str, np.ndarray] = {}     # S3: name -> 4x4 error in the camera's frame
+        self.on_tick = None                                # () -> None after every control tick (tools/viewer.py)
         m = config['motion']
         self.speed, self.hz, self.max_error = float(m['speed']), float(m['control_hz']), float(m['max_tracking_error'])
         self.close_s = float(config['grasp']['close_s'])
@@ -107,10 +112,10 @@ class SimRobot:
         """RGB plus, for the ground-truth segmenter, the body under each pixel (-1 for none)."""
         model, data = self.sim.model, self.sim.data
         r = self._renderer(self.camera_sizes[camera])
-        r.update_scene(data, camera=camera)
+        r.update_scene(data, camera=camera, scene_option=self._camera_option)
         rgb = r.render().copy()
         r.enable_segmentation_rendering()
-        r.update_scene(data, camera=camera)
+        r.update_scene(data, camera=camera, scene_option=self._camera_option)
         seg = r.render()
         r.disable_segmentation_rendering()
         ids, types = seg[..., 0], seg[..., 1]
@@ -144,6 +149,8 @@ class SimRobot:
         sim.step(self.steps_per_tick)
         if not np.isfinite(sim.data.qpos).all():
             raise RuntimeError('simulator state is not finite')
+        if self.on_tick is not None:
+            self.on_tick()
 
     def _hold(self, seconds: float) -> None:
         for _ in range(max(1, math.ceil(seconds * self.hz))):
@@ -183,10 +190,5 @@ class SimRobot:
         return float(qL - qR)
 
     def home(self) -> MoveResult:
-        """Up to travel height, over to the start pose, jaws open."""
-        self.set_gripper(1.0)
-        pos, _ = self.ee_pose()
-        up = pos.copy()
-        up[2] = max(up[2], START_POSITION[2])
-        r = self.move_linear(up, self.start_rotation)
-        return self.move_linear(START_POSITION, self.start_rotation) if r.ok else r
+        """Up as far as reachable, over to the start pose, jaws open."""
+        return go_home(self, START_POSITION, self.start_rotation)

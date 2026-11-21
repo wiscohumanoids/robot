@@ -54,3 +54,21 @@ class Robot(Protocol):
 
     def home(self) -> MoveResult:
         """Back to the start pose, jaws open."""
+
+
+def go_home(robot: Robot, start: np.ndarray, rotation: np.ndarray) -> MoveResult:
+    """Jaws open, straight up as high as the arm reaches here (at most the start height), then to the start pose.
+
+    The pitched gripper's reach shrinks with height: far out over the table the start height itself is out of
+    reach, and a lift straight to it would fail and leave the arm over the table, in the overhead camera's view.
+    """
+    robot.set_gripper(1.0)
+    pos, _ = robot.ee_pose()
+    up = max(pos[2], float(start[2]))
+    while up > pos[2] + 1e-3 and not robot.reachable(np.array([pos[0], pos[1], up]), rotation):
+        up -= 0.01
+    if up > pos[2] + 1e-3:
+        r = robot.move_linear(np.array([pos[0], pos[1], up]), rotation)
+        if not r.ok:
+            return r
+    return robot.move_linear(np.asarray(start, float), rotation)

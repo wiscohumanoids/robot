@@ -66,8 +66,13 @@ refine:
   max_correction: 0.04
   size_tolerance: 0.15
 
+segmenters:                           # R2: set from tools/compare_segmenters.py-style checks on rig images
+  sam3:
+    box_threshold: 0.35
+
 find:
   size_tolerance: 0.35
+  level_margin: 0.03
 
 motion:
   speed: 0.05                         # slow while it is new

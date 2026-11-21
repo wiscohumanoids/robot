@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panthera agent viewer</title>
+<style>
+:root {
+  --bg: #111316; --panel: #181b20; --card: #1e2228; --line: #2c323b; --text: #e3e6ea; --dim: #8b939e;
+  --accent: #6aa8ff; --llm: #b48cff; --tool: #4fc1a6; --warn: #f0b252; --bad: #ef6b6b; --good: #5fcf80;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 14px;
+  border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 14px; margin: 0 12px 0 0; font-weight: 600; }
+label { color: var(--dim); display: inline-flex; gap: 5px; align-items: center; }
+select, input, textarea, button { font: inherit; color: var(--text); background: var(--card);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+input[type=number] { width: 64px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); color: #0b1220; border-color: var(--accent); font-weight: 600; }
+button.attn { border-color: var(--warn); color: var(--warn); }
+main { display: grid; grid-template-columns: minmax(420px, 1.15fr) minmax(380px, 1fr); height: calc(100% - 49px); }
+#left { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); }
+#viewwrap { position: relative; background: #000; flex: 1 1 auto; min-height: 240px; display: flex;
+  align-items: center; justify-content: center; overflow: hidden; }
+#view { max-width: 100%; max-height: 100%; cursor: grab; user-select: none; }
+#view.dragging { cursor: grabbing; }
+.overlay { position: absolute; display: flex; gap: 4px; align-items: center; }
+#tabs { top: 8px; left: 8px; }
+#tabs button { background: rgba(20,22,26,.8); padding: 3px 9px; }
+#tabs button.on { border-color: var(--accent); color: var(--accent); }
+#pill { top: 8px; right: 8px; background: rgba(20,22,26,.85); border: 1px solid var(--line); border-radius: 999px;
+  padding: 3px 10px; font-family: var(--mono); font-size: 12px; }
+#pausebar { left: 50%; bottom: 10px; transform: translateX(-50%); background: rgba(40,30,10,.92);
+  border: 1px solid var(--warn); color: var(--warn); border-radius: 8px; padding: 6px 12px; display: none; gap: 10px; }
+#controls { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--panel); }
+#instruction { width: 100%; min-height: 54px; resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button.on { background: #2a3442; color: var(--accent); }
+#stats { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+#keynote { color: var(--warn); }
+#right { display: flex; flex-direction: column; min-height: 0; }
+#tlhead { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line);
+  background: var(--panel); }
+#tlhead h2 { font-size: 13px; margin: 0; flex: 1; }
+#timeline { overflow-y: auto; padding: 10px 12px 40px; flex: 1; }
+.card { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--dim); border-radius: 6px;
+  margin-bottom: 8px; }
+.card .head { display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; cursor: pointer; }
+.card .title { font-weight: 600; }
+.card .meta { margin-left: auto; color: var(--dim); font-family: var(--mono); font-size: 11px; text-align: right; }
+.card .body { padding: 0 10px 8px; }
+.card.collapsed .body { display: none; }
+.badge { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 4px;
+  text-transform: uppercase; color: #0b1220; background: var(--dim); white-space: nowrap; }
+.k-user { border-left-color: var(--accent); } .k-user .badge { background: var(--accent); }
+.k-req { border-left-color: var(--llm); } .k-req .badge { background: var(--llm); }
+.k-resp { border-left-color: var(--llm); } .k-resp .badge { background: var(--llm); }
+.k-tool { border-left-color: var(--tool); } .k-tool .badge { background: var(--tool); }
+.k-res { border-left-color: var(--tool); } .k-res .badge { background: var(--tool); }
+.k-bad { border-left-color: var(--bad); } .k-bad .badge { background: var(--bad); }
+.k-good { border-left-color: var(--good); } .k-good .badge { background: var(--good); }
+.k-sys { border-left-color: var(--line); background: transparent; }
+pre { margin: 4px 0; white-space: pre-wrap; word-break: break-word; font: 12px/1.45 var(--mono); }
+.txt { color: var(--text); }
+.json { color: #c9d4e0; background: #15181d; border-radius: 4px; padding: 6px 8px; }
+.thinking { color: #c4b5e8; font-style: italic; border-left: 2px solid var(--llm); padding-left: 8px; margin: 4px 0;
+  white-space: pre-wrap; }
+.call { background: #15201d; border: 1px solid #24443c; border-radius: 4px; padding: 6px 8px; margin: 4px 0; }
+.call b { color: var(--tool); font-family: var(--mono); }
+.tr { border: 1px dashed var(--line); border-radius: 4px; padding: 4px 8px; margin: 4px 0; }
+.tr.err { border-color: var(--bad); }
+.lbl { color: var(--dim); font-size: 11px; margin-top: 6px; }
+details { margin: 4px 0; } summary { cursor: pointer; color: var(--dim); }
+.thumb { max-height: 130px; max-width: 100%; border-radius: 4px; border: 1px solid var(--line); cursor: zoom-in;
+  margin: 4px 6px 4px 0; vertical-align: top; }
+.thumb.small { max-height: 54px; }
+.steps { list-style: none; padding: 0; margin: 4px 0; font-family: var(--mono); font-size: 12px; }
+.steps li { padding: 2px 0 2px 16px; position: relative; border-top: 1px solid #23282f; }
+.steps li::before { content: "·"; position: absolute; left: 5px; color: var(--dim); }
+.steps li.pending { color: var(--warn); }
+.steps li.ok::before { content: "✓"; color: var(--good); left: 2px; }
+.steps li.fail { color: var(--bad); } .steps li.fail::before { content: "✗"; color: var(--bad); left: 2px; }
+.steps .why { color: var(--dim); }
+.usage { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 6px; }
+.divider { text-align: center; color: var(--dim); font-size: 11px; margin: 14px 0 8px; border-top: 1px solid var(--line);
+  padding-top: 6px; }
+#lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center;
+  justify-content: center; z-index: 10; cursor: zoom-out; flex-direction: column; gap: 8px; }
+#lightbox img { max-width: 94vw; max-height: 88vh; }
+#lightbox div { color: var(--dim); }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } #viewwrap { height: 55vh; flex: none; }
+  #right { height: 80vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Panthera agent viewer</h1>
+  <label>Task <select id="task"><option value="">— none (free instruction) —</option></select></label>
+  <label id="scenelbl">Scene <select id="scene"></select></label>
+  <label>Seed <input id="seed" type="number" value="0" min="0"></label>
+  <label title="S3: the overhead camera's calibrated pose is 5 mm / 1° off (the image is still the true one)">
+    <input id="camerr" type="checkbox"> camera error</label>
+  <button id="reset">Reset scene</button>
+</header>
+<main>
+  <section id="left">
+    <div id="viewwrap">
+      <img id="view" src="/frame.mjpg" alt="simulation view" draggable="false">
+      <div class="overlay" id="tabs">
+        <button data-cam="free" class="on">Free</button><button data-cam="overhead">Overhead</button>
+        <button data-cam="wrist">Wrist</button><button id="homeview" title="reset the free camera">⟲</button>
+      </div>
+      <div class="overlay" id="pill">idle</div>
+      <div class="overlay" id="pausebar"><span id="pausetext">Paused</span>
+        <button id="next2" class="attn">Next ▶</button></div>
+    </div>
+    <div id="controls">
+      <textarea id="instruction" placeholder="Tell the arm what to do, e.g. stack the red cube on the green cube"></textarea>
+      <div class="row">
+        <label>Planner <select id="planner"><option value="claude">Claude API</option>
+          <option value="scripted">Scripted red→green (no API)</option></select></label>
+        <label>Model <input id="model" size="16"></label>
+        <label>Effort <select id="effort"><option>low</option><option selected>medium</option><option>high</option>
+          <option>xhigh</option><option>max</option></select></label>
+        <label>Masks <select id="segmenter"></select></label>
+        <button id="recheck" title="ask the VM's perception servers whether they are up">⟳</button>
+        <button id="run" class="primary">Run ▶</button>
+      </div>
+      <div class="row">
+        <span class="seg" id="mode">
+          <button data-mode="off" class="on" title="run without stopping">Run freely</button>
+          <button data-mode="turn" title="wait before each Claude request and each tool call">Pause each turn</button>
+          <button data-mode="motion" title="also wait before each arm move and gripper action">Pause each motion</button>
+        </span>
+        <button id="pause">Pause ⏸</button><button id="next">Next ▶</button><button id="stop">Stop ■</button>
+        <label>Speed <select id="speed"><option>0.25</option><option>0.5</option><option selected>1</option>
+          <option>2</option><option>4</option></select>×</label>
+      </div>
+      <div class="row" id="stats">—</div>
+      <div id="keynote"></div>
+    </div>
+  </section>
+  <section id="right">
+    <div id="tlhead"><h2>What happens, step by step</h2>
+      <label><input type="checkbox" id="follow" checked> follow</label>
+      <label><input type="checkbox" id="motion" checked> motion steps</label>
+      <button id="collapse">Collapse all</button></div>
+    <div id="timeline"></div>
+  </section>
+</main>
+<div id="lightbox"><img alt=""><div></div></div>
+<script>
+const $ = (s) => document.querySelector(s);
+const TL = $('#timeline');
+let status = {}, info = {}, openTool = null, setupCard = null;
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text; return e; }
+const cm = (v) => (v * 100).toFixed(1);
+const P = (p) => p ? `(${cm(p[0])}, ${cm(p[1])}, ${cm(p[2])}) cm` : '';
+const mm = (v) => (v * 1000).toFixed(1) + ' mm';
+const deg = (r) => (r * 180 / Math.PI).toFixed(0) + '°';
+async function post(cmd) {
+  const r = await fetch('/cmd', {method: 'POST', body: JSON.stringify(cmd)}); const j = await r.json();
+  if (!j.ok) alert(j.error); return j;
+}
+
+// ---------- timeline ----------
+function nearBottom() { return TL.scrollHeight - TL.scrollTop - TL.clientHeight < 80; }
+function add(node) { const stick = $('#follow').checked && nearBottom(); TL.appendChild(node);
+  if (stick) TL.scrollTop = TL.scrollHeight; return node; }
+function card(kind, badge, title, meta) {
+  const c = el('div', 'card ' + kind), h = el('div', 'head');
+  h.append(el('span', 'badge', badge), el('span', 'title', title));
+  const m = el('span', 'meta', meta || ''); h.append(m);
+  h.onclick = () => c.classList.toggle('collapsed');
+  c.append(h, el('div', 'body')); c.metaEl = m; c.bodyEl = c.lastChild; return c;
+}
+function details(summary, node, open) { const d = el('details'); if (open) d.open = true;
+  d.append(el('summary', null, summary), node); return d; }
+function json(o) { return el('pre', 'json', JSON.stringify(o, null, 2)); }
+function img(id, caption, small) { const i = el('img', 'thumb' + (small ? ' small' : '')); i.src = '/img/' + id;
+  i.title = caption || ''; i.onclick = (e) => { e.stopPropagation(); lightbox(id, caption); }; return i; }
+function lightbox(id, caption) { const lb = $('#lightbox'); lb.querySelector('img').src = '/img/' + id;
+  lb.querySelector('div').textContent = caption || ''; lb.style.display = 'flex'; }
+$('#lightbox').onclick = () => $('#lightbox').style.display = 'none';
+
+function blocks(list, into) {
+  if (typeof list === 'string') { into.append(el('pre', 'txt', list)); return; }
+  let caption = null;
+  for (const b of list || []) {
+    if (b.type === 'text') {
+      const m = /^\[(.*)\]$/.exec(b.text); if (m) { caption = m[1]; continue; }
+      into.append(el('pre', 'txt', b.text));
+    } else if (b.type === 'image') { into.append(img(b.image, caption)); caption = null; }
+    else if (b.type === 'thinking') into.append(el('div', 'thinking', b.thinking || '(thinking not shown)'));
+    else if (b.type === 'redacted_thinking') into.append(el('div', 'thinking', '(redacted thinking)'));
+    else if (b.type === 'tool_use') { const c = el('div', 'call');
+      c.append(el('span', null, 'tool call → '), el('b', null, b.name), json(b.input)); into.append(c); }
+    else if (b.type === 'tool_result') { const t = el('div', 'tr' + (b.is_error ? ' err' : ''));
+      t.append(el('div', 'lbl', `tool_result for ${b.tool_use_id}${b.is_error ? ' (is_error)' : ''}`));
+      blocks(b.content, t); into.append(t); }
+    else into.append(json(b));
+  }
+}
+
+function stepsList() {
+  if (openTool) return openTool.steps;
+  if (!setupCard) { setupCard = add(card('k-sys', 'skills', 'Before the first turn'));
+    setupCard.steps = setupCard.bodyEl.appendChild(el('ul', 'steps')); }
+  return setupCard.steps;
+}
+function step(text, cls, why, image) {
+  const li = el('li', cls || ''); li.append(el('span', null, text));
+  if (why) li.append(el('span', 'why', '  ' + why));
+  if (image) { li.append(el('br'), img(image.image, text, true)); }
+  if (cls === 'pending' || /move|grip/.test(cls || '')) li.dataset.motion = '1';
+  const ul = stepsList(); const stick = $('#follow').checked && nearBottom(); ul.append(li);
+  if (stick) TL.scrollTop = TL.scrollHeight; return li;
+}
+let pendingMove = null, pendingGrip = null;
+function finish(li, ok, text) { if (!li) return; li.className = ok ? 'ok' : 'fail';
+  li.dataset.motion = '1'; li.lastChild.textContent += '  ' + text; }
+
+const handlers = {
+  reset(e) {
+    openTool = null; setupCard = null;
+    const d = add(el('div', 'divider',
+      `scene ${e.scene} · seed ${e.seed}${e.task ? ' · task ' + e.task : ''}${e.camera_error ? ' · overhead camera 5 mm / 1° off' : ''}`));
+    d.title = 'true block positions (cm): ' + JSON.stringify(e.truth_cm);
+    if (e.instruction && !$('#instruction').value) $('#instruction').value = e.instruction;
+    $('#task').value = e.task || ''; $('#seed').value = e.seed; $('#camerr').checked = !!e.camera_error;
+    if (!e.task) $('#scene').value = e.scene;
+    $('#scenelbl').style.display = e.task ? 'none' : '';
+  },
+  log_dir(e) { add(el('div', 'divider', 'logging to ' + e.path)); },
+  run_start(e) {
+    openTool = null; setupCard = null;
+    const c = add(card('k-user', 'you', e.instruction, `${e.model || ''}${e.effort ? ' · ' + e.effort : ''}`));
+    c.bodyEl.append(el('div', 'lbl', 'Sent once, then reused from the prompt cache every turn:'),
+      details('System prompt', el('pre', 'txt', e.system)),
+      details(`Tools (${e.tools.length}): ${e.tools.map(t => t.name).join(', ')}`, json(e.tools)),
+      details('Request options', json(e.request || {})));
+  },
+  llm_request(e) {
+    openTool = null;
+    const c = add(card('k-req', '→ claude', `Request, turn ${e.turn}`,
+      `${e.messages} message${e.messages > 1 ? 's' : ''} + system + tools`));
+    c.bodyEl.append(el('div', 'lbl', e.turn === 1 ? 'The first message: the instruction and the overhead image'
+      : 'New this turn (appended to the conversation): the last tool\'s result'));
+    blocks(e.new, c.bodyEl);
+  },
+  llm_response(e) {
+    const u = e.usage || {}, cost = e.cost != null ? ` · $${e.cost.toFixed(4)}` : '';
+    const c = add(card('k-resp', '← claude', `Reply, turn ${e.turn}`, `${e.seconds}s · ${e.stop_reason}${cost}`));
+    blocks(e.content, c.bodyEl);
+    if (u.input_tokens != null) c.bodyEl.append(el('div', 'usage',
+      `tokens: ${u.input_tokens} in · ${u.cache_read_input_tokens || 0} cache read · ` +
+      `${u.cache_creation_input_tokens || 0} cache write · ${u.output_tokens} out${e.model ? ' · ' + e.model : ''}`));
+  },
+  tool_start(e) {
+    const c = add(card('k-tool', 'tool', `${e.name}(${Object.entries(e.input).map(([k, v]) =>
+      `${k}=${JSON.stringify(v)}`).join(', ')})`, 'running…'));
+    c.steps = c.bodyEl.appendChild(el('ul', 'steps')); openTool = c;
+  },
+  tool_result(e) {
+    const c = openTool || add(card('k-tool', 'tool', e.name));
+    c.classList.add(e.ok ? 'k-good' : 'k-bad');
+    c.metaEl.textContent = `${e.ok ? 'ok' : 'FAILED'} · ${e.seconds}s`;
+    const r = el('div', 'tr' + (e.ok ? '' : ' err'));
+    r.append(el('div', 'lbl', 'Result returned to Claude:'), el('pre', 'txt', e.message));
+    for (const i of e.images) r.append(img(i.image, i.caption));
+    c.bodyEl.append(r); openTool = null;
+  },
+  run_end(e) {
+    const o = e.outcome || {};
+    const good = o.stop === 'done' && o.success;
+    const c = add(card(good ? 'k-good' : 'k-bad', 'end',
+      o.stop === 'done' ? `done: ${o.success ? 'success' : 'not achieved'} (the model's claim)` : `stopped: ${o.stop}`,
+      o.turns ? `${o.turns} turns` : ''));
+    if (o.summary) c.bodyEl.append(el('pre', 'txt', o.summary));
+  },
+  judged(e) {
+    const ok = e.metrics.success;
+    const c = add(card(ok ? 'k-good' : 'k-bad', 'truth', `Ground truth for ${e.task}: ${ok ? 'success' : 'failure'}`));
+    c.bodyEl.append(json(e.metrics));
+  },
+  error(e) {
+    const c = add(card('k-bad', 'error', e.message));
+    c.bodyEl.append(details('traceback', el('pre', 'txt', e.traceback)));
+  },
+  // ---------- inside a tool ----------
+  observe(e) { step(`${e.camera} image`, '', e.why, e.image); },
+  segment(e) {
+    const s = e.instances.map(i => `${i.label} (${i.score}, ${i.pixels} px)`).join(', ') || 'nothing';
+    const ms = e.timing_ms && e.timing_ms.total != null ? `, ${Math.round(e.timing_ms.total)} ms on the VM` : '';
+    step(`segment "${e.query}" [${e.segmenter}${ms}] → ${e.instances.length} mask${e.instances.length === 1 ? '' : 's'}`,
+      '', s);
+  },
+  find(e) {
+    if (!e.found.length) { step(`measured: nothing`); return; }
+    for (const f of e.found) step(`#${f.number} ${f.label}: top ${P(f.top)}, yaw ${deg(f.yaw)}, ` +
+      `${(f.size[0] * 1000).toFixed(0)}×${(f.size[1] * 1000).toFixed(0)} mm` + (f.level > 1 ? `, level ${f.level}` : ''),
+      f.trusted ? '' : 'fail', f.trusted ? 'footprint from the mask, two planes' : 'size does not match: partly hidden?');
+  },
+  plan(e) {
+    const clear = (o) => o.clearance_mm >= 1000 ? 'nothing near' : `clearance ${o.clearance_mm} mm to #${o.nearest}`;
+    const opts = e.options.map(o => `${o.yaw_deg}°: ${o.reachable ? `reachable, ${clear(o)}` : 'unreachable'}`);
+    const c = e.chosen;
+    step(`approach plan ${e.what}: ${c ? `yaw ${c.yaw_deg}°, pre-height ${(c.pregrasp_height * 100).toFixed(1)} cm, TCP ${P(c.tcp)}`
+      : 'no approach'}`, c ? '' : 'fail', 'tried ' + opts.join(' · '));
+  },
+  move_start(e) { pendingMove = step(`move: ${e.what}${e.target ? ' → ' + P(e.target) : ''}`, 'pending'); },
+  move(e) { finish(pendingMove, e.ok, e.ok ? `reached (error ${mm(e.error)})` : (e.reason || 'failed'));
+    pendingMove = null; },
+  gripper_start(e) { pendingGrip = step(`gripper: ${e.what}`, 'pending'); },
+  gripper(e) { finish(pendingGrip, true, `jaws ${(e.width * 1000).toFixed(0)} mm apart`); pendingGrip = null; },
+  refine(e) { step(`wrist refine ${e.what}: corrected ${e.correction_mm} mm → top ${P(e.top)}, yaw ${deg(e.yaw)}`); },
+  refine_note(e) { step(`wrist refine ${e.what}: ${e.note}`, '', ''); },
+  grasp(e) { step(`grasp #${e.number}: jaws ${(e.width * 1000).toFixed(0)} mm` +
+      (e.width_after_lift != null ? `, ${(e.width_after_lift * 1000).toFixed(0)} mm after the lift` : ''),
+      e.ok ? 'ok' : 'fail'); },
+  place(e) { step(`released #${e.number} ${e.what}`, 'ok'); },
+};
+
+function applyMotionFilter() { TL.classList.toggle('nomotion', !$('#motion').checked); }
+const st = document.createElement('style'); st.textContent = '.nomotion li[data-motion] { display: none; }';
+document.head.append(st);
+$('#motion').onchange = applyMotionFilter;
+$('#collapse').onclick = () => TL.querySelectorAll('.card').forEach(c => c.classList.add('collapsed'));
+
+// ---------- status ----------
+const PAUSED_BEFORE = { llm_request: 'before sending the request to Claude', tool_start: 'before running the tool',
+  move_start: 'before the move', gripper_start: 'before the gripper action', now: '' };
+function showStatus(s) {
+  status = s;
+  const busy = s.state !== 'idle';
+  $('#pill').textContent = `${s.paused ? 'paused' : s.state}${s.sim_time != null ? ' · sim ' + s.sim_time + ' s' : ''}`;
+  $('#pill').style.borderColor = s.paused ? 'var(--warn)' : s.state === 'thinking' ? 'var(--llm)' :
+    busy ? 'var(--tool)' : 'var(--line)';
+  $('#run').disabled = busy; $('#reset').disabled = busy;
+  $('#stop').disabled = !busy; $('#pause').disabled = !busy || s.paused; $('#next').disabled = !s.paused;
+  $('#next').classList.toggle('attn', !!s.paused);
+  $('#pausebar').style.display = s.paused ? 'flex' : 'none';
+  $('#pausetext').textContent = 'Paused ' + (PAUSED_BEFORE[s.paused_before] || '');
+  document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === s.mode));
+  const t = s.tokens || {};
+  $('#stats').textContent = `turn ${s.turn || 0} · tokens ${t.input_tokens || 0} in / ${t.cache_read_input_tokens || 0} ` +
+    `cached / ${t.cache_creation_input_tokens || 0} cache-write / ${t.output_tokens || 0} out · ` +
+    `$${(s.cost || 0).toFixed(4)} since reset${s.model ? ' · ' + s.model : ''}`;
+}
+
+// ---------- controls ----------
+$('#run').onclick = () => post({op: 'run', instruction: $('#instruction').value, planner: $('#planner').value,
+  model: $('#model').value.trim(), effort: $('#effort').value, segmenter: $('#segmenter').value});
+$('#reset').onclick = () => { const task = $('#task').value;
+  if (task) $('#instruction').value = info.tasks[task].instruction;
+  post({op: 'reset', task, scene: $('#scene').value, seed: +$('#seed').value, camera_error: $('#camerr').checked}); };
+$('#task').onchange = () => { const t = $('#task').value; $('#scenelbl').style.display = t ? 'none' : '';
+  if (t) $('#instruction').value = info.tasks[t].instruction; };
+$('#pause').onclick = () => post({op: 'pause'});
+$('#next').onclick = $('#next2').onclick = () => post({op: 'next'});
+$('#stop').onclick = () => post({op: 'stop'});
+$('#speed').onchange = () => post({op: 'speed', speed: +$('#speed').value});
+document.querySelectorAll('#mode button').forEach(b => b.onclick = () => post({op: 'mode', mode: b.dataset.mode}));
+document.querySelectorAll('#tabs button[data-cam]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button[data-cam]').forEach(x => x.classList.toggle('on', x === b));
+  post({op: 'view', camera: b.dataset.cam}); });
+$('#homeview').onclick = () => post({op: 'view', home: true});
+$('#planner').onchange = keynote;
+function keynote() { $('#keynote').textContent = $('#planner').value === 'claude' && !info.has_key ?
+  'ANTHROPIC_API_KEY is not set (repo .env): Claude runs will fail. The scripted planner needs no key.' :
+  $('#planner').value === 'claude' ? 'Claude runs bill your API key: the cost so far is shown above.' : ''; }
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('#run').click(); });
+
+// orbit and zoom on the free camera
+let drag = null, acc = {d_azimuth: 0, d_elevation: 0, zoom: 1}, queued = false;
+function flush() { queued = false; const a = acc; acc = {d_azimuth: 0, d_elevation: 0, zoom: 1};
+  post({op: 'view', ...a}); }
+function queue() { if (!queued) { queued = true; setTimeout(flush, 40); } }
+const view = $('#view');
+view.onpointerdown = (e) => { drag = [e.clientX, e.clientY]; view.classList.add('dragging');
+  view.setPointerCapture(e.pointerId); };
+view.onpointermove = (e) => { if (!drag) return; acc.d_azimuth -= (e.clientX - drag[0]) * 0.3;
+  acc.d_elevation -= (e.clientY - drag[1]) * 0.3; drag = [e.clientX, e.clientY]; queue(); };
+view.onpointerup = () => { drag = null; view.classList.remove('dragging'); };
+view.addEventListener('wheel', (e) => { e.preventDefault(); acc.zoom *= Math.exp(e.deltaY * 0.0015); queue(); },
+  {passive: false});
+
+// ---------- start ----------
+fetch('/info').then(r => r.json()).then(i => {
+  info = i;
+  for (const [n, t] of Object.entries(i.tasks)) $('#task').append(new Option(`${n} (${t.scene})`, n));
+  for (const s of i.scenes) $('#scene').append(new Option(s, s));
+  $('#model').value = i.model; $('#effort').value = i.effort;
+  if (!i.has_key) $('#planner').value = 'scripted';
+  fillSegmenters(i.segmenters, i.segmenter);
+  keynote();
+});
+function fillSegmenters(segs, chosen) {
+  const sel = $('#segmenter'), keep = chosen || sel.value; sel.innerHTML = '';
+  for (const [n, s] of Object.entries(segs)) {
+    const o = new Option(`${s.label}${s.up ? '' : ' (down)'}`, n); o.title = s.detail; sel.append(o);
+  }
+  if (keep) sel.value = keep;
+}
+$('#recheck').onclick = () => fetch('/info').then(r => r.json()).then(i => fillSegmenters(i.segmenters));
+const es = new EventSource('/events');
+es.onopen = () => { TL.innerHTML = ''; openTool = null; setupCard = null; };
+es.onmessage = (m) => { const e = JSON.parse(m.data); const h = handlers[e.kind];
+  if (h) h(e); else add(card('k-sys', e.kind, '')).bodyEl.append(json(e)); };
+es.addEventListener('status', (m) => showStatus(JSON.parse(m.data)));
+</script>
+</body>
+</html>
