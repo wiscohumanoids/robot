@@ -2,3 +2,6 @@
 runs/
 __pycache__/
 .pytest_cache/
+data/
+models/
+memory/

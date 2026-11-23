@@ -19,7 +19,7 @@ import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from core.build import SEGMENTERS, load_config, load_dotenv, make_segmenter, make_skills  # noqa: E402
+from core.build import SEGMENTERS, config_for_scene, load_config, load_dotenv, make_segmenter, make_skills  # noqa: E402
 from core.camera import pose_error  # noqa: E402
 from core.tasks import TASKS  # noqa: E402
 from llm.claude import ClaudePlanner  # noqa: E402
@@ -27,16 +27,25 @@ from llm.loop import AgentRun  # noqa: E402
 from robots.sim_robot import SimRobot  # noqa: E402
 
 
-def run_one(instruction, task, seed, config, segmenter, planner, log_dir, camera_error=None, max_turns=40):
-    """Set up the sim (task scene and set-up if given), run the agent, judge the result if a task."""
+def run_one(instruction, task, seed, config, segmenter, planner, log_dir, camera_error=None, max_turns=40,
+            memory=None, policies=None):
+    """Set up the sim (task scene and set-up if given), run the agent, judge the result if a task. `planner` may be
+    a function of the skills (the sim oracle, llm/scripted.py OracleScript). `memory`: the seen-objects list (default:
+    the usual folder); `policies`: trained local policies by skill name."""
     import numpy as np
     scene = task.scene if task else config['scene']
-    robot = SimRobot({**config, 'scene': scene}, seed=seed)
+    config = config_for_scene(config, scene)
+    robot = SimRobot(config, seed=seed)
     if task and task.setup:
         task.setup(robot)
     if camera_error:
         robot.camera_errors['overhead'] = pose_error(camera_error[0], camera_error[1], np.random.default_rng(seed))
-    skills = make_skills(robot, make_segmenter(segmenter, config), config)
+    seg = make_segmenter(segmenter, config, memory)
+    skills = make_skills(robot, seg, config, memory if memory is not None else getattr(seg, 'memory', None))
+    if policies:
+        skills.policies = dict(policies)
+    if callable(planner) and not hasattr(planner, 'create'):
+        planner = planner(skills)
     outcome = AgentRun(skills, planner, config, log_dir, max_turns=max_turns).run(instruction)
     if task:
         outcome['metrics'] = task.check(robot.truth_objects())

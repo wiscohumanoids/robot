@@ -17,12 +17,26 @@ import numpy as np
 
 @dataclass
 class ObjectType:
-    """What `find` needs to know about a kind of object (config `objects:`)."""
+    """What `find` needs to know about a kind of object: from the config (`objects:`), or measured when the object
+    was learned (the seen-objects list, perception/memory.py)."""
     name: str
     words: set[str]
     height: float
     footprint: tuple[float, float]       # long, short
     symmetry: float                      # radians
+    kind: str = 'box'                    # box | round | long | flat | irregular (learned objects)
+    outline: list | None = None          # top-view outline in the object's frame, metres (learned objects)
+    parts: dict | None = None            # name -> (x, y, z) offset in the object's frame (learned objects)
+    deformable: bool = False
+    learned: bool = False
+
+    @staticmethod
+    def from_entry(e) -> 'ObjectType':
+        """A learned object's type (perception/memory.py Entry with a measured shape)."""
+        s = e.shape
+        return ObjectType(e.name, set(e.words) | set(e.name.lower().split()), float(s.height),
+                          (float(s.footprint[0]), float(s.footprint[1])), float(np.deg2rad(s.symmetry_deg)), s.kind,
+                          s.outline, {k: tuple(v.offset) for k, v in e.parts.items()}, bool(s.deformable), True)
 
 
 @dataclass
@@ -82,8 +96,15 @@ class World:
                  for name, o in objects.items()}
         return World(types)
 
+    memory: object | None = None         # the seen-objects list (perception/memory.py), when the skills have one
+
     def type_for(self, query: str) -> ObjectType | None:
-        """The object type a query names ("red block" -> cube), or None."""
+        """The object type a query names: a learned object first ("purple mug"), then a configured type ("red block"
+        -> cube). None when neither knows it."""
+        if self.memory is not None:
+            for e in self.memory.lookup(query):
+                if e.shape is not None:
+                    return ObjectType.from_entry(e)
         q = query.lower().replace('_', ' ').split()
         for t in self.types.values():
             if any(w in t.words or w.rstrip('s') in t.words for w in q):

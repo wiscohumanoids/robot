@@ -1,7 +1,7 @@
 """Segmenters: an image and a text query in, one mask per matching object out."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 import numpy as np
@@ -17,6 +17,7 @@ class Instance:
     mask: np.ndarray            # (H, W) bool
     label: str                  # what the segmenter calls it
     score: float                # its confidence (1.0 for ground truth)
+    extra: dict = field(default_factory=dict)      # segmenter-specific (dino_local: similarity, colour distance)
 
 
 class Segmenter(Protocol):

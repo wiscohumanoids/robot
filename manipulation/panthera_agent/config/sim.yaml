@@ -51,16 +51,43 @@ refine:                               # wrist-camera correction at the pre-grasp
   size_tolerance: 0.15                # a wrist measurement is used only within 15 % of the expected size (a held
                                       # block or the jaws hiding part of the target shrink it)
 
-segmenters:                           # options per VM segmenter (perception/server_client.py)
+segmenters:                           # options per segmenter (perception/server_client.py, perception/dino_local.py)
+  dino_local:                         # learned objects, local DINOv3 (perception/dino_local.py)
+    margin: 0.0                       # a patch is the object when its similarity to the object beats the table's by this
+    colour: 22.0                      # Lab distance to one of the object's colours (lightness half-weighted)
+    colour_share: 0.15                # a patch needs this share of object-coloured pixels
   sam3:
     box_threshold: 0.35               # instance score; the release's 0.5 missed cubes scored 0.44, and the blue
                                       # checkerboard floor scores at most about 0.23 as "blue cube"
 
 find:
   size_tolerance: 0.35                # flagged as partly hidden or merged beyond 35 % of the expected size
+  plausible_size: [0.4, 2.5]          # masks outside this ratio of the expected size are not the object: dropped
   level_margin: 0.03                  # a higher stack level must fit the size better by 3 % (core/skills.py _measure)
 
 motion:
+  profile: smoothstep                 # smoothstep (the scripted collector's; the S1-S5 results) | quintic (codex/dino-ik)
+  max_jerk: 8.0                       # quintic only, m/s^3
   speed: 0.12                         # m/s along straight lines
   control_hz: 30
   max_tracking_error: 0.012           # a move ending further than this from its target failed
+
+checks:                               # by sight, around grasps and places (core/skill_checks.py)
+  in_hand: true                       # after a lift, the wrist camera looks for the object where the grasp put it
+  place_check: true                   # after a place, the wrist camera measures where the object ended up
+  align: false                        # line the held object up over the target from above before lowering; measured
+                                      # in the sim to make placing worse (the gripper hides the held object), so off
+  seated_fraction: 0.25               # "on it": within this share of the support's short side of its centre
+
+learn:                                # learning new objects (core/skill_learn.py)
+  max_view_gap: 0.005                 # two views must agree this well (m) for a height to count
+  survey_min_height: 0.05             # the wrist camera's viewpoints stay this far above the table...
+  obstacle_height: 0.12               # ...and clear of every other thing on it, taken to be this tall
+  cloth_thickness: 0.004              # a deformable thing's height
+
+contact:                              # contact and tool skills (core/skill_contact.py)
+  insert_depth: 0.015                 # inserted when the held object went this far below the hole's top
+  hover: 0.006                        # the handoff: the held object's bottom this far above the hole
+  max_steps: 60
+  pull_to: 0.45                       # pull_with_tool drags an object to this distance from the base
+  pour_clearance: 0.03                # the container's mouth this far above the target's rim

@@ -3,6 +3,11 @@
 # to start until the calibration files exist. Lengths in metres, angles in degrees.
 
 arm: left                             # which arm the agent drives: left | right (arm-mapping.json in panthera_teleop)
+# Both arms: uncomment, with each base's pose in the table frame (R0: measured like the centre camera's). The skills
+# then use the nearest arm that reaches; `arm` is the one used first.
+# arms:
+#   left:  {T_table_base: [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]], wrist_camera: wrist}
+#   right: {T_table_base: "R0", wrist_camera: wrist_right}
 
 overhead_orientation: "R0: say how the centre camera's image is oriented, e.g. up is +x (away from the robot) and left is +y"
 
@@ -75,6 +80,7 @@ find:
   level_margin: 0.03
 
 motion:
+  profile: quintic                    # zero speed and acceleration at both ends (gentler on the motors)
   speed: 0.05                         # slow while it is new
   control_hz: 30
   max_tracking_error: 0.012
@@ -87,3 +93,18 @@ safety:                               # every commanded TCP must lie in this box
   y: [-0.30, 0.30]
   z_floor: 0.005                      # above the table plane
   z_max: 0.40
+
+checks:
+  in_hand: true
+  place_check: true
+  align: false                        # turn on to test it on the rig: calibration error is what it could correct
+
+learn:
+  max_view_gap: 0.005
+  survey_min_height: 0.06
+  obstacle_height: 0.15               # more margin on the rig
+
+contact:
+  insert_depth: 0.012
+  hover: 0.008
+  max_steps: 40

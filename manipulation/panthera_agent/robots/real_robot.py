@@ -11,6 +11,12 @@
   the R0 calibration files. The wrist camera's pose is the flange's (forward kinematics) times its hand-eye transform.
 - Safety: every commanded TCP must be inside the config's `safety` box; a move that does not settle within
   `settle_timeout_s`, or ends further than `max_tracking_error` from its target, stops the arm and fails.
+- Motion profile: `motion.profile` quintic (zero speed and acceleration at both ends; the default on the rig) or
+  smoothstep, as in the sim.
+- Two arms: with `arms:` in the config (each arm's SDK side, wrist camera and pose of its base in the table frame,
+  `T_table_base`, measured at R0), `arm_names()` lists them and `select_arm` switches; every pose the skills give is
+  in the table frame (the driven arm's base frame when there is one arm) and is converted here. The arm a skill uses
+  is a rule, not the LLM's choice: the nearest arm whose IK reaches (core/skills.py).
 
 Runs on the rig's Linux computer (the SDK is a Linux-only wheel), in panthera_teleop's environment with this
 folder's requirements added.
@@ -56,6 +62,7 @@ class RealRobot:
         """`calibrating`: open the cameras with intrinsics only (tools/calibrate_extrinsics.py finds the poses)."""
         self.cfg = config
         self.calibrating = calibrating
+        self.profile = config['motion'].get('profile', 'quintic')
         self.table_z = float(config['table']['z'])
         m, g = config['motion'], config['gripper']
         self.speed, self.hz, self.max_error = float(m['speed']), float(m['control_hz']), float(m['max_tracking_error'])
@@ -70,10 +77,21 @@ class RealRobot:
         sys.path.insert(0, str(setup.SDK / 'scripts'))
         from Panthera_lib import Panthera
         configs = setup.prepare()
-        self.arm = Panthera(str(configs[config['arm']]))
-        setup.wait_for_joint_feedback(self.arm, config['arm'])
-        self.kin = PantheraSim(SIM_ROOT / 'sim' / 'panthera' / 'scene.xml')
-        self._check_kinematics()
+        # The arms: `arms:` (two, each with its base pose in the table frame), or the single `arm:`.
+        arms = config.get('arms') or {config['arm']: {}}
+        self._arms = {}
+        for name, a in arms.items():
+            sdk = Panthera(str(configs[name]))
+            setup.wait_for_joint_feedback(sdk, name)
+            T = np.array(a.get('T_table_base', np.eye(4).tolist()), float)
+            self._arms[name] = dict(sdk=sdk, kin=PantheraSim(SIM_ROOT / 'sim' / 'panthera' / 'scene.xml'), T=T,
+                                    wrist=a.get('wrist_camera', 'wrist'))
+        self._active = None
+        self.select_arm(config.get('arm') if config.get('arm') in self._arms else next(iter(self._arms)))
+        for name in self._arms:
+            self._use(name)
+            self._check_kinematics()
+        self._use(self._active)
 
     # ---------- set-up ----------
     def _open_cameras(self, cams: dict) -> dict:
@@ -115,6 +133,36 @@ class RealRobot:
             raise RuntimeError(f'kinematics disagree: SDK {p_sdk}, model flange {link6} / TCP {self.kin.ee_pos()}; '
                                'check the URDF and joint zeros before moving')
 
+    # ---------- arms ----------
+    def _use(self, name: str) -> None:
+        a = self._arms[name]
+        self.arm, self.kin, self.T_table_base = a['sdk'], a['kin'], a['T']
+        self.T_base_table = np.linalg.inv(a['T'])
+
+    def arm_names(self) -> list[str]:
+        """The arms this rig drives."""
+        return list(self._arms)
+
+    @property
+    def active_arm(self) -> str:
+        return self._active
+
+    def select_arm(self, arm: str) -> None:
+        """Drive `arm` from now on (IK, commands, its wrist camera)."""
+        if arm not in self._arms:
+            raise ValueError(f'no arm {arm!r} (have {", ".join(self._arms)})')
+        self._active = arm
+        self._use(arm)
+
+    def _to_base(self, p: np.ndarray, R: np.ndarray | None = None):
+        """A table-frame position (and rotation) in the active arm's base frame."""
+        q = self.T_base_table[:3, :3] @ np.asarray(p, float) + self.T_base_table[:3, 3]
+        return q if R is None else (q, self.T_base_table[:3, :3] @ R)
+
+    def _to_table(self, p: np.ndarray, R: np.ndarray | None = None):
+        q = self.T_table_base[:3, :3] @ np.asarray(p, float) + self.T_table_base[:3, 3]
+        return q if R is None else (q, self.T_table_base[:3, :3] @ R)
+
     # ---------- cameras ----------
     def camera_names(self) -> list[str]:
         """The configured cameras."""
@@ -123,12 +171,15 @@ class RealRobot:
     def _camera(self, name: str) -> Camera:
         cap, cal = self.cams[name]
         cam = Camera.from_dict({'T_base_cam': np.eye(4).tolist(), **cal})
-        if 'T_flange_cam' in cal:                        # wrist: rides the flange
-            cam.T_base_cam = self.flange_pose() @ np.array(cal['T_flange_cam'], float)
+        if 'T_flange_cam' in cal:                        # wrist: rides the flange (table frame)
+            cam.T_base_cam = self.T_table_base @ self.flange_pose_base() @ np.array(cal['T_flange_cam'], float)
         return cam
 
     def observe(self, camera: str) -> Observation:
-        """The newest frame (the buffered ones are dropped) with the camera's pose now."""
+        """The newest frame (the buffered ones are dropped) with the camera's pose now. "wrist" is the active
+        arm's wrist camera."""
+        if camera == 'wrist' and self._arms[self._active]['wrist'] in self.cams:
+            camera = self._arms[self._active]['wrist']
         cap, _ = self.cams[camera]
         for _ in range(3):
             cap.grab()
@@ -139,7 +190,10 @@ class RealRobot:
 
     # ---------- motion ----------
     def ee_pose(self) -> tuple[np.ndarray, np.ndarray]:
-        """TCP from the measured joints."""
+        """TCP from the measured joints, table frame."""
+        return self._to_table(*self._ee_pose_base())
+
+    def _ee_pose_base(self) -> tuple[np.ndarray, np.ndarray]:
         self._sync()
         pos, quat = self.kin.ee_pose()
         import mujoco
@@ -156,11 +210,11 @@ class RealRobot:
         return ''
 
     def reachable(self, position, rotation, tolerance: float = 2e-3) -> bool:
-        """Inside the safety box, and IK from the measured joints reaches the pose."""
+        """Inside the safety box (table frame), and IK from the measured joints reaches the pose."""
         if self._safe(np.asarray(position, float)):
             return False
-        _, pe, re = self.kin.ik(np.asarray(position, float), mat_to_quat(rotation), q_init=self._sync(), iters=200,
-                                max_joint_step=None)
+        p, R = self._to_base(position, rotation)
+        _, pe, re = self.kin.ik(p, mat_to_quat(R), q_init=self._sync(), iters=200, max_joint_step=None)
         return pe < tolerance and re < 0.02
 
     def _send(self, q: np.ndarray) -> None:
@@ -174,15 +228,20 @@ class RealRobot:
         why = self._safe(target)
         if why:
             return MoveResult(False, float('nan'), why)
-        start, R0 = self.ee_pose()
+        target, rotation = self._to_base(target, rotation)        # IK works in the arm's own base frame
+        start, R0 = self._ee_pose_base()
         q = self._sync()
         quat, q0 = mat_to_quat(rotation), mat_to_quat(R0)
         if np.dot(quat, q0) < 0:
             quat = -quat
-        n = max(1, math.ceil(max(0.4, np.linalg.norm(target - start) / (speed or self.speed)) * self.hz))
+        dist = float(np.linalg.norm(target - start))
+        if self.profile == 'quintic':
+            n = max(1, math.ceil(max(0.4, 1.875 * dist / (speed or self.speed)) * self.hz))
+        else:
+            n = max(1, math.ceil(max(0.4, dist / (speed or self.speed)) * self.hz))
         for i in range(1, n + 1):
             u = i / n
-            u = u * u * (3 - 2 * u)
+            u = u ** 3 * (10 + u * (-15 + 6 * u)) if self.profile == 'quintic' else u * u * (3 - 2 * u)
             qq = q0 * (1 - u) + quat * u
             p = start * (1 - u) + target * u
             q, pe, _ = self.kin.ik(p, qq / np.linalg.norm(qq), q_init=q, iters=35, max_joint_step=0.08,
@@ -198,7 +257,7 @@ class RealRobot:
             if np.max(np.abs(self._sync() - q)) < 0.01:
                 break
             time.sleep(0.02)
-        err = float(np.linalg.norm(self.ee_pose()[0] - target))
+        err = float(np.linalg.norm(self._ee_pose_base()[0] - target))
         if err > self.max_error:
             self.stop()
             return MoveResult(False, err, f'ended {err * 1000:.0f} mm from the target')
@@ -223,11 +282,20 @@ class RealRobot:
         return float(self.arm.get_current_state_gripper().torque)
 
     def home(self) -> MoveResult:
-        """Up as far as reachable, then to the start pose, jaws open."""
-        return go_home(self, START_POSITION, self.start_rotation)
+        """Up as far as reachable, then to the active arm's start pose, jaws open."""
+        p, R = self._to_table(START_POSITION, self.start_rotation)
+        return go_home(self, p, R)
+
+    def base_xy(self) -> np.ndarray:
+        """Where the active arm's base stands, table frame (bearings for radial grasps are taken from here)."""
+        return self.T_table_base[:2, 3].copy()
 
     def flange_pose(self) -> np.ndarray:
-        """4x4 pose of link6 (the wrist camera's mount) from the measured joints."""
+        """4x4 pose of link6 (the wrist camera's mount), table frame."""
+        return self.T_table_base @ self.flange_pose_base()
+
+    def flange_pose_base(self) -> np.ndarray:
+        """4x4 pose of link6 in the active arm's base frame, from the measured joints."""
         self._sync()
         T = np.eye(4)
         T[:3, :3] = self.kin.data.xmat[self.kin._link6].reshape(3, 3)

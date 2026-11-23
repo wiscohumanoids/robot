@@ -43,19 +43,44 @@ def main():
     ap.add_argument('--model')
     ap.add_argument('--effort', choices=['low', 'medium', 'high', 'xhigh', 'max'])
     ap.add_argument('--max-turns', type=int, default=40)
+    ap.add_argument('--planner', choices=['claude', 'oracle'], default='claude',
+                    help='oracle: the scripted sim stand-in (llm/scripted.py ORACLES; free, for the pipeline itself)')
+    ap.add_argument('--fresh-memory', action='store_true',
+                    help='each run starts with no learned objects (measures learning on first sight)')
+    ap.add_argument('--policy', action='store_true', help='insert uses the trained local policy (models/insert)')
     args = ap.parse_args()
     load_dotenv()
     config = load_config()
-    planner = ClaudePlanner(model=args.model, effort=args.effort)
+    planner = ClaudePlanner(model=args.model, effort=args.effort) if args.planner == 'claude' else None
+    policies = None
+    if args.policy:
+        from learning.policy import load
+        pol = load('insert')
+        policies = {'insert': pol.act} if pol is not None else None
     out = ROOT / 'runs' / f'eval_{time.strftime("%Y%m%d_%H%M%S")}'
     rows = []
+    if args.planner == 'oracle':
+        from llm.scripted import ORACLES
+        skipped = [n for n in args.tasks if n not in ORACLES]
+        if skipped:
+            print(f'no oracle script for {", ".join(skipped)}: skipped', flush=True)
+        args.tasks = [n for n in args.tasks if n in ORACLES]
     for name in args.tasks:
         task = TASKS[name]
         for seed in range(args.first_seed, args.first_seed + args.seeds):
             log_dir = out / f'{name}_seed{seed}'
             try:
-                o = run_one(task.instruction, task, seed, config, args.segmenter, planner, log_dir,
-                            args.camera_error, args.max_turns)
+                memory = None
+                if args.fresh_memory:
+                    import tempfile
+                    from perception.memory import ObjectMemory
+                    memory = ObjectMemory(tempfile.mkdtemp(prefix='memory_'))
+                p = planner
+                if p is None:
+                    from llm.scripted import ORACLES, OracleScript
+                    p = (lambda steps: (lambda skills: OracleScript(skills, steps)))(ORACLES[name])
+                o = run_one(task.instruction, task, seed, config, args.segmenter, p, log_dir,
+                            args.camera_error, args.max_turns, memory=memory, policies=policies)
             except Exception as e:                       # a crashed run counts as a failure and is recorded
                 o = dict(done=False, success=False, judged_success=False, turns=0, stop=f'error: {e}')
             row = dict(task=name, seed=seed, judged=o.get('judged_success', False), claimed=o.get('success', False),
@@ -69,7 +94,8 @@ def main():
                              claim_agrees=sum(x['judged'] == x['claimed'] for x in r),
                              mean_turns=sum(x['turns'] or 0 for x in r) / max(1, len(r)))
     out.mkdir(parents=True, exist_ok=True)
-    (out / 'summary.json').write_text(json.dumps(dict(model=planner.model, effort=planner.effort,
+    (out / 'summary.json').write_text(json.dumps(dict(model=planner.model if planner else 'oracle (scripted)',
+                                                      effort=planner.effort if planner else None,
                                                       segmenter=args.segmenter, camera_error=args.camera_error,
                                                       per_task=summary, runs=rows), indent=2))
     for name, s in summary.items():

@@ -11,8 +11,14 @@ grasp plan, each straight-line move and its tracking error, wrist-camera correct
 that goes back to the model.
 
 Controls: pause at each turn (before each request and each tool) or at each motion, step with Next, pause or stop
-at any time, sim speed. "Scripted" plays a fixed red-on-green plan with no API call, to try the viewer for free.
+at any time, sim speed. "Scripted" plays a fixed plan with no API call, to try the viewer for free (on the agent's
+own tasks it also learns the objects, choosing the numbered points from the simulator's segmentation).
 Runs are logged to runs/viewer_<time>/ like tools/run_agent.py's.
+
+Also shown: the seen-objects list (what has been learned, with pictures; forget one from there), and Practice: the
+local insertion skill's demos, imitation, DAgger, RL and evaluation on the training scene, live, with the success
+rate as it goes. During practice you can take over with the keyboard (W/S, A/D move, R/F up/down, Q/E turn), the
+way a person corrects in HIL-SERL.
 
 One process: the simulation and rendering stay on the main thread (MuJoCo's GL context lives there); the web server
 answers on background threads; a Claude request runs on a worker thread while the main thread keeps rendering.
@@ -42,13 +48,15 @@ import cv2  # noqa: E402
 import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
-from core.build import SEGMENTERS, load_config, load_dotenv, make_segmenter, make_skills  # noqa: E402
+from core.build import SEGMENTERS, config_for_scene, load_config, load_dotenv, make_segmenter, make_skills  # noqa: E402
 from core.camera import pose_error  # noqa: E402
 from core.tasks import TASKS  # noqa: E402
 from llm.loop import AgentRun, StopRun  # noqa: E402
 
 PAGE = pathlib.Path(__file__).with_name('viewer.html')
-SCENES = ['scene.xml', 'scene_two_blocks.xml']
+from scenes.catalog import SCENES as AGENT_SCENES  # noqa: E402
+
+SCENES = ['scene.xml', 'scene_two_blocks.xml'] + [f'agent_{n}.xml' for n in AGENT_SCENES]
 FRAME = (960, 640)                       # width, height of the streamed view
 # USD per million tokens: input, output, cache read, cache write (5-minute). From Anthropic's pricing for the model.
 PRICES = {'claude-opus-5-5': (4.0, 20.0, 0.20, 5.0)}
@@ -118,6 +126,11 @@ class Viewer:
         self._last_render = 0.0
         self._last_status = 0.0
         self._next_tick = None
+        from perception.memory import ObjectMemory
+        self.memory = ObjectMemory()                          # the seen-objects list, kept between runs
+        self._segmenters: dict = {}
+        self.use_policy = False                               # run the trained insertion policy in `insert`
+        self.teleop_action, self.teleop_time = None, 0.0     # the keyboard takeover during practice
 
     # ---------- events and status ----------
     def _store(self, jpeg: bytes) -> str:
@@ -253,7 +266,8 @@ class Viewer:
             self.renderer = None
         self.task = TASKS[task] if task else None
         scene = self.task.scene if self.task else (scene or self.config['scene'])
-        self.robot = SimRobot({**self.config, 'scene': scene}, seed=seed)
+        self.scene_config = config_for_scene(self.config, scene)
+        self.robot = SimRobot(self.scene_config, seed=seed)
         if self.task and self.task.setup:
             self.task.setup(self.robot)
         if camera_error:
@@ -267,9 +281,11 @@ class Viewer:
         self.view_dirty = True
         self.render()
 
-    def make_planner(self, planner: str, model: str | None, effort: str | None):
+    def make_planner(self, planner: str, model: str | None, effort: str | None, skills=None):
         if planner == 'scripted':
-            from llm.scripted import RedOnGreenScript
+            from llm.scripted import ORACLES, OracleScript, RedOnGreenScript
+            if self.task is not None and self.task.name in ORACLES:
+                return OracleScript(skills, ORACLES[self.task.name])
             return RedOnGreenScript()
         from llm.claude import ClaudePlanner
         return ClaudePlanner(model=model or None, effort=effort or None)
@@ -280,14 +296,23 @@ class Viewer:
         self.stop_requested = False
         self.set_status(state='acting', turn=0)
         try:
-            p = BackgroundPlanner(self.make_planner(planner, model, effort), self)
-            self.set_status(model=p.model, effort=p.effort)
-            skills = make_skills(self.robot, make_segmenter(segmenter, self.config), self.config)
+            if segmenter not in self._segmenters:            # keep one per kind (dino_local loads a network)
+                self._segmenters[segmenter] = make_segmenter(segmenter, self.scene_config, self.memory)
+            skills = make_skills(self.robot, self._segmenters[segmenter], self.scene_config, self.memory)
             skills.on_event = self.on_event
+            if self.use_policy:
+                from learning.policy import load
+                pol = load('insert')
+                if pol is not None:
+                    skills.policies = {'insert': pol.act}
+                    self.push('note', dict(text=f'insert uses the trained policy {pol.record}'))
+            p = BackgroundPlanner(self.make_planner(planner, model, effort, skills), self)
+            self.set_status(model=p.model, effort=p.effort)
             log_dir = ROOT / 'runs' / f'viewer_{time.strftime("%Y%m%d_%H%M%S")}'
             self.push('log_dir', dict(path=str(log_dir.relative_to(ROOT))))
-            AgentRun(skills, p, self.config, log_dir, max_turns=self.args.max_turns,
+            AgentRun(skills, p, self.scene_config, log_dir, max_turns=self.args.max_turns,
                      on_event=self.on_event).run(instruction)
+            self.push('memory', self.memory_info())
             if self.task and self.task_fresh:
                 self.push('judged', dict(task=self.task.name, metrics=self.task.check(self.robot.truth_objects())))
         except StopRun:
@@ -323,12 +348,15 @@ class Viewer:
             elif op == 'run':
                 self.run(cmd['instruction'], cmd.get('planner', 'claude'), cmd.get('model'), cmd.get('effort'),
                          cmd.get('segmenter', 'sim_truth'))
+            elif op == 'practice':
+                self.practice(cmd.get('stage', 'eval'), int(cmd.get('episodes') or 10), cmd.get('layouts') or '0-9',
+                              cmd.get('policy') or 'latest')
 
     def command(self, cmd: dict) -> dict:
         """A command from the page (web thread). Run controls act at once; scene changes queue for the main thread."""
         op = cmd.get('op')
         busy = self.status['state'] != 'idle'
-        if op in ('reset', 'run'):
+        if op in ('reset', 'run', 'practice'):
             if busy:
                 return dict(ok=False, error='a run is in progress: stop it first')
             if op == 'run' and not str(cmd.get('instruction', '')).strip():
@@ -350,6 +378,16 @@ class Viewer:
                 self.set_status(mode=cmd['mode'])
                 if cmd['mode'] == 'off':
                     self.paused = False
+        elif op == 'forget':
+            ok = self.memory.forget(str(cmd.get('name', '')))
+            self.push('memory', self.memory_info())
+            return dict(ok=ok, error=None if ok else 'no such object')
+        elif op == 'policy':
+            self.use_policy = bool(cmd.get('use'))
+        elif op == 'intervene':
+            a = cmd.get('action')
+            self.teleop_action = None if a is None else np.clip(np.asarray(a, float), -1, 1)
+            self.teleop_time = time.monotonic()
         elif op == 'speed':
             self.set_status(speed=float(np.clip(float(cmd.get('speed', 1)), 0.1, 8)))
         elif op == 'view':
@@ -373,7 +411,7 @@ class Viewer:
         out = {}
         for name, label in SEGMENTERS.items():
             up, detail = True, ''
-            if name != 'sim_truth':
+            if name in ('dino_sam2', 'sam3'):
                 try:
                     h = ServerSegmenter(name).health()
                     detail = f'{h.get("backend")}, {h.get("requests")} requests'
@@ -381,6 +419,70 @@ class Viewer:
                     up, detail = False, str(e)
             out[name] = dict(label=label, up=up, detail=detail)
         return out
+
+    def memory_info(self) -> dict:
+        self.memory.load()
+        return dict(objects=[dict(name=e.name, slug=e.slug, summary=e.summary(),
+                                  grasps=len(e.grasps), views=sorted(e.fg)) for e in self.memory.entries.values()])
+
+    def teleop(self):
+        """The keyboard's current action, if a key was held in the last 0.4 s."""
+        if self.teleop_action is not None and time.monotonic() - self.teleop_time < 0.4:
+            return self.teleop_action
+        return None
+
+    def practice(self, stage: str, episodes: int, layouts: str, policy: str) -> None:
+        """A practice session on the insertion training scene, shown live (main thread)."""
+        from learning.envs import InsertEnv
+        from learning.practice import Practice
+        from learning.supervisor import SimSupervisor
+        self.stop_requested = False
+        self.set_status(state='acting', turn=0)
+        keep = self.robot
+        try:
+            lo, hi = (int(v) for v in layouts.split('-'))
+            self.push('practice', dict(event='start', stage=stage, episodes=episodes, layouts=layouts))
+            env = InsertEnv(self.config, layouts=list(range(lo, hi + 1)))
+            if self.renderer is not None:
+                self.renderer.close()
+                self.renderer = None
+            self.robot = env.robot
+            self.robot.on_tick = self.on_tick
+            viewer = self
+
+            class Sup(SimSupervisor):              # the keyboard takes priority over the simulated supervisor
+                def intervene(self, e, action):
+                    a = viewer.teleop()
+                    return a if a is not None else super().intervene(e, action)
+
+                def demo(self, e):
+                    a = viewer.teleop()
+                    return a if a is not None else super().demo(e)
+
+            pr = Practice(env, Sup(), on_event=lambda k, d: self.push(k, d))
+            if stage == 'demos':
+                pr.demos(episodes)
+            elif stage == 'bc':
+                pr.bc(3000)
+            elif stage == 'dagger':
+                pr.dagger(2, episodes, 3000)
+            elif stage == 'rl':
+                pr.rl(episodes)
+            else:
+                pr.evaluate(episodes, policy)
+            self.push('practice', dict(event='end', stage=stage, log=str(pr.log_dir.relative_to(ROOT))))
+        except StopRun:
+            self.push('practice', dict(event='end', stage=stage, stopped=True))
+        except Exception as e:
+            self.push('error', dict(message=f'{type(e).__name__}: {e}', traceback=traceback.format_exc()))
+        finally:
+            if self.renderer is not None:
+                self.renderer.close()
+                self.renderer = None
+            self.robot = keep
+            self.stop_requested = False
+            self.set_status(state='idle')
+            self.view_dirty = True
 
     def info(self) -> dict:
         import os
@@ -412,6 +514,12 @@ def handler(viewer: Viewer):
                     self._send(PAGE.read_bytes(), 'text/html; charset=utf-8')
                 elif self.path == '/info':
                     self._send(json.dumps(viewer.info()).encode(), 'application/json')
+                elif self.path == '/memory':
+                    self._send(json.dumps(viewer.memory_info()).encode(), 'application/json')
+                elif self.path.startswith('/memory/') and self.path.endswith('.jpg'):
+                    f = viewer.memory.folder / self.path[len('/memory/'):-4] / 'thumb.jpg'
+                    ok = f.resolve().is_relative_to(viewer.memory.folder.resolve()) and f.exists()
+                    self._send(f.read_bytes(), 'image/jpeg') if ok else self._send(b'none', 'text/plain', 404)
                 elif self.path.startswith('/img/'):
                     img = viewer.images.get(self.path[5:])
                     self._send(img, 'image/jpeg') if img else self._send(b'not found', 'text/plain', 404)

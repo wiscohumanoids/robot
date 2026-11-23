@@ -1,9 +1,15 @@
 """The tools' bodies: find, pick, place, look, home. Geometry and IK only; no LLM inside.
 
-pick(n):  pre-grasp from the estimate (rectangle yaw, pitched approach, `pregrasp_height` above the grasp point),
-          travel there (up to travel height, across, down), refine with the wrist camera until a correction is under
-          `refine.tolerance`, descend, close, check the jaw width, lift and check again.
-place_on(n) / place_at(x, y): the same against the support's top face (or a spot on the table), release, retreat.
+pick(n):  pre-grasp from the estimate (rectangle yaw for a cube; for a learned object, the best grasp its outline
+          and parts allow, core/grasp.py), travel there (up to travel height, across, down), refine with the wrist
+          camera until a correction is under `refine.tolerance` (stopping if the match is ambiguous), descend, close,
+          check the jaw width, lift, check again, and check by sight that the object is between the jaws.
+place_on(n) / place_at(x, y): the same against the support's top face (or a spot on the table); before lowering,
+          line the held object up over the target in the overhead image; release, retreat, then measure where it
+          ended up.
+
+More skills live in mixins: learning new objects (core/skill_learn.py), the checks by sight (core/skill_checks.py),
+and contact and tool skills (core/skill_contact.py).
 
 Every step appends to `trace` (what was estimated, what was corrected, how moves ended), which tools/run_scripted.py
 compares with the simulator's ground truth and the agent's run log keeps. `on_event(kind, data)`, when set, also
@@ -15,35 +21,31 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from core.geometry import convex_hull, fold_yaw, footprint, gripper_rotation, polygon_gap, rectangle
+from core.geometry import convex_hull, fold_yaw, footprint, gripper_rotation, polygon_gap, rectangle, rot_z
+from core.grasp import draw_options, grasp_options
+from core.skill_checks import CheckSkills
+from core.skill_contact import ContactSkills
+from core.skill_learn import LearnSkills
+from core.types import Held, Result
 from core.world import Found, ObjectType, World
 from perception.base import Segmenter
 from perception.overlay import draw_instances, draw_table_grid
 from robots.base import Observation, Robot
 
 
-@dataclass
-class Result:
-    """What a skill reports: whether it worked, a message for the LLM, images, and details for the log."""
-    ok: bool
-    message: str
-    images: list[tuple[str, np.ndarray]] = field(default_factory=list)      # (caption, rgb)
-    details: dict = field(default_factory=dict)
-
-
-@dataclass
-class Held:
-    """The object in the jaws, and where it sits relative to them."""
-    obj: Found
-    offset: np.ndarray            # TCP - object centre, in the gripper frame
-    yaw_offset: float             # object yaw - gripper yaw at the grasp
-
-
-class Skills:
+class Skills(LearnSkills, CheckSkills, ContactSkills):
     """The manipulation skills over a robot, a segmenter and the agent's world."""
 
-    def __init__(self, robot: Robot, segmenter: Segmenter, world: World, config: dict):
+    def __init__(self, robot: Robot, segmenter: Segmenter, world: World, config: dict, memory=None):
         self.robot, self.segmenter, self.world, self.cfg = robot, segmenter, world, config
+        if memory is None:
+            memory = getattr(segmenter, 'memory', None)
+        if memory is None:
+            from perception.memory import ObjectMemory
+            memory = ObjectMemory()
+        self.memory = memory
+        world.memory = memory
+        self.checks = {**dict(in_hand=True, align=False, place_check=True), **(config.get('checks') or {})}
         self.table = config['table']
         g, p, r = config['grasp'], config['place'], config['refine']
         self.pitch = np.deg2rad(g['pitch'])
@@ -65,6 +67,7 @@ class Skills:
         # Wrist corrections of overhead estimates: each one measures the overhead camera's calibration error where
         # it looked. Their median is added to overhead estimates (see `overhead_correction`).
         self.overhead_deltas: list[np.ndarray] = []
+        self.init_learning()
 
     # ---------- events ----------
     def _emit(self, kind: str, **data) -> None:
@@ -144,12 +147,15 @@ class Skills:
         """
         z0 = float(self.table['z'])
         fits = []
-        for n in ([level] if level else range(1, self.max_levels + 1)):
+        # A learned object is assumed to stand on the table unless the agent stacked it (a known level): telling
+        # levels apart by apparent size needs identical objects, like the cubes.
+        levels = [level] if level else ([1] if t.learned else range(1, self.max_levels + 1))
+        for n in levels:
             z = z0 + n * t.height
             for base in ({z - t.height, z0} if level and n > 1 else {z - t.height}):
                 fp = footprint(mask, obs.camera, z, base)
                 if fp is not None:
-                    fits.append((fp, n, max(abs(m - e) / e for m, e in zip(fp.size, t.footprint))))
+                    fits.append((fp, n, max(abs(m - e) / max(e, 1e-4) for m, e in zip(fp.size, t.footprint))))
         if level and fits:
             fits = [min(fits, key=lambda f: f[2])]
         if not fits:
@@ -160,7 +166,7 @@ class Skills:
 
     @staticmethod
     def _size_error(fp, t: ObjectType) -> float:
-        return max(abs(m - e) / e for m, e in zip(fp.size, t.footprint))
+        return max(abs(m - e) / max(e, 1e-4) for m, e in zip(fp.size, t.footprint))
 
     def _use_built_stacks(self, dets: list, obs: Observation, t: ObjectType, corr: np.ndarray) -> None:
         """Give the detections on a stack the agent built that stack's known height (see `World.stacks`).
@@ -209,15 +215,33 @@ class Skills:
         t = self.world.type_for(query)
         if t is None:
             known = ', '.join(sorted(w for ty in self.world.types.values() for w in ty.words))
-            return Result(False, f'"{query}" names no object type I can measure (known words: {known}).')
+            seen = ', '.join(e.name for e in self.memory.entries.values()) or 'none yet'
+            return Result(False, f'"{query}" is no object I know how to measure. Objects learned so far: {seen}; '
+                                 f'configured words: {known}. To learn a new object, call propose_points to get '
+                                 f'numbered points on the image, then learn with the points on it.')
         self.world.step += 1
         obs = self._observe(camera, f'find "{query}"')
         corr = self.overhead_correction() if camera == 'overhead' else np.zeros(3)
         dets = []                                          # [instance, footprint, level, trusted, known, note]
-        for inst in self._segment(obs, query):
+        instances = self._segment(obs, query)
+        heat = getattr(self.segmenter, 'last_heat', None)
+        if heat is not None:
+            self._emit('heat', camera=camera, query=query, image=heat)
+        dropped = []
+        lo, hi = (float(v) for v in self.cfg['find'].get('plausible_size', (0.4, 2.5)))
+        for inst in instances:
             fp, level, trusted = self._measure(inst.mask, obs, t)
-            if fp is not None:
-                dets.append([inst, fp, level, trusted, False, ''])
+            if fp is None:
+                continue
+            # A mask far smaller or far larger than the object can be is not it (a speck of matching colour; SAM 3's
+            # whole-table mask for "cube"), whatever its level: drop it rather than report an obstacle.
+            ratio = max(m / e for m, e in zip(fp.size, t.footprint))
+            if not lo <= ratio <= hi:
+                dropped.append(dict(label=inst.label, size_mm=[round(v * 1000) for v in fp.size]))
+                continue
+            dets.append([inst, fp, level, trusted, False, ''])
+        if dropped:
+            self._emit('dropped', query=query, why=f'size outside {lo}-{hi}x the expected', dropped=dropped)
         self._use_built_stacks(dets, obs, t, corr)
         # The same object seen again, or an old estimate now under a newly seen top: the new number replaces it. (An
         # old estimate above a new one stays: "green cube" under a known red one does not erase red.)
@@ -269,10 +293,35 @@ class Skills:
                 return Result(False, f'Could not reach {what} ({name}): {r.reason}.')
         return None
 
+    def _base_xy(self) -> np.ndarray:
+        f = getattr(self.robot, 'base_xy', None)
+        return np.zeros(2) if f is None else np.asarray(f(), float)
+
+    def _arm_for(self, xy: np.ndarray, z: float) -> None:
+        """With two arms: drive the nearest one whose IK reaches above `xy` (a geometric rule, not the LLM's)."""
+        names = getattr(self.robot, 'arm_names', lambda: [])()
+        if len(names) < 2 or self.held is not None:
+            return
+        keep = self.robot.active_arm
+        order = []
+        for name in names:
+            self.robot.select_arm(name)
+            order.append((float(np.linalg.norm(np.asarray(xy[:2]) - self._base_xy())), name))
+        for _, name in sorted(order):
+            self.robot.select_arm(name)
+            b = self._base_xy()
+            R = gripper_rotation(float(np.arctan2(xy[1] - b[1], xy[0] - b[0])), self.pitch)
+            if self.robot.reachable(np.array([xy[0], xy[1], z + self.pre_h]), R):
+                if name != keep:
+                    self._emit('arm', arm=name, why='nearest arm that reaches')
+                return
+        self.robot.select_arm(keep)
+
     def _yaws(self, yaw: float, symmetry: float, at: np.ndarray) -> list[float]:
-        """The equivalent gripper yaws (yaw + k * symmetry) within 100 deg of the radial bearing to `at`, the most
-        radial first."""
-        bearing = float(np.arctan2(at[1], at[0]))
+        """The equivalent gripper yaws (yaw + k * symmetry) within 100 deg of the radial bearing to `at` (from the
+        driven arm's base), the most radial first."""
+        b = self._base_xy()
+        bearing = float(np.arctan2(at[1] - b[1], at[0] - b[0]))
         out = []
         for k in range(int(round(2 * np.pi / symmetry))):
             y = fold_yaw(yaw + k * symmetry, 2 * np.pi, bearing)
@@ -306,13 +355,15 @@ class Skills:
                     best, who = gap, o
         return best, who
 
-    def _choose(self, yaws: list[float], tcp_of, ignore: set[int], what: str):
+    def _choose(self, yaws: list, tcp_of, ignore: set[int], what: str):
         """First (yaw, pre-height) whose TCP and pre-pose are reachable and whose gripper footprint clears the other
-        objects. Returns (yaw, R, tcp, pre) or a failing Result naming what is in the way."""
+        objects. `yaws`: gripper yaws (all with `tcp_of(R)`), or (yaw, tcp_of) pairs, each with its own grasp
+        point. Returns (yaw, R, tcp, pre) or a failing Result naming what is in the way."""
         blocked, reachable_any, tried = None, False, []
-        for yaw in yaws:
-            R = gripper_rotation(yaw, self.pitch)
-            tcp = tcp_of(R)
+        for item in yaws:
+            yaw, f, pitch = (item + (None,))[:3] if isinstance(item, tuple) else (item, tcp_of, None)
+            R = gripper_rotation(yaw, self.pitch if pitch is None else pitch)
+            tcp = f(R)
             option = dict(yaw_deg=round(float(np.rad2deg(yaw)), 1), tcp=tcp.tolist(), reachable=False)
             tried.append(option)
             for h in [self.pre_h] + self.lower_pre:
@@ -349,19 +400,27 @@ class Skills:
         info = dict(iterations=0, corrections_mm=[], note='')
         for _ in range(self.refine_iters):
             obs = self._observe('wrist', f'refine {what}')
-            best = None
+            seen = []
             for inst in self._segment(obs, obj.query):
                 fp, level, trusted = self._measure(inst.mask, obs, obj.type, tolerance=self.refine_size_tol,
                                                    level=obj.level if obj.level_known else None)
                 if fp is None:
                     continue
                 d = float(np.linalg.norm(fp.center[:2] - obj.top[:2]))
-                if best is None or d < best[1]:
-                    best = (fp, d, trusted, level)
-            if best is None:
+                seen.append((fp, d, trusted, level))
+            if not seen:
                 info['note'] = 'not seen by the wrist camera; kept the overhead estimate'
                 break
-            fp, d, trusted, level = best
+            seen.sort(key=lambda x: x[1])
+            fp, d, trusted, level = seen[0]
+            # Two equally plausible matches (two alike objects side by side): a correction toward either could be
+            # wrong, so keep the estimate rather than guess.
+            if (len(seen) > 1 and seen[1][2] and seen[1][1] < self.max_correction
+                    and seen[1][1] - d < float(self.cfg['refine'].get('ambiguity', 0.008))):
+                info['note'] = (f'ambiguous in the wrist view ({len(seen)} alike matches {d * 1000:.0f} and '
+                                f'{seen[1][1] * 1000:.0f} mm away); kept the previous estimate')
+                info['ambiguous'] = True
+                break
             if not trusted:
                 info['note'] = 'partly hidden in the wrist view; kept the previous estimate'
                 break
@@ -392,22 +451,52 @@ class Skills:
         return info
 
     # ---------- skills ----------
-    def pick(self, number: int) -> Result:
-        """Pick up found object `number`."""
+    def pick(self, number: int, part: str | None = None) -> Result:
+        """Pick up found object `number` (by its learned `part`, if given)."""
         if self.held:
             return Result(False, f'Already holding #{self.held.obj.number}; place it first.')
         obj = self.world.objects.get(int(number))
         if obj is None:
             return Result(False, f'No object #{number}; use find first.')
         self._current(obj)
+        self._arm_for(obj.top, obj.top[2])
         sym = obj.type.symmetry
         ignore = {obj.number}
-        plan = self._choose(self._yaws(obj.yaw, sym, obj.top), lambda R: obj.center + self.tcp_offset * R[:, 0],
-                            ignore, f'pick #{number}')
+        shaped = bool(obj.type.learned and obj.type.outline)
+        if part and part != 'top' and not shaped:
+            return Result(False, f'#{number} has no learned parts to grasp by.')
+        if shaped:
+            # A learned shape: grasps from its outline (and part), each a point on the object and a yaw.
+            try:
+                opts = grasp_options(obj, self.cfg, base_xy=self._base_xy(), part=part,
+                                     table_z=float(self.table['z']))
+            except KeyError:
+                return Result(False, f'#{number} has no part "{part}" (its parts: '
+                                     f'{", ".join(obj.type.parts or {}) or "none"}).')
+            if not opts:
+                return Result(False, f'#{number}: no grasp fits the open jaws (it is too wide or too thin '
+                                     f'everywhere{" at " + part if part else ""}).')
+            self._emit('grasp_options', number=number, image=draw_options(obj.type.outline, obj, opts),
+                       options=[dict(yaw_deg=round(float(np.rad2deg(o.yaw)), 1), width_mm=round(o.width * 1000, 1),
+                                     why=o.why) for o in opts[:6]])
+
+            def at(o):
+                # A pinch from above puts the TCP itself at the grasp point (the fingertips).
+                off = 0.0 if o.pitch is not None else self.tcp_offset
+                return lambda R: np.array([o.center_xy[0], o.center_xy[1], o.z]) + off * R[:, 0]
+            plan = self._choose([(o.yaw, at(o), o.pitch) for o in opts[:24]], None, ignore, f'pick #{number}')
+        else:
+            plan = self._choose(self._yaws(obj.yaw, sym, obj.top), lambda R: obj.center + self.tcp_offset * R[:, 0],
+                                ignore, f'pick #{number}')
         if isinstance(plan, Result):
             return plan
         yaw_g, R, grasp, pre = plan
         h = pre[2] - grasp[2]
+        pitch_g = float(np.arcsin(np.clip(-R[2, 0], -1, 1)))         # the approach's tilt below horizontal
+        tcp_off = self.tcp_offset if abs(pitch_g - self.pitch) < 1e-3 else 0.0
+        # The grasp in the object's frame, so a wrist correction of the object's pose moves the grasp with it.
+        local = rot_z(-obj.yaw) @ (grasp - tcp_off * R[:, 0] - obj.top)
+        yaw_rel = yaw_g - obj.yaw
         self._grip(1.0, 'open before the approach')
         err = self._travel(pre, R, f'above #{number}')
         if err:
@@ -415,9 +504,15 @@ class Skills:
 
         def replan(o):                    # after a wrist correction: same side, same height
             nonlocal yaw_g, R, grasp, pre
-            yaw_g = fold_yaw(o.yaw, sym, yaw_g)
-            R = gripper_rotation(yaw_g, self.pitch)
-            grasp = o.center + self.tcp_offset * R[:, 0]
+            if shaped:
+                yaw_o = fold_yaw(o.yaw, sym, yaw_g - yaw_rel) if sym < 2 * np.pi - 1e-6 else o.yaw
+                yaw_g = yaw_o + yaw_rel
+                R = gripper_rotation(yaw_g, pitch_g)
+                grasp = o.top + rot_z(yaw_o) @ local + tcp_off * R[:, 0]
+            else:
+                yaw_g = fold_yaw(o.yaw, sym, yaw_g)
+                R = gripper_rotation(yaw_g, self.pitch)
+                grasp = o.center + self.tcp_offset * R[:, 0]
             pre = grasp + np.array([0.0, 0.0, h])
 
         def move_pre(o):
@@ -431,7 +526,8 @@ class Skills:
         if not r.ok:
             return Result(False, f'Could not descend to #{number}: {r.reason}.', details=dict(refine=refine))
         width = self._grip(0.0, f'close on #{number}')
-        if width < self.min_width:
+        thin = obj.type.deformable or obj.type.kind == 'flat'
+        if width < self.min_width and not thin:
             self._grip(1.0, 'open (closed on nothing)')
             self._move(pre, R, f'back up from #{number}')
             self._record(dict(event='grasp', number=number, ok=False, width=width))
@@ -439,18 +535,36 @@ class Skills:
                                  'Find it again.', details=dict(refine=refine))
         self._move(pre, R, f'lift #{number}')
         lifted = self.robot.gripper_width()
-        self._record(dict(event='grasp', number=number, ok=lifted >= self.min_width, width=width,
-                               width_after_lift=lifted, yaw=yaw_g))
-        if lifted < self.min_width:
-            return Result(False, f'Grasped #{number} but dropped it while lifting.', details=dict(refine=refine))
+        held_by_width = lifted >= self.min_width or thin
+        expected = obj.center + (pre - grasp)
+        in_hand = self.check_in_hand(obj, number, expected) if self.checks['in_hand'] else None
+        ok = bool(held_by_width) and (in_hand is None or in_hand['held'] is None or bool(in_hand['held']))
+        self._record(dict(event='grasp', number=number, ok=ok, width=width, width_after_lift=lifted, yaw=yaw_g,
+                          part=part, in_hand=None if in_hand is None else in_hand['held']))
+        self.remember_grasp(obj, yaw_g, part, ok, lifted)
+        if not ok:
+            why = (f'the wrist camera does not see it between the jaws ({in_hand["note"]})' if held_by_width
+                   else f'the jaws closed to {lifted * 1000:.0f} mm')
+            if thin or held_by_width:
+                self._grip(1.0, 'open (nothing held)')
+            return Result(False, f'Grasp of #{number} failed after lifting: {why}. Find it again.',
+                          [('wrist, in hand', in_hand['image'])] if in_hand and in_hand.get('image') is not None
+                          else [], details=dict(refine=refine))
         self.held = Held(obj, R.T @ (grasp - obj.center), obj.yaw - yaw_g)
+        if in_hand is not None and in_hand.get('measured') is not None and self.checks.get('use_in_hand_pose', True):
+            tcp_now, R_now = self.robot.ee_pose()
+            self.held.offset = R_now.T @ (tcp_now - in_hand['measured'])   # where it really sits in the jaws
         self.world.objects.pop(obj.number, None)
         if self.world.stack_at(obj.top[:2]) is not None:      # a stack it built is one lower now
             self.world.set_stack(obj.top[:2], obj.level - 1)
         note = f' Wrist refine: {refine["corrections_mm"]} mm.' if refine['corrections_mm'] else ''
         note += f' ({refine["note"]})' if refine['note'] else ''
-        return Result(True, f'Holding #{number} ({obj.label}), jaws {lifted * 1000:.0f} mm apart.{note}',
-                      details=dict(refine=refine, width=lifted))
+        if in_hand is not None:
+            note += f' In hand by sight: {in_hand["note"]}.'
+        images = [('wrist, in hand', in_hand['image'])] if in_hand and in_hand.get('image') is not None else []
+        return Result(True, f'Holding #{number} ({obj.label}){" by its " + part if part else ""}, jaws '
+                            f'{lifted * 1000:.0f} mm apart.{note}', images, details=dict(refine=refine, width=lifted,
+                                                                                          in_hand=in_hand))
 
     def _place(self, top: np.ndarray, yaw: float, what: str, support: Found | None) -> Result:
         """Set the held object down with its base on `top` (a support's top face, or a spot on the table), turned to
@@ -471,6 +585,13 @@ class Skills:
         err = self._travel(pre, R, what)
         if err:
             return err
+
+        def _shift(d):                  # move the pre-place and place targets by (dx, dy), then go to the pre-place
+            nonlocal tcp, pre
+            tcp = tcp + np.array([d[0], d[1], 0.0])
+            pre = pre + np.array([d[0], d[1], 0.0])
+            r = self._move(pre, R, f'aligned pre-place {what}')
+            return None if r.ok else Result(False, f'Could not reach the aligned pre-place: {r.reason}.')
         refine = dict(iterations=0, corrections_mm=[], note='')
         if support is not None:
             def move_pre(o):
@@ -482,6 +603,9 @@ class Skills:
                 r = self._move(pre, R, f'corrected pre-place {what}')
                 return None if r.ok else Result(False, f'Could not reach the corrected pre-place: {r.reason}.')
             refine = self._refine(support, what, move_pre)
+        align = None
+        if self.checks['align']:
+            align = self.align_over(support, top, what, lambda d: _shift(d))
         r = self._move(tcp, R, f'lower {what}')
         if not r.ok:
             return Result(False, f'Could not lower onto {what}: {r.reason}.', details=dict(refine=refine))
@@ -495,7 +619,23 @@ class Skills:
                           stack_levels=support.level + 1 if support is not None else 1))
         note = f' Wrist refine: {refine["corrections_mm"]} mm.' if refine['corrections_mm'] else ''
         note += f' ({refine["note"]})' if refine['note'] else ''
-        return Result(True, f'Released #{number} {what}.{note} Look or find to check it.', details=dict(refine=refine))
+        if align and align.get('moved_mm'):
+            note += f' Lined up by sight: moved {align["moved_mm"]} mm.'
+        elif align and align.get('note'):
+            note += f' ({align["note"]})'
+        images = []
+        check = None
+        if self.checks['place_check']:
+            expected = tcp - R @ held.offset + np.array([0.0, 0.0, held.obj.type.height / 2])
+            check = self.check_place(held.obj, expected, support, yaw_g + held.yaw_offset)
+            note += f' Check: {check["note"]}'
+            if check.get('image') is not None:
+                images.append(('after the place', check['image']))
+        else:
+            note += ' Look or find to check it.'
+        return Result(True, f'Released #{number} {what}.{note}', images,
+                      details=dict(refine=refine, align=align, check={k: v for k, v in (check or {}).items()
+                                                                      if k != 'image'}))
 
     def place_on(self, number: int) -> Result:
         """Set the held object on top of found object `number`, faces aligned."""

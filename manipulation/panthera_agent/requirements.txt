@@ -5,3 +5,9 @@ opencv-contrib-python<4.12      # contrib: the ChArUco board for the rig's calib
 pyyaml
 anthropic                       # the planner (llm/claude.py)
 pytest
+# Local perception (perception/dino.py) and the local skills' learning (learning/): DINOv3 ViT-S/16 through timm,
+# from Hugging Face; PyTorch runs on CUDA (the VM), Apple's GPU (MPS) or the CPU. Tested with torch 2.14, timm 1.0.31.
+torch
+timm>=1.0.20                    # DINOv3 models
+huggingface_hub
+safetensors

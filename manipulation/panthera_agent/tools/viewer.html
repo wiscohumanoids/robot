@@ -98,6 +98,25 @@ details { margin: 4px 0; } summary { cursor: pointer; color: var(--dim); }
   justify-content: center; z-index: 10; cursor: zoom-out; flex-direction: column; gap: 8px; }
 #lightbox img { max-width: 94vw; max-height: 88vh; }
 #lightbox div { color: var(--dim); }
+#side { display: flex; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--line); background: var(--panel);
+  flex-wrap: wrap; }
+.panel { flex: 1 1 300px; min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; }
+.panel h3 { margin: 0 0 6px; font-size: 12px; color: var(--dim); font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; display: flex; gap: 6px; align-items: center; }
+.panel h3 span { flex: 1; }
+#memlist { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
+.mem { display: flex; gap: 8px; align-items: center; font-size: 12px; }
+.mem img { width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); }
+.mem .s { flex: 1; color: var(--text); }
+.mem button { padding: 1px 6px; font-size: 11px; }
+#prchart { width: 100%; height: 60px; background: #15181d; border-radius: 4px; }
+#prstrip { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; max-height: 70px; overflow-y: auto; }
+#prstrip .ep { width: 10px; height: 10px; border-radius: 2px; background: var(--bad); }
+#prstrip .ep.ok { background: var(--good); } #prstrip .ep.int { outline: 1px solid var(--warn); }
+.keys { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.k-learn { border-left-color: #e6c84f; } .k-learn .badge { background: #e6c84f; }
+.k-prac { border-left-color: #ff8fb1; } .k-prac .badge { background: #ff8fb1; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } #viewwrap { height: 55vh; flex: none; }
   #right { height: 80vh; } }
 </style>
@@ -128,7 +147,7 @@ details { margin: 4px 0; } summary { cursor: pointer; color: var(--dim); }
       <textarea id="instruction" placeholder="Tell the arm what to do, e.g. stack the red cube on the green cube"></textarea>
       <div class="row">
         <label>Planner <select id="planner"><option value="claude">Claude API</option>
-          <option value="scripted">Scripted red→green (no API)</option></select></label>
+          <option value="scripted">Scripted (no API)</option></select></label>
         <label>Model <input id="model" size="16"></label>
         <label>Effort <select id="effort"><option>low</option><option selected>medium</option><option>high</option>
           <option>xhigh</option><option>max</option></select></label>
@@ -148,6 +167,27 @@ details { margin: 4px 0; } summary { cursor: pointer; color: var(--dim); }
       </div>
       <div class="row" id="stats">—</div>
       <div id="keynote"></div>
+      <div class="row"><label title="the insert skill runs the trained local policy (models/insert/latest) instead
+        of the scripted search"><input type="checkbox" id="usepolicy"> insert: use the trained policy</label></div>
+    </div>
+    <div id="side">
+      <div class="panel"><h3><span>Seen objects</span><button id="memrefresh">⟳</button></h3>
+        <div id="memlist"><span class="keys">none learned yet</span></div></div>
+      <div class="panel"><h3><span>Practice: insert (peg_tight scene)</span></h3>
+        <div class="row">
+          <select id="prstage"><option value="eval">evaluate</option><option value="demos">demos</option>
+            <option value="bc">imitate (BC)</option><option value="dagger">DAgger</option>
+            <option value="rl">RL + interventions</option></select>
+          <label>episodes <input id="prn" type="number" value="10" min="1"></label>
+          <label>layouts <input id="prlay" value="0-9" size="6"></label>
+          <select id="prpol"><option value="latest">trained</option><option value="scripted">scripted</option>
+            <option value="expert">expert</option></select>
+          <button id="prgo">Practice ▶</button>
+        </div>
+        <svg id="prchart" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+        <div id="prstrip"></div>
+        <div class="keys" id="prkeys">take over: hold W/S, A/D (move), R/F (up/down), Q/E (turn) while practising</div>
+      </div>
     </div>
   </section>
   <section id="right">
@@ -331,7 +371,88 @@ const handlers = {
       (e.width_after_lift != null ? `, ${(e.width_after_lift * 1000).toFixed(0)} mm after the lift` : ''),
       e.ok ? 'ok' : 'fail'); },
   place(e) { step(`released #${e.number} ${e.what}`, 'ok'); },
+  heat(e) { step(`similarity map for "${e.query}" (${e.camera})`, '', 'bright = like the learned examples', e.image); },
+  dropped(e) { step(`dropped ${e.dropped.length} mask(s): ${e.why}`, 'fail',
+    e.dropped.map(d => `${d.label} ${d.size_mm.join('×')} mm`).join(', ')); },
+  points(e) { step(`${e.count} numbered points (${e.camera})`, '', (e.groups || '').replace(/\n/g, ' · '), e.image); },
+  propose(e) { },
+  learn_mask(e) { step(`learned the look of "${e.name}": its pixels`, 'ok', '', e.image); },
+  learned(e) { step(`learned "${e.name}": ${e.summary}`, 'ok', '', e.image);
+    if (e.wrist) step('second view (wrist): the same object, for the height', '', '', e.wrist); loadMemory(); },
+  learn(e) { step(`measured ${e.name}: ${e.shape}, ${(e.footprint || []).map(v => (v * 1000).toFixed(0)).join('×')} mm, ` +
+    `${(e.height * 1000).toFixed(0)} mm tall` + (e.gap_mm != null ? ` (views agree within ${e.gap_mm.toFixed(1)} mm)` : ''), 'ok'); },
+  grasp_options(e) { step(`grasp options for #${e.number}`, '', e.options.map(o => `${o.yaw_deg}°: ${o.why}`).join(' · '), e.image); },
+  in_hand_image(e) { step(`in hand by sight: ${e.held ? 'seen between the jaws' : 'NOT seen'}`, e.held ? 'ok' : 'fail', '', e.image); },
+  in_hand(e) { },
+  align(e) { if (e.image) step(`line up ${e.what}: ${e.offset_mm} mm off`, '', 'overhead, held (cyan) vs target (yellow)', e.image);
+    else if (e.note) step(`line up ${e.what}: ${e.note}`); },
+  place_check(e) { step(e.seen ? `after the place: ${e.offset_mm} mm from the target, turned ${e.turn_deg}°` +
+    (e.on === false ? ', NOT seated' : '') : 'after the place: not seen where released', e.seen && e.on !== false ? 'ok' : 'fail'); },
+  finish_start(e) { step(`local skill ${e.skill}: ${e.how}`, 'pending'); },
+  finish_step(e) { step(`${e.skill} step ${e.step}` + (e.angle != null ? `: tipped ${e.angle}°` : e.action ? `: ${JSON.stringify(e.action)}` : ''), ''); },
+  finish(e) { step(`${e.skill}: ${e.ok ? 'done' : 'did not finish'} (${e.how}, ${e.steps} steps, ${e.depth_mm} mm deep)`, e.ok ? 'ok' : 'fail'); },
+  tool(e) { step(`tool: ${e.skill} #${e.number}, ${(e.pulled_m * 100).toFixed(0)} cm`, e.ok === false ? 'fail' : 'ok'); },
+  pour(e) { step(`poured over #${e.number}: ${e.angle_deg}° about the ${e.axis} axis`, 'ok'); },
+  finish_note(e) { },
+  memory(e) { showMemory(e.objects); },
+  note(e) { add(el('div', 'divider', e.text)); },
+  practice(e) { practiceEvent(e); },
+  practice_frames(e) { if (lastPrCard && e.frames) for (const f of e.frames) lastPrCard.bodyEl.append(img(f.image, 'wrist', true)); },
 };
+
+// ---------- memory ----------
+function showMemory(objs) {
+  const box = $('#memlist'); box.innerHTML = '';
+  if (!objs || !objs.length) { box.append(el('span', 'keys', 'none learned yet')); return; }
+  for (const o of objs) {
+    const r = el('div', 'mem'); const i = el('img'); i.src = `/memory/${o.slug}.jpg?${Date.now()}`;
+    const f = el('button', null, 'forget'); f.onclick = () => { if (confirm(`Forget ${o.name}?`)) post({op: 'forget', name: o.name}); };
+    r.append(i, el('span', 's', `${o.summary} · views: ${o.views.join(', ')}`), f); box.append(r);
+  }
+}
+function loadMemory() { fetch('/memory').then(r => r.json()).then(m => showMemory(m.objects)); }
+$('#memrefresh').onclick = loadMemory;
+
+// ---------- practice ----------
+let prHistory = [], lastPrCard = null;
+function practiceEvent(e) {
+  if (e.event === 'start') { prHistory = []; $('#prstrip').innerHTML = ''; drawChart();
+    lastPrCard = add(card('k-prac', 'practice', `${e.stage}: ${e.episodes} episodes on layouts ${e.layouts}`)); return; }
+  if (e.event === 'episode') {
+    prHistory.push(e.success ? 1 : 0);
+    const d = el('div', 'ep' + (e.success ? ' ok' : '') + (e.interventions ? ' int' : ''));
+    d.title = `${e.source}: ${e.success ? 'success' : 'failure'}, ${e.steps} steps, ${e.interventions} interventions`;
+    $('#prstrip').append(d); drawChart();
+    if (lastPrCard) lastPrCard.metaEl.textContent = `${prHistory.length} episodes · ${(100 * mean(prHistory.slice(-20))).toFixed(0)}% last 20`;
+    return;
+  }
+  if (!lastPrCard) lastPrCard = add(card('k-prac', 'practice', 'practice'));
+  if (e.event === 'rate') lastPrCard.bodyEl.append(el('div', 'lbl', `${e.what}: ${(e.success * 100).toFixed(0)}% of ${e.n}` +
+    (e.interventions ? `, ${e.interventions} interventions` : '')));
+  else if (e.event === 'bc') lastPrCard.bodyEl.append(el('div', 'lbl', `imitation step ${e.step}: loss ${e.loss}, held-out ${e.val}`));
+  else if (e.event === 'trained' || e.event === 'promoted' || e.event === 'end' || e.event === 'rl_start')
+    lastPrCard.bodyEl.append(json(e));
+}
+const mean = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+function drawChart() {
+  const svg = $('#prchart'); const n = prHistory.length; let pts = '';
+  for (let i = 0; i < n; i++) { const w = prHistory.slice(Math.max(0, i - 9), i + 1);
+    pts += `${(i / Math.max(1, n - 1)) * 300},${60 - mean(w) * 56 - 2} `; }
+  svg.innerHTML = `<line x1="0" y1="32" x2="300" y2="32" stroke="#2c323b" stroke-dasharray="3 3"/>` +
+    (n ? `<polyline points="${pts}" fill="none" stroke="#5fcf80" stroke-width="2"/>` : '');
+}
+$('#prgo').onclick = () => post({op: 'practice', stage: $('#prstage').value, episodes: +$('#prn').value,
+  layouts: $('#prlay').value, policy: $('#prpol').value});
+$('#usepolicy').onchange = () => post({op: 'policy', use: $('#usepolicy').checked});
+const KEYS = {w: [1, 0, 0, 0], s: [-1, 0, 0, 0], a: [0, 1, 0, 0], d: [0, -1, 0, 0], r: [0, 0, 1, 0], f: [0, 0, -1, 0],
+  q: [0, 0, 0, 1], e: [0, 0, 0, -1]};
+const held = new Set(); let teleTimer = null;
+function teleSend() { if (!held.size) { post({op: 'intervene', action: null}); clearInterval(teleTimer); teleTimer = null; return; }
+  const a = [0, 0, 0, 0, 0]; for (const k of held) KEYS[k].forEach((v, i) => a[i] += v); post({op: 'intervene', action: a}); }
+document.addEventListener('keydown', (e) => { const k = e.key.toLowerCase();
+  if (!KEYS[k] || status.state === 'idle' || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+  held.add(k); if (!teleTimer) teleTimer = setInterval(teleSend, 100); teleSend(); });
+document.addEventListener('keyup', (e) => { held.delete(e.key.toLowerCase()); });
 
 function applyMotionFilter() { TL.classList.toggle('nomotion', !$('#motion').checked); }
 const st = document.createElement('style'); st.textContent = '.nomotion li[data-motion] { display: none; }';
@@ -406,6 +527,7 @@ fetch('/info').then(r => r.json()).then(i => {
   if (!i.has_key) $('#planner').value = 'scripted';
   fillSegmenters(i.segmenters, i.segmenter);
   keynote();
+  loadMemory();
 });
 function fillSegmenters(segs, chosen) {
   const sel = $('#segmenter'), keep = chosen || sel.value; sel.innerHTML = '';

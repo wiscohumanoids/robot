@@ -2,7 +2,8 @@
 the geometry's or the motion's.
 
 A query matches a scene body when its object word names one of the body's object types (config `objects:` words:
-"block" finds the cubes) and any colour it names is in the body's name (cube_red is red).
+"block" finds the cubes), or is itself one of the body's name words ("mug" finds mug_purple, for learned objects),
+and any colour it names is in the body's name (cube_red is red).
 """
 from __future__ import annotations
 
@@ -26,7 +27,9 @@ class SimTruthSegmenter:
         for t, vocab in self.types.items():
             if t in body and any(w in vocab or w.rstrip('s') in vocab for w in query):
                 return True
-        return False
+        # Any other object (a learned one: "purple mug" -> body mug_purple): a query noun is the body's own word.
+        nouns = [w.rstrip('s') if len(w) > 3 else w for w in query if w not in COLOURS]
+        return any(n in body for n in nouns)
 
     def segment(self, obs: Observation, query: str) -> list[Instance]:
         """One mask per matching body, largest first."""

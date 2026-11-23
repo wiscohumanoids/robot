@@ -34,22 +34,36 @@ def load_dotenv(path: pathlib.Path = REPO / '.env') -> None:
 
 
 # Where object masks come from: the sim's own (perfect) ones, or one of the GPU VM's perception servers.
-SEGMENTERS = {'sim_truth': 'MuJoCo ground truth', 'dino_sam2': 'Grounding DINO + SAM 2.1 (VM)', 'sam3': 'SAM 3 (VM)'}
+SEGMENTERS = {'sim_truth': 'MuJoCo ground truth', 'dino_local': 'DINOv3, learned objects (this machine)',
+              'dino_sam2': 'Grounding DINO + SAM 2.1 (VM)', 'sam3': 'SAM 3 (VM)'}
 
 
-def make_segmenter(name: str, config: dict):
-    """One of SEGMENTERS."""
+def make_segmenter(name: str, config: dict, memory=None):
+    """One of SEGMENTERS. `memory`: the seen-objects list (perception/memory.py) dino_local finds objects from."""
     if name == 'sim_truth':
         from perception.sim_truth import SimTruthSegmenter
         return SimTruthSegmenter(config['objects'])
+    if name == 'dino_local':
+        from perception.dino_local import DinoLocalSegmenter
+        return DinoLocalSegmenter(memory, **(config.get('segmenters') or {}).get('dino_local', {}))
     if name in ('dino_sam2', 'sam3'):
         from perception.server_client import ServerSegmenter
         return ServerSegmenter(name, **(config.get('segmenters') or {}).get(name, {}))
     raise ValueError(f'unknown segmenter {name!r} ({", ".join(SEGMENTERS)})')
 
 
-def make_skills(robot, segmenter, config: dict):
-    """Skills over a fresh World."""
+def make_skills(robot, segmenter, config: dict, memory=None):
+    """Skills over a fresh World, with the seen-objects list (the segmenter's, `memory`, or the default folder)."""
     from core.skills import Skills
     from core.world import World
-    return Skills(robot, segmenter, World.from_config(config['objects']), config)
+    return Skills(robot, segmenter, World.from_config(config['objects']), config, memory=memory)
+
+
+def config_for_scene(config: dict, scene: str) -> dict:
+    """The config with the scene's file and, for the agent's scenes (scenes/catalog.py), its table extent."""
+    out = {**config, 'scene': scene}
+    if scene.startswith('agent_'):
+        from scenes.catalog import SCENES
+        sc = SCENES[scene[len('agent_'):-len('.xml')]]
+        out['table'] = {**config['table'], 'x': list(sc.table_x), 'y': list(sc.table_y)}
+    return out
