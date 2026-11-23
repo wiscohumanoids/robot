@@ -149,11 +149,15 @@ class ContactSkills:
 
     def _run_policy(self, policy, start, R, hole, c):
         """The trained local policy, 10 Hz: wrist image + pose relative to the start -> a small relative move."""
+        from learning.cond import condition, memory_feature
         from learning.envs import local_observation
+        entry = next(iter(self.memory.lookup(self.held.obj.type.name)), None) if self.held.obj.type.learned else None
+        cond = condition('insert', memory_feature(entry))       # which skill, which object (learning/cond.py)
         steps = 0
         yaw0 = 0.0
         for steps in range(1, c['max_steps'] + 1):
             obs = local_observation(self.robot, start, yaw0)
+            obs['cond'] = cond
             a = np.asarray(policy(obs), float)
             if a[-1] > 0.5:                           # the policy says it is done
                 break

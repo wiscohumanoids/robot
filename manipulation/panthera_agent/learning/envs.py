@@ -52,11 +52,21 @@ class InsertEnv:
     max_steps = 40
 
     def __init__(self, config: dict, seed: int = 0, offset_m: float = 0.006, offset_deg: float = 8.0,
-                 depth: float = 0.015, scene: str = 'agent_peg_tight.xml', layouts: list[int] | None = None):
+                 depth: float = 0.015, scene: str = 'agent_peg_tight.xml', layouts: list[int] | None = None,
+                 spec: dict | None = None):
         """`layouts`: the scene seeds episodes are drawn from (the fixture and the peg are placed differently in
-        each); default just `seed`. Train on some, evaluate on others."""
+        each); default just `seed`. Train on some, evaluate on others. `spec`: an insertion task from the
+        curriculum (scenes/catalog.py insert_scene: peg shape, size, colours, clearance, handoff error); without
+        it, the tight square peg scene."""
         from core.build import config_for_scene
         from robots.sim_robot import SimRobot
+        self.spec = spec
+        if spec is not None:
+            from scenes.catalog import insert_scene, register
+            scene = register(insert_scene(spec))
+            offset_m = float(spec.get('offset_mm', offset_m * 1000)) / 1000
+            offset_deg = float(spec.get('offset_deg', offset_deg))
+        self.task = spec['id'] if spec else 'peg_tight'
         self.cfg = config_for_scene(config, scene)
         self.layouts = list(layouts) if layouts else [seed]
         self.robot = SimRobot(self.cfg, seed=self.layouts[0])
@@ -65,21 +75,39 @@ class InsertEnv:
         self.offset_m, self.offset_deg, self.depth = offset_m, np.deg2rad(offset_deg), depth
         self.pitch = np.deg2rad(self.cfg['grasp']['pitch'])
         m = self.robot.sim.model
-        self._peg = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, 'peg_red')
-        self._hole = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, 'fixture_orange')
-        self.peg_h = 0.06
-        self.hole_top = float(self.robot.sim.data.xpos[self._hole][2]) + 0.035
+        pc, fc = (spec['peg_colour'], spec['fixture_colour']) if spec else ('red', 'orange')
+        self._peg = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, f'peg_{pc}')
+        self._hole = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, f'fixture_{fc}')
+        self.peg_h = float(spec['peg_height']) if spec else 0.06
+        self.round = bool(spec and spec['peg_shape'] == 'cylinder')
+        self.fixture_h = 0.035
         self._use(self.layouts[0])
 
     def _use(self, layout: int) -> None:
         """Switch to a scene layout, setting it up (once) the privileged way."""
+        m = self.robot.sim.model
         if layout not in self._snapshots:
             self.robot.reset(layout)
-            self.hole_top = float(self.robot.sim.data.xpos[self._hole][2]) + 0.035
+            self.hole_top = float(self.robot.sim.data.xpos[self._hole][2]) + self.fixture_h
+            self.feature = self._object_feature()
             self._setup()
-            self._snapshots[layout] = (self._snapshot, self.R0.copy(), self.handoff.copy(), self.in_hand.copy())
-        self._snapshot, self.R0, self.handoff, self.in_hand = self._snapshots[layout]
+            # The fixture is a fixed body placed per layout in the model, not the state: keep its place too.
+            self._snapshots[layout] = (self._snapshot, self.R0.copy(), self.handoff.copy(), self.in_hand.copy(),
+                                       m.body_pos[self._hole].copy(), m.body_quat[self._hole].copy(),
+                                       self.hole_top, self.feature)
+        (self._snapshot, self.R0, self.handoff, self.in_hand, pos, quat, self.hole_top,
+         self.feature) = self._snapshots[layout]
+        m.body_pos[self._hole], m.body_quat[self._hole] = pos, quat
         self.layout = layout
+
+    def close(self) -> None:
+        self.robot.close()
+
+    def _object_feature(self):
+        """The peg's DINO feature from the overhead image (what the agent's memory would hold for it)."""
+        from learning.cond import object_feature
+        obs = self.robot.observe('overhead')
+        return object_feature(obs.rgb, obs.extra['segmentation'] == self._peg)
 
     # ---------- privileged set-up ----------
     def _setup(self) -> None:
@@ -88,7 +116,7 @@ class InsertEnv:
         peg = d.xpos[self._peg].copy()
         yaw_peg = _yaw_of(d.xmat[self._peg].reshape(3, 3))
         bearing = float(np.arctan2(peg[1], peg[0]))
-        yaw = yaw_peg + np.round((bearing - yaw_peg) / (np.pi / 2)) * (np.pi / 2)
+        yaw = bearing if self.round else yaw_peg + np.round((bearing - yaw_peg) / (np.pi / 2)) * (np.pi / 2)
         R = gripper_rotation(yaw, self.pitch)
         tcp_off = float(self.cfg['grasp']['tcp_offset'])
         grasp = np.array([peg[0], peg[1], peg[2] + self.peg_h - 0.014]) + tcp_off * R[:, 0]
@@ -103,9 +131,9 @@ class InsertEnv:
         hyaw = _yaw_of(d.xmat[self._hole].reshape(3, 3))
         hb = float(np.arctan2(hole[1], hole[0]))
         # The peg turns with the hand: a hand yaw that turns it face-on to the hole, as radial as possible.
-        turn = (hyaw - yaw_peg + np.pi / 4) % (np.pi / 2) - np.pi / 4
+        turn = 0.0 if self.round else (hyaw - yaw_peg + np.pi / 4) % (np.pi / 2) - np.pi / 4
         yaw_g = yaw + turn
-        yaw_g += np.round((hb - yaw_g) / (np.pi / 2)) * (np.pi / 2)
+        yaw_g = hb if self.round else yaw_g + np.round((hb - yaw_g) / (np.pi / 2)) * (np.pi / 2)
         self.R0 = gripper_rotation(yaw_g, self.pitch)
         tcp, _ = r.ee_pose()
         target = np.array([hole[0], hole[1], self.hole_top + 0.006]) - self.R0 @ self.in_hand
@@ -152,7 +180,10 @@ class InsertEnv:
         return self.observe()
 
     def observe(self) -> dict:
-        return local_observation(self.robot, self.start, self.yaw)
+        from learning.cond import condition
+        obs = local_observation(self.robot, self.start, self.yaw)
+        obs['cond'] = condition(self.skill, self.feature)
+        return obs
 
     def final_views(self) -> dict:
         """Full-resolution images of how the attempt ended, for labelling."""
@@ -168,7 +199,7 @@ class InsertEnv:
         peg, pyaw = self.peg_state()
         hole = d.xpos[self._hole]
         hyaw = _yaw_of(d.xmat[self._hole].reshape(3, 3))
-        dyaw = (pyaw - hyaw + np.pi / 4) % (np.pi / 2) - np.pi / 4
+        dyaw = 0.0 if self.round else (pyaw - hyaw + np.pi / 4) % (np.pi / 2) - np.pi / 4
         return peg[:2] - hole[:2], float(dyaw), float(self.hole_top - peg[2])
 
     def success(self) -> bool:

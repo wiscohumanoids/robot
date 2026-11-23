@@ -257,3 +257,49 @@ def layout(scene: Scene, rng: np.random.Generator) -> dict[str, tuple[np.ndarray
         placed.append((xy, b.radius))
         out[b.name] = (xy, float(rng.uniform(-np.pi, np.pi)) if b.yaw is None else np.deg2rad(b.yaw))
     return out
+
+
+# ---------- insertion tasks made from a spec (the curriculum's: learning/curriculum.py) ----------
+def ring_fixture(colour: str, hole_r: float, outer_r: float = 0.04, height: float = 0.035, segments: int = 24):
+    """A fixed block with a round through-hole of radius `hole_r` (a ring of wall segments)."""
+    wall = outer_r - hole_r
+    mid = hole_r + wall / 2
+    seg = np.pi * outer_r / segments * 1.15                   # half-width, overlapping at the outside
+    geoms = []
+    for i in range(segments):
+        a = 2 * np.pi * i / segments
+        geoms.append(Geom('box', (wall / 2, seg, height / 2), (mid * np.cos(a), mid * np.sin(a), height / 2),
+                          euler=(0, 0, float(np.rad2deg(a))), name=f'fixture_{colour}' if i == 0 else None))
+    return Body(f'fixture_{colour}', colour, geoms, free=False, pos=None, yaw=None, graspable=False,
+                radius=outer_r + 0.02)
+
+
+# The ranges a spec may take (the curriculum step checks Claude's proposals against these).
+INSERT_RANGES = dict(peg_shape=['box', 'cylinder'], peg_width=(0.016, 0.040), peg_height=(0.040, 0.080),
+                     clearance=(0.0005, 0.004), offset_mm=(0.0, 12.0), offset_deg=(0.0, 15.0),
+                     colours=[c for c in COLOURS if c not in ('white', 'grey')])
+
+
+def insert_scene(spec: dict) -> Scene:
+    """The scene for an insertion task spec: {id, peg_shape, peg_width, peg_height, peg_colour, clearance,
+    fixture_colour, ...}. The fixture is placed at random per layout; the peg beside it."""
+    w, h, c = float(spec['peg_width']), float(spec['peg_height']), float(spec['clearance'])
+    if spec['peg_shape'] == 'cylinder':
+        peg = cylinder('peg', spec['peg_colour'], w / 2, h)
+        fixture = ring_fixture(spec['fixture_colour'], w / 2 + c, outer_r=w / 2 + c + 0.022)
+    else:
+        peg = box('peg', spec['peg_colour'], w, w, h)
+        fixture = peg_fixture(spec['fixture_colour'], hole=w + 2 * c, outer=w + 2 * c + 0.045, place=None)
+    return Scene(f'ins_{spec["id"]}', [peg, fixture], f'insertion task {spec["id"]}: {spec["peg_shape"]} peg '
+                 f'{w * 1000:.0f} mm, {c * 1000:.1f} mm clearance a side', spawn_x=(0.30, 0.48), spawn_y=(-0.20, 0.20))
+
+
+def register(scene: Scene) -> str:
+    """Add a scene made at run time to SCENES and write its file; returns the file name SimRobot loads."""
+    import pathlib
+    SCENES[scene.name] = scene
+    path = pathlib.Path(__file__).resolve().parents[2] / 'panthera_sim' / 'sim' / 'panthera' / f'agent_{scene.name}.xml'
+    text = scene_xml(scene)
+    if not path.exists() or path.read_text() != text:
+        path.write_text(text)
+    return path.name

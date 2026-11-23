@@ -155,6 +155,12 @@ class SimRobot:
             out[name] = d.flexvert_xpos[a:a + n].copy()
         return out
 
+    def close(self) -> None:
+        """Free the GL renderers (several sims in one process: close one before starting the next)."""
+        for r in self._renderers.values():
+            r.close()
+        self._renderers.clear()
+
     # ---------- cameras ----------
     def camera_names(self) -> list[str]:
         """The rendered cameras."""

@@ -10,8 +10,8 @@ The environment is learning/envs.py SkillEnv: the insert skill's own handoff (fi
 steps, success from the arm's pose (the peg's bottom below the hole's top). Between attempts the peg is lifted back
 out to the handoff; when something goes wrong the supervisor resets through the agent (Claude, with
 --reset-instruction) or asks the person. Every attempt is an episode in data/episodes/insert/, with full-resolution
-final images for Claude's labels (python -m learning.label), synced to the VM for the nightly job
-(tools/learning_sync.sh push).
+final images for Claude's labels (python -m learning.label), synced to the VM for the daily cycle
+(tools/learning_vm.sh push).
 
 Before the first session: tools/rig_check.py passes, the peg and the hole are learned (the agent's learn tool), and
 someone is at the stop button. The rig's speed limits (config/rig.yaml motion, safety) apply to every step.

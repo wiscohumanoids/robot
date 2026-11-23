@@ -23,8 +23,9 @@ import numpy as np
 import torch
 from torch import nn
 
-from learning.episodes import EpisodeStore
-from learning.policy import Encoder, LocalPolicy, device, prep, save
+from learning.cond import condition
+from learning.episodes import EpisodeStore, all_stores
+from learning.policy import SHARED, Encoder, LocalPolicy, device, prep, save
 
 
 def _targets(z: dict) -> np.ndarray:
@@ -34,33 +35,39 @@ def _targets(z: dict) -> np.ndarray:
     return a
 
 
-def chunk_dataset(store: EpisodeStore, chunk: int, entries: list[dict]):
-    """(wrist, state, target chunk (N, chunk, 5), mask (N, chunk)) over the given episodes."""
-    W, S, A, M = [], [], [], []
-    for e in entries:
+def chunk_dataset(items: list[tuple], chunk: int):
+    """(wrist, state, condition, target chunk (N, chunk, 5), mask (N, chunk)) over (store, entry) pairs."""
+    W, S, C, A, M = [], [], [], [], []
+    for store, e in items:
         z = store.load(e['id'])
         tgt = _targets(z)
         T = len(tgt)
+        cond = z['cond'] if 'cond' in z else np.repeat(condition(store.skill, None)[None], T, axis=0)
         for t in range(T):
             idx = np.arange(t, t + chunk)
             m = idx < T
             a = tgt[np.minimum(idx, T - 1)].copy()
             W.append(z['wrist'][t])
             S.append(z['state'][t])
+            C.append(cond[t])
             A.append(a)
             M.append(m)
-    return np.stack(W), np.stack(S), np.stack(A).astype(np.float32), np.stack(M)
+    return np.stack(W), np.stack(S), np.stack(C), np.stack(A).astype(np.float32), np.stack(M)
 
 
-def train_bc(skill: str, steps: int = 3000, chunk: int = 4, batch: int = 128, lr: float = 3e-4,
+def train_bc(skill: str = SHARED, steps: int = 3000, chunk: int = 4, batch: int = 128, lr: float = 3e-4,
              init: LocalPolicy | None = None, name: str | None = None, log=print, store_root=None,
              make_latest: bool = True) -> tuple:
-    """Fit the imitation policy; returns (policy, record). With `make_latest`, the skills load it from now on."""
-    store = EpisodeStore(skill, store_root)
-    eps = [e for e in store.entries() if e.get('success') or e.get('relabelled')]
-    if not eps:
-        raise RuntimeError(f'no usable {skill} episodes in {store.folder}')
-    W, S, A, M = chunk_dataset(store, chunk, eps)
+    """Fit the shared imitation policy on every skill's usable episodes (successful ones, and relabelled ones: the
+    supervisor's action at every step); returns (policy, record). With `make_latest`, the skills load it from now
+    on. `skill`: SHARED for all skills' episodes, or one skill's name to train on that skill alone."""
+    stores = all_stores(store_root) if skill == SHARED else [EpisodeStore(skill, store_root)]
+    items = [(st, e) for st in stores for e in st.entries()
+             if (e.get('success') or e.get('relabelled')) and not str(e.get('source', '')).startswith('eval')]
+    if not items:
+        raise RuntimeError(f'no usable episodes in {[str(st.folder) for st in stores]}')
+    eps = items
+    W, S, Cn, A, M = chunk_dataset(items, chunk)
     dev = device()
     pol = (init or LocalPolicy(chunk=chunk)).to(dev).train()
     opt = torch.optim.AdamW(pol.parameters(), lr=lr, weight_decay=1e-4)
@@ -72,7 +79,7 @@ def train_bc(skill: str, steps: int = 3000, chunk: int = 4, batch: int = 128, lr
     losses = []
     for step in range(1, steps + 1):
         b = np.random.choice(tr, min(batch, len(tr)))
-        img, st = prep(W[b], S[b], dev, augment=True)
+        img, st = prep(W[b], S[b], dev, augment=True, cond=Cn[b])
         tgt = torch.as_tensor(A[b], device=dev)
         m = torch.as_tensor(M[b], device=dev, dtype=torch.float32)[..., None]
         loss = ((pol(img, st) - tgt).abs() * m).sum() / (m.sum() * A.shape[-1])
@@ -83,13 +90,14 @@ def train_bc(skill: str, steps: int = 3000, chunk: int = 4, batch: int = 128, lr
         if step % max(1, steps // 10) == 0 or step == steps:
             with torch.no_grad():
                 pol.eval()
-                img, st = prep(W[val], S[val], dev)
+                img, st = prep(W[val], S[val], dev, cond=Cn[val])
                 vl = float(((pol(img, st) - torch.as_tensor(A[val], device=dev)).abs()
                             * torch.as_tensor(M[val], device=dev)[..., None]).mean())
                 pol.train()
             log(dict(event='bc', step=step, loss=round(float(np.mean(losses[-50:])), 4), val=round(vl, 4),
                      seconds=round(time.time() - t0, 1)))
-    record = dict(kind='bc', episodes=len(eps), frames=int(n), steps=steps, chunk=chunk, device=dev,
+    tasks = sorted({str(e.get('task', st.skill)) for st, e in items})
+    record = dict(kind='bc', episodes=len(eps), frames=int(n), steps=steps, chunk=chunk, device=dev, tasks=tasks,
                   final_loss=round(float(np.mean(losses[-50:])), 4), seconds=round(time.time() - t0, 1))
     name = name or f'bc_{time.strftime("%Y%m%d_%H%M%S")}'
     record['name'] = name

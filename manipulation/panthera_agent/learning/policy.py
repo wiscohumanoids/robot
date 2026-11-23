@@ -1,4 +1,5 @@
-"""The local policies: small networks on the wrist image and the relative state, sized to train in minutes.
+"""The shared local policy: one small network for every local skill and object, on the wrist image, the relative
+state and a condition (which skill, which object: learning/cond.py), sized to train in minutes.
 
 LocalPolicy ("ACT-lite"): a convolutional encoder for the 64 x 64 wrist image (random-shift augmented while
 training, as in DrQ / HIL-SERL), the 5-number state, and a head predicting a chunk of the next `chunk` actions (ACT's
@@ -9,8 +10,8 @@ SAC (for the RL stage): a tanh-Gaussian actor built on the same encoder and trun
 policy's weights), and two Q networks with their own encoder. Small on purpose: HIL-SERL reaches near-perfect
 insertion with a ResNet-10 at 128 x 128 on one GPU in 1-2.5 h; this is smaller still, to run on a laptop or the VM.
 
-Checkpoints: models/<skill>/<name>.pt with the network's settings and a short record of what it was trained on;
-models/<skill>/latest.json names the one the skills load.
+Checkpoints: models/local/<name>.pt (SHARED) with the network's settings and a short record of what it was trained
+on; models/local/latest.json names the one the skills load.
 """
 from __future__ import annotations
 
@@ -23,8 +24,11 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from learning.cond import CONDITION_DIM
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ACTION_DIM, STATE_DIM = 5, 5
+SHARED = 'local'                       # the one policy for every local skill
 STATE_SCALE = torch.tensor([1 / 0.01, 1 / 0.01, 1 / 0.01, 1 / 0.1, 1 / 0.04])   # metres and radians to ~unit
 
 
@@ -59,13 +63,16 @@ class Encoder(nn.Module):
         return self.fc(self.conv(img))
 
 
-def prep(wrist, state, dev, augment: bool = False):
-    """Batch tensors: images (N, 3, 64, 64) in [0, 1] (randomly shifted when `augment`), states scaled."""
+def prep(wrist, state, dev, augment: bool = False, cond=None):
+    """Batch tensors: images (N, 3, 64, 64) in [0, 1] (randomly shifted when `augment`), states scaled, and the
+    condition (N, CONDITION_DIM) appended to the state (zeros when not given)."""
     img = torch.as_tensor(np.asarray(wrist), device=dev).permute(0, 3, 1, 2).float() / 255.0
     if augment:
         img = random_shift(img)
     st = torch.as_tensor(np.asarray(state), device=dev, dtype=torch.float32) * STATE_SCALE.to(dev)
-    return img, st
+    c = torch.zeros((st.shape[0], CONDITION_DIM), device=dev) if cond is None else \
+        torch.as_tensor(np.asarray(cond), device=dev, dtype=torch.float32)
+    return img, torch.cat([st, c], -1)
 
 
 class LocalPolicy(nn.Module):
@@ -75,11 +82,15 @@ class LocalPolicy(nn.Module):
         super().__init__()
         self.chunk = chunk
         self.enc = Encoder()
-        self.trunk = nn.Sequential(nn.Linear(256 + STATE_DIM, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU())
+        self.cond = nn.Sequential(nn.Linear(CONDITION_DIM, 64), nn.ReLU())
+        self.trunk = nn.Sequential(nn.Linear(256 + STATE_DIM + 64, hidden), nn.ReLU(), nn.Linear(hidden, hidden),
+                                   nn.ReLU())
         self.head = nn.Linear(hidden, chunk * ACTION_DIM)
 
     def features(self, img, st):
-        return self.trunk(torch.cat([self.enc(img), st], -1))
+        """`st`: the scaled state with the condition appended (see `prep`)."""
+        s, c = st[:, :STATE_DIM], st[:, STATE_DIM:]
+        return self.trunk(torch.cat([self.enc(img), s, self.cond(c)], -1))
 
     def forward(self, img, st):
         return torch.tanh(self.head(self.features(img, st))).view(-1, self.chunk, ACTION_DIM)
@@ -87,7 +98,8 @@ class LocalPolicy(nn.Module):
     @torch.no_grad()
     def act(self, obs: dict) -> np.ndarray:
         dev = next(self.parameters()).device
-        img, st = prep(obs['wrist'][None], obs['state'][None], dev)
+        c = obs.get('cond')
+        img, st = prep(obs['wrist'][None], obs['state'][None], dev, cond=None if c is None else c[None])
         return self(img, st)[0, 0].cpu().numpy()
 
 
@@ -118,7 +130,7 @@ class Critic(nn.Module):
     def __init__(self, hidden: int = 256):
         super().__init__()
         self.enc = Encoder()
-        self.q = nn.ModuleList([nn.Sequential(nn.Linear(256 + STATE_DIM + ACTION_DIM, hidden), nn.ReLU(),
+        self.q = nn.ModuleList([nn.Sequential(nn.Linear(256 + STATE_DIM + CONDITION_DIM + ACTION_DIM, hidden), nn.ReLU(),
                                               nn.Linear(hidden, hidden), nn.ReLU(), nn.Linear(hidden, 1))
                                 for _ in range(2)])
 
@@ -129,7 +141,9 @@ class Critic(nn.Module):
 
 # ---------- checkpoints ----------
 def models_dir(skill: str) -> pathlib.Path:
-    d = ROOT / 'models' / skill
+    """models/<skill>/ (PANTHERA_AGENT_MODELS moves the models folder; the VM keeps it next to its data)."""
+    import os
+    d = pathlib.Path(os.environ.get('PANTHERA_AGENT_MODELS') or ROOT / 'models') / skill
     d.mkdir(parents=True, exist_ok=True)
     return d
 

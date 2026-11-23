@@ -27,7 +27,7 @@ import torch
 from torch.nn import functional as F
 
 from learning.episodes import Episode, EpisodeStore
-from learning.policy import Actor, Critic, LocalPolicy, device, load, prep, save
+from learning.policy import SHARED, Actor, Critic, LocalPolicy, device, load, prep, save
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -42,9 +42,10 @@ class Practice:
         self.on_event = on_event
         self.log_dir = log_dir or ROOT / 'runs' / f'practice_{self.skill}_{time.strftime("%Y%m%d_%H%M%S")}'
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.task = getattr(env, 'task', self.skill)
 
     def log(self, d: dict) -> None:
-        d = dict(t=round(time.time(), 2), **d)
+        d = dict(t=round(time.time(), 2), task=self.task, **d)
         with open(self.log_dir / 'metrics.jsonl', 'a') as f:
             f.write(json.dumps(d, default=str) + '\n')
         if self.on_event:
@@ -74,7 +75,7 @@ class Practice:
             frames.append(obs['wrist'])
         ok = self.sup.judge(env)
         views = env.final_views() if save_it and hasattr(env, 'final_views') else None
-        eid = self.store.save(ep, views, source=source, success=ok, judged_by=self.sup.name,
+        eid = self.store.save(ep, views, source=source, success=ok, judged_by=self.sup.name, task=self.task,
                               relabelled=label_expert) if save_it else ''
         out = dict(event='episode', source=source, success=ok, steps=len(ep), interventions=n_int, id=eid,
                    dropped=bool(info.get('dropped')))
@@ -95,22 +96,22 @@ class Practice:
         elif policy == 'scripted':
             act = lambda o: self.env.scripted_search()
         else:
-            p = load(self.skill, policy)
+            p = load(SHARED, policy)
             if p is None:
-                raise RuntimeError(f'no {self.skill} policy "{policy}" in models/')
+                raise RuntimeError(f'no shared policy "{policy}" in models/{SHARED}/')
             act = p.act
         res = [self.episode(act, f'eval_{policy}', save_it=save_it) for _ in range(n)]
         return self._rate(res, f'eval {policy}')
 
     def bc(self, steps: int, init=None) -> LocalPolicy:
         from learning.train import train_bc
-        pol, record = train_bc(self.skill, steps, init=init, log=self.log)
+        pol, record = train_bc(SHARED, steps, init=init, log=self.log)
         self.log(dict(event='trained', **record))
         return pol
 
     def dagger(self, rounds: int, n: int, steps: int) -> None:
         """Roll out the current policy, the supervisor labels what it should have done at every step, retrain."""
-        pol = load(self.skill) or self.bc(steps)
+        pol = load(SHARED) or self.bc(steps)
         for k in range(rounds):
             res = [self.episode(pol.act, 'dagger', label_expert=True) for _ in range(n)]
             self._rate(res, f'dagger round {k + 1} (before retraining)')
@@ -123,7 +124,7 @@ class Practice:
         keeps an imitation term on the demonstration half of each batch (weight `bc_weight`): starting from the
         imitation policy, an untrained critic's gradients would otherwise undo it within a few hundred updates."""
         dev = device()
-        base = load(self.skill) or LocalPolicy()
+        base = load(SHARED) or LocalPolicy()
         actor = Actor(copy.deepcopy(base).to(dev).train()).to(dev)
         critic = Critic().to(dev)
         target = copy.deepcopy(critic)
@@ -135,10 +136,10 @@ class Practice:
         for e in self.store.filter(success=True):
             demo.add_episode(self.store.load(e['id']))
         self.log(dict(event='rl_start', demo_transitions=len(demo), device=dev))
-        best = self.evaluate(eval_n, 'latest') if load(self.skill) else 0.0
+        best = self.evaluate(eval_n, 'latest') if load(SHARED) else 0.0
 
         def act(obs):
-            img, st = prep(obs['wrist'][None], obs['state'][None], dev)
+            img, st = prep(obs['wrist'][None], obs['state'][None], dev, cond=obs['cond'][None])
             with torch.no_grad():
                 a, _ = actor(img, st)
             return a[0].cpu().numpy()
@@ -150,10 +151,10 @@ class Practice:
             if not parts:
                 return None
             n_demo = len(parts[0][0]) if len(demo) else 0
-            W, S, A, R, W2, S2, D = (np.concatenate(x) for x in zip(*parts))
+            W, S, C, A, R, W2, S2, D = (np.concatenate(x) for x in zip(*parts))
             updates[0] += 1
-            img, st = prep(W, S, dev, augment=True)
-            img2, st2 = prep(W2, S2, dev, augment=True)
+            img, st = prep(W, S, dev, augment=True, cond=C)
+            img2, st2 = prep(W2, S2, dev, augment=True, cond=C)
             a = torch.as_tensor(A, device=dev)
             r = torch.as_tensor(R, device=dev)
             d = torch.as_tensor(D, device=dev)
@@ -202,7 +203,8 @@ class Practice:
                 nxt, r, done, info = env.step(a)
                 if reward_model is not None:
                     r = float(reward_model.prob(nxt['wrist']) > 0.5)
-                tr = (obs['wrist'], obs['state'], a.astype(np.float32), r, nxt['wrist'], nxt['state'], float(done))
+                tr = (obs['wrist'], obs['state'], obs['cond'], a.astype(np.float32), r, nxt['wrist'], nxt['state'],
+                      float(done))
                 online.add(*tr)
                 if take is not None:
                     demo.add(*tr)
@@ -214,19 +216,19 @@ class Practice:
                         losses.append(out)
             ok = self.sup.judge(env)
             eid = self.store.save(ep, env.final_views() if hasattr(env, 'final_views') else None, source='rl',
-                                  success=ok, judged_by=self.sup.name)
+                                  success=ok, judged_by=self.sup.name, task=self.task)
             self.log(dict(event='episode', source='rl', episode=k, success=ok, steps=len(ep), interventions=n_int,
                           id=eid, critic_loss=round(float(np.mean([x[0] for x in losses])), 4) if losses else None,
                           alpha=round(float(log_alpha.exp()), 4)))
             if k % eval_every == 0 or k == n:
                 pol = actor.base.eval()
                 name = f'rl_{time.strftime("%Y%m%d_%H%M%S")}'
-                save(pol, self.skill, name, dict(kind='rl', episodes=k, interventions_last=n_int), make_latest=False)
+                save(pol, SHARED, name, dict(kind='rl', episodes=k, interventions_last=n_int), make_latest=False)
                 rate = self._rate([self.episode(lambda o: actor_det(actor, o, dev), 'eval_rl', save_it=False)
                                    for _ in range(eval_n)], f'rl after {k} episodes')
                 if rate >= best:
                     best = rate
-                    save(pol, self.skill, name, dict(kind='rl', episodes=k, eval_success=rate))
+                    save(pol, SHARED, name, dict(kind='rl', episodes=k, eval_success=rate))
                     self.log(dict(event='promoted', name=name, success=rate))
                 actor.base.train()
 
@@ -241,7 +243,7 @@ ACTION_ENTROPY = -5.0
 
 
 def actor_det(actor: Actor, obs, dev):
-    img, st = prep(obs['wrist'][None], obs['state'][None], dev)
+    img, st = prep(obs['wrist'][None], obs['state'][None], dev, cond=obs['cond'][None])
     with torch.no_grad():
         a, _ = actor(img, st, deterministic=True)
     return a[0].cpu().numpy()
@@ -259,17 +261,19 @@ class _Buffer:
         if len(self.items) > self.cap:
             self.items.pop(0)
 
-    def add_episode(self, z: dict):
+    def add_episode(self, z: dict, skill: str = 'insert'):
+        from learning.cond import condition
         T = len(z['action'])
+        cond = z['cond'] if 'cond' in z else np.repeat(condition(skill, None)[None], T, axis=0)
         for t in range(T):
             t2 = min(t + 1, T - 1)
-            self.add(z['wrist'][t], z['state'][t], z['action'][t], float(z['reward'][t]), z['wrist'][t2],
+            self.add(z['wrist'][t], z['state'][t], cond[t], z['action'][t], float(z['reward'][t]), z['wrist'][t2],
                      z['state'][t2], float(t == T - 1))
 
     def sample(self, n):
         idx = np.random.randint(0, len(self.items), n)
         cols = list(zip(*[self.items[i] for i in idx]))
-        return [np.stack(c).astype(np.float32 if i not in (0, 4) else np.uint8) for i, c in enumerate(cols)]
+        return [np.stack(c).astype(np.float32 if i not in (0, 5) else np.uint8) for i, c in enumerate(cols)]
 
 
 def make_env(args):

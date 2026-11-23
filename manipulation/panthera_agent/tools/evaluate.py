@@ -55,7 +55,7 @@ def main():
     policies = None
     if args.policy:
         from learning.policy import load
-        pol = load('insert')
+        pol = load('local')
         policies = {'insert': pol.act} if pol is not None else None
     out = ROOT / 'runs' / f'eval_{time.strftime("%Y%m%d_%H%M%S")}'
     rows = []

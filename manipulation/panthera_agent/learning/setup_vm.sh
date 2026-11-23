@@ -7,6 +7,7 @@
 #
 # Leaves the other environments in ~/hsim_envs alone (the perception servers', the pi0.5 server's).
 set -euo pipefail
+unset LD_LIBRARY_PATH        # the system CUDA libraries would shadow PyTorch's own cuDNN (see learning/daily.sh)
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 ENV="${PANTHERA_AGENT_ENV:-$HOME/hsim_envs/panthera_agent}"
 UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
@@ -20,5 +21,8 @@ m = mujoco.MjModel.from_xml_string('<mujoco><worldbody><geom size="1"/></worldbo
 r = mujoco.Renderer(m, 64, 64); r.update_scene(mujoco.MjData(m)); r.render(); print('MuJoCo', mujoco.__version__, 'EGL rendering ok')
 import sys; sys.path.insert(0, '.')
 PY
-cd "$HERE" && MUJOCO_GL=egl "$ENV/bin/python" -c "from perception.dino import shared; d = shared(); print('DINOv3 on', d.device)"
+cd "$HERE" && MUJOCO_GL=egl "$ENV/bin/python" -c "
+import numpy as np
+from perception.dino import shared
+d = shared(); f = d(np.zeros((480, 640, 3), np.uint8)); print('DINOv3 on', d.device, 'features', f.shape)"
 echo "ready: $ENV"

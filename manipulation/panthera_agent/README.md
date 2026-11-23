@@ -149,7 +149,9 @@ learning/            the local skills' learning loop (see "Learning")
   supervisor.py      who demonstrates, corrects, judges and resets: the sim's expert, or the agent and a person
   label.py           Claude's labels of episodes (structured output) and their agreement with the recorded outcome
   teleop.py          a person's corrections from the keyboard on the rig
-  nightly.py, .sh    the overnight job on the VM; setup_vm.sh makes its environment
+  cond.py            the shared policy's condition: which skill, which object (its DINO feature)
+  curriculum.py      the daily cycle: morning practice, night retrain and promotion, Claude's curriculum step
+  daily.sh           one phase of it on the VM; setup_vm.sh makes the VM's environment
   export_lerobot.py  successful episodes as a LeRobot dataset, for ACT with LeRobot's own trainer
 llm/
   claude.py          Anthropic API connector: model, effort, one tool call per turn, prompt caching, refusal fallback
@@ -173,7 +175,7 @@ tools/
   capture_empty_table.py   R0: the overhead camera's photo of the empty table (the points' background)
   rig_check.py       before every session: config, calibration, cameras, arms, kinematics, safety box (moves nothing)
   practice_rig.py    R5: practise a local skill on the rig (SkillEnv, keyboard corrections, the agent's resets)
-  learning_sync.sh   episodes and the seen-objects list to the VM, checkpoints and reports back
+  learning_vm.sh     the daily cycle on the VM from here: setup, sync, morning, night, wait, log, status, pull
 tests/               pytest (no GPU, API key or rig): geometry against MuJoCo's cameras, segmentation, the skills in
                      the sim (stacking, calibration error, unstacking), calibration math, the agent loop with a
                      scripted stand-in for the model, the API request; the agent's scenes, grasps from shapes,
@@ -251,7 +253,7 @@ points from the simulator's segmentation where the model would look. Runs are lo
 | **S6** | Any object: learned on first sight (numbered points, two views), found with `dino_local`, grasped from its shape, checked by sight | Odd shapes picked and placed from their measured shape, no server | `tools/evaluate.py --planner oracle --fresh-memory --segmenter dino_local --tasks learn_and_stack mug_left` |
 | **S7** | Contact and tools: insert, pull_with_tool, pour_into | Each succeeds in its scene | `tools/evaluate.py ... --tasks peg_insert pour_beads hook_puck` |
 | **S8** | Learning the insertion's last centimetres: demos, imitation, DAgger, RL with interventions, a success classifier, Claude's labels | The trained policy beats the scripted search on held-out layouts | `python -m learning.practice ...`, the viewer's Practice |
-| **S9** | The nightly loop on the VM | A report each morning; `latest` only ever improves | `learning/nightly.sh` (job `panthera_agent_nightly`) |
+| **S9** | The daily cycle on the VM: morning practice, night retrain, Claude's curriculum | `latest` only ever improves; tasks added as the old ones pass | `tools/learning_vm.sh morning` / `night` / `pull` |
 
 The sim is one arm. Two-arm selection is built (`select_arm`, nearest arm that reaches) and waits for the bimanual
 scene and the rig.
@@ -265,7 +267,7 @@ scene and the rig.
 | **R2** | The skills on the real arms with safety limits: workspace box, z floor, speed caps |
 | **R3** | The same perception code on real images, one pick-and-place, then the agent loop |
 | **R4** | The test set on the rig; the failures decide where the first ACT skill goes |
-| **R5** | Objects learned on the rig (`tools/capture_empty_table.py` first), then the local skill practised there: `tools/practice_rig.py` (the insert skill's own handoff, keyboard corrections, the agent's resets), Claude's labels (`python -m learning.label`), `tools/learning_sync.sh push`, the nightly job, `pull` |
+| **R5** | Objects learned on the rig (`tools/capture_empty_table.py` first), then the local skill practised there: `tools/practice_rig.py` (the insert skill's own handoff, keyboard corrections, the agent's resets), Claude's labels (`python -m learning.label`), `tools/learning_vm.sh push`, the daily cycle, `pull` |
 
 The rig's computer is Linux x86_64 (the arms' SDK is a Linux-only wheel). The perception server runs on the GPU VM
 because the rig's laptop has no NVIDIA GPU.
@@ -351,21 +353,15 @@ run at scale here).
 
 ### Learning the insertion (S8, S9), measured
 
-`agent_peg_tight` (1 mm clearance a side), the handoff deliberately off by up to 6 mm and 8 deg, success from the
-simulator. Training on layouts 0-39, testing on 100-119, never seen:
+The first measurements of the learned insertion (imitation, DAgger, RL; 37.5 % at best on unseen layouts) are void:
+the training environment restored each layout's arm and peg but not its fixed fixture, so in most episodes the hole
+was elsewhere than the handoff aimed. Fixed (the fixture's place is part of each layout's snapshot); with it, the
+privileged expert inserts 16/16 on the tight square peg (it was 80-85 %), 12/12 on a round peg and 10/12 on a 20 mm
+square one, and the scripted search 0-1 of 12-16. The learning numbers are re-measured by the daily cycle below
+(`runs/vm/learning.log` after `tools/learning_vm.sh pull`).
 
-| | Success |
-|---|---|
-| scripted search (press, spiral) | 0-4 % |
-| privileged expert (the sim's supervisor) | 80-85 % |
-| imitation on 40 expert demos | 0 % held out |
-| + DAgger, 3 rounds (115 episodes) | 25 % on training layouts, 10 % held out |
-| + DAgger on 40 layouts (340 episodes, 7 min of training on the Mac's GPU) | 37.5 % held out |
-| + RL with interventions (RLPD-style SAC, 50 episodes) | worse (30 % then 20 %); stopped. Kept the imitation policy |
-
-The success classifier (single wrist frames, 11,361 frames, 306 positive): 98.5 % held-out accuracy, 1.6 % false
-positives. The nightly job ran end to end locally (inventory, classifier, candidate, held-out evaluation, promotion,
-report). Claude's labels: the request works (structured output), but from 64-pixel wrist frames it could not see an
+Still valid: the success classifier (single wrist frames): 98.5 % held-out accuracy, 1.6 % false positives on 11,361
+frames. Claude's labels: the request works (structured output), but from 64-pixel wrist frames it could not see an
 insertion and said so (low confidence on every one); episodes now keep full-resolution final images for labelling,
 not yet measured.
 
@@ -381,15 +377,36 @@ The local skills improve by practice, in two loops (research notes, "learning on
    four; on the rig a person's keyboard corrections (`learning/teleop.py`), a stall watchdog, the geometric success
    check and the agent's own resets (an instruction to Claude). Every attempt is an episode with full-resolution final
    images.
-2. **Overnight (the GPU VM)**: `tools/learning_sync.sh push`, then the `panthera_agent_nightly` job
-   (`learning/nightly.sh`, set up once with `learning/setup_vm.sh`): the success classifier retrained, a candidate
-   policy trained on everything, both candidate and current evaluated in the sim on held-out layouts, the candidate
-   promoted only if better; a report. `tools/learning_sync.sh pull` brings `models/` and the report back. With
-   `--export-lerobot`, the successful episodes are also exported for an ACT fine-tune with LeRobot's own trainer
-   (profile `../profiles/panthera_local.yaml`; `../finetune.sh local panthera_local` trains the small policy).
+2. **Every day, on the GPU VM** (`learning/curriculum.py`, driven from here by `tools/learning_vm.sh`):
+   - **morning**: practice in the sim on every active task: expert demonstrations for new tasks, DAgger rounds (the
+     working policy tries, the expert labels, a fine-tune), RL with interventions if enabled (off by default);
+   - **night**: one imitation run on every episode so far, starting from the promoted policy; candidate and promoted
+     policy tested on each task's held-out layouts; promoted only if the mean improves and no task drops; a task
+     above 95 % two nights running is marked mastered; the success classifier retrained;
+   - **step** (right after the night): Claude reads the results and answers in a fixed form: an assessment, the next
+     morning's focus, and new tasks. The code accepts new tasks only when every active task is at the bar (90 %), at
+     most two a day, within the allowed ranges (peg shape, size, colours, clearance, handoff error). The insertion
+     family is the one Claude can grow today (it has a sim environment and an expert); a new family (seating, the
+     hook's drag, the cloth's pinch) needs its environment written once.
 
-Claude labels episodes and filters training data (`python -m learning.label`); it is never the RL reward. The reward is
-the simulator, the geometric check or the trained classifier.
+   One policy for all of it: the **shared local policy** (`learning/policy.py`, models/local/), told the skill and
+   the object (its DINO feature, learning/cond.py) besides what the wrist camera sees, so every task adds data to
+   the same network. Grasping and placing stay geometric.
+
+   ```bash
+   tools/learning_vm.sh setup        # once
+   tools/learning_vm.sh morning      # then: tools/learning_vm.sh wait; tools/learning_vm.sh log
+   tools/learning_vm.sh night        # wait, log, then:
+   tools/learning_vm.sh pull         # the promoted weights to models/local/, the log and curriculum to runs/vm/
+   ```
+   Everything the VM makes stays in ~/hsim_data/panthera_agent (episodes, memory, models, curriculum.json) and one
+   log, learning.log, that every phase appends to. Locally, the viewer's "insert: use the trained policy" and
+   `tools/evaluate.py --policy` load the pulled weights. With LeRobot installed, `learning/export_lerobot.py` exports
+   the successful episodes for an ACT fine-tune with LeRobot's own trainer (profile `../profiles/panthera_local.yaml`;
+   `../finetune.sh local panthera_local` trains the shared policy).
+
+Claude labels episodes and filters training data (`python -m learning.label`), and grows the curriculum; it is never
+the RL reward. The reward is the simulator, the geometric check or the trained classifier.
 
 ## Later (not built yet)
 

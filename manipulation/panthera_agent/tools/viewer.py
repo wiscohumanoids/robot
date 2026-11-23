@@ -302,7 +302,7 @@ class Viewer:
             skills.on_event = self.on_event
             if self.use_policy:
                 from learning.policy import load
-                pol = load('insert')
+                pol = load('local')
                 if pol is not None:
                     skills.policies = {'insert': pol.act}
                     self.push('note', dict(text=f'insert uses the trained policy {pol.record}'))

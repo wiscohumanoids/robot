@@ -86,3 +86,24 @@ def test_insert_env_expert_bc_and_classifier(tmp_path, monkeypatch):
     assert a.shape == (5,) and np.all(np.abs(a) <= 1)
     _, rec = train_reward('insert', steps=40, log=lambda d: None)
     assert rec['positives'] >= 4
+
+
+def test_the_daily_cycle_runs_and_only_promotes_a_better_policy(tmp_path, monkeypatch):
+    """init, a tiny morning and night (no Claude step): episodes, a working policy, a held-out comparison, a log."""
+    import json
+    monkeypatch.setenv('PANTHERA_AGENT_DATA', str(tmp_path / 'data'))
+    monkeypatch.setenv('PANTHERA_AGENT_MODELS', str(tmp_path / 'models'))
+    from types import SimpleNamespace
+    from learning import curriculum as C
+    C.init(SimpleNamespace(force=True))
+    st = json.loads(C.state_path().read_text())
+    st['settings'] = dict(morning=dict(demos_new_task=3, dagger_rounds=1, episodes_per_task=2, finetune_steps=20),
+                          night=dict(steps=30, eval_episodes=2), train_layouts=[0, 1], eval_layouts=[200, 201])
+    C.state_path().write_text(json.dumps(st))
+    C.morning(SimpleNamespace())
+    C.night(SimpleNamespace(no_step=True))
+    st = C.load_state()
+    phases = [r['phase'] for r in st['tasks'][0]['results']]
+    assert 'morning' in phases and 'night' in phases
+    text = C.log_path().read_text()
+    assert '[morning] done' in text and ('PROMOTED' in text or 'not promoted' in text)

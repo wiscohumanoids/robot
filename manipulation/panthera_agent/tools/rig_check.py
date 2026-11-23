@@ -119,8 +119,8 @@ def main():
     @check('trained local policy (optional)')
     def _():
         from learning.policy import load
-        p = load('insert')
-        return True, 'none yet (insert uses the scripted search)' if p is None else f'insert: {p.record}'
+        p = load('local')
+        return True, 'none yet (insert uses the scripted search)' if p is None else f'shared local policy: {p.record}'
 
     width = max(len(n) for n, _, _ in results)
     for name, ok, detail in results:

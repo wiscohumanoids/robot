@@ -2,7 +2,8 @@
 
 One episode = one attempt at a local skill, from the handoff to the end:
 
-    data/episodes/<skill>/<id>.npz   wrist (T, 64, 64, 3) uint8, state (T, 5), action (T, 5) as executed,
+    data/episodes/<skill>/<id>.npz   wrist (T, 64, 64, 3) uint8, state (T, 5), cond (T, 392) the policy's condition
+                                     (skill + object, learning/cond.py), action (T, 5) as executed,
                                      expert (T, 5) the supervisor's action where it gave one (NaN elsewhere),
                                      intervened (T,) bool (the supervisor drove that step), reward (T,)
     data/episodes/<skill>/index.jsonl   one line per episode: id, source (expert | scripted | policy | dagger |
@@ -10,7 +11,7 @@ One episode = one attempt at a local skill, from the handoff to the end:
                                      human | check), steps, interventions, the policy version, labels added later
                                      (Claude's verdict), and free notes
 
-The same format on the sim and on the rig, so the nightly job (learning/nightly.sh) trains on both. `filter` picks
+The same format on the sim and on the rig, so the night phase (learning/curriculum.py) trains on both. `filter` picks
 the episodes a training run uses: successful ones for imitation, all of them for RL.
 
 Data stays out of the repository (data/ is ignored); tools/vm.sh-style rsync moves it to the GPU VM.
@@ -41,6 +42,7 @@ class Episode:
     expert: list = field(default_factory=list)
     intervened: list = field(default_factory=list)
     reward: list = field(default_factory=list)
+    cond: list = field(default_factory=list)
     meta: dict = field(default_factory=dict)
 
     def add(self, obs: dict, action, expert=None, intervened: bool = False, reward: float = 0.0) -> None:
@@ -50,14 +52,19 @@ class Episode:
         self.expert.append(np.full(5, np.nan, np.float32) if expert is None else np.asarray(expert, np.float32))
         self.intervened.append(bool(intervened))
         self.reward.append(float(reward))
+        if 'cond' in obs:
+            self.cond.append(np.asarray(obs['cond'], np.float32))
 
     def __len__(self) -> int:
         return len(self.action)
 
     def arrays(self) -> dict:
-        return dict(wrist=np.stack(self.wrist), state=np.stack(self.state), action=np.stack(self.action),
-                    expert=np.stack(self.expert), intervened=np.array(self.intervened, bool),
-                    reward=np.array(self.reward, np.float32))
+        out = dict(wrist=np.stack(self.wrist), state=np.stack(self.state), action=np.stack(self.action),
+                   expert=np.stack(self.expert), intervened=np.array(self.intervened, bool),
+                   reward=np.array(self.reward, np.float32))
+        if len(self.cond) == len(self.action):
+            out['cond'] = np.stack(self.cond)
+        return out
 
 
 class EpisodeStore:
@@ -150,3 +157,9 @@ class EpisodeRecorder:
                                                            judged_by='check', **(info or {}))
         self.ep = None
         return eid
+
+
+def all_stores(root: pathlib.Path | None = None) -> list[EpisodeStore]:
+    """One store per skill that has episodes."""
+    base = (root or data_root()) / 'episodes'
+    return [EpisodeStore(d.name, root) for d in sorted(base.iterdir()) if d.is_dir()] if base.exists() else []
