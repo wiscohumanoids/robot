@@ -7,6 +7,7 @@ takes the profile name, and the trainers check data and models against it.
 |---|---|---|
 | [`panthera_sim`](panthera_sim.yaml) | one Panthera-HT arm in MuJoCo, block stacking (`panthera_sim/`) | `act`, `pi05` |
 | [`panthera_bimanual`](panthera_bimanual.yaml) | the two real Panthera-HT arms, gear-and-pin assembly (`panthera_teleop/`) | `pi05` |
+| [`panthera_local`](panthera_local.yaml) | one Panthera-HT arm, local contact skills (wrist camera, relative actions; `panthera_agent/learning/`) | `local` |
 | [`g1_dex1`](g1_dex1.yaml) | the simulated G1 with Dex1 grippers at a counter (`training/manipulation/`) | `groot` |
 
 ## Fields
@@ -21,7 +22,7 @@ takes the profile name, and the trainers check data and models against it.
 | `image_size` | square image size the policy is trained at |
 | `task` | the language instruction every episode must carry (`null`: per-episode instructions) |
 | `simulation` | true for simulated arms: checkpoints record the simulator dynamics version |
-| `methods` | the fine-tuning methods that apply (`act`, `pi05`, `groot`) |
+| `methods` | the fine-tuning methods that apply (`act`, `pi05`, `groot`, `local`) |
 | `pi05` | pi0.5 data options: `train_episodes` / `val_episodes` ([start, stop) ranges, checked), `normalization` (`train_episodes`: recompute state/action statistics on the training episodes; `checkpoint`: keep the checkpoint's on resume), `require_manifest` (a verified `panthera_teleop` export) |
 | `groot` | GR00T options: `modality_config` |
 | `deployment` | extra fields for each checkpoint's `deployment.json` (action representation, alignment, gripper convention, ...) |

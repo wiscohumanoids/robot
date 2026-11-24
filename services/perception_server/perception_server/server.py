@@ -4,7 +4,10 @@ an SSH tunnel (ssh -N -L 8100:localhost:8100 hsim-gpu).
   GET  /health   {status, backend, models, gpu memory}
   POST /detect   see protocol.py
 
-  python -m perception_server.server --backend real|fake [--dino ...] [--sam ...] [--port 8100]
+  python -m perception_server.server --backend real|sam3|fake [--dino ...] [--sam ...] [--sam3 ...] [--port 8100]
+
+Backends: real = Grounding DINO + SAM 2.1; sam3 = SAM 3 alone (text prompt -> instance masks; run_sam3_server.sh
+starts it on port 8101 beside the real one); fake = ground truth from the request.
 """
 from __future__ import annotations
 
@@ -116,12 +119,17 @@ def make_app():
 
 def load_backend(args):
     """The fake or the real detection backend, with the post-processing options."""
-    from .models import FakeBackend, GroundedSam2Backend
+    from .models import FakeBackend, GroundedSam2Backend, Sam3Backend
     if args.backend == "fake":
         STATE["post"] = {"mask_nms": True, "priors": True, "verify": False}
         return FakeBackend()
-    be = GroundedSam2Backend(dino_id=args.dino, sam_id=args.sam, device=args.device, chunk=args.chunk)
-    be.default_box_threshold = args.box_threshold
+    if args.backend == "sam3":
+        be = Sam3Backend(model_id=args.sam3, device=args.device)
+    else:
+        be = GroundedSam2Backend(dino_id=args.dino, sam_id=args.sam, device=args.device, chunk=args.chunk)
+        be.default_box_threshold = 0.30
+    if args.box_threshold is not None:
+        be.default_box_threshold = args.box_threshold
     STATE["post"] = {"mask_nms": not args.no_mask_nms, "priors": not args.no_priors, "verify": args.verifier != "none"}
     if args.verifier != "none":
         STATE["verifier"] = postprocess.CropVerifier(args.verifier, device=args.device)
@@ -134,15 +142,18 @@ def load_backend(args):
 def main():
     """Parse the options, load the backend and serve on localhost."""
     ap = argparse.ArgumentParser()
-    ap.add_argument("--backend", choices=["real", "fake"], default="real")
+    ap.add_argument("--backend", choices=["real", "sam3", "fake"], default="real")
     # Defaults chosen on a kitchen benchmark: base + tiny ensemble at 0.30
     # finds fridges (8/13 views vs 2/13 for base alone) and small objects (45 %) at 45 % precision, ~0.6 s/frame.
     ap.add_argument("--dino", default="IDEA-Research/grounding-dino-base,IDEA-Research/grounding-dino-tiny",
                     help="one id, or comma-separated ids for an ensemble")
     ap.add_argument("--sam", default="facebook/sam2.1-hiera-base-plus")
+    ap.add_argument("--sam3", default="facebook/sam3", help="SAM 3 weights (gated on Hugging Face) for --backend sam3")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--chunk", type=int, default=12)
-    ap.add_argument("--box-threshold", type=float, default=0.30, help="default when a request does not set one")
+    ap.add_argument("--box-threshold", type=float, default=None,
+                    help="default when a request does not set one (real: 0.30, the DINO box score; sam3: 0.5, the "
+                         "instance score)")
     ap.add_argument("--no-mask-nms", action="store_true")
     ap.add_argument("--no-priors", action="store_true", help="disable the 3D size/placement priors")
     ap.add_argument("--verifier", default="google/siglip2-base-patch16-224",

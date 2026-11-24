@@ -9,6 +9,8 @@
 #   pi05    panthera_sim, panthera_bimanual finetune/pi05_full.py (full pi0.5 fine-tune through the pinned LeRobot
 #                                          trainer; flags are LeRobot's, plus --expect_resume_step=N)
 #   groot   g1_dex1                        training/manipulation/groot/finetune.sh <dataset version>
+#   local   panthera_local                 panthera_agent/learning/train.py bc (the local skills' small policies;
+#                                          the daily cycle is panthera_agent/learning/curriculum.py)
 #
 # Environment: PYTHON (interpreter with the method's packages; default: panthera_sim/.venv-act/bin/python for act,
 # python3 otherwise). pi05 needs LeRobot at the commit in finetune/pi05_full.py and the base weights downloaded.
@@ -54,5 +56,9 @@ case "$method" in
     exec "${PYTHON:-python3}" "$HERE/finetune/pi05_full.py" "--profile=$profile" "$@" ;;
   groot)
     exec "$ROOT/training/manipulation/groot/finetune.sh" "$@" ;;
-  *) echo "unknown method $method (act, pi05, groot)" >&2; usage ;;
+  local)
+    cd "$HERE/panthera_agent"
+    PY="${PYTHON:-$( [[ -x .venv/bin/python ]] && echo .venv/bin/python || echo python3 )}"
+    exec "$PY" -m learning.train bc "$@" ;;
+  *) echo "unknown method $method (act, pi05, groot, local)" >&2; usage ;;
 esac

@@ -68,3 +68,25 @@ jobs:
     workdir: "{repo}/training/manipulation"
     command: "bash groot/finetune.sh v1"
     gpu_mem_gb: 40
+
+  panthera_agent_morning:
+    description: panthera_agent shared local policy, morning practice in the sim (demos for new tasks, DAgger, RL if enabled) - learning/curriculum.py; one log, ~/hsim_data/panthera_agent/learning.log
+    kind: step
+    enabled: false
+    workdir: "{repo}/manipulation/panthera_agent"
+    command: "bash learning/daily.sh morning"
+    env:
+      PANTHERA_AGENT_DATA: "{data}/panthera_agent"
+      PANTHERA_AGENT_PYTHON: "{envs}/panthera_agent/bin/python"
+    gpu_mem_gb: 4
+
+  panthera_agent_night:
+    description: panthera_agent shared local policy, night - retrain on every episode, held-out tests, promote if better, then Claude adds tasks when ready (learning/curriculum.py)
+    kind: step
+    enabled: false
+    workdir: "{repo}/manipulation/panthera_agent"
+    command: "bash learning/daily.sh night"
+    env:
+      PANTHERA_AGENT_DATA: "{data}/panthera_agent"
+      PANTHERA_AGENT_PYTHON: "{envs}/panthera_agent/bin/python"
+    gpu_mem_gb: 4

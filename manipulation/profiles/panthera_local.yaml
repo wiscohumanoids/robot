@@ -1,0 +1,19 @@
+# Arm profile: the Panthera's local (finishing) skills from panthera_agent (manipulation/panthera_agent/learning/).
+# A local skill starts where the geometry hands over (the held object just above its target) and finishes the contact
+# (insert, seat, catch); it sees only the wrist camera and its pose relative to the handoff. See README.md for the
+# format. Trained by panthera_agent's own trainer (learning/train.py, the daily cycle learning/curriculum.py); ACT through LeRobot's
+# trainer after learning/export_lerobot.py.
+name: panthera_local
+description: one Panthera-HT arm, local contact skills (insert first), wrist camera only, relative actions
+robot_type: panthera_ht_local
+fps: 10
+state_dim: 5                     # TCP minus the handoff position (m, x y z), yaw turned since (rad), jaw width (m)
+action_dim: 5                    # dx dy dz (x 3 mm), dyaw (x 3 deg), done (> 0.5 stops); all in [-1, 1]
+cameras: [observation.images.wrist]
+image_size: 64
+task: null                       # one dataset per skill; the skill name is the task
+simulation: false                # sim and rig episodes share the format; each episode records its source
+methods: [local]
+deployment:
+  action_representation: relative
+  frame: handoff

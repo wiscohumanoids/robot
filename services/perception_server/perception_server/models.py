@@ -277,3 +277,65 @@ class GroundedSam2Backend:
             torch.cuda.synchronize()
         t2 = time.perf_counter()
         return dets, {"detect": (t1 - t0) * 1000, "segment": (t2 - t1) * 1000}
+
+
+class Sam3Backend:
+    """SAM 3 (Meta, Nov 2025): one model, text prompt in, every matching instance's mask out ("promptable concept
+    segmentation"). No separate detector: the label is the prompt.
+
+    The image is encoded once per request; each requested label then gets its own text pass on those features
+    (`get_vision_features` / `vision_embeds`, as in the transformers docs). `box_threshold` in a request is the
+    instance score threshold here (default `default_box_threshold`, 0.5 as in the SAM 3 release).
+    """
+    name = "sam3"
+    default_box_threshold = 0.5
+
+    def __init__(self, model_id="facebook/sam3", device="cuda", dtype="bf16"):
+        """Load SAM 3 on `device` (the weights are gated: the HF token must have been granted access)."""
+        import torch
+        from transformers import Sam3Model, Sam3Processor
+        self.torch = torch
+        self.device = device
+        self.model_id = model_id
+        self.dtype = torch.bfloat16 if (dtype == "bf16" and device.startswith("cuda")) else torch.float32
+        self.proc = Sam3Processor.from_pretrained(model_id)
+        self.model = Sam3Model.from_pretrained(model_id, dtype=self.dtype).to(device).eval()
+
+    def info(self) -> dict:
+        """Backend name, model, device and peak GPU memory."""
+        t = self.torch
+        mem = t.cuda.max_memory_allocated() / 1e9 if self.device.startswith("cuda") else 0.0
+        return {"backend": self.name, "model": self.model_id, "device": self.device,
+                "dtype": str(self.dtype).replace("torch.", ""), "gpu_mem_peak_gb": round(mem, 2)}
+
+    def _cast(self, inputs):
+        return {k: (v.to(self.device, self.dtype) if v.dtype.is_floating_point else v.to(self.device))
+                for k, v in inputs.items() if hasattr(v, "dtype")}
+
+    def detect(self, rgb, labels, box_threshold=None, mask_threshold=0.5, max_dets=40, **_):
+        """Instances of each label, with masks, boxes and scores."""
+        torch = self.torch
+        from PIL import Image
+        img = Image.fromarray(rgb)
+        H, W = rgb.shape[:2]
+        thr = self.default_box_threshold if box_threshold is None else float(box_threshold)
+        uniq = list(dict.fromkeys(n for n in labels if n.strip()))
+        t0 = time.perf_counter()
+        dets = []
+        with torch.inference_mode():
+            img_in = self.proc(images=img, return_tensors="pt")
+            vision = self.model.get_vision_features(pixel_values=self._cast(img_in)["pixel_values"])
+            for label in uniq:
+                txt = self._cast(self.proc(text=_norm(label), return_tensors="pt"))
+                out = self.model(vision_embeds=vision, input_ids=txt["input_ids"],
+                                 attention_mask=txt.get("attention_mask"))
+                r = self.proc.post_process_instance_segmentation(
+                    out, threshold=thr, mask_threshold=mask_threshold, target_sizes=[(H, W)])[0]
+                for m, b, s in zip(r["masks"].cpu().numpy(), r["boxes"].float().cpu().numpy(),
+                                   r["scores"].float().cpu().numpy()):
+                    dets.append({"label": label, "score": float(s), "box_xyxy": b.tolist(), "mask": m.astype(bool)})
+        if self.device.startswith("cuda"):
+            torch.cuda.synchronize()
+        t1 = time.perf_counter()
+        dets = sorted(dets, key=lambda d: -d["score"])[:max_dets]
+        return dets, {"detect": (t1 - t0) * 1000, "segment": 0.0}

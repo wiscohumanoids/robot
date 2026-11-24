@@ -1,8 +1,9 @@
 """Leg odometry (node name: `leg_odometry`): body velocity from joint encoders + IMU.
 
-Uses only what a real robot has: its own kinematic model (the G1 model file: link
-lengths and joint layout, not the simulator's state), joint angles and speeds from
-/joint_states, and the IMU's gyro and tilt from /imu.
+Uses only what a real robot has: its own kinematic model (the robot profile's model file,
+parameter `robot_model`, e.g. Wisco's or the G1's: link lengths and joint layout, not the
+simulator's state), joint angles and speeds from /joint_states, and the IMU's gyro and tilt
+from /imu.
 
 The foot on the ground (stance foot) is not moving, so the body's velocity in its own
 frame is the negative of how the stance foot appears to move relative to the body:

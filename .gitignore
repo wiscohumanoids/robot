@@ -160,3 +160,6 @@ service-account*.json
 
 # RK3588 cyclictest output (the summary goes into the hardware README)
 infra/rk3588/reports/
+
+# panthera_agent: insertion task scenes the curriculum generates at run time (scenes/catalog.py register)
+manipulation/panthera_sim/sim/panthera/agent_ins_*.xml

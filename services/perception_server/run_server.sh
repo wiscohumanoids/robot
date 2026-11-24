@@ -4,10 +4,11 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 LOG="$HOME/hsim_runs/perception"; mkdir -p "$LOG"
-SESSION=hsim-svc-perception
+SESSION="${SESSION:-hsim-svc-perception}"          # run_sam3_server.sh sets its own
+LOGFILE="${LOGFILE:-server.log}"
 tmux has-session -t "$SESSION" 2>/dev/null && { echo "already running: tmux attach -t $SESSION"; exit 0; }
 # LD_LIBRARY_PATH unset: the VM's default puts system CUDA 13.2 libs first, so torch would load the system cuDNN
 # instead of the one it ships with (that breaks cuDNN ops in some environments).
 tmux new-session -d -s "$SESSION" "cd '$HERE' && env -u LD_LIBRARY_PATH HF_HOME=\$HOME/hsim_data/hf-cache HF_HUB_OFFLINE=\${HF_HUB_OFFLINE:-0} \
-  \$HOME/hsim_envs/perception/bin/python -m perception_server.server --backend real $* 2>&1 | tee -a '$LOG/server.log'"
-echo "started tmux session $SESSION; log $LOG/server.log; health: curl -s localhost:8100/health"
+  \$HOME/hsim_envs/perception/bin/python -m perception_server.server --backend real $* 2>&1 | tee -a '$LOG/$LOGFILE'"
+echo "started tmux session $SESSION; log $LOG/$LOGFILE"

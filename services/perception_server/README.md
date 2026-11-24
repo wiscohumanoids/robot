@@ -6,15 +6,17 @@ under the mask** -> 3D centre and size in the camera frame and, given the camera
 **mask NMS** (one object found twice), **3D size/placement priors** (a "fridge" that ends at 0.86 m is a dishwasher;
 `priors.py`), **SigLIP 2 crop check** for object/appliance classes (the crop must look like its label among the
 kitchen vocabulary). On a kitchen benchmark the clean-up raised precision from 0.50 to 0.78 with recall kept.
-No SAM 3 (gated) and no FoundationPose (6-DoF pose not needed: the VLA grasps from images). It runs on the GPU
-machine, not the robot, while the models are being chosen; the client falls back to a stub, so the stack runs without it.
+A second backend, **SAM 3** (`--backend sam3`: one model, text prompt -> every matching instance's mask, no separate
+detector), runs as its own server beside this one with the same API; `manipulation/panthera_agent` uses either. No
+FoundationPose (6-DoF pose not needed: the VLA grasps from images). It runs on the GPU machine, not the robot, while
+the models are being chosen; the client falls back to a stub, so the stack runs without it.
 
 | | |
 |---|---|
-| Where | GPU VM, `127.0.0.1:8100` (never exposed; the Mac uses an SSH tunnel) |
-| Env | `~/hsim_envs/perception` (Python 3.12, torch cu128, transformers >= 4.56) via `setup_env_vm.sh` |
-| Weights | `~/hsim_data/hf-cache` (Grounding DINO base/tiny, SAM 2.1 hiera base+/small) |
-| Run | `run_server.sh` (tmux `hsim-svc-perception`, log `~/hsim_runs/perception/server.log`) |
+| Where | GPU VM, `127.0.0.1:8100` (DINO + SAM 2.1) and `127.0.0.1:8101` (SAM 3); never exposed, the Mac uses an SSH tunnel |
+| Env | `~/hsim_envs/perception` (Python 3.12, torch cu128, transformers >= 4.56; SAM 3 needs the `Sam3Model` of recent transformers, 5.22 on the VM) via `setup_env_vm.sh` |
+| Weights | `~/hsim_data/hf-cache` (Grounding DINO base/tiny, SAM 2.1 hiera base+/small; `facebook/sam3`, gated: the token in `~/hsim_data/hf-cache/token` must have been granted access) |
+| Run | `run_server.sh` (tmux `hsim-svc-perception`, log `~/hsim_runs/perception/server.log`); `run_sam3_server.sh` (tmux `hsim-svc-perception-sam3`, port 8101, log `server_sam3.log`) |
 | API | `GET /health`, `POST /detect` (format: `perception_server/protocol.py`) |
 | ROS side | `hsim_perception/perception_client` (launch `perception:=server`), falls back to the line-of-sight stub |
 
@@ -23,7 +25,13 @@ machine, not the robot, while the models are being chosen; the client falls back
 ~/robot/services/perception_server/setup_env_vm.sh --prefetch   # once
 ~/robot/services/perception_server/run_server.sh                # tmux hsim-svc-perception
 curl -s localhost:8100/health
+~/robot/services/perception_server/run_sam3_server.sh           # optional: SAM 3 beside it, tmux hsim-svc-perception-sam3
+curl -s localhost:8101/health
 ```
+SAM 3 is gated on Hugging Face: request access at https://huggingface.co/facebook/sam3, then put a token of that
+account in `~/hsim_data/hf-cache/token` (mode 600); the first start downloads the weights (3.4 GB).
+In a request to the SAM 3 server, `box_threshold` is the instance score threshold (default 0.5); `distractors`,
+`chunk` and the DINO-specific options are ignored, the post-processing options apply as for the other backend.
 Restart after a code change: `tmux kill-session -t hsim-svc-perception; bash ~/robot/services/perception_server/run_server.sh`.
 Options: `--verifier none` (no crop check), `--no-priors`, `--no-mask-nms`; per request `"postprocess": {...}` and
 `"return_rejected": true` (rejected detections with the reason, for debugging).

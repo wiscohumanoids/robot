@@ -28,6 +28,8 @@ case "$cmd" in
       --exclude 'ros2_ws/build' --exclude 'ros2_ws/install' --exclude 'ros2_ws/log' \
       --exclude 'training/*/logs' --exclude 'training/*/data' --exclude wandb --exclude results \
       --exclude 'assets/envs/**/build*' --exclude '*.pt' \
+      --exclude 'manipulation/panthera_agent/data' --exclude 'manipulation/panthera_agent/models' \
+      --exclude 'manipulation/panthera_agent/memory' --exclude 'manipulation/panthera_agent/runs' \
       "$ROOT/" "$HOST:~/$VM_REPO/"
     echo "synced to $HOST:~/$VM_REPO"
     ;;
@@ -66,7 +68,7 @@ case "$cmd" in
     # -f (follow logs) needs a terminal on the remote side.
     args=$(printf " %q" "$@")
     tty=(); [[ " $* " == *" -f "* ]] && tty=(-t)
-    exec ssh "${tty[@]}" "$HOST" "/usr/bin/python3 ~/$VM_REPO/infra/vm_jobs/vmjobs.py$args"
+    exec ssh ${tty[@]+"${tty[@]}"} "$HOST" "/usr/bin/python3 ~/$VM_REPO/infra/vm_jobs/vmjobs.py$args"
     ;;
   *)
     sed -n '2,16p' "$0"; exit 1 ;;
