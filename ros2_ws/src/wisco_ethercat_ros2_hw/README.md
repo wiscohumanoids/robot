@@ -165,7 +165,7 @@ leg controller ──joint references──► ParallelLinkageController ──m
   calibrated and their directions right.
 - **Geometry** is `robots/wisco_v1/linkage.json`, measured from the CAD; `robots/wisco_v1/linkage.py` is the Python
   reference, also used in training (per-motor limits through the rods, `training/locomotion/wisco_v1/wisco_mjlab/
-  robot/ankle_actuator.py`).
+  ankle_actuator.py`).
 
 Setup (`config/wisco_parallel_joints.yaml`): one joint-table row per motor; calibrate each motor to read 0 at the
 joint's zero pose (foot flat, torso upright), with the direction that turns its crank the way linkage.json does; the

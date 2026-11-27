@@ -2,7 +2,7 @@
 (tasks/tracking/config/g1/env_cfgs.py) with the robot swapped to Wisco. Lines that differ are marked "# WISCO:".
 
 Whole body: all 29 joints are actions (head welded, as in the velocity task). Robot, actuators (DC motors with
-torque-speed curve + 0-10 ms delay), gains and action scales come from wisco_mjlab.robot.robot_cfg, so
+torque-speed curve + 0-10 ms delay), gains and action scales come from wisco_mjlab.robot_cfg, so
 tracking and velocity always share the same robot model.
 """
 from __future__ import annotations
@@ -22,8 +22,8 @@ from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
 from mjlab.tasks.tracking.tracking_env_cfg import make_tracking_env_cfg
 
-from wisco_mjlab.robot import linkage_penalty
-from wisco_mjlab.robot import robot_cfg as RC
+from wisco_mjlab import linkage_penalty
+from wisco_mjlab import robot_cfg as RC
 
 _INFO = json.loads((Path(RC.MODEL_DIR) / "train_model_info.json").read_text())
 # Joint order of the retargeted CSV / motion npz = the training model's joint order.

@@ -22,7 +22,7 @@ import torch
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
 
-LINKAGE_JSON = Path(__file__).resolve().parents[5] / "robots" / "wisco_v1" / "model" / "ankle_linkage.json"
+LINKAGE_JSON = Path(__file__).resolve().parents[4] / "robots" / "wisco_v1" / "model" / "ankle_linkage.json"
 SIDES = ("left", "right")
 
 
