@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 9026c9127e153371d7a78dfcb0c45ae2046a3d10  # v0.17.6
+    hooks:
+      - id: ruff
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: cba56bcde1fdd01c1deb3f945e69764c291a6530  # v1.38.0
+    hooks:
+      - id: yamllint
+        args: ["-c", ".yamllint"]
+
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck --severity=warning
+        language: python
+        additional_dependencies: [shellcheck-py]
+        types: [shell]
