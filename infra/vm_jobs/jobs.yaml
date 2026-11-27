@@ -40,6 +40,15 @@ jobs:
       import_path: "{repo}/training/locomotion/wisco_v1"
       import_module: wisco_mjlab
 
+  wisco_amp:
+    description: Wisco V1 clean-room AMP prototype (training-only; needs a retargeted walk clip)
+    kind: rl
+    enabled: false
+    workdir: "{repo}/training/locomotion"
+    command: "uv run python wisco_v1/wisco_amp/train.py Wisco-V1-AMP-Velocity-Flat --env.scene.num-envs 512 --agent.amp.motion-files {data}/motions/wisco/walk.npz --log-root {log_root}"
+    gpu_mem_gb: 12
+    auto_resume: 1
+
   g1_velocity_arms_free:
     description: G1 walking policy, arms-free recipe (legs + waist; scripted arm motion)
     kind: rl

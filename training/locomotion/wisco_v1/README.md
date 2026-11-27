@@ -27,6 +27,7 @@ training/locomotion/wisco_v1/
     terms/
       arms_free_terms.py     custom terms: in-place-turn commands, performance-gated curriculum, scripted arm motion,
                              hand payloads, self-collision and angular-momentum penalties, yaw-rate tracking
+  wisco_amp/             clean-room adversarial motion prior prototype (training-only)
   vm/                    GPU machine scripts (run from training/locomotion)
     check_env.py           build the real environment and check it, no training
     smoke_test.sh          5 PPO updates on 256 robots
