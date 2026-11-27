@@ -13,36 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: pip install ruff yamllint shellcheck-py
-      - name: Collect changed files
-        id: changed
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          set -euo pipefail
-          out="$RUNNER_TEMP/changed"
-          mkdir -p "$out"
-          : > "$out/python.txt"
-          : > "$out/shell.txt"
-          : > "$out/yaml.txt"
-          if [ -z "${BASE_SHA:-}" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "no base commit; nothing to lint"
-            exit 0
-          fi
-          git diff --name-only --diff-filter=ACMRT "$BASE_SHA"..HEAD > "$out/all.txt"
-          grep -E '\.py$' "$out/all.txt" > "$out/python.txt" || true
-          grep -E '\.sh$' "$out/all.txt" > "$out/shell.txt" || true
-          grep -E '\.(yml|yaml)$' "$out/all.txt" > "$out/yaml.txt" || true
-          printf 'changed: %s python, %s shell, %s YAML\n' \
-            "$(wc -l < "$out/python.txt")" "$(wc -l < "$out/shell.txt")" "$(wc -l < "$out/yaml.txt")"
-      - name: Ruff
-        run: xargs -d '\n' -r ruff check < "$RUNNER_TEMP/changed/python.txt"
-      - name: ShellCheck
-        run: xargs -d '\n' -r shellcheck --severity=error < "$RUNNER_TEMP/changed/shell.txt"
-      - name: yamllint
-        run: xargs -d '\n' -r yamllint < "$RUNNER_TEMP/changed/yaml.txt"
+      - name: Python syntax and undefined names
+        run: ruff check .
+      - name: Unused imports and variables in tools and tests
+        run: ruff check tools tests --select F401,F841
+      - name: Shell scripts
+        run: shellcheck --severity=error $(git ls-files '*.sh')
+      - name: YAML
+        run: yamllint $(git ls-files '*.yml' '*.yaml')

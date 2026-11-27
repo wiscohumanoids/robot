@@ -1,5 +1,6 @@
 target-version = "py312"
 
 [lint]
-# High-signal rules only. These are enforced on files changed by a PR/commit, not the whole repo.
-select = ["E9", "F63", "F7", "F82", "F811", "F401", "F841"]
+# High-signal rules only: syntax errors, undefined names, bad escapes and redefinitions.
+# Style rules are deliberately not enabled yet; the repo has a long-line, compact style.
+select = ["E9", "F63", "F7", "F82", "F811"]
