@@ -8,25 +8,14 @@ runs go to `robots/wisco_v1/hardware_observations.md`.
 training/locomotion/wisco_v1/
   train.py, play.py      launchers: register the task, then run mjlab's own train / play
   wisco_mjlab/           the task (registers Wisco-V1-Velocity-Flat):
-    task/
-      env_cfg.py             assembles the task from env/
-      rl_cfg.py              PPO settings
-      env/
-        recipe.py            tuning constants
-        sensors.py           feet contact + non-arm self-collision sensors
-        actions.py           policy joints and viewer body
-        commands.py          velocity command sampling + command curriculum
-        events.py            randomization, scripted arms, payloads, pushes
-        rewards.py           reward terms and metrics
-        curriculum.py        performance-gated difficulty
-        play.py              evaluation overrides
-    robot/
-      robot_cfg.py           actuators (DC motor torque-speed limits + command delay), gains and limits from robots/wisco_v1/model/
-      ankle_actuator.py      per-motor ankle torque limits through the rod linkage
-      linkage_penalty.py     penalty for ankle motor torque above peak and sustained above rated
-    terms/
-      arms_free_terms.py     custom terms: in-place-turn commands, performance-gated curriculum, scripted arm motion,
-                             hand payloads, self-collision and angular-momentum penalties, yaw-rate tracking
+    robot_cfg.py           actuators (DC motor torque-speed limits + command delay), gains and limits from robots/wisco_v1/model/
+    env_cfg.py             observations, rewards, randomization, curriculum (arms-free recipe)
+    arms_free_terms.py     custom terms: in-place-turn commands, performance-gated curriculum, scripted arm motion,
+                           hand payloads, self-collision and angular-momentum penalties, yaw-rate tracking
+    ankle_actuator.py      per-motor ankle torque limits through the rod linkage
+    linkage_penalty.py     penalty for ankle motor torque above peak and sustained above rated
+    rl_cfg.py              PPO settings
+  wisco_amp/             AMP prototype via amp-rsl-rl (training-only)
   vm/                    GPU machine scripts (run from training/locomotion)
     check_env.py           build the real environment and check it, no training
     smoke_test.sh          5 PPO updates on 256 robots

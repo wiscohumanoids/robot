@@ -15,7 +15,7 @@
    linear-tracking reward rate > 50 % of its weight AND the angular-tracking rate > 40 % of its weight, at most once per
    50 training iterations (24 x 50 env steps); -0.1 when mean episode length < 0.4 x max.
 4. Reward terms: self-collision without the arms, angular momentum of the policy-controlled bodies, yaw-rate
-   tracking, ankle motor overload (see robot/linkage_penalty.py).
+   tracking, ankle motor overload (see linkage_penalty.py).
 """
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # training/locomotion (GPU machine)
 
-The uv project that pins mjlab 1.6.0 (`pyproject.toml`, `.python-version`). Every mjlab job (G1 and Wisco V1 walking,
+The uv project that pins mjlab main at a commit with RSL-RL 5.5.2 (`pyproject.toml`, `.python-version`). Every mjlab job (G1 and Wisco V1 walking,
 motion tracking) runs from this folder with its `.venv`. Trained policies are exported as ONNX plus a
 `manifest.yaml` and deployed from `models/locomotion/` (see [its README](../../models/locomotion/README.md)).
 

@@ -266,7 +266,7 @@ The whole game is: framework owns PPO, you own the environment and the reward. N
 | Concept above | Wisco V1 in this repo |
 |---|---|
 | Robot model | `robots/wisco_v1/`: URDF/MJCF generated from CAD + MyActuator datasheets; `model/wisco_v1_train.xml` is what mjlab trains on |
-| Framework | mjlab 1.6.0 (MuJoCo-Warp on the GPU) + RSL-RL PPO; 4,096 parallel robots, 24 steps per rollout, actor 512-256-128 ELU |
+| Framework | mjlab main (RSL-RL 5.5.2, MuJoCo-Warp on the GPU) + RSL-RL PPO; 4,096 parallel robots, 24 steps per rollout, actor 512-256-128 ELU |
 | Recipe | "arms-free": the policy drives 15 joints (legs 12 + waist 3) and holds the 14 arm joints (and the head), so manipulation can use the arms later |
 | Observation (85 values) | body linear and angular velocity, projected gravity, positions and velocities of all 29 modelled joints, last action (15), velocity command (3) |
 | Action | 15 joint position targets: `default_pos + action_scale * action`, tracked by PD with the gains in `robots/wisco_v1/model/robot_numbers.yaml` |

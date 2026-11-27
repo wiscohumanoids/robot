@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Train walking and motion-tracking policies with mjlab and export ONNX + manifest"
 requires-python = ">=3.11,<3.15"
 dependencies = [
-  "mjlab==1.6.0",
+  # mjlab main is the first line with rsl-rl 5.5.2, which amp-rsl-rl needs.
+  "mjlab @ git+https://github.com/mujocolab/mjlab.git@d872bfd2b048da657345c07669172fa284b38abf",
+  "amp-rsl-rl>=2.2.3",
   "onnx>=1.17",
   "onnxruntime>=1.20",
   "pyyaml>=6.0",
