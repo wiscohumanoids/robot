@@ -22,4 +22,4 @@ legs + waist/torso only; the other joints follow `/arm/joint_targets` or hold th
 for manipulation while the robot walks.
 
 Swap a policy without changing the profile: `ros2 launch hsim_bringup sim_stack.launch.py policy:=/hsim/models/locomotion/<policy-id>`. Add one:
-`tools/vm.sh pull-policy <run-dir> <policy-id>` (export on the GPU machine and copy here), then point a robot profile at it.
+`tools/dev/vm.sh pull-policy <run-dir> <policy-id>` (export on the GPU machine and copy here), then point a robot profile at it.

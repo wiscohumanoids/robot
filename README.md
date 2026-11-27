@@ -81,7 +81,7 @@ The stack is built so the parts most often changed can be swapped from the comma
 | **Localization** | `mapping:=rtabmap\|slam\|map` | RTAB-Map visual SLAM (default), slam_toolbox, AMCL on a known map |
 | **Perception / estimation** | `perception:=server\|stub`, `estimator:=ekf\|truth` | real detector or line-of-sight stub; EKF or ground truth (debug) |
 | **Robot backend (low level)** | `backend:=sim\|ros2_control` | MuJoCo simulation node, or ros2_control + MuJoCo; ros2_control + EtherCAT on hardware |
-| **Training job** | `infra/vm_jobs/jobs.yaml` + `tools/vm.sh jobs launch <job>` | Wisco / G1 walking, tracking, GR00T fine-tune |
+| **Training job** | `infra/vm_jobs/jobs.yaml` + `tools/dev/vm.sh jobs launch <job>` | Wisco / G1 walking, tracking, GR00T fine-tune |
 
 **Robot backends.** The layer under the walking policy and the arm controller can be:
 
@@ -98,22 +98,22 @@ The stack is built so the parts most often changed can be swapped from the comma
 ```bash
 cp .env.example .env                       # add ANTHROPIC_API_KEY for the planner
 tools/ros.sh up                            # build the ROS 2 Jazzy image and start the container
-python3 -m venv .venv && .venv/bin/pip install -r tools/requirements-mac.txt
-.venv/bin/python tools/env_build.py assets/envs/test/table_room   # build the test room for Wisco V1
+python3 -m venv .venv && .venv/bin/pip install -r tools/dev/requirements-mac.txt
+.venv/bin/python tools/build/env_build.py assets/envs/test/table_room   # build the test room for Wisco V1
 tools/ros.sh test sim test/table_room      # Wisco V1 walking in MuJoCo: contract check + drive test
 tools/ros.sh shell                         # inside: ros2 launch hsim_bringup autonomy.launch.py env:=test/table_room
 ```
 
-Watch with `tools/viewer.sh --env test/table_room`; talk to it with `tools/ask.sh "walk to the table"`. Real object
+Watch with `tools/sim/viewer.sh --env test/table_room`; talk to it with `tools/ask.sh "walk to the table"`. Real object
 detection needs the perception server on the GPU machine and a tunnel (`ssh -f -N -L 8100:localhost:8100 hsim-gpu`);
 without it use `perception:=stub`.
 
 ## Training on the GPU machine
 
 `training/train.sh <robot> <task>` is the one entry point for walking and tracking runs, and
-`manipulation/finetune.sh <method> <arm profile>` for manipulation fine-tunes. `tools/vm.sh sync` copies the repo to
+`manipulation/finetune.sh <method> <arm profile>` for manipulation fine-tunes. `tools/dev/vm.sh sync` copies the repo to
 the GPU machine; jobs are defined in `infra/vm_jobs/jobs.yaml` and launched with
-`tools/vm.sh jobs launch <job>`; `tools/vm.sh pull-policy <run> <id>` exports a trained walking policy into
+`tools/dev/vm.sh jobs launch <job>`; `tools/dev/vm.sh pull-policy <run> <id>` exports a trained walking policy into
 `models/locomotion/<id>/`, where the stack can load it. Machine setup: [`infra/README.md`](infra/README.md).
 
 ## Decisions this repo has made
@@ -148,7 +148,7 @@ the GPU machine; jobs are defined in `infra/vm_jobs/jobs.yaml` and launched with
 
 - **Branch per change**, pull request into `main`; CI runs the static checks and a container build with smoke tests.
 - **Interfaces are shared, internals are yours.** Change a topic, type, rate, owner, TF edge, action or service in
-  `ros2_ws/src/hsim_bringup/config/interface_contract.yaml`, run `python3 tools/gen_docs.py`, and update the stub and
+  `ros2_ws/src/hsim_bringup/config/interface_contract.yaml`, run `python3 tools/dev/gen_docs.py`, and update the stub and
   every consumer in the same change.
 - **Adding a node:** keep decision logic in a ROS-free module with plain pytest tests; publish topic names as string
   literals; add its interfaces to the contract with its node name as owner; start it from a launch file in

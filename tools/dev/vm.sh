@@ -3,18 +3,18 @@
 # Runs on the laptop. The VM keeps a copy of this repo in ~/$VM_REPO (default ~/robot); its training
 # environments live inside that copy (training/locomotion/.venv) and are never synced.
 #
-#   tools/vm.sh sync                          copy the repo (code only: no builds, logs, datasets or weights)
-#   tools/vm.sh pull-policy <run-dir> <id>    export a run's ONNX + manifest on the VM, copy to models/locomotion/<id>/
+#   tools/dev/vm.sh sync                          copy the repo (code only: no builds, logs, datasets or weights)
+#   tools/dev/vm.sh pull-policy <run-dir> <id>    export a run's ONNX + manifest on the VM, copy to models/locomotion/<id>/
 #                                             (run-dir is relative to training/locomotion, e.g. logs/rsl_rl/<exp>/<time>)
-#   tools/vm.sh pull-results [dest] [--list]  copy small results (ONNX, reports, plots, videos, newest checkpoint per
+#   tools/dev/vm.sh pull-results [dest] [--list]  copy small results (ONNX, reports, plots, videos, newest checkpoint per
 #                                             run) from ~/hsim_runs into dest (default results/), keeping 5 GB free
-#   tools/vm.sh jobs <args>                   job queue (infra/vm_jobs/): list | status | launch <job>... | launch-all |
+#   tools/dev/vm.sh jobs <args>                   job queue (infra/vm_jobs/): list | status | launch <job>... | launch-all |
 #                                             logs <job> [-f] [-n N] | stop <job>... | resume <job>...
 #
 # Environment (the repo's .env, or the shell): VM_HOST (ssh host alias, default hsim-gpu), VM_REPO (repo folder under ~
 # on the VM, default robot).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 if [ -f "$ROOT/.env" ]; then set -a; . "$ROOT/.env"; set +a; fi
 HOST="${VM_HOST:-hsim-gpu}"
 VM_REPO="${VM_REPO:-robot}"
@@ -32,8 +32,8 @@ case "$cmd" in
     echo "synced to $HOST:~/$VM_REPO"
     ;;
   pull-policy)
-    run="${1:?usage: tools/vm.sh pull-policy <run-dir> <policy-id>}"
-    id="${2:?usage: tools/vm.sh pull-policy <run-dir> <policy-id>}"
+    run="${1:?usage: tools/dev/vm.sh pull-policy <run-dir> <policy-id>}"
+    id="${2:?usage: tools/dev/vm.sh pull-policy <run-dir> <policy-id>}"
     ssh "$HOST" "cd ~/$VM_REPO/training/locomotion && ~/.local/bin/uv run python scripts/export_manifest.py '$run' --policy-id '$id'"
     mkdir -p "$ROOT/models/locomotion/$id"
     rsync -az "$HOST:~/$VM_REPO/models/locomotion/$id/" "$ROOT/models/locomotion/$id/"

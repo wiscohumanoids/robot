@@ -1,6 +1,6 @@
 """Teleop bridge (node name: `teleop`): Mac MuJoCo viewer keys -> /cmd_vel_teleop, typed tasks -> planner.
 
-The viewer (tools/viewer.sh) sends its current command over UDP ~30 times a second:
+The viewer (tools/sim/viewer.sh) sends its current command over UDP ~30 times a second:
     b"HCMD", float32 vx, vy, wz, uint8 flags   (flags bit 0 = reset requested)
 This node republishes the latest command as geometry_msgs/TwistStamped on
 /cmd_vel_teleop at 50 Hz while packets keep arriving AND the command is not zero (plus 0.5 s of zeros

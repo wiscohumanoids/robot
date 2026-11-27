@@ -18,5 +18,5 @@ on the GPU machine: `infra/vm_jobs/`.
 Arm manipulation training (ACT, pi0.5, GR00T on an arm profile) has its own entry point,
 [`manipulation/finetune.sh`](../manipulation/README.md#fine-tuning-one-entry-point).
 
-**From training to the robot:** a walking run is exported to ONNX + `manifest.yaml` (`tools/vm.sh pull-policy`), checked
-in plain MuJoCo (`tools/play.sh`, sim-to-sim), then loaded by the ROS stack with `policy:=` or a robot profile.
+**From training to the robot:** a walking run is exported to ONNX + `manifest.yaml` (`tools/dev/vm.sh pull-policy`), checked
+in plain MuJoCo (`tools/sim/play.sh`, sim-to-sim), then loaded by the ROS stack with `policy:=` or a robot profile.

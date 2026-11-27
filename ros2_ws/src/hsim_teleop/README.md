@@ -13,7 +13,7 @@ UDP 9871 still works directly where forwarding does.
 from the simulator): its pose estimate, `/map`, `/scan`, stereo points, Nav2's `/plan`, object memory,
 planner status. UDP to host.docker.internal:9872, map frame. See the module docstring for the format.
 
-## The viewer (tools/viewer.sh)
+## The viewer (tools/sim/viewer.sh)
 - **Main view:** a high camera follows the robot and slowly swings round behind it; walls or tall
   furniture between the camera and the robot are hidden (cutaway). Orbit/zoom with the mouse any time
   (it keeps your angle); **F** toggles swinging with the robot's heading.

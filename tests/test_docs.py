@@ -1,7 +1,7 @@
 """Documentation hygiene: cheap insurance against the docs rotting.
   - every relative link in the repo's own markdown resolves (files and #anchors)
   - every ROS package has a README
-  - generated doc blocks are up to date (tools/gen_docs.py)
+  - generated doc blocks are up to date (tools/dev/gen_docs.py)
 
     python -m pytest tests -q
 """
@@ -58,6 +58,6 @@ def test_every_ros_package_has_a_readme():
 
 
 def test_generated_docs_are_current():
-    r = subprocess.run([sys.executable, str(ROOT / 'tools' / 'gen_docs.py'), '--check'],
+    r = subprocess.run([sys.executable, str(ROOT / 'tools' / 'dev' / 'gen_docs.py'), '--check'],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr

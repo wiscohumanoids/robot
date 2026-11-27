@@ -4,7 +4,7 @@
 # imu_link, lidar_link); only the MuJoCo names, mounts and limits below differ.
 name: g1
 world: /hsim/assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml   # bare training world (no env)
-env_build_dir: build                 # assets/envs/<env>/<this>/  (tools/env_build.py --robot g1)
+env_build_dir: build                 # assets/envs/<env>/<this>/  (tools/build/env_build.py --robot g1)
 policy: /hsim/models/locomotion/g1_velocity_all_joints
 default_sensors: lidar               # lidar | stereo
 bodies:

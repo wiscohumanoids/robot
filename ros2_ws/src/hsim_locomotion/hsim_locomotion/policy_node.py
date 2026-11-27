@@ -23,7 +23,7 @@ Publishes /locomotion/joint_targets and /locomotion/status (1 Hz).
   then it advances one clip step per policy step; at the end it holds the last frame (or restarts with loop:=true).
   /cmd_vel is ignored. The observation adds the clip's reference joint state and its anchor pose relative to the
   robot's anchor body.
-  The manifest/observation logic lives in policy_contract.py (shared with tools/sim2sim_play.py).
+  The manifest/observation logic lives in policy_contract.py (shared with tools/sim/sim2sim_play.py).
 """
 
 from pathlib import Path

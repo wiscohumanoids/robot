@@ -18,7 +18,7 @@ Service:
   /sim/reset                std_srvs/Trigger: put the robot back in the standing keyframe
   /sim/set_body_pose        TEST-ONLY: move a free body in the world (e.g. drop an obstacle)
 Side channel (not ROS, for the Mac viewer): qpos streamed over UDP to
-viewer_host:viewer_port at viewer_hz, so tools/viewer.sh can show the robot
+viewer_host:viewer_port at viewer_hz, so tools/sim/viewer.sh can show the robot
 in a native MuJoCo window. Packet: b"HSIM", uint32 nq, float64 time, float64[nq] qpos.
 Subscribes:
   /locomotion/joint_targets joint position targets by name (until the first one arrives,
@@ -104,7 +104,7 @@ class MujocoSim(Node):
         self.declare_parameter('lockstep_grace', 0.005)
 
         scene = self.get_parameter('scene').value
-        # .mjb = a built environment (tools/env_build.py); .xml = a plain MJCF world
+        # .mjb = a built environment (tools/build/env_build.py); .xml = a plain MJCF world
         self.m = (mujoco.MjModel.from_binary_path(scene) if scene.endswith('.mjb')
                   else mujoco.MjModel.from_xml_path(scene))
         self.d = mujoco.MjData(self.m)

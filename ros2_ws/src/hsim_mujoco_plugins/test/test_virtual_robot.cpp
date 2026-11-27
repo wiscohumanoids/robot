@@ -1,4 +1,4 @@
-// VirtualRobotSystem on Wisco V1 in the test room (assets/envs/test/table_room, built by tools/env_build.py; the
+// VirtualRobotSystem on Wisco V1 in the test room (assets/envs/test/table_room, built by tools/build/env_build.py; the
 // test skips when it is not built): the drives come up through the CiA402 state machine into mode 5, the two-motor
 // mechanisms read what the rod geometry says, and mode-5 holds from the bus keep the robot upright.
 #include <gtest/gtest.h>
@@ -94,7 +94,7 @@ protected:
 
   void start(bool hold_until_released)
   {
-    if (!std::filesystem::exists(kWorld)) {GTEST_SKIP() << kWorld << " not built (tools/env_build.py)";}
+    if (!std::filesystem::exists(kWorld)) {GTEST_SKIP() << kWorld << " not built (tools/build/env_build.py)";}
     char err[1000];
     model_ = mj_loadXML(kWorld.c_str(), nullptr, err, sizeof(err));
     ASSERT_NE(model_, nullptr) << err;

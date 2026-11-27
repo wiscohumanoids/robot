@@ -1,6 +1,6 @@
 """Build an environment: G1 training world + a room -> files the stack loads.
 
-    .venv/bin/python tools/env_build.py assets/envs/test/table_room
+    .venv/bin/python tools/build/env_build.py assets/envs/test/table_room
 
 Reads <env>/env.yaml and writes <env>/build/:
   world.mjb     G1 training world with the room attached (prefix "room/"), compiled to
@@ -32,9 +32,9 @@ import mujoco
 import numpy as np
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ROOM_PREFIX = "room/"
-THIRD_PARTY_TOKEN = "$HSIM_THIRD_PARTY"      # written by tools/robocasa_export.py in place of the asset checkout path
+THIRD_PARTY_TOKEN = "$HSIM_THIRD_PARTY"      # written by tools/build/robocasa_export.py in place of the asset checkout path
 KEY = "init_state"
 FREE, OCCUPIED = 254, 0          # PGM values Nav2 reads as free / occupied (negate: 0)
 

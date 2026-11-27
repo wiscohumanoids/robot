@@ -72,7 +72,7 @@ log/
 # ============================================================================
 # Large regenerable artifacts
 # ============================================================================
-# Built environment worlds (tools/env_build.py regenerates them): build/, build_wisco/, build_<robot>/
+# Built environment worlds (tools/build/env_build.py regenerates them): build/, build_wisco/, build_<robot>/
 assets/envs/**/build/
 assets/envs/**/build_*/
 *.mjb

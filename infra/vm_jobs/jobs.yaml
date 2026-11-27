@@ -1,5 +1,5 @@
-# Job queue for the GPU VM, read by infra/vm_jobs/vmjobs.py (from the laptop: tools/vm.sh jobs <command>).
-# Add a job here, sync the repo (tools/vm.sh sync), then launch it. Each job writes to ~/hsim_runs/<job id>/.
+# Job queue for the GPU VM, read by infra/vm_jobs/vmjobs.py (from the laptop: tools/dev/vm.sh jobs <command>).
+# Add a job here, sync the repo (tools/dev/vm.sh sync), then launch it. Each job writes to ~/hsim_runs/<job id>/.
 #
 # Placeholders in command / env / report values:
 #   {repo}     the repo copy on the VM (defaults.repo)   {log_root}  ~/hsim_runs/<job id>

@@ -1,5 +1,5 @@
 """Evaluate a trained velocity policy inside mjlab's own environment (GPU, MuJoCo-Warp; CPU works too)
-with fixed commands, the same scripts tools/sim2sim_play.py --headless uses on the CPU.
+with fixed commands, the same scripts tools/sim/sim2sim_play.py --headless uses on the CPU.
 
 Same table on both sides tells you whether a behavior comes from the policy itself
 (both sides agree) or from the CPU deployment (they differ).
@@ -30,7 +30,7 @@ from mjlab.envs import ManagerBasedRlEnv  # noqa: E402
 from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper  # noqa: E402
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls  # noqa: E402
 
-SCRIPT = [  # same as tools/sim2sim_play.py
+SCRIPT = [  # same as tools/sim/sim2sim_play.py
     (2.0, (0.0, 0.0, 0.0), "stand"),
     (4.0, (0.5, 0.0, 0.0), "forward 0.5"),
     (4.0, (1.0, 0.0, 0.0), "forward 1.0"),
@@ -39,7 +39,7 @@ SCRIPT = [  # same as tools/sim2sim_play.py
     (3.0, (-0.4, 0.0, 0.0), "backward 0.4"),
     (2.0, (0.0, 0.0, 0.0), "stand"),
 ]
-DEADBAND_SCRIPT = [  # same as tools/sim2sim_play.py --script deadband
+DEADBAND_SCRIPT = [  # same as tools/sim/sim2sim_play.py --script deadband
     (2.0, (0.0, 0.0, 0.0), "stand"),
     (4.0, (0.0, 0.0, 0.3), "turn 0.3"),
     (4.0, (0.0, 0.0, 0.5), "turn 0.5"),

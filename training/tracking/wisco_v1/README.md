@@ -25,6 +25,6 @@ CUDA_VISIBLE_DEVICES= .venv-mjlab/bin/python training/tracking/wisco_v1/train.py
     --env.scene.num-envs 4 --agent.max-iterations 2 --agent.logger tensorboard --env.commands.motion.motion-file /tmp/wisco_dance1_subject2.npz
 ```
 Train on the VM: `training/tracking/wisco_v1/train_wisco_tracking.sh dance1_subject2 --log-root ~/hsim_runs/wisco_track_dance1`.
-Watch a trained policy: `tools/play_mjlab.py --task Wisco-V1-Tracking-Flat --policy <run>.onnx --motion-file <npz> --video out.mp4`.
+Watch a trained policy: `tools/sim/play_mjlab.py --task Wisco-V1-Tracking-Flat --policy <run>.onnx --motion-file <npz> --video out.mp4`.
 
 If the retargeter changes, rerun it: the VM launcher reconverts the npz automatically when the CSV is newer.

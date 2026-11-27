@@ -141,7 +141,7 @@ def main() -> int:
     ap.add_argument("--out-dir", type=Path, help="output folder (default: models/locomotion/<policy-id>)")
     ap.add_argument("--gains-from-model", type=Path, help="take kp/kd per joint from this MuJoCo world's position "
                     "actuators instead of the ONNX metadata (Wisco: its PD runs in Python in training, so mjlab exports "
-                    "kp=1, kd=0; tools/build_robot_world.py writes the real gains into the deploy world)")
+                    "kp=1, kd=0; tools/build/build_robot_world.py writes the real gains into the deploy world)")
     ap.add_argument("--action-joints", help="comma-separated driven joints in action order, for ONNX files exported "
                     "without `action_joint_names` metadata (e.g. Wisco: its training config's LOCOMOTION_ACTION_JOINTS)")
     args = ap.parse_args()

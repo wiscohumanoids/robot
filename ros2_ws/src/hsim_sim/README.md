@@ -34,7 +34,7 @@ ros2 launch hsim_bringup sim_stack.launch.py backend:=ros2_control viewer:=false
 
 **Worlds.** Bare: the profile's training scene, converted at launch (`robot/` prefix removed, an IMU added; checked
 equal to the original: gains, masses, geometry, keyframe, timestep). With `env:=`: the env's
-`world_ros2_control/world.xml` (+ `assets/`), which `tools/env_build.py` writes next to `world.mjb`: the same world
+`world_ros2_control/world.xml` (+ `assets/`), which `tools/build/env_build.py` writes next to `world.mjb`: the same world
 as MJCF with a copy of every mesh and texture, because the plugin bundles its own MuJoCo (3.12) and a compiled `.mjb`
 only loads in the version that wrote it. Masses and inertias are written explicitly, so the two files match (checked:
 masses, inertias, geometry, friction, joints, actuators; one second of physics agrees to 1e-7). Rebuild older envs

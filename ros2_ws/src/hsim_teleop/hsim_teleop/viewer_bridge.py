@@ -1,6 +1,6 @@
 """Perception bridge for the Mac viewer (node name: `viewer_bridge`). Display only.
 
-Sends what the ROBOT knows, never simulator truth, to tools/viewer.sh's perception panel over UDP
+Sends what the ROBOT knows, never simulator truth, to tools/sim/viewer.sh's perception panel over UDP
 (viewer_host:viewer_port, default host.docker.internal:9872). Everything is in the map frame.
 
   b"HPER" + zlib(JSON), 10 Hz:

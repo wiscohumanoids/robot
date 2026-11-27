@@ -11,14 +11,14 @@ policy folder (models/locomotion/<id>/ with policy.onnx + manifest.yaml), then:
   The manifest / observation logic is shared with the ROS node
   (ros2_ws/src/hsim_locomotion/hsim_locomotion/policy_contract.py).
 
-Viewer (macOS needs mjpython; tools/play.sh handles it):
-    tools/play.sh [--policy models/locomotion/g1_velocity_all_joints]
+Viewer (macOS needs mjpython; tools/sim/play.sh handles it):
+    tools/sim/play.sh [--policy models/locomotion/g1_velocity_all_joints]
   Keys:  Up/Down = forward/back speed   Left/Right = turn   , . = sidestep
          / = stop (zero command)        R = reset robot
 
 Headless test (scripted commands, prints how well it tracked them):
-    python tools/sim2sim_play.py --headless
-    python tools/sim2sim_play.py --headless --script deadband   # small commands
+    python tools/sim/sim2sim_play.py --headless
+    python tools/sim/sim2sim_play.py --headless --script deadband   # small commands
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ import onnxruntime as ort
 
 from viewer_camera import clear_view
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "ros2_ws/src/hsim_locomotion"))
 from hsim_locomotion.policy_contract import Contract, load_contract  # noqa: E402
 DEFAULT_SCENE = ROOT / "assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml"
@@ -105,7 +105,7 @@ class Policy:
         c = load_contract(folder)
         if c.kind != 'velocity':
             raise SystemExit(f'{folder} is a {c.kind} policy; this player runs walking policies '
-                             '(play tracking policies with tools/play_mjlab.py or in the ROS stack)')
+                             '(play tracking policies with tools/sim/play_mjlab.py or in the ROS stack)')
         sess = ort.InferenceSession(str(folder / "policy.onnx"), providers=["CPUExecutionProvider"])
         n_in = sess.get_inputs()[0].shape[-1]
         if isinstance(n_in, int) and n_in != c.obs_dim:
@@ -306,7 +306,7 @@ def main():
     """Play a deployed policy in plain MuJoCo (no ROS), headless or in the viewer."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--policy", type=Path, default=DEFAULT_POLICY, help="folder with policy.onnx + manifest.yaml")
-    ap.add_argument("--env", help="environment, e.g. test/table_room (built with tools/env_build.py)")
+    ap.add_argument("--env", help="environment, e.g. test/table_room (built with tools/build/env_build.py)")
     ap.add_argument("--scene", type=Path, default=DEFAULT_SCENE)
     ap.add_argument("--headless", action="store_true", help="run the scripted test instead of the viewer")
     ap.add_argument("--script", choices=sorted(SCRIPTS), default="standard", help="headless command script")

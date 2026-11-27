@@ -13,7 +13,7 @@ Unitree G1 velocity-command walking policy, all-joints recipe (drives all 29 joi
 
 ## Evaluation: measured body velocity vs command, 2nd half of each segment
 
-| Command (vx, vy, wz) | mjlab on GPU (`eval_commands.py`) | MuJoCo on CPU (`tools/play.sh --headless`) |
+| Command (vx, vy, wz) | mjlab on GPU (`eval_commands.py`) | MuJoCo on CPU (`tools/sim/play.sh --headless`) |
 |---|---|---|
 | stand | 0.00, 0.00, -0.01 | 0.00, 0.00, 0.00 |
 | forward 0.5 | 0.49, 0.00, -0.05 | 0.46, -0.02, -0.05 |

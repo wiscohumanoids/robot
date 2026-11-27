@@ -4,7 +4,7 @@ behavior tree, planner.
     ros2 launch hsim_bringup autonomy.launch.py env:=test/table_room [robot:=g1|wisco] [mapping:=rtabmap|slam|map]
 
 robot:=wisco uses config/robots/wisco.yaml: stereo camera (no lidar), its policy and its env builds
-(assets/envs/<env>/build_wisco/, made with tools/env_build.py <env> --robot wisco).
+(assets/envs/<env>/build_wisco/, made with tools/build/env_build.py <env> --robot wisco).
 
 The robot estimates its own motion (leg odometry + IMU) and, by default, builds its map while it moves: RTAB-Map
 SLAM from the head camera's color + depth, starting from an empty map every launch (mapping:=slam: slam_toolbox on

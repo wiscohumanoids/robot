@@ -2,8 +2,8 @@
 """Regenerates the tables in docs/interface_contract.md from the machine-readable contract,
 ros2_ws/src/hsim_bringup/config/interface_contract.yaml (the file `contract_check` enforces live).
 
-    python3 tools/gen_docs.py            # rewrite the generated blocks in place
-    python3 tools/gen_docs.py --check    # exit 1 if any block is out of date (CI, tests/test_docs.py)
+    python3 tools/dev/gen_docs.py            # rewrite the generated blocks in place
+    python3 tools/dev/gen_docs.py --check    # exit 1 if any block is out of date (CI, tests/test_docs.py)
 
 Only text between `<!-- BEGIN GENERATED:<name> -->` and `<!-- END GENERATED:<name> -->` is touched;
 everything else in the file is hand-written. Never edit a generated block by hand: edit the YAML and
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / 'ros2_ws' / 'src' / 'hsim_bringup' / 'config' / 'interface_contract.yaml'
 TARGETS = [ROOT / 'docs' / 'interface_contract.md']
 
@@ -92,7 +92,7 @@ def main():
             if not args.check:
                 path.write_text(new)
     if args.check and stale:
-        print('out of date (run python3 tools/gen_docs.py):', *stale)
+        print('out of date (run python3 tools/dev/gen_docs.py):', *stale)
         return 1
     print('updated:' if stale else 'up to date', *stale)
     return 0

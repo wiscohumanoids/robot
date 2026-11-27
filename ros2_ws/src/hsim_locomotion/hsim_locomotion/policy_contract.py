@@ -1,5 +1,5 @@
 """Policy deploy contract: reads a manifest (v1, v2 or v3) and builds the observation / joint
-targets exactly like mjlab did in training. Pure numpy, no ROS, so tools/sim2sim_play.py and
+targets exactly like mjlab did in training. Pure numpy, no ROS, so tools/sim/sim2sim_play.py and
 the tests use the same code as policy_node.
 
 Manifest v1: velocity policy that drives every joint in `joints` (each has action_scale).

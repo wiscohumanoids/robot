@@ -10,7 +10,7 @@ that put MuJoCo inside a ros2_control controller manager need these plugins:
 
 Both publish the world's state in the MuJoCo node's formats (`include/hsim_mujoco_plugins/ground_truth_stream.hpp`):
 `/sim/ground_truth/state` (`std_msgs/Float64MultiArray`, `[time, qpos...]`, 20 Hz), which the simulated head camera
-renders the world from and graders read, and the UDP stream for `tools/viewer.sh` (`b"HSIM"`, nq, time, qpos).
+renders the world from and graders read, and the UDP stream for `tools/sim/viewer.sh` (`b"HSIM"`, nq, time, qpos).
 
 ## GroundTruthPlugin
 
@@ -58,5 +58,5 @@ gain encoding among them). Parameters: see the header, `include/hsim_mujoco_plug
 `hsim_sim/ethercat_sim_backend.py` writes them.
 
 `test/test_virtual_robot.cpp` runs the plugin on Wisco V1 in the test room (skipped until
-`tools/env_build.py assets/envs/test/table_room --robot wisco` has built it): every drive reaches mode 5, the
+`tools/build/env_build.py assets/envs/test/table_room --robot wisco` has built it): every drive reaches mode 5, the
 two-motor mechanisms read what the rod geometry gives, and mode-5 holds over the bus keep the robot upright.

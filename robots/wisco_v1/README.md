@@ -28,7 +28,7 @@ pre-training checks, simulated current draw, and the hardware observations from 
 | `tools/current_estimate.py` → `reports/current_draw/` | per-motor and bus current while walking, from the policy and a datasheet motor model |
 
 The sim world the ROS stack loads, `assets/robots/wisco_v1/mjlab_1.6.0/`, is built from the training task with
-`tools/build_robot_world.py wisco`.
+`tools/build/build_robot_world.py wisco`.
 
 ## How the numbers flow
 
@@ -84,7 +84,7 @@ cd robots/wisco_v1/model
 ../../../.venv/bin/python sync_robot_folder.py      # robot.urdf, robot.xml, model_report.json
 ../../../.venv/bin/python build_training_model.py   # model/wisco_v1_train.xml + train_model_info.json
 cd ../checks && ../../../.venv/bin/python run_checks.py --actuator dc --delay 2
-cd ../../.. && .venv-mjlab/bin/python tools/build_robot_world.py wisco   # the ROS sim world
+cd ../../.. && .venv-mjlab/bin/python tools/build/build_robot_world.py wisco   # the ROS sim world
 ```
 
 ## Changing numbers when real data arrives

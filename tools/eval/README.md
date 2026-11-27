@@ -2,7 +2,7 @@
 
 Graders and measurement tools for the running stack. These are the **only** code allowed to read simulator ground
 truth (`/sim/ground_truth/*`, the env's true geometry); the robot stack never does. Most run inside the container
-against a launched stack, and `tools/autonomy_test.sh` (`tools/ros.sh autotest`) calls them.
+against a launched stack, and `tools/test/autonomy_test.sh` (`tools/ros.sh autotest`) calls them.
 
 | File | What |
 |---|---|

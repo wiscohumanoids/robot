@@ -3,7 +3,7 @@
 Every environment is `<source>/<name>/` with an `env.yaml` (what to build) and a `build/` folder
 produced by the builder (gitignored, rebuild any time):
 
-    .venv/bin/python tools/env_build.py assets/envs/test/table_room
+    .venv/bin/python tools/build/env_build.py assets/envs/test/table_room
 
 | build/ file | Used by |
 |---|---|
@@ -17,8 +17,8 @@ Use one:
     # container
     ros2 launch hsim_bringup sim_stack.launch.py env:=test/table_room
     # Mac (must be the same env)
-    tools/viewer.sh --env test/table_room
-    tools/play.sh --env test/table_room          # standalone, no ROS
+    tools/sim/viewer.sh --env test/table_room
+    tools/sim/play.sh --env test/table_room          # standalone, no ROS
 
 Each robot profile builds into its own folder (`build/` for the G1, `build_wisco/` for Wisco V1): add
 `--robot g1|wisco` (default `wisco`).
@@ -31,8 +31,8 @@ RoboCasa's assets (about 25 GB). The exported `room.xml` refers to those assets 
 `env_build.py` expands it, so building a kitchen needs the checkout but the built `world.mjb` is self-contained.
 
     # export (run from the repo, not from ~/hsim_third_party) then build
-    ~/hsim_third_party/.venv-robocasa/bin/python tools/robocasa_export.py --layout 3 --style 3
-    .venv/bin/python tools/env_build.py assets/envs/robocasa/kitchen_l3_s3
+    ~/hsim_third_party/.venv-robocasa/bin/python tools/build/robocasa_export.py --layout 3 --style 3
+    .venv/bin/python tools/build/env_build.py assets/envs/robocasa/kitchen_l3_s3
 
 The exporter builds a real RoboCasa task scene, removes RoboCasa's robot, and keeps the kitchen + the task's objects.
 Our training physics always win over RoboCasa's settings. The robot starts where RoboCasa put its robot, turned to

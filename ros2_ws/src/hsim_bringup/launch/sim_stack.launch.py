@@ -5,9 +5,9 @@
 robot:=g1|wisco        robot profile config/robots/<robot>.yaml: world, policy, body names, sensor mounts,
                        default sensors (Wisco: stereo, it has no lidar), env build dir (Wisco: build_wisco/)
 
-Then on the Mac: tools/viewer.sh [--env ...]  (native MuJoCo window: watch + drive with arrow keys)
+Then on the Mac: tools/sim/viewer.sh [--env ...]  (native MuJoCo window: watch + drive with arrow keys)
 
-env:=<source>/<name>   world from assets/envs/<env>/build/ (build with tools/env_build.py);
+env:=<source>/<name>   world from assets/envs/<env>/build/ (build with tools/build/env_build.py);
                        without env: the bare training world (flat floor, no map)
 estimator:=ekf         leg odometry + IMU fused by robot_localization (default, realistic)
 estimator:=truth       DEBUG ONLY: odometry copied from the simulator's ground truth
@@ -26,7 +26,7 @@ backend:=ros2_control  the robot run by its own controllers instead: MuJoCo insi
                        JointTargetController `leg_targets` and `arm_targets` (wisco_ethercat_ros2_hw) take the policy's
                        /locomotion/joint_targets with hold, ramp-in, joint limits and a timeout, as on the RK3588, and
                        MuJoCo's position actuators apply the trained PD (MyActuator mode 5's law). Works with env:= (the
-                       env's world_ros2_control/ from tools/env_build.py) and with the stereo camera, SLAM and
+                       env's world_ros2_control/ from tools/build/env_build.py) and with the stereo camera, SLAM and
                        perception (GroundTruthPlugin feeds the simulated camera and the Mac viewer). No lockstep with
                        the policy (as on the robot), no lidar, no battery model; IMU and joint states are noise-free.
 backend:=ethercat_sim  one layer further down: the robot's EtherCAT hardware simulated (hsim_mujoco_plugins'
@@ -160,7 +160,7 @@ def robot_nodes(context):
         needed = [world, map_yaml] + ([rc_world] if ros2_control else [])
         for f in needed:
             if not os.path.exists(f):
-                raise RuntimeError(f'{f} missing: run tools/env_build.py assets/envs/{env} --robot {prof["name"]} on the Mac first')
+                raise RuntimeError(f'{f} missing: run tools/build/env_build.py assets/envs/{env} --robot {prof["name"]} on the Mac first')
         if ros2_control:
             nodes += ros2_control_nodes(rc_world, float(arg(context, 'update_rate')), viewer, backend, prof)
         else:

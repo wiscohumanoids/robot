@@ -2,7 +2,7 @@
 for the G1 (mjlab `export-scene` output + the training physics options), so env_build.py and the ROS sim
 can load it.
 
-  .venv-mjlab/bin/python tools/build_robot_world.py wisco
+  .venv-mjlab/bin/python tools/build/build_robot_world.py wisco
   -> assets/robots/wisco_v1/mjlab_1.6.0/{scene.xml, wisco_velocity_flat.xml, assets/*.stl}
 
 Why this isn't just export-scene for Wisco: the G1's mjlab actuators are MuJoCo position actuators, so the
@@ -23,7 +23,7 @@ from pathlib import Path
 
 import mujoco
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ROBOTS = {
   "wisco": {
     "task": "Wisco-V1-Velocity-Flat",
@@ -100,7 +100,7 @@ def main(robot: str):
   (out / f'{r["world_name"]}.xml').write_text(
     f'<!-- {robot} velocity-flat training world from mjlab 1.6.0, for deployment on CPU.\n'
     f'     scene.xml: mjlab `export-scene {r["task"]}` with the Python-side PD actuators turned into MuJoCo position\n'
-    f'     actuators (kp/kd/effort from robot_numbers.yaml), written by tools/build_robot_world.py.\n'
+    f'     actuators (kp/kd/effort from robot_numbers.yaml), written by tools/build/build_robot_world.py.\n'
     f'     Physics options restated from the task config (export-scene does not write them). -->\n'
     f'<mujoco model="{r["world_name"]}">\n  {physics_options(r["task"])}\n  <include file="scene.xml"/>\n</mujoco>\n')
   print(f"wrote {out} ({len(done)} position actuators)")

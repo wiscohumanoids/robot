@@ -72,7 +72,7 @@ def test_manifest_is_self_consistent(manifest):
 
 def test_container_paths_exist():
     """Every literal /hsim/<path> in code and config points at something in the repo (or a build output)."""
-    generated = ('ros2_ws/install', 'ros2_ws/build', 'assets/envs')   # created by colcon / tools/env_build.py
+    generated = ('ros2_ws/install', 'ros2_ws/build', 'assets/envs')   # created by colcon / tools/build/env_build.py
     bad = []
     for f in _tracked('*.py', '*.sh', '*.yaml', '*.yml', '*.xml'):
         if f.is_relative_to(ROOT / 'manipulation') or f.is_relative_to(ROOT / 'hardware') or f.is_relative_to(ROOT / 'tests'):

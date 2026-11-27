@@ -62,7 +62,7 @@ tf_edges:
   - {parent: base_link,      child: imu_link,       owner: imu_mount,        static: true,  phase: 3}
   - {parent: torso_link,     child: head_camera,    owner: camera_mount,     static: true,  phase: 3}
   - {parent: head_camera,    child: head_camera_optical, owner: camera_optical_mount, static: true, phase: 3}
-# Actions and services between layers (documented here so tools/gen_docs.py and tests/test_contract.py cover them;
+# Actions and services between layers (documented here so tools/dev/gen_docs.py and tests/test_contract.py cover them;
 # contract_check does not check these live). server = ROS node name; clients = who calls it.
 actions:
   /behavior/execute_plan: {type: hsim_interfaces/action/ExecutePlan, server: behavior, clients: [planner, tools/eval/run_plan.py], phase: 3}

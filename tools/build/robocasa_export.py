@@ -3,7 +3,7 @@
 Runs in RoboCasa's own Python environment (~/hsim_third_party/.venv-robocasa), from any
 folder except ~/hsim_third_party (that folder's robocasa/ checkout shadows the package):
 
-    ~/hsim_third_party/.venv-robocasa/bin/python tools/robocasa_export.py --layout 1 --style 1
+    ~/hsim_third_party/.venv-robocasa/bin/python tools/build/robocasa_export.py --layout 1 --style 1
 
 How: RoboCasa only builds kitchens inside a task with a robot, so this builds a real task
 scene with its default robot, then removes the robot and writes:
@@ -11,7 +11,7 @@ scene with its default robot, then removes the robot and writes:
              RoboCasa checkout through the $HSIM_THIRD_PARTY token, which env_build.py expands
   env.yaml   our environment definition: spawn, map bounds, named objects
 Then build it like any environment:
-    .venv/bin/python tools/env_build.py assets/envs/robocasa/<name>
+    .venv/bin/python tools/build/env_build.py assets/envs/robocasa/<name>
 """
 
 import argparse
@@ -24,8 +24,8 @@ import robocasa  # registers the kitchen tasks; also locates the asset checkout
 import robosuite
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
-THIRD_PARTY_TOKEN = "$HSIM_THIRD_PARTY"     # expanded by tools/env_build.py
+ROOT = Path(__file__).resolve().parents[2]
+THIRD_PARTY_TOKEN = "$HSIM_THIRD_PARTY"     # expanded by tools/build/env_build.py
 
 # What an object detector would call each RoboCasa fixture class (None = structure, not an object)
 FIXTURE_LABELS = {

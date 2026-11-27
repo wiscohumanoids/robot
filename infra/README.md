@@ -38,16 +38,16 @@ Host hsim-gpu
 Security groups only need SSH from your address. Service ports (perception 8100, VLA, Foxglove) are reached through SSH
 tunnels, never opened publicly, e.g. `ssh -f -N -L 8100:localhost:8100 hsim-gpu`.
 
-## Moving code and results (`tools/vm.sh`)
+## Moving code and results (`tools/dev/vm.sh`)
 
-- `tools/vm.sh sync`: copy the repo to `~/robot` on the GPU machine (code only; `VM_REPO` changes the folder).
-- `tools/vm.sh pull-policy <run-dir> <id>`: export a trained walking policy and copy it into `models/locomotion/<id>/`.
-- `tools/vm.sh pull-results`: copy small results (ONNX, reports, plots, videos, newest checkpoint per run).
-- `tools/vm.sh jobs <command>`: the job queue (`vm_jobs/`).
+- `tools/dev/vm.sh sync`: copy the repo to `~/robot` on the GPU machine (code only; `VM_REPO` changes the folder).
+- `tools/dev/vm.sh pull-policy <run-dir> <id>`: export a trained walking policy and copy it into `models/locomotion/<id>/`.
+- `tools/dev/vm.sh pull-results`: copy small results (ONNX, reports, plots, videos, newest checkpoint per run).
+- `tools/dev/vm.sh jobs <command>`: the job queue (`vm_jobs/`).
 - Experiment tracking: Weights & Biases (mjlab stores motion clips there for the tracking task); runs log offline by default.
 
 ## Cost rules
 
 - The GPU machine costs about $3.4/hour on demand (about $1.5 spot). Stop it when a run ends.
-- Training checkpoints every 50 iterations, so an interruption loses minutes; runs resume (`tools/vm.sh jobs resume <job>`).
+- Training checkpoints every 50 iterations, so an interruption loses minutes; runs resume (`tools/dev/vm.sh jobs resume <job>`).
 - Keep outputs on the EBS volume (`~/hsim_runs`, `~/hsim_data`), not the instance-store NVMe, which is wiped on stop.

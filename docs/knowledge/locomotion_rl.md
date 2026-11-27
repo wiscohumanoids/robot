@@ -272,7 +272,7 @@ The whole game is: framework owns PPO, you own the environment and the reward. N
 | Action | 15 joint position targets: `default_pos + action_scale * action`, tracked by PD with the gains in `robots/wisco_v1/model/robot_numbers.yaml` |
 | Actuator realism | DC motor torque-speed limits, 0–10 ms command delay, per-motor ankle torque through the rod linkage (with an overload penalty) |
 | Domain randomization | link masses ×0.85–1.20, friction, kp/kd ±10 %, pushes, arm motion and hand payload |
-| Training | on the GPU machine (`training/locomotion/wisco_v1/`, launched with `tools/vm.sh jobs launch wisco_velocity`) |
+| Training | on the GPU machine (`training/locomotion/wisco_v1/`, launched with `tools/dev/vm.sh jobs launch wisco_velocity`) |
 | Export → deploy | ONNX + `manifest.yaml` (`models/locomotion/wisco_v1_velocity_arms_free/`), run by the `locomotion` node at 50 Hz; checked sim-to-sim in plain MuJoCo first |
 
 What is still estimated on the robot side (masses, delay, driver gains, friction) and how it gets measured:

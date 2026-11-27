@@ -10,21 +10,21 @@ Jobs (training runs, servers, pipeline steps) are defined in `jobs.yaml`; each r
 | `record_video.py` | GPU machine (mjlab venv) | headless video of a trained policy |
 | `eval_velocity.py` | GPU machine (mjlab venv) | scripted command tests of a walking checkpoint |
 | `morning_report.py` | GPU machine (mjlab venv) | per training job: curves, the newest ONNX, a video and evaluation → `~/hsim_runs/report/index.md` + `index.html` |
-| `pull_manifest.sh` | GPU machine | lists the small results worth copying back (`tools/vm.sh pull-results`) |
+| `pull_manifest.sh` | GPU machine | lists the small results worth copying back (`tools/dev/vm.sh pull-results`) |
 | `test/` | GPU machine | dummy jobs that exercise the runner (`fake_rl.py` prints training-style output) |
 
 ## Commands (from the laptop)
 
 ```
-tools/vm.sh jobs list                    # jobs, enabled, kind, GPU estimate, dependencies
-tools/vm.sh jobs launch wisco_velocity   # one or more jobs
-tools/vm.sh jobs launch-all              # every enabled job + the GPU logger (~/hsim_runs/gpu.csv every 60 s)
-tools/vm.sh jobs status                  # iteration, reward, episode length, steps/s, ETA, GPU memory per job
-tools/vm.sh jobs logs wisco_velocity -f  # follow a job's output (-n N for the last N lines)
-tools/vm.sh jobs stop wisco_velocity     # Ctrl-C to the job's process group, terminate after 45 s
-tools/vm.sh jobs resume wisco_velocity   # training jobs: --agent.resume True --agent.load-run <newest run>
+tools/dev/vm.sh jobs list                    # jobs, enabled, kind, GPU estimate, dependencies
+tools/dev/vm.sh jobs launch wisco_velocity   # one or more jobs
+tools/dev/vm.sh jobs launch-all              # every enabled job + the GPU logger (~/hsim_runs/gpu.csv every 60 s)
+tools/dev/vm.sh jobs status                  # iteration, reward, episode length, steps/s, ETA, GPU memory per job
+tools/dev/vm.sh jobs logs wisco_velocity -f  # follow a job's output (-n N for the last N lines)
+tools/dev/vm.sh jobs stop wisco_velocity     # Ctrl-C to the job's process group, terminate after 45 s
+tools/dev/vm.sh jobs resume wisco_velocity   # training jobs: --agent.resume True --agent.load-run <newest run>
 ssh hsim-gpu 'cd ~/robot && MUJOCO_GL=egl training/locomotion/.venv/bin/python infra/vm_jobs/morning_report.py'
-tools/vm.sh pull-results                 # copy small results to results/ (--list to preview)
+tools/dev/vm.sh pull-results                 # copy small results to results/ (--list to preview)
 ```
 On the GPU machine itself, run the runner directly: `python3 ~/robot/infra/vm_jobs/vmjobs.py <command>`.
 
@@ -46,8 +46,8 @@ On the GPU machine itself, run the runner directly: `python3 ~/robot/infra/vm_jo
 ## Testing the runner
 
 ```
-tools/vm.sh jobs --jobs ~/robot/infra/vm_jobs/test/jobs_test.yaml launch T2_after_T1 T1_rl T3_crash_resume T4_long
-tools/vm.sh jobs --jobs ~/robot/infra/vm_jobs/test/jobs_test.yaml status
+tools/dev/vm.sh jobs --jobs ~/robot/infra/vm_jobs/test/jobs_test.yaml launch T2_after_T1 T1_rl T3_crash_resume T4_long
+tools/dev/vm.sh jobs --jobs ~/robot/infra/vm_jobs/test/jobs_test.yaml status
 ssh hsim-gpu 'rm -rf ~/hsim_runs/_vmjobs_test'
 ```
 Never test with the real `jobs.yaml`: a job whose script exists launches for real.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Job runner for the GPU VM: one tmux session per job, logs + state under ~/hsim_runs/<job>/.
 
-Usage (on the VM; from the laptop use tools/vm.sh jobs <command>, which runs this over ssh):
+Usage (on the VM; from the laptop use tools/dev/vm.sh jobs <command>, which runs this over ssh):
   vmjobs.py [--jobs FILE] list
   vmjobs.py [--jobs FILE] launch <job> [<job> ...]
   vmjobs.py [--jobs FILE] launch-all            # every enabled job + the GPU logger

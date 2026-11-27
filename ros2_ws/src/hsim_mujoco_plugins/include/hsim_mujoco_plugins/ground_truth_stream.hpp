@@ -4,7 +4,7 @@
 //   /sim/ground_truth/state   std_msgs/Float64MultiArray [time, qpos...] at `state_rate` Hz: the simulated head
 //                             camera renders the world from it (and graders read it)
 //   UDP to viewer_host:viewer_port at `viewer_rate` Hz: b"HSIM", uint32 nq, float64 time, float64[nq] qpos,
-//                             for tools/viewer.sh's native MuJoCo window (0 = off)
+//                             for tools/sim/viewer.sh's native MuJoCo window (0 = off)
 //
 // update() is called from the control thread with the latest simulated time and qpos; it keeps its own schedule
 // (simulated time) and starts it again when time goes backwards (a world reset).

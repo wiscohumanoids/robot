@@ -1,4 +1,4 @@
-"""Native MuJoCo window for the ROS stack (Mac side). Run via tools/viewer.sh.
+"""Native MuJoCo window for the ROS stack (Mac side). Run via tools/sim/viewer.sh.
 
 Shows exactly what the ROS `sim` node is simulating, what the robot itself perceives, and drives it.
 No physics happens here: this window copies the robot pose streamed by the sim (UDP 9870) onto the
@@ -32,7 +32,7 @@ import numpy as np
 from perception_view import PerceptionView
 from viewer_camera import Cutaway, FollowCam
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SCENE = ROOT / "assets/robots/g1/mjlab_1.6.0/g1_velocity_flat.xml"
 PROFILES = ROOT / "ros2_ws/src/hsim_bringup/config/robots"     # robot profiles (same files the launch uses)
 CMD_LIMITS = np.array([[-1.0, 1.5], [-0.5, 0.5], [-0.7, 0.7]])
@@ -50,7 +50,7 @@ def load_world(env, scene, build_dir="build"):
     if env:
         scene = ROOT / "assets/envs" / env / build_dir / "world.mjb"
         if not scene.exists():
-            raise SystemExit(f"{scene} missing: run .venv/bin/python tools/env_build.py assets/envs/{env} --robot <robot>")
+            raise SystemExit(f"{scene} missing: run .venv/bin/python tools/build/env_build.py assets/envs/{env} --robot <robot>")
     return mujoco.MjModel.from_binary_path(str(scene)) if str(scene).endswith(".mjb") \
         else mujoco.MjModel.from_xml_path(str(scene))
 

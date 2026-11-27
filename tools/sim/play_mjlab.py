@@ -5,14 +5,14 @@ the reference motion are exactly what the policy was trained with. Actions come 
 artifact that gets deployed), not from a training checkpoint.
 
   # tracking (G1): headless mp4 (VM, MUJOCO_GL=egl) or --viewer on the Mac
-  python tools/play_mjlab.py --task Mjlab-Tracking-Flat-Unitree-G1 --policy run.onnx \
+  python tools/sim/play_mjlab.py --task Mjlab-Tracking-Flat-Unitree-G1 --policy run.onnx \
       --motion-file ~/hsim_data/motions/g1/dance1_subject2.npz --seconds 30 --video dance.mp4
   # tracking (Wisco)
-  python tools/play_mjlab.py --task Wisco-V1-Tracking-Flat --policy run.onnx --motion-file wisco_dance.npz --viewer
+  python tools/sim/play_mjlab.py --task Wisco-V1-Tracking-Flat --policy run.onnx --motion-file wisco_dance.npz --viewer
   # velocity: fixed command vx,vy,wz
-  python tools/play_mjlab.py --task Wisco-V1-Velocity-Flat --policy run.onnx --cmd 0.5,0,0 --seconds 20 --video walk.mp4
-Run with the mjlab env: VM `cd training/locomotion && uv run python ../../tools/play_mjlab.py ...`,
-Mac `.venv-mjlab/bin/python tools/play_mjlab.py ...` (CPU; add CUDA_VISIBLE_DEVICES= if no GPU).
+  python tools/sim/play_mjlab.py --task Wisco-V1-Velocity-Flat --policy run.onnx --cmd 0.5,0,0 --seconds 20 --video walk.mp4
+Run with the mjlab env: VM `cd training/locomotion && uv run python ../../tools/sim/play_mjlab.py ...`,
+Mac `.venv-mjlab/bin/python tools/sim/play_mjlab.py ...` (CPU; add CUDA_VISIBLE_DEVICES= if no GPU).
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 
 
 def register_tasks():

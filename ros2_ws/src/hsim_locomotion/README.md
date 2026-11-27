@@ -16,5 +16,5 @@ Publishes /locomotion/joint_targets and /locomotion/status (`mode=policy`, polic
 | 3 (`kind: tracking`) | every joint in `joints`, playing the clip its ONNX file carries | none. The node aligns the clip to the robot's anchor body (TF `world_frame` -> `anchor_frame`, default `odom` -> `torso_link`) on the first tick, advances one clip step per policy step, then holds the last frame (`loop:=true` restarts); `/cmd_vel` is ignored |
 
 /locomotion/joint_targets always carries every joint: the policy's joints first (action order), then the held joints.
-The manifest/observation logic is in `policy_contract.py` (no ROS), shared with `tools/sim2sim_play.py`.
+The manifest/observation logic is in `policy_contract.py` (no ROS), shared with `tools/sim/sim2sim_play.py`.
 Tests: `python -m pytest ros2_ws/src/hsim_locomotion/test -q` (needs numpy, pyyaml, pytest).

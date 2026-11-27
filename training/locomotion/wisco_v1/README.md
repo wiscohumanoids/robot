@@ -33,15 +33,15 @@ The mjlab environment is the uv project in `training/locomotion/` (its `.venv`);
 
 ```
 # laptop
-tools/vm.sh sync
-tools/vm.sh jobs launch wisco_velocity            # the queued job (infra/vm_jobs/jobs.yaml), or by hand on the machine:
+tools/dev/vm.sh sync
+tools/dev/vm.sh jobs launch wisco_velocity            # the queued job (infra/vm_jobs/jobs.yaml), or by hand on the machine:
 # GPU machine
 cd ~/robot/training/locomotion
 MUJOCO_GL=egl .venv/bin/python wisco_v1/vm/check_env.py 1024
 wisco_v1/vm/smoke_test.sh
 wisco_v1/vm/train_velocity.sh --log-root ~/hsim_runs/wisco_velocity
 ```
-Export a run to the stack with `tools/vm.sh pull-policy <run-dir> <policy-id>`.
+Export a run to the stack with `tools/dev/vm.sh pull-policy <run-dir> <policy-id>`.
 
 ## Changing the robot's numbers
 

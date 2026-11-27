@@ -1,6 +1,6 @@
 <!-- wisco velocity-flat training world from mjlab 1.6.0, for deployment on CPU.
      scene.xml: mjlab `export-scene Wisco-V1-Velocity-Flat` with the Python-side PD actuators turned into MuJoCo position
-     actuators (kp/kd/effort from robot_numbers.yaml), written by tools/build_robot_world.py.
+     actuators (kp/kd/effort from robot_numbers.yaml), written by tools/build/build_robot_world.py.
      Physics options restated from the task config (export-scene does not write them). -->
 <mujoco model="wisco_velocity_flat">
   <option timestep="0.005" integrator="implicitfast" cone="pyramidal" jacobian="auto" solver="Newton" iterations="10" tolerance="1e-08" ls_iterations="20" ls_tolerance="0.01" ccd_iterations="50" impratio="1.0" gravity="0 0 -9.81"/>

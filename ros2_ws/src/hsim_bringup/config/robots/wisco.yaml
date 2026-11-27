@@ -1,9 +1,9 @@
 # Robot profile: Wisco Humanoid V1 (wiscohumanoids/). See g1.yaml for the format.
-# Values measured from assets/robots/wisco_v1/mjlab_1.6.0/wisco_velocity_flat.xml (tools/build_robot_world.py) at the
+# Values measured from assets/robots/wisco_v1/mjlab_1.6.0/wisco_velocity_flat.xml (tools/build/build_robot_world.py) at the
 # standing pose, and robots/wisco_v1/model/robot_numbers.yaml (sensors).
 name: wisco
 world: /hsim/assets/robots/wisco_v1/mjlab_1.6.0/wisco_velocity_flat.xml
-env_build_dir: build_wisco           # tools/env_build.py <env> --robot wisco
+env_build_dir: build_wisco           # tools/build/env_build.py <env> --robot wisco
 policy: /hsim/models/locomotion/wisco_v1_velocity_arms_free   # legs + torso, arms/head held (manifest v2)
 default_sensors: stereo              # no lidar on Wisco: ZED X depth -> point cloud -> /scan (front only)
 bodies:

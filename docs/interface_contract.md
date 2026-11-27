@@ -3,7 +3,7 @@
 Every topic, TF edge, action and service between layers of the stack, and which node owns it.
 
 **Source of truth:** `ros2_ws/src/hsim_bringup/config/interface_contract.yaml`. The tables below are generated
-from it by `python3 tools/gen_docs.py` (never edit them by hand; `tests/test_docs.py` fails if they are stale).
+from it by `python3 tools/dev/gen_docs.py` (never edit them by hand; `tests/test_docs.py` fails if they are stale).
 The YAML's topics and TF edges are checked against a running stack by
 `ros2 run hsim_bringup contract_check --phase N`; `tests/test_contract.py` checks the YAML against the code
 without ROS.

@@ -5,7 +5,7 @@ plugin, under the robot's own controllers.
 
 `world` is either the scene a walking policy trained in (mjlab's exported MJCF, the bare training floor) or an
 environment's plugin-ready build, `assets/envs/<env>/<build dir>/world_ros2_control/world.xml`, written by
-tools/env_build.py next to the env's world.mjb (same model, same qpos layout; MJCF with its assets beside it, since
+tools/build/env_build.py next to the env's world.mjb (same model, same qpos layout; MJCF with its assets beside it, since
 the plugin bundles its own MuJoCo version and a compiled .mjb only loads in the version that wrote it). This
 writes, into `out_dir`:
 
@@ -86,7 +86,7 @@ def robot_joints(model):
 
 def convert(scene, prefix=PREFIX):
     """The plugin-ready MjSpec and its compiled model: prefix removed, IMU sensors added on the policy IMU site.
-    tools/env_build.py builds an env's world_ros2_control.mjb from this spec.
+    tools/build/env_build.py builds an env's world_ros2_control.mjb from this spec.
     """
     spec = mujoco.MjSpec.from_file(scene)
     _absolute_asset_dirs(spec, scene)
@@ -228,7 +228,7 @@ def load(world, prefix=PREFIX):
     if world.endswith('.mjb'):
         model = mujoco.MjModel.from_binary_path(world)
         if not _plugin_ready(model):
-            raise ValueError(f'{world}: not a plugin-ready world (rebuild it with tools/env_build.py)')
+            raise ValueError(f'{world}: not a plugin-ready world (rebuild it with tools/build/env_build.py)')
         return world, model, None
     model = mujoco.MjModel.from_xml_path(world)
     if _plugin_ready(model):

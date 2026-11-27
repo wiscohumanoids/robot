@@ -3,7 +3,7 @@
 // On the sim stack's ros2_control backend MuJoCo runs inside the controller manager's process (the upstream
 // mujoco_ros2_control hardware plugin), not in the hsim_sim MuJoCo node. Two things the rest of the simulation needs
 // came from that node, and this plugin provides them in the same formats (ground_truth_stream.hpp):
-// /sim/ground_truth/state for the simulated head camera and graders, and the UDP stream for tools/viewer.sh. The
+// /sim/ground_truth/state for the simulated head camera and graders, and the UDP stream for tools/sim/viewer.sh. The
 // world file the backend runs and the env's world.mjb have the same qpos layout (env_build.py writes both).
 //
 // Parameters (under mujoco_plugins.<name>.): type, state_topic, state_rate, viewer_host, viewer_port, viewer_rate.

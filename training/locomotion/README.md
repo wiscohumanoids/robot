@@ -30,7 +30,7 @@ unattended (`infra/vm_jobs/`).
 
 | # | Step | Command | Done when |
 |---|---|---|---|
-| 0 | Copy the repo | (laptop) `tools/vm.sh sync` | repo at `~/robot` on the machine |
+| 0 | Copy the repo | (laptop) `tools/dev/vm.sh sync` | repo at `~/robot` on the machine |
 | 1 | Set up the machine | `infra/aws/gpu_vm/setup.sh` | torch and Warp see the GPU |
 | 2 | Smoke test | `scripts/smoke_test.sh` | 5 PPO updates on 256 envs without errors |
 | 3 | W&B login | `uv run wandb login` | |
@@ -39,11 +39,11 @@ unattended (`infra/vm_jobs/`).
 | 6 | W&B registry | one time, in the W&B web UI: Registry → new registry `Motions`, artifact type `All Types` | registry exists |
 | 7 | Convert a clip | `scripts/upload_motion.sh walk1_subject1` | NPZ in the registry, preview video looks right |
 | 8 | Train tracking | `scripts/train_tracking.sh <entity>-org/wandb-registry-Motions/walk1_subject1` | the robot follows the clip without falling |
-| 9 | Export | (laptop) `tools/vm.sh pull-policy <run-dir> <policy-id>` (runs `export_manifest.py` on the machine) | ONNX + manifest in `models/locomotion/<id>/` |
+| 9 | Export | (laptop) `tools/dev/vm.sh pull-policy <run-dir> <policy-id>` (runs `export_manifest.py` on the machine) | ONNX + manifest in `models/locomotion/<id>/` |
 | 10 | Stop the machine | AWS console or CLI | |
 
 mjlab converts motion clips itself, so the BeyondMimic `csv_to_npz.py` step is not used (its body ordering differs).
 
 **Watching a policy:** `uv run play <task> --wandb-run-path <entity>/mjlab/<run-id> --viewer viser` starts a web viewer
 on the machine; open it from the laptop through an SSH tunnel (the port is printed on start). On the laptop,
-`tools/play_mjlab.py` plays an exported policy in plain MuJoCo.
+`tools/sim/play_mjlab.py` plays an exported policy in plain MuJoCo.

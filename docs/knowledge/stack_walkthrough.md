@@ -20,7 +20,7 @@ which MuJoCo world, which walking policy folder, the body and sensor-mount names
 environment build folder. Changing robots is choosing a different profile; no node has a robot name in its code.
 
 `env:=<source>/<name>` picks a room from `assets/envs/`, already built into a single MuJoCo file plus a Nav2 map and a
-list of named objects (`tools/env_build.py`, see `assets/envs/README.md`).
+list of named objects (`tools/build/env_build.py`, see `assets/envs/README.md`).
 
 ## 2. A request becomes skills
 
@@ -120,9 +120,9 @@ balance. The arm pipelines (teleop, datasets, ACT / pi0.5 training) are in `mani
 | Artifact | Made by | Lives in |
 |---|---|---|
 | Robot model and numbers | `robots/<robot>/model/` scripts from CAD and datasheets; actuator values refined by `training/sim2real/pace.py` | `robots/<robot>/` |
-| Simulation world of the robot | `tools/build_robot_world.py` from the training task | `assets/robots/` |
-| Rooms | `tools/env_build.py` (and `tools/robocasa_export.py` for kitchens) | `assets/envs/<env>/build*/` |
-| Walking and tracking policies | `training/train.sh` on the GPU machine, exported by `tools/vm.sh pull-policy` | `models/locomotion/` |
+| Simulation world of the robot | `tools/build/build_robot_world.py` from the training task | `assets/robots/` |
+| Rooms | `tools/build/env_build.py` (and `tools/build/robocasa_export.py` for kitchens) | `assets/envs/<env>/build*/` |
+| Walking and tracking policies | `training/train.sh` on the GPU machine, exported by `tools/dev/vm.sh pull-policy` | `models/locomotion/` |
 | Manipulation policy | `manipulation/finetune.sh` (ACT, pi0.5, GR00T over an arm profile) | served by `services/vla_server/` |
 
 ## 11. Checking it
@@ -134,4 +134,4 @@ balance. The arm pipelines (teleop, datasets, ACT / pi0.5 training) are in `mani
   `tools/ros.sh test sim "" wisco ros2_control` runs it through the ros2_control backend
   (`... ethercat_sim` through the simulated drives).
 - `tools/ros.sh autotest [name] [robot]`: navigation, behavior-tree and reach checks graded on simulator ground truth
-  (`tools/autonomy_test.sh`, `tools/eval/`).
+  (`tools/test/autonomy_test.sh`, `tools/eval/`).

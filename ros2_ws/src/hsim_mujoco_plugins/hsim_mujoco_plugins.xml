@@ -4,7 +4,7 @@
          base_class_type="mujoco_ros2_control_plugins::MuJoCoROS2ControlPluginBase">
     <description>
       Publishes the simulated world's full state ([time, qpos...]) on /sim/ground_truth/state, as the MuJoCo sim
-      node does, and streams it to the Mac viewer over UDP, so the camera, the graders and tools/viewer.sh work on
+      node does, and streams it to the Mac viewer over UDP, so the camera, the graders and tools/sim/viewer.sh work on
       the ros2_control backend.
     </description>
   </class>
