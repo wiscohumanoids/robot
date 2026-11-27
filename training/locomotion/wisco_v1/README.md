@@ -8,13 +8,16 @@ runs go to `robots/wisco_v1/hardware_observations.md`.
 training/locomotion/wisco_v1/
   train.py, play.py      launchers: register the task, then run mjlab's own train / play
   wisco_mjlab/           the task (registers Wisco-V1-Velocity-Flat):
-    robot_cfg.py           actuators (DC motor torque-speed limits + command delay), gains and limits from robots/wisco_v1/model/
-    env_cfg.py             observations, rewards, randomization, curriculum (arms-free recipe)
-    arms_free_terms.py     custom terms: in-place-turn commands, performance-gated curriculum, scripted arm motion,
-                           hand payloads, self-collision and angular-momentum penalties, yaw-rate tracking
-    ankle_actuator.py      per-motor ankle torque limits through the rod linkage
-    linkage_penalty.py     penalty for ankle motor torque above peak and sustained above rated
-    rl_cfg.py              PPO settings
+    task/
+      env_cfg.py             observations, rewards, randomization, curriculum (arms-free recipe)
+      rl_cfg.py              PPO settings
+    robot/
+      robot_cfg.py           actuators (DC motor torque-speed limits + command delay), gains and limits from robots/wisco_v1/model/
+      ankle_actuator.py      per-motor ankle torque limits through the rod linkage
+      linkage_penalty.py     penalty for ankle motor torque above peak and sustained above rated
+    terms/
+      arms_free_terms.py     custom terms: in-place-turn commands, performance-gated curriculum, scripted arm motion,
+                             hand payloads, self-collision and angular-momentum penalties, yaw-rate tracking
   vm/                    GPU machine scripts (run from training/locomotion)
     check_env.py           build the real environment and check it, no training
     smoke_test.sh          5 PPO updates on 256 robots

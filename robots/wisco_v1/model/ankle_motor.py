@@ -2,7 +2,7 @@
 
 tau_motor = solve(J(q)^T, tau_joint), with J = d(crank angle)/d(joint angle) bilinearly
 interpolated from the grid in ankle_linkage.json (made by linkage_tools.py).
-The mjlab penalty (training/locomotion/wisco_v1/wisco_mjlab/linkage_penalty.py) does the same in torch.
+The mjlab penalty (training/locomotion/wisco_v1/wisco_mjlab/robot/linkage_penalty.py) does the same in torch.
 """
 import json
 

@@ -3,10 +3,10 @@
 (lines marked "# WISCO:") and the arms-free locomotion recipe (marked "# ARMS-FREE:"):
   1 legs + waist only (15 actions); 2 arms position-held with random moving targets; 3 0-1 kg hand payload;
   4 tracking std 0.25 / 0.35; 5 >= 15 % turn-in-place commands, yaw range +-1.5; 6 command delay 0-10 ms
-  (robot_cfg.py); 7 pushes 0.8 m/s; 8 motor DR (armature, kp/kd, friction, damping) + mass DR.
+  (robot/robot_cfg.py); 7 pushes 0.8 m/s; 8 motor DR (armature, kp/kd, friction, damping) + mass DR.
 Difficulty curriculum (without it the policy learns to stand still; the same design as the G1 arms-free task):
 items 2, 3, 7 scale with a performance-gated level L (0 -> 1) and item 4 starts at the G1 defaults (0.5 / 0.707) and
-tightens with a second level L2 after L = 1. See arms_free_terms.py. Mass and motor DR are on from the start.
+tightens with a second level L2 after L = 1. See terms/arms_free_terms.py. Mass and motor DR are on from the start.
 """
 from __future__ import annotations
 
@@ -25,10 +25,10 @@ from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from mjlab.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 
-from . import linkage_penalty
-from . import robot_cfg as RC
-from . import arms_free_terms
-from .robot_cfg import P, get_wisco_robot_cfg
+from ..robot import linkage_penalty
+from ..robot import robot_cfg as RC
+from ..terms import arms_free_terms
+from ..robot.robot_cfg import P, get_wisco_robot_cfg
 
 # WISCO: mass uncertainty (robots/wisco_v1/hardware_observations.md, "Masses"). Each part's mass and inertia scaled together by a
 # factor in [0.85, 1.20] (skewed up: the CAD masses leave out wiring). pseudo_inertia scales by e^(2*alpha).
