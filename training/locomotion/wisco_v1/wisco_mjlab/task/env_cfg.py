@@ -1,6 +1,6 @@
 """Wisco V1 velocity (walking) task, arms-free recipe.
 
-The task is assembled from small, purpose-specific modules:
+The task is assembled from small, purpose-specific modules in task/env/:
 
   recipe.py     tuning constants
   sensors.py    feet contact and non-arm self-collision sensors
@@ -16,14 +16,14 @@ from __future__ import annotations
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 
-from ...robot.robot_cfg import get_wisco_robot_cfg
-from .actions import configure_actions
-from .commands import configure_commands
-from .curriculum import add_curriculum
-from .events import add_events
-from .play import configure_play
-from .rewards import add_rewards
-from .sensors import add_sensors
+from ..robot.robot_cfg import get_wisco_robot_cfg
+from .env.actions import configure_actions
+from .env.commands import configure_commands
+from .env.curriculum import add_curriculum
+from .env.events import add_events
+from .env.play import configure_play
+from .env.rewards import add_rewards
+from .env.sensors import add_sensors
 
 
 def wisco_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:

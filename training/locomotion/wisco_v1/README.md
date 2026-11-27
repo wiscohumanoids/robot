@@ -9,8 +9,9 @@ training/locomotion/wisco_v1/
   train.py, play.py      launchers: register the task, then run mjlab's own train / play
   wisco_mjlab/           the task (registers Wisco-V1-Velocity-Flat):
     task/
+      env_cfg.py             assembles the task from env/
+      rl_cfg.py              PPO settings
       env/
-        build.py             assembles the task from the modules below
         recipe.py            tuning constants
         sensors.py           feet contact + non-arm self-collision sensors
         actions.py           policy joints and viewer body
@@ -19,7 +20,6 @@ training/locomotion/wisco_v1/
         rewards.py           reward terms and metrics
         curriculum.py        performance-gated difficulty
         play.py              evaluation overrides
-      rl_cfg.py              PPO settings
     robot/
       robot_cfg.py           actuators (DC motor torque-speed limits + command delay), gains and limits from robots/wisco_v1/model/
       ankle_actuator.py      per-motor ankle torque limits through the rod linkage

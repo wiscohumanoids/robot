@@ -1,4 +1,4 @@
-"""Wisco V1 flat velocity task configuration."""
-from .build import wisco_flat_env_cfg
+"""Helper modules for task/env_cfg.py.
 
-__all__ = ["wisco_flat_env_cfg"]
+Import from the individual modules; this package intentionally has no barrel.
+"""

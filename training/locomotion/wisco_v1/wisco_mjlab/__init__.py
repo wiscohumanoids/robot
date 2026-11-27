@@ -7,7 +7,7 @@ over to mjlab's unchanged train / play entry points.
 from mjlab.tasks.registry import register_mjlab_task
 from mjlab.tasks.velocity.rl import VelocityOnPolicyRunner
 
-from .task.env import wisco_flat_env_cfg
+from .task.env_cfg import wisco_flat_env_cfg
 from .task.rl_cfg import wisco_ppo_runner_cfg
 
 TASK_ID = "Wisco-V1-Velocity-Flat"
