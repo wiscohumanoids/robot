@@ -15,6 +15,7 @@ training/locomotion/wisco_v1/
     ankle_actuator.py      per-motor ankle torque limits through the rod linkage
     linkage_penalty.py     penalty for ankle motor torque above peak and sustained above rated
     rl_cfg.py              PPO settings
+  wisco_amp/             AMP prototype via amp-rsl-rl (training-only)
   vm/                    GPU machine scripts (run from training/locomotion)
     check_env.py           build the real environment and check it, no training
     smoke_test.sh          5 PPO updates on 256 robots

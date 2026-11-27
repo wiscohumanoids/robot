@@ -10,7 +10,7 @@ on the GPU machine: `infra/vm_jobs/`.
 
 | Folder | What | Robots |
 |---|---|---|
-| [`locomotion/`](locomotion/README.md) | walking (velocity) policies with mjlab 1.6.0 and RSL-RL PPO; also the Python environment every mjlab job runs in | Wisco V1 (`wisco_v1/`), G1 (`hsim_tasks/`, `scripts/`) |
+| [`locomotion/`](locomotion/README.md) | walking (velocity) policies with mjlab (RSL-RL 5.5.2) and RSL-RL PPO; also the Python environment every mjlab job runs in | Wisco V1 (`wisco_v1/`), G1 (`hsim_tasks/`, `scripts/`) |
 | [`tracking/`](tracking/README.md) | motion tracking: one policy reproduces one human motion clip | Wisco V1 (`wisco_v1/`), G1 |
 | [`manipulation/`](manipulation/README.md) | humanoid pick-and-place: scripted demonstrations → LeRobot dataset → GR00T fine-tune | G1 with Dex1 grippers |
 | [`sim2real/`](sim2real/README.md) | making the simulator match the robot (PACE actuator identification) and the steps from a trained policy to first steps | Wisco V1 |
