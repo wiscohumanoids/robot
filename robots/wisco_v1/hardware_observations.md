@@ -60,7 +60,7 @@ measurements come back, the less retraining later.
   through the linkage (as the drives would), some ankle motor is still above rated in 67 % of steps (22.7 % of
   motor-steps, RMS 10.1 N·m; 2 s moving RMS above rated 34 % of motor-time).
 - **Simulation meanwhile:** training clamps each ankle motor through the linkage, penalizes any step above peak and
-  penalizes sustained torque above rated (`training/locomotion/wisco_v1/wisco_mjlab/robot/ankle_actuator.py`,
+  penalizes sustained torque above rated (`training/locomotion/wisco_v1/wisco_mjlab/ankle_actuator.py`,
   `linkage_penalty.py`).
 - **Two X4-36 per ankle look undersized for this gait and mass.** Whether the real ankle overheats depends on the real
   mass (likely above 40.6 kg) and cooling.

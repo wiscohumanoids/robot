@@ -25,7 +25,7 @@ sys.path.insert(0, str(HERE.parents[3] / "robots" / "wisco_v1" / "model"))
 import wisco_mjlab  # noqa: E402  (registers the task)
 from mjlab.envs import ManagerBasedRlEnv  # noqa: E402
 from mjlab.tasks.registry import load_env_cfg  # noqa: E402
-from wisco_mjlab.robot import linkage_penalty  # noqa: E402
+from wisco_mjlab import linkage_penalty  # noqa: E402
 
 import ankle_motor  # noqa: E402
 import robot_params as P  # noqa: E402
@@ -122,7 +122,7 @@ report("6_speed", True, {"num_envs": N, "env_steps_per_s": int(100 * N / dt),
        "gpu_mem_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2) if DEVICE != "cpu" else None})
 
 # 7. arms-free recipe at full curriculum difficulty (L = L2 = 1): arm targets, payload, pure-turn share, final stds
-from wisco_mjlab.terms import arms_free_terms as V
+from wisco_mjlab import arms_free_terms as V
 c = V._curr(env); c.L, c.L2 = 1.0, 1.0
 V._apply(env, c, {**V.DEFAULT_CURRICULUM, **cfg.curriculum["level"].params})
 st = env._wisco_arm_state

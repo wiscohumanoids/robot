@@ -19,7 +19,7 @@ N = int(sys.argv[2]) if len(sys.argv) > 2 else 256
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # training/locomotion/wisco_v1 (wisco_mjlab)
 import wisco_mjlab  # noqa: E402
 import mjlab.tasks  # noqa: E402,F401
-from wisco_mjlab.robot import linkage_penalty  # noqa: E402
+from wisco_mjlab import linkage_penalty  # noqa: E402
 from mjlab.envs import ManagerBasedRlEnv  # noqa: E402
 from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper  # noqa: E402
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls  # noqa: E402
