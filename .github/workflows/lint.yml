@@ -1,0 +1,27 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ruff yamllint shellcheck-py
+      - name: Python syntax and undefined names
+        run: ruff check .
+      - name: Unused imports and variables in tools and tests
+        run: ruff check tools tests --select F401,F841
+      - name: Shell scripts
+        run: shellcheck --severity=error $(git ls-files '*.sh')
+      - name: YAML
+        run: yamllint $(git ls-files '*.yml' '*.yaml')
