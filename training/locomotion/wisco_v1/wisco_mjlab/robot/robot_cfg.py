@@ -16,7 +16,7 @@ from .ankle_actuator import AnkleLinkageActuatorCfg
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 
-MODEL_DIR = Path(__file__).resolve().parents[4] / "robots" / "wisco_v1" / "model"
+MODEL_DIR = Path(__file__).resolve().parents[5] / "robots" / "wisco_v1" / "model"
 sys.path.insert(0, str(MODEL_DIR))
 import robot_params as P  # noqa: E402
 
