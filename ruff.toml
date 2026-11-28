@@ -1,0 +1,6 @@
+target-version = "py312"
+
+[lint]
+# High-signal rules only. Pre-commit runs these on changed files, so the repo does not
+# need a one-time cleanup before they can be enabled.
+select = ["E9", "F63", "F7", "F82", "F811", "F401", "F841"]

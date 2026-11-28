@@ -156,6 +156,8 @@ the GPU machine; jobs are defined in `infra/vm_jobs/jobs.yaml` and launched with
 - **Generated files are never hand-edited:** robot models (`robots/*/model/`), training models, the contract tables.
 - **Checks:** `python -m pytest tests ros2_ws/src/*/test training/sim2real manipulation/finetune` (no ROS needed); `tools/ros.sh test [stub|sim] [env] [robot] [backend]`
   (stack smoke test); `tools/ros.sh autotest [name] [robot]` (autonomy checks).
+- **Lint:** `pip install pre-commit && pre-commit install` once. Commits lint the files they touch; CI runs
+  `pre-commit` on the files changed by the PR.
 - **Code and docs describe the work, not who did it**; history and authorship live in git.
 
 ## Known limitations

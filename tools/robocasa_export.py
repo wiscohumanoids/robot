@@ -19,7 +19,6 @@ import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import numpy as np
 import robocasa  # registers the kitchen tasks; also locates the asset checkout
 import robosuite
 import yaml

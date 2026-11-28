@@ -1,0 +1,9 @@
+extends: relaxed
+
+rules:
+  # The repo intentionally uses long lines and aligned inline YAML.
+  line-length: disable
+  commas: disable
+  colons: disable
+  # A few hardware configs use CRLF. Keep the lint check about structure, not line endings.
+  new-lines: disable

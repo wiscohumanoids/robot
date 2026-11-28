@@ -36,7 +36,6 @@ def run(folder, seed=0):
     feet = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, PREFIX + f"{s}_ankle_roll_link") for s in ("left", "right")]
     period = p.sim_dt * p.decimation
     out, totals = [], {}
-    rng = np.random.default_rng(seed)
     for sec, cmd, label in SCRIPT:
         n = int(sec / period)
         rock, tilt, lifts, slide, drift = [], [], 0, 0.0, []

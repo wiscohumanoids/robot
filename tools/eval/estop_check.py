@@ -3,7 +3,7 @@
 Keeps sending 'walk forward 0.5 m/s' as teleop the whole time; engages the operator e-stop
 after 5 s, releases it after 9 s. Measures true speed (privileged) in each window.
 """
-import math, sys, time
+import sys, time
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
