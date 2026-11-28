@@ -1,0 +1,29 @@
+name: ci-docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pytest pyyaml
+      - name: Docs checks
+        run: python -m pytest -q tests/test_docs.py

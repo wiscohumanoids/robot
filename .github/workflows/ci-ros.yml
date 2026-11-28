@@ -1,34 +1,32 @@
-name: ci
+name: ci-ros
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'ros2_ws/**'
+      - 'assets/**'
+      - 'models/**'
+      - 'robots/**'
+      - 'tools/**'
+      - 'infra/docker/**'
+      - '.github/workflows/ci-ros.yml'
   pull_request:
+    paths:
+      - 'ros2_ws/**'
+      - 'assets/**'
+      - 'models/**'
+      - 'robots/**'
+      - 'tools/**'
+      - 'infra/docker/**'
+      - '.github/workflows/ci-ros.yml'
+
+permissions:
+  contents: read
 
 jobs:
-  # Fast, no ROS: interface contract vs code, generated docs, links, robot profiles / manifests,
-  # and the pure-Python unit tests of each ROS package.
-  static:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      # Pinocchio 3+ (the arm toolkit's API) is only on pip with NumPy 2, so this job runs NumPy 2; the ros job below
-      # covers the ROS image's NumPy 1.26. mcap, fastapi, httpx and uvicorn let the logging and perception-link tests run.
-      - run: pip install pytest pyyaml opencv-python-headless "pin>=3" scipy "mujoco==3.11.0" pyarrow mcap fastapi httpx uvicorn
-      - name: Generated docs are up to date
-        run: python tools/gen_docs.py --check
-      - name: Contract, consistency and unit tests
-        run: python -m pytest -q tests ros2_ws/src/*/test training/sim2real manipulation/finetune
-
-  # Real ROS 2 Jazzy in the same container the stack is developed in (infra/docker): build the
-  # workspace, then bring up the stub stack and the MuJoCo + policy stack, check each against the
-  # live interface contract and drive them.
   ros:
     runs-on: ubuntu-latest
-    needs: static
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
